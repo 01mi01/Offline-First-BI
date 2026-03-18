@@ -1,0 +1,44 @@
+name: offline_first_bi
+description: "Aplicación móvil offline-first para emprendimientos artísticos"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Estado
+  flutter_riverpod: ^2.4.9
+  # Base de datos local
+  drift: ^2.14.0
+  sqlite3_flutter_libs: ^0.5.18
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  # Seguridad
+  crypto: ^3.0.3
+  encrypt: ^5.0.3
+  otp: ^3.1.4
+  qr_flutter: ^4.1.0
+  # Utilidades
+  uuid: ^4.2.2
+  intl: ^0.19.0
+  # Reportes
+  pdf: ^3.10.8
+  excel: ^4.0.3
+  share_plus: ^10.1.2
+  permission_handler: ^11.3.1
+  # UI
+  google_fonts: ^6.1.0
+  fl_chart: ^0.68.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.14.0
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
