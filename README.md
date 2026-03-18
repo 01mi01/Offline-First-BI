@@ -7,27 +7,26 @@ Aplicación móvil Full Stack con enfoque Offline-First orientada a Business Int
 Diseñar y desarrollar una aplicación móvil Full Stack para el registro y control de las operaciones comerciales de emprendimientos artísticos, incorporando Business Intelligence y un enfoque Offline-First con medidas de seguridad para garantizar la integridad y confidencialidad de los datos.
 
 ## Objetivos específicos 
-- Backend: Configuración inicial de las carpetas del proyecto con Clean Architecture y Riverpod. Implementación de la base de datos local con Drift y configuración de la base de datos en Supabase.
-- Frontend: Implementación del inicio de sesión con credenciales, cierre de sesión y cierre automático de sesión por inactividad.
-- Flujo 1: El administrador inicia sesión con sus credenciales y gestiona los usuarios de la aplicación, incluyendo la creación, edición, bloqueo y desbloqueo de usuarios.
-- Flujo 2: Un usuario creado por el administrador inicia sesión con sus credenciales y es bloqueado al superar el límite de intentos fallidos. El administrador desbloquea la cuenta desde el módulo de gestión de usuarios para que el usuario pueda volver a acceder, o bien bloquea manualmente una cuenta activa impidiendo el acceso hasta que el administrador la restablezca.
-- Flujo 3: El administrador define los permisos de acceso por módulo para un usuario desde el módulo de permisos de acceso y el usuario inicia sesión para verificar que el menú de navegación refleja únicamente los módulos habilitados por el administrador.
+- Backend: Configuración inicial del proyecto con Clean Architecture y Riverpod. Implementación de la base de datos local utilizando Drift (SQLite).
+- Base de datos: Implementación de la base de datos local con las tablas users, roles, categories, products, materials, product_materials, sales, sale_items, purchases, purchase_items, suppliers, clients, events y locations, garantizando almacenamiento, recuperación y actualización correcta de los datos desde la aplicación.
+- Flujo 1: Registro de productos desde la aplicación móvil y verificación de que los datos se almacenan correctamente en la base de datos local.
+- Flujo 2: Registro de ventas seleccionando productos del inventario, cálculo automático del total y actualización automática del stock.
+- Flujo 3: Generación de reportes filtrados por fecha o producto a partir de la información almacenada en la base de datos local.
 
 ## Alcance
 
 ### Incluye
+- Base de datos local con SQLite mediante Drift
 - CRUD completo de productos, categorías, materiales, ventas, compras, clientes, proveedores, eventos y ubicaciones
 - Reportes exportables en PDF y Excel
+
+### No incluye (por ahora)
 - Panel de Business Intelligence con vistas guardadas
 - Autenticación con 2FA opcional y soporte offline
 - Gestión de usuarios y permisos individuales por módulo
 - Módulo de auditoría
 - Tema claro y oscuro
 - Sincronización automática con la nube
-
-### No incluye
-- Notificaciones
-- Procesamiento de pagos o integración con sistemas bancarios
 
 ## Stack tecnológico
 - Frontend: Flutter + Dart
@@ -57,13 +56,7 @@ git clone https://github.com/01mi01/Offline-First-BI
 flutter pub get
 ```
 
-3. Crear un archivo `.env` en la raíz del proyecto con las siguientes variables de entorno:
-```
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-```
-
-4. Ejecutar la aplicación
+3. Ejecutar la aplicación
 ```bash
 flutter run
 ```
