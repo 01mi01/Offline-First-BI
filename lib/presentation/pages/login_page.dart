@@ -55,7 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
                 children: [
-                  SizedBox(height: screenHeight * 0.09),
+                  SizedBox(height: screenHeight * 0.08),
                   Center(
                     child: SvgPicture.asset(
                       'assets/images/logo.svg',
@@ -67,7 +67,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 20),
+                      padding: const EdgeInsets.only(right: 18),
                       child: Text(
                         'by Chris',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -80,7 +80,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   SizedBox(height: screenHeight * 0.06),
                   Text(
                     'Iniciar sesión',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
@@ -89,7 +89,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   const SizedBox(height: 8),
                   Text(
                     'Ingresa tus datos para acceder a tu cuenta',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                     textAlign: TextAlign.center,

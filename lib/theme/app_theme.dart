@@ -38,7 +38,10 @@ final lightTheme = ThemeData(
     error: AppColors.error,
   ),
   scaffoldBackgroundColor: AppColors.background,
+
+  // Tipografía
   textTheme: GoogleFonts.interTextTheme(),
+  
   appBarTheme: const AppBarTheme(
     backgroundColor: AppColors.surface,
     foregroundColor: AppColors.textPrimary,
