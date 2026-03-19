@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 // Colores principales de la aplicación
 class AppColors {
   //Teal (original)
-  static const primary = Color(0xFF1A9E98);
-  static const primaryDark = Color(0xFF137A75);
+  //static const primary = Color(0xFF1A9E98);
+  //static const primaryDark = Color(0xFF137A75);
 
   //Lime (nuevo logo)
   //static const primary = Color(0xFFAFC908);
@@ -15,13 +15,15 @@ class AppColors {
   //static const primary = Color(0xFFBCE704);
   //static const primaryDark = Color(0xFF97B803);
 
-  static const background = Color(0xFFFFFFFF);
-  static const surface = Color(0xFFFFFFFF);
-  static const textPrimary = Color(0xFF000000);
-  static const textSecondary = Color(0xFF4B5563);
-  static const border = Color(0xFFE5E7EB);
-  static const error = Color(0xFFEF4444);
-  static const success = Color(0xFF10B981);
+static const primary = Color(0xFF00C3CF); 
+static const primaryDark = Color(0xFF008197);
+static const background = Color(0xFFF2F2F7);
+static const surface = Color(0xFFFFFFFF);
+static const textPrimary = Color(0xFF000000);
+static const textSecondary = Color(0xFF6B7280);
+static const border = Color(0xFFE5E7EB);
+static const error = Color(0xFFFF3B30);
+static const success = Color(0xFF34C759);
 }
 
 // Tema claro de la aplicación
