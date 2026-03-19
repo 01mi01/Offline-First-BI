@@ -3,6 +3,9 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'package:drift/drift.dart' show Value;
 
 part 'app_database.g.dart';
 
@@ -232,6 +235,67 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (Migrator m) async {
+      await m.createAll();
+      await _insertDatosIniciales();
+    },
+  );
+
+  Future<void> _insertDatosIniciales() async {
+    // Roles del sistema
+    await batch((b) {
+      b.insertAll(roles, [
+        RolesCompanion.insert(name: 'admin'),
+        RolesCompanion.insert(name: 'propietario'),
+        RolesCompanion.insert(name: 'usuario'),
+      ]);
+    });
+
+    // Módulos del sistema
+    await batch((b) {
+      b.insertAll(modules, [
+        ModulesCompanion.insert(name: 'inventario'),
+        ModulesCompanion.insert(name: 'ventas'),
+        ModulesCompanion.insert(name: 'compras'),
+        ModulesCompanion.insert(name: 'clientes'),
+        ModulesCompanion.insert(name: 'proveedores'),
+        ModulesCompanion.insert(name: 'eventos'),
+        ModulesCompanion.insert(name: 'reportes'),
+        ModulesCompanion.insert(name: 'business_intelligence'),
+        ModulesCompanion.insert(name: 'auditoria'),
+        ModulesCompanion.insert(name: 'usuarios'),
+      ]);
+    });
+
+    // Contraseña de prueba: 123456
+    final passwordHash = _hashPassword('123456');
+
+    // Usuario de prueba con rol usuario
+    final testUserId = await into(users).insert(
+      UsersCompanion.insert(
+        username: 'usuario_prueba',
+        email: 'prueba@test.com',
+        passwordHash: passwordHash,
+      ),
+    );
+
+    // Rol usuario para el usuario de prueba
+    final rolUsuario = await (select(roles)..where((r) => r.name.equals('usuario'))).getSingle();
+
+    await into(userRoles).insert(
+      UserRolesCompanion.insert(userId: testUserId, roleId: rolUsuario.id),
+    );
+  }
+
+  // Genera hash SHA-256 de la contraseña
+  String _hashPassword(String password) {
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
 
   // Abre la conexión con la base de datos local
   static LazyDatabase _openConnection() {
