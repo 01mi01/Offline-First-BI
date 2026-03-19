@@ -54,7 +54,7 @@ class MenuDrawer extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 12),
+                  //const SizedBox(height: 12),
                   Text(
                     user?.username ?? '',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
