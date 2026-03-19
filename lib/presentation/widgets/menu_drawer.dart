@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../pages/login_page.dart';
+import '../pages/inventario_page.dart';
 
 // Opciones del menú lateral con su ícono y etiqueta
 final _menuItems = [
@@ -95,8 +96,16 @@ class MenuDrawer extends ConsumerWidget {
                     icon: item['icon'] as IconData,
                     label: item['label'] as String,
                     onTap: () {
-                      // Navegación por módulo, se implementa por etapas
                       Navigator.pop(context);
+                      final module = item['module'] as String;
+                      if (module == 'inventario') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const InventarioPage(),
+                          ),
+                        );
+                      }
                     },
                   );
                 },
