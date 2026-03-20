@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_bar_widget.dart';
 import 'categories_page.dart';
+import 'products_page.dart';
 
 class InventarioPage extends ConsumerWidget {
   const InventarioPage({super.key});
@@ -30,7 +31,7 @@ class InventarioPage extends ConsumerWidget {
         ),
         body: const TabBarView(
           children: [
-            Center(child: Text('Productos — próximamente')),
+            const ProductsPage(),
             CategoriesPage(),
           ],
         ),

@@ -2,48 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../../application/product_provider.dart';
 import '../../application/category_provider.dart';
-import '../../models/category_model.dart';
+import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
 
-class CategoryDialog extends ConsumerStatefulWidget {
-  final CategoryModel? category;
+class ProductDialog extends ConsumerStatefulWidget {
+  final ProductModel? product;
 
-  const CategoryDialog({super.key, this.category});
+  const ProductDialog({super.key, this.product});
 
   @override
-  ConsumerState<CategoryDialog> createState() => _CategoryDialogState();
+  ConsumerState<ProductDialog> createState() => _ProductDialogState();
 }
 
-class _CategoryDialogState extends ConsumerState<CategoryDialog> {
+class _ProductDialogState extends ConsumerState<ProductDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
+  late final TextEditingController _salePriceController;
+  late final TextEditingController _costController;
+  late final TextEditingController _stockController;
   String? _imagePath;
+  int? _selectedCategoryId;
   late bool _isActive;
   bool _hasChanges = false;
-  String? _saveError;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.category?.name ?? '');
+    _nameController = TextEditingController(text: widget.product?.name ?? '');
     _descController = TextEditingController(
-      text: widget.category?.description ?? '',
+      text: widget.product?.description ?? '',
     );
-    _imagePath = widget.category?.image;
-    _isActive = widget.category?.isActive ?? true;
+    _salePriceController = TextEditingController(
+      text: widget.product?.salePrice.toString() ?? '',
+    );
+    _costController = TextEditingController(
+      text: widget.product?.productionCost?.toString() ?? '',
+    );
+    _stockController = TextEditingController(
+      text: widget.product?.stock.toString() ?? '0',
+    );
+    _imagePath = widget.product?.image;
+    _selectedCategoryId = widget.product?.categoryId;
+    _isActive = widget.product?.isActive ?? true;
 
     _nameController.addListener(_checkChanges);
     _descController.addListener(_checkChanges);
+    _salePriceController.addListener(_checkChanges);
+    _costController.addListener(_checkChanges);
+    _stockController.addListener(_checkChanges);
   }
 
   void _checkChanges() {
     final changed =
-        _nameController.text.trim() != (widget.category?.name ?? '') ||
-        _descController.text.trim() != (widget.category?.description ?? '') ||
-        _imagePath != widget.category?.image ||
-        _isActive != (widget.category?.isActive ?? true);
+        _nameController.text.trim() != (widget.product?.name ?? '') ||
+        _descController.text.trim() != (widget.product?.description ?? '') ||
+        _salePriceController.text.trim() !=
+            (widget.product?.salePrice.toString() ?? '') ||
+        _costController.text.trim() !=
+            (widget.product?.productionCost?.toString() ?? '') ||
+        _stockController.text.trim() !=
+            (widget.product?.stock.toString() ?? '0') ||
+        _imagePath != widget.product?.image ||
+        _selectedCategoryId != widget.product?.categoryId ||
+        _isActive != (widget.product?.isActive ?? true);
     if (changed != _hasChanges) setState(() => _hasChanges = changed);
   }
 
@@ -51,6 +75,9 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    _salePriceController.dispose();
+    _costController.dispose();
+    _stockController.dispose();
     super.dispose();
   }
 
@@ -65,39 +92,24 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Limpiar error anterior
-    setState(() => _saveError = null);
-
     await ref
-        .read(categoryProvider.notifier)
+        .read(productProvider.notifier)
         .save(
-          id: widget.category?.id,
+          id: widget.product?.id,
+          categoryId: _selectedCategoryId,
           name: _nameController.text.trim(),
           description: _descController.text.trim(),
           image: _imagePath,
+          salePrice: double.tryParse(_salePriceController.text.trim()) ?? 0,
+          productionCost: double.tryParse(_costController.text.trim()),
+          stock: int.tryParse(_stockController.text.trim()) ?? 0,
           isActive: _isActive,
         );
-
-    if (!mounted) return;
-
-    final error = ref.read(categoryProvider).error;
-    if (error != null) {
-      // Mostrar error en el formulario y revertir toggle
-      setState(() {
-        _saveError = error;
-        _isActive = true;
-        _hasChanges = false;
-      });
-      return;
-    }
-
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
-      // Confirmar antes de desactivar
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -106,14 +118,14 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
             borderRadius: BorderRadius.circular(20),
           ),
           title: const Text(
-            '¿Desactivar categoría?',
+            '¿Desactivar producto?',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
           content: Text(
-            'La categoría "${_nameController.text.trim()}" no estará disponible para nuevos productos.',
+            'El producto "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
             style: const TextStyle(color: AppColors.textSecondary),
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -136,8 +148,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                         onPressed: () => Navigator.pop(ctx, false),
                         child: const Text(
                           'Cancelar',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ),
@@ -155,8 +165,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                         onPressed: () => Navigator.pop(ctx, true),
                         child: const Text(
                           'Desactivar',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
@@ -176,7 +184,13 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.category != null;
+    final isEditing = widget.product != null;
+    // Solo categorías activas en el dropdown
+    final categories = ref
+        .watch(categoryProvider)
+        .categories
+        .where((c) => c.isActive)
+        .toList();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -194,7 +208,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
             children: [
               // Título
               Text(
-                isEditing ? 'Editar categoría' : 'Nueva categoría',
+                isEditing ? 'Editar producto' : 'Nuevo producto',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -239,10 +253,26 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
-                  hintText: 'Nombre de la categoría',
+                  hintText: 'Nombre del producto',
                 ),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Categoría
+              DropdownButtonFormField<int>(
+                value: _selectedCategoryId,
+                decoration: const InputDecoration(labelText: 'Categoría'),
+                items: categories
+                    .map(
+                      (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  setState(() => _selectedCategoryId = val);
+                  _checkChanges();
+                },
               ),
               const SizedBox(height: 16),
 
@@ -254,6 +284,56 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                   hintText: 'Descripción opcional',
                 ),
                 maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+
+              // Precio de venta y costo de producción
+              TextFormField(
+                controller: _salePriceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Precio de venta',
+                  hintText: '0.00',
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Campo requerido';
+                  final salePrice = double.tryParse(v);
+                  if (salePrice == null) return 'Valor inválido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _costController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Costo de producción',
+                  hintText: '0.00',
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return null;
+                  final cost = double.tryParse(v);
+                  if (cost == null) return 'Valor inválido';
+                  final salePrice =
+                      double.tryParse(_salePriceController.text.trim()) ?? 0;
+                  if (cost >= salePrice) {
+                    return 'Debe ser menor al precio de venta';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Stock
+              TextFormField(
+                controller: _stockController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Stock inicial',
+                  hintText: '0',
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: 20),
 
@@ -275,7 +355,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Categoría activa',
+                            'Producto activo',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
@@ -283,8 +363,8 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                           ),
                           Text(
                             _isActive
-                                ? 'Visible en el sistema'
-                                : 'Oculta en el sistema',
+                                ? 'Disponible para ventas'
+                                : 'No disponible para ventas',
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -298,46 +378,17 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                         activeColor: AppColors.primary,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: Colors.white,
-                        trackOutlineColor: MaterialStateProperty.all(
+                        trackOutlineColor: WidgetStateProperty.all(
                           Colors.transparent,
                         ),
                       ),
                     ],
                   ),
                 ),
-              // Error al guardar
-              if (_saveError != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _saveError!,
-                          style: const TextStyle(
-                            color: AppColors.error,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
+
               const SizedBox(height: 24),
 
-              // Botones
+              // Botones cancelar y guardar
               Row(
                 children: [
                   Expanded(

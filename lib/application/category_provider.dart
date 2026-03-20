@@ -59,6 +59,17 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
     String? image,
     bool isActive = true,
   }) async {
+    // Si se intenta desactivar, verificar que no tenga productos activos
+    if (id != null && !isActive) {
+      final hasActive = await repository.hasActiveProducts(id);
+      if (hasActive) {
+        state = state.copyWith(
+          error: 'No se puede desactivar una categoría con productos activos.',
+        );
+        return;
+      }
+    }
+    state = state.copyWith(error: null);
     await repository.save(
       id: id,
       name: name,
@@ -76,8 +87,9 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
   }
 }
 
-final categoryProvider =
-    StateNotifierProvider<CategoryNotifier, CategoryState>((ref) {
-  final repository = ref.watch(categoryRepositoryProvider);
-  return CategoryNotifier(repository);
-});
+final categoryProvider = StateNotifierProvider<CategoryNotifier, CategoryState>(
+  (ref) {
+    final repository = ref.watch(categoryRepositoryProvider);
+    return CategoryNotifier(repository);
+  },
+);

@@ -1,35 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
+import '../../application/product_provider.dart';
 import '../../application/category_provider.dart';
-import '../../models/category_model.dart';
+import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
-import '../dialogs/category_dialog.dart';
+import '../dialogs/product_dialog.dart';
 
-class CategoriesPage extends ConsumerStatefulWidget {
-  const CategoriesPage({super.key});
+class ProductsPage extends ConsumerStatefulWidget {
+  const ProductsPage({super.key});
 
   @override
-  ConsumerState<CategoriesPage> createState() => _CategoriesPageState();
+  ConsumerState<ProductsPage> createState() => _ProductsPageState();
 }
 
-class _CategoriesPageState extends ConsumerState<CategoriesPage> {
+class _ProductsPageState extends ConsumerState<ProductsPage> {
   bool _isGrid = false;
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(categoryProvider);
+    final state = ref.watch(productProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
-        onPressed: () => _showDialog(context, ref, null),
+        onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Column(
         children: [
+          // Barra de toggle lista/catálogo
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Row(
@@ -45,18 +47,18 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
           Expanded(
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : state.categories.isEmpty
+                : state.products.isEmpty
                 ? Center(
                     child: Text(
-                      'No hay categorías registradas',
+                      'No hay productos registrados',
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   )
                 : _isGrid
-                ? _GridView(categories: state.categories)
+                ? _GridView(products: state.products)
                 : _ListViewWidget(
-                    categories: state.categories,
-                    onEdit: (cat) => _showDialog(context, ref, cat),
+                    products: state.products,
+                    onEdit: (p) => _showDialog(context, p),
                   ),
           ),
         ],
@@ -64,11 +66,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     );
   }
 
-  void _showDialog(
-    BuildContext context,
-    WidgetRef ref,
-    CategoryModel? category,
-  ) {
+  void _showDialog(BuildContext context, ProductModel? product) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -76,11 +74,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => CategoryDialog(category: category),
+      builder: (_) => ProductDialog(product: product),
     );
   }
 }
 
+// Toggle lista/catálogo
 class _ViewToggle extends StatelessWidget {
   final bool isGrid;
   final ValueChanged<bool> onToggle;
@@ -144,34 +143,47 @@ class _ToggleBtn extends StatelessWidget {
   }
 }
 
-class _ListViewWidget extends StatelessWidget {
-  final List<CategoryModel> categories;
-  final ValueChanged<CategoryModel> onEdit;
+// Vista de lista — muestra todos los campos
+class _ListViewWidget extends ConsumerWidget {
+  final List<ProductModel> products;
+  final ValueChanged<ProductModel> onEdit;
 
-  const _ListViewWidget({required this.categories, required this.onEdit});
+  const _ListViewWidget({required this.products, required this.onEdit});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categories = ref.watch(categoryProvider).categories;
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: categories.length,
+      itemCount: products.length,
       itemBuilder: (context, index) {
-        final cat = categories[index];
-        return _CategoryCard(category: cat, onEdit: () => onEdit(cat));
+        final p = products[index];
+        final categoryName =
+            categories
+                .where((c) => c.id == p.categoryId)
+                .map((c) => c.name)
+                .firstOrNull ??
+            'Sin categoría';
+        return _ProductCard(
+          product: p,
+          categoryName: categoryName,
+          onEdit: () => onEdit(p),
+        );
       },
     );
   }
 }
 
+// Vista de catálogo — solo activos, imagen, nombre, precio
 class _GridView extends StatelessWidget {
-  final List<CategoryModel> categories;
+  final List<ProductModel> products;
 
-  const _GridView({required this.categories});
+  const _GridView({required this.products});
 
   @override
   Widget build(BuildContext context) {
-    // Solo muestra categorías activas en la vista catálogo
-    final active = categories.where((c) => c.isActive).toList();
+    final active = products.where((p) => p.isActive).toList();
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
@@ -179,30 +191,36 @@ class _GridView extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
+        childAspectRatio: 0.80,
       ),
       itemCount: active.length,
       itemBuilder: (context, index) {
-        final cat = active[index];
-        return _GridCard(category: cat, onTap: () => _showDetail(context, cat));
+        final p = active[index];
+        return _GridCard(product: p, onTap: () => _showDetail(context, p));
       },
     );
   }
 
-  void _showDetail(BuildContext context, CategoryModel cat) {
+  void _showDetail(BuildContext context, ProductModel p) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),
-      builder: (_) => _CategoryDetail(category: cat),
+      builder: (_) => _ProductDetail(product: p),
     );
   }
 }
 
-class _CategoryCard extends StatelessWidget {
-  final CategoryModel category;
+// Tarjeta para la vista de lista
+class _ProductCard extends StatelessWidget {
+  final ProductModel product;
+  final String categoryName;
   final VoidCallback onEdit;
 
-  const _CategoryCard({required this.category, required this.onEdit});
+  const _ProductCard({
+    required this.product,
+    required this.categoryName,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -215,14 +233,16 @@ class _CategoryCard extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Imagen del producto
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: category.image != null
+            child: product.image != null
                 ? Image.file(
-                    File(category.image!),
-                    width: 56,
-                    height: 56,
+                    File(product.image!),
+                    width: 64,
+                    height: 64,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => _placeholder(),
                   )
@@ -233,41 +253,102 @@ class _CategoryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Nombre y categoría en la misma línea
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        product.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Categoría en pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        categoryName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                // Descripción
+                if (product.description != null &&
+                    product.description!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    product.description!,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 6),
+                // Precio de venta
                 Text(
-                  category.name,
-                  style: const TextStyle(
+                  'Precio de venta: Bs. ${product.salePrice.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: AppColors.textPrimary,
+                    fontSize: 13,
                   ),
                 ),
-                if (category.description != null &&
-                    category.description!.isNotEmpty)
+                // Costo de producción
+                if (product.productionCost != null) ...[
+                  const SizedBox(height: 2),
                   Text(
-                    category.description!,
+                    'Costo: Bs. ${product.productionCost!.toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 13,
                     ),
                   ),
-                const SizedBox(height: 4),
+                ],
+                const SizedBox(height: 2),
+                // Stock
+                Text(
+                  'Stock: ${product.stock}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Estado activo/inactivo
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
+                      horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: category.isActive
+                    color: product.isActive
                         ? AppColors.success.withOpacity(0.1)
                         : AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    category.isActive ? 'Activa' : 'Inactiva',
+                    product.isActive ? 'Activo' : 'Inactivo',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: category.isActive
+                      color: product.isActive
                           ? AppColors.success
                           : AppColors.error,
                     ),
@@ -277,11 +358,8 @@ class _CategoryCard extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(
-              Icons.edit_outlined,
-              color: AppColors.primary,
-              size: 20,
-            ),
+            icon: const Icon(Icons.edit_outlined,
+                color: AppColors.primary, size: 20),
             onPressed: onEdit,
           ),
         ],
@@ -291,26 +369,24 @@ class _CategoryCard extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      width: 56,
-      height: 56,
+      width: 64,
+      height: 64,
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Icon(
-        Icons.category_outlined,
-        color: AppColors.primary,
-        size: 28,
-      ),
+      child: const Icon(Icons.inventory_2_outlined,
+          color: AppColors.primary, size: 28),
     );
   }
 }
 
+// Tarjeta para la vista de catálogo
 class _GridCard extends StatelessWidget {
-  final CategoryModel category;
+  final ProductModel product;
   final VoidCallback onTap;
 
-  const _GridCard({required this.category, required this.onTap});
+  const _GridCard({required this.product, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -325,14 +401,15 @@ class _GridCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Imagen del producto
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(20),
                 ),
-                child: category.image != null
+                child: product.image != null
                     ? Image.file(
-                        File(category.image!),
+                        File(product.image!),
                         width: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _gridPlaceholder(),
@@ -340,17 +417,32 @@ class _GridCard extends StatelessWidget {
                     : _gridPlaceholder(),
               ),
             ),
+            // Nombre y precio
             Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(
-                category.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: AppColors.textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Bs. ${product.salePrice.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -364,7 +456,7 @@ class _GridCard extends StatelessWidget {
       color: AppColors.primary.withOpacity(0.07),
       child: const Center(
         child: Icon(
-          Icons.category_outlined,
+          Icons.inventory_2_outlined,
           color: AppColors.primary,
           size: 40,
         ),
@@ -373,11 +465,11 @@ class _GridCard extends StatelessWidget {
   }
 }
 
-// Detalle de la categoría
-class _CategoryDetail extends StatelessWidget {
-  final CategoryModel category;
+// Detalle de producto
+class _ProductDetail extends StatelessWidget {
+  final ProductModel product;
 
-  const _CategoryDetail({required this.category});
+  const _ProductDetail({required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -392,12 +484,12 @@ class _CategoryDetail extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Imagen o placeholder
+              // Imagen con botón cerrar
               Stack(
                 children: [
-                  if (category.image != null)
+                  if (product.image != null)
                     Image.file(
-                      File(category.image!),
+                      File(product.image!),
                       width: double.infinity,
                       height: 260,
                       fit: BoxFit.cover,
@@ -405,8 +497,6 @@ class _CategoryDetail extends StatelessWidget {
                     )
                   else
                     _placeholder(),
-
-                  // Botón cerrar en la esquina superior derecha
                   Positioned(
                     top: 12,
                     right: 12,
@@ -428,26 +518,24 @@ class _CategoryDetail extends StatelessWidget {
                   ),
                 ],
               ),
-
-              // Nombre y descripción
+              // Info del producto
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      category.name,
+                      product.name,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    if (category.description != null &&
-                        category.description!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                    if (product.description != null &&
+                        product.description!.isNotEmpty) ...[
                       Text(
-                        category.description!,
+                        product.description!,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 15,
@@ -455,6 +543,16 @@ class _CategoryDetail extends StatelessWidget {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'Bs. ${product.salePrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    
                   ],
                 ),
               ),
@@ -470,8 +568,11 @@ class _CategoryDetail extends StatelessWidget {
       width: double.infinity,
       height: 260,
       color: AppColors.surface,
-      child: const Icon(Icons.category_outlined,
-          color: AppColors.primary, size: 60),
+      child: const Icon(
+        Icons.inventory_2_outlined,
+        color: AppColors.primary,
+        size: 60,
+      ),
     );
   }
 }

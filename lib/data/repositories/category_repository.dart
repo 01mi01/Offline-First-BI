@@ -61,6 +61,16 @@ class CategoryRepository {
         );
   }
 
+  // Verifica si la categoría tiene productos activos
+  Future<bool> hasActiveProducts(int categoryId) async {
+    final rows =
+        await (database.select(database.products)..where(
+              (p) => p.categoryId.equals(categoryId) & p.isActive.equals(true),
+            ))
+            .get();
+    return rows.isNotEmpty;
+  }
+
   // Desactiva una categoría
   Future<void> deactivate(int id) async {
     await (database.update(
