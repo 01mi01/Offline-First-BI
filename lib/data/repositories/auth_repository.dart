@@ -15,42 +15,88 @@ class AuthRepository {
     return digest.toString();
   }
 
-  // Busca el usuario y verifica la contraseña
+  // Convierte fila de usuario a modelo
+  Future<UserModel?> _buildUserModel(User user) async {
+    final userRole = await (database.select(
+      database.userRoles,
+    )..where((ur) => ur.userId.equals(user.id))).getSingleOrNull();
+
+    String role = 'usuario';
+    if (userRole != null) {
+      final roleData = await (database.select(
+        database.roles,
+      )..where((r) => r.id.equals(userRole.roleId))).getSingleOrNull();
+      role = roleData?.name ?? 'usuario';
+    }
+
+    return UserModel(
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: role,
+      mfaEnabled: user.mfaEnabled,
+      darkMode: user.darkMode,
+    );
+  }
+
+  // Inicia sesión y persiste la sesión localmente
   Future<UserModel?> login(String username, String password) async {
     try {
       final hash = _hashPassword(password);
 
-      final user = await (database.select(database.users)
-            ..where((u) => u.username.equals(username))
-            ..where((u) => u.isActive.equals(true)))
-          .getSingleOrNull();
+      final user =
+          await (database.select(database.users)
+                ..where((u) => u.username.equals(username))
+                ..where((u) => u.isActive.equals(true)))
+              .getSingleOrNull();
 
       if (user == null) return null;
       if (user.passwordHash != hash) return null;
 
-      // Obtener el rol del usuario
-      final userRole = await (database.select(database.userRoles)
-            ..where((ur) => ur.userId.equals(user.id)))
-          .getSingleOrNull();
+      // Guarda la sesión en la tabla local
+      await database.delete(database.sesionLocal).go();
+      await database
+          .into(database.sesionLocal)
+          .insert(
+            SesionLocalCompanion.insert(
+              userId: user.id.toString(),
+              username: user.username,
+              createdAt: DateTime.now(),
+            ),
+          );
 
-      String role = 'usuario';
-      if (userRole != null) {
-        final roleData = await (database.select(database.roles)
-              ..where((r) => r.id.equals(userRole.roleId)))
-            .getSingleOrNull();
-        role = roleData?.name ?? 'usuario';
-      }
-
-      return UserModel(
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: role,
-        mfaEnabled: user.mfaEnabled,
-        darkMode: user.darkMode,
-      );
+      return await _buildUserModel(user);
     } catch (e) {
       return null;
     }
+  }
+
+  // Recupera la sesión activa al abrir la app
+  Future<UserModel?> getSesionActual() async {
+    try {
+      final sesiones = await database.select(database.sesionLocal).get();
+      if (sesiones.isEmpty) return null;
+
+      final sesion = sesiones.first;
+      final userId = int.tryParse(sesion.userId);
+      if (userId == null) return null;
+
+      final user =
+          await (database.select(database.users)
+                ..where((u) => u.id.equals(userId))
+                ..where((u) => u.isActive.equals(true)))
+              .getSingleOrNull();
+
+      if (user == null) return null;
+
+      return await _buildUserModel(user);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Cierra sesión eliminando el registro local
+  Future<void> logout() async {
+    await database.delete(database.sesionLocal).go();
   }
 }

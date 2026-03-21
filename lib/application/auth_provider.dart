@@ -28,13 +28,23 @@ class AuthState {
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository repository;
 
-  AuthNotifier(this.repository) : super(AuthState());
+  AuthNotifier(this.repository) : super(AuthState(isLoading: true)) {
+    _checkSession();
+  }
+
+  // Verifica si hay una sesión activa al iniciar la app
+  Future<void> _checkSession() async {
+    try {
+      final user = await repository.getSesionActual();
+      state = AuthState(user: user, isLoading: false);
+    } catch (e) {
+      state = AuthState(isLoading: false);
+    }
+  }
 
   Future<void> login(String username, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-
     final user = await repository.login(username, password);
-
     if (user != null) {
       state = state.copyWith(user: user, isLoading: false);
     } else {
@@ -45,12 +55,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await repository.logout();
     state = AuthState();
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+final authProvider =
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return AuthNotifier(repository);
 });

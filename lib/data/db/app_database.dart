@@ -204,6 +204,15 @@ class AuditLogs extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+// Tablas que se agregaron para el desarrollo
+class SesionLocal extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get userId => text()();
+  TextColumn get username => text()();
+  BoolColumn get activa => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime()();
+}
+
 // Base de datos
 
 @DriftDatabase(
@@ -227,13 +236,14 @@ class AuditLogs extends Table {
     PurchaseItems,
     SavedReports,
     AuditLogs,
+    SesionLocal,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -245,6 +255,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 2) {
         await m.deleteTable('product_materials');
         await m.createTable(productMaterials);
+      }
+      if (from < 3) {
+        await m.createTable(sesionLocal);
       }
     },
   );

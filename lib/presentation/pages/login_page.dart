@@ -55,7 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
                 children: [
-                  SizedBox(height: screenHeight * 0.06),
+                  SizedBox(height: screenHeight * 0.08),
                   Center(
                     child: SvgPicture.asset(
                       'assets/images/logo.svg',
@@ -63,21 +63,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       fit: BoxFit.contain,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 18),
-                      child: Text(
-                        'by Chris',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.04),
+                  SizedBox(height: screenHeight * 0.06),
                   Text(
                     'Iniciar sesión',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -94,7 +80,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: screenHeight * 0.04),
+                  SizedBox(height: screenHeight * 0.06),
                 ],
               ),
             ),

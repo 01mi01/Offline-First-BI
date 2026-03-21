@@ -8243,6 +8243,355 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
   }
 }
 
+class $SesionLocalTable extends SesionLocal
+    with TableInfo<$SesionLocalTable, SesionLocalData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SesionLocalTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _usernameMeta = const VerificationMeta(
+    'username',
+  );
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+    'username',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _activaMeta = const VerificationMeta('activa');
+  @override
+  late final GeneratedColumn<bool> activa = GeneratedColumn<bool>(
+    'activa',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("activa" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    username,
+    activa,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sesion_local';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SesionLocalData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('username')) {
+      context.handle(
+        _usernameMeta,
+        username.isAcceptableOrUnknown(data['username']!, _usernameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_usernameMeta);
+    }
+    if (data.containsKey('activa')) {
+      context.handle(
+        _activaMeta,
+        activa.isAcceptableOrUnknown(data['activa']!, _activaMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SesionLocalData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SesionLocalData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      username: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}username'],
+      )!,
+      activa: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}activa'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SesionLocalTable createAlias(String alias) {
+    return $SesionLocalTable(attachedDatabase, alias);
+  }
+}
+
+class SesionLocalData extends DataClass implements Insertable<SesionLocalData> {
+  final int id;
+  final String userId;
+  final String username;
+  final bool activa;
+  final DateTime createdAt;
+  const SesionLocalData({
+    required this.id,
+    required this.userId,
+    required this.username,
+    required this.activa,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['username'] = Variable<String>(username);
+    map['activa'] = Variable<bool>(activa);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SesionLocalCompanion toCompanion(bool nullToAbsent) {
+    return SesionLocalCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      username: Value(username),
+      activa: Value(activa),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SesionLocalData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SesionLocalData(
+      id: serializer.fromJson<int>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      username: serializer.fromJson<String>(json['username']),
+      activa: serializer.fromJson<bool>(json['activa']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'userId': serializer.toJson<String>(userId),
+      'username': serializer.toJson<String>(username),
+      'activa': serializer.toJson<bool>(activa),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SesionLocalData copyWith({
+    int? id,
+    String? userId,
+    String? username,
+    bool? activa,
+    DateTime? createdAt,
+  }) => SesionLocalData(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    username: username ?? this.username,
+    activa: activa ?? this.activa,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SesionLocalData copyWithCompanion(SesionLocalCompanion data) {
+    return SesionLocalData(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      username: data.username.present ? data.username.value : this.username,
+      activa: data.activa.present ? data.activa.value : this.activa,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SesionLocalData(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('username: $username, ')
+          ..write('activa: $activa, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, userId, username, activa, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SesionLocalData &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.username == this.username &&
+          other.activa == this.activa &&
+          other.createdAt == this.createdAt);
+}
+
+class SesionLocalCompanion extends UpdateCompanion<SesionLocalData> {
+  final Value<int> id;
+  final Value<String> userId;
+  final Value<String> username;
+  final Value<bool> activa;
+  final Value<DateTime> createdAt;
+  const SesionLocalCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.username = const Value.absent(),
+    this.activa = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SesionLocalCompanion.insert({
+    this.id = const Value.absent(),
+    required String userId,
+    required String username,
+    this.activa = const Value.absent(),
+    required DateTime createdAt,
+  }) : userId = Value(userId),
+       username = Value(username),
+       createdAt = Value(createdAt);
+  static Insertable<SesionLocalData> custom({
+    Expression<int>? id,
+    Expression<String>? userId,
+    Expression<String>? username,
+    Expression<bool>? activa,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (username != null) 'username': username,
+      if (activa != null) 'activa': activa,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SesionLocalCompanion copyWith({
+    Value<int>? id,
+    Value<String>? userId,
+    Value<String>? username,
+    Value<bool>? activa,
+    Value<DateTime>? createdAt,
+  }) {
+    return SesionLocalCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      username: username ?? this.username,
+      activa: activa ?? this.activa,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (activa.present) {
+      map['activa'] = Variable<bool>(activa.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SesionLocalCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('username: $username, ')
+          ..write('activa: $activa, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8268,6 +8617,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PurchaseItemsTable purchaseItems = $PurchaseItemsTable(this);
   late final $SavedReportsTable savedReports = $SavedReportsTable(this);
   late final $AuditLogsTable auditLogs = $AuditLogsTable(this);
+  late final $SesionLocalTable sesionLocal = $SesionLocalTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8292,6 +8642,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     purchaseItems,
     savedReports,
     auditLogs,
+    sesionLocal,
   ];
 }
 
@@ -16465,6 +16816,200 @@ typedef $$AuditLogsTableProcessedTableManager =
       AuditLog,
       PrefetchHooks Function({bool userId})
     >;
+typedef $$SesionLocalTableCreateCompanionBuilder =
+    SesionLocalCompanion Function({
+      Value<int> id,
+      required String userId,
+      required String username,
+      Value<bool> activa,
+      required DateTime createdAt,
+    });
+typedef $$SesionLocalTableUpdateCompanionBuilder =
+    SesionLocalCompanion Function({
+      Value<int> id,
+      Value<String> userId,
+      Value<String> username,
+      Value<bool> activa,
+      Value<DateTime> createdAt,
+    });
+
+class $$SesionLocalTableFilterComposer
+    extends Composer<_$AppDatabase, $SesionLocalTable> {
+  $$SesionLocalTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get activa => $composableBuilder(
+    column: $table.activa,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SesionLocalTableOrderingComposer
+    extends Composer<_$AppDatabase, $SesionLocalTable> {
+  $$SesionLocalTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get activa => $composableBuilder(
+    column: $table.activa,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SesionLocalTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SesionLocalTable> {
+  $$SesionLocalTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<bool> get activa =>
+      $composableBuilder(column: $table.activa, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SesionLocalTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SesionLocalTable,
+          SesionLocalData,
+          $$SesionLocalTableFilterComposer,
+          $$SesionLocalTableOrderingComposer,
+          $$SesionLocalTableAnnotationComposer,
+          $$SesionLocalTableCreateCompanionBuilder,
+          $$SesionLocalTableUpdateCompanionBuilder,
+          (
+            SesionLocalData,
+            BaseReferences<_$AppDatabase, $SesionLocalTable, SesionLocalData>,
+          ),
+          SesionLocalData,
+          PrefetchHooks Function()
+        > {
+  $$SesionLocalTableTableManager(_$AppDatabase db, $SesionLocalTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SesionLocalTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SesionLocalTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SesionLocalTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> username = const Value.absent(),
+                Value<bool> activa = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SesionLocalCompanion(
+                id: id,
+                userId: userId,
+                username: username,
+                activa: activa,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String userId,
+                required String username,
+                Value<bool> activa = const Value.absent(),
+                required DateTime createdAt,
+              }) => SesionLocalCompanion.insert(
+                id: id,
+                userId: userId,
+                username: username,
+                activa: activa,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SesionLocalTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SesionLocalTable,
+      SesionLocalData,
+      $$SesionLocalTableFilterComposer,
+      $$SesionLocalTableOrderingComposer,
+      $$SesionLocalTableAnnotationComposer,
+      $$SesionLocalTableCreateCompanionBuilder,
+      $$SesionLocalTableUpdateCompanionBuilder,
+      (
+        SesionLocalData,
+        BaseReferences<_$AppDatabase, $SesionLocalTable, SesionLocalData>,
+      ),
+      SesionLocalData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -16507,4 +17052,6 @@ class $AppDatabaseManager {
       $$SavedReportsTableTableManager(_db, _db.savedReports);
   $$AuditLogsTableTableManager get auditLogs =>
       $$AuditLogsTableTableManager(_db, _db.auditLogs);
+  $$SesionLocalTableTableManager get sesionLocal =>
+      $$SesionLocalTableTableManager(_db, _db.sesionLocal);
 }
