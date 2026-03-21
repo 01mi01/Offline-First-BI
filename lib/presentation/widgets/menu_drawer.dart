@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../pages/login_page.dart';
 import '../pages/inventario_page.dart';
 import '../pages/materials_page.dart';
+import '../pages/clients_suppliers_page.dart';
 
 // Opciones del menú lateral con su ícono y etiqueta
 final _menuItems = [
@@ -24,11 +25,10 @@ final _menuItems = [
     'label': 'Compras',
     'icon': Icons.shopping_bag_outlined,
   },
-  {'module': 'clientes', 'label': 'Clientes', 'icon': Icons.people_outline},
   {
-    'module': 'proveedores',
-    'label': 'Proveedores',
-    'icon': Icons.local_shipping_outlined,
+    'module': 'clientes',
+    'label': 'Clientes y Proveedores',
+    'icon': Icons.people_outline,
   },
   {'module': 'eventos', 'label': 'Eventos', 'icon': Icons.event_outlined},
   {'module': 'reportes', 'label': 'Reportes', 'icon': Icons.bar_chart_outlined},
@@ -116,6 +116,13 @@ class MenuDrawer extends ConsumerWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const MaterialsPage(),
+                          ),
+                        );
+                      } else if (module == 'clientes') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ClientsSuppliersPage(),
                           ),
                         );
                       }
