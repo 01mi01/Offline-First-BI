@@ -61,17 +61,16 @@ git clone https://github.com/01mi01/Offline-First-BI
 flutter pub get
 ```
 
-3. Ejecutar la aplicación
+3. Generar archivos necesarios (.g.dart)
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+4. Ejecutar la aplicación
 
 ```bash
 flutter run
-```
-
-## Variables de entorno
-
-```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## Equipo 
