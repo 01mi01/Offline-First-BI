@@ -141,7 +141,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                         onPressed: () => Navigator.pop(ctx, true),
                         child: const Text(
                           'Desactivar',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: AppColors.surface),
                         ),
                       ),
                     ),
@@ -278,7 +278,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                         onChanged: _onToggleActive,
                         activeColor: AppColors.primary,
                         inactiveTrackColor: AppColors.border,
-                        inactiveThumbColor: Colors.white,
+                        inactiveThumbColor: AppColors.surface,
                         trackOutlineColor: WidgetStateProperty.all(
                           Colors.transparent,
                         ),

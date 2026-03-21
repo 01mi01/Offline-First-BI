@@ -26,7 +26,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, ref, null),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: AppColors.surface),
       ),
       body: Column(
         children: [
@@ -137,7 +137,7 @@ class _ToggleBtn extends StatelessWidget {
         child: Icon(
           icon,
           size: 20,
-          color: active ? Colors.white : AppColors.textSecondary,
+          color: active ? AppColors.surface : AppColors.textSecondary,
         ),
       ),
     );
@@ -420,7 +420,7 @@ class _CategoryDetail extends StatelessWidget {
                         ),
                         child: const Icon(
                           Icons.close,
-                          color: Colors.white,
+                          color: AppColors.surface,
                           size: 18,
                         ),
                       ),
@@ -470,8 +470,11 @@ class _CategoryDetail extends StatelessWidget {
       width: double.infinity,
       height: 260,
       color: AppColors.surface,
-      child: const Icon(Icons.category_outlined,
-          color: AppColors.primary, size: 60),
+      child: const Icon(
+        Icons.category_outlined,
+        color: AppColors.primary,
+        size: 60,
+      ),
     );
   }
 }

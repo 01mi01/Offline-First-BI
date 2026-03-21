@@ -6,24 +6,23 @@ class AppColors {
   //Teal (original)
   //static const primary = Color(0xFF1A9E98);
   //static const primaryDark = Color(0xFF137A75);
+  static const primary = Color(0xFF00C3CF);
+  static const primaryDark = Color(0xFF008197);
+  static const background = Color(0xFFF2F2F7);
+  static const surface = Color(0xFFFFFFFF);
+  static const textPrimary = Color(0xFF000000);
+  static const textSecondary = Color(0xFF6B7280);
+  static const border = Color(0xFFE5E7EB);
+  static const error = Color(0xFFFF3B30);
+  static const success = Color(0xFF34C759);
+}
 
-  //Lime (nuevo logo)
-  //static const primary = Color(0xFFAFC908);
-  //static const primaryDark = Color(0xFF8FA506);
-
-  //Lime (nuevo logo + Dark mode)
-  //static const primary = Color(0xFFBCE704);
-  //static const primaryDark = Color(0xFF97B803);
-
-static const primary = Color(0xFF00C3CF); 
-static const primaryDark = Color(0xFF008197);
-static const background = Color(0xFFF2F2F7);
-static const surface = Color(0xFFFFFFFF);
-static const textPrimary = Color(0xFF000000);
-static const textSecondary = Color(0xFF6B7280);
-static const border = Color(0xFFE5E7EB);
-static const error = Color(0xFFFF3B30);
-static const success = Color(0xFF34C759);
+// Formatea un número eliminando decimales innecesarios
+String formatNumber(double value) {
+  if (value == value.truncateToDouble()) {
+    return value.toInt().toString();
+  }
+  return value.toString();
 }
 
 // Tema claro de la aplicación
@@ -41,7 +40,7 @@ final lightTheme = ThemeData(
 
   // Tipografía
   textTheme: GoogleFonts.interTextTheme(),
-  
+
   appBarTheme: const AppBarTheme(
     backgroundColor: AppColors.surface,
     foregroundColor: AppColors.textPrimary,

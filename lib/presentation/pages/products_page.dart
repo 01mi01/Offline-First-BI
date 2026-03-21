@@ -28,7 +28,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: AppColors.surface),
       ),
       body: Column(
         children: [
@@ -137,7 +137,7 @@ class _ToggleBtn extends StatelessWidget {
         child: Icon(
           icon,
           size: 20,
-          color: active ? Colors.white : AppColors.textSecondary,
+          color: active ? AppColors.surface : AppColors.textSecondary,
         ),
       ),
     );
@@ -596,7 +596,7 @@ class _ProductGridDetail extends StatelessWidget {
                         ),
                         child: const Icon(
                           Icons.close,
-                          color: Colors.white,
+                          color: AppColors.surface,
                           size: 18,
                         ),
                       ),

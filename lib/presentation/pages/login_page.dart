@@ -34,9 +34,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     final state = ref.read(authProvider);
     if (state.user != null && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
     }
   }
 
@@ -71,9 +71,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       child: Text(
                         'by Chris',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -81,17 +81,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Text(
                     'Iniciar sesión',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Ingresa tus datos para acceder a tu cuenta',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: screenHeight * 0.04),
@@ -120,7 +120,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         // Campo usuario
                         Text(
                           'Usuario',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -143,7 +144,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         // Campo contraseña
                         Text(
                           'Contraseña',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -187,13 +189,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline,
-                                    color: AppColors.error, size: 16),
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: AppColors.error,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   authState.error!,
-                                  style:
-                                      const TextStyle(color: AppColors.error),
+                                  style: const TextStyle(
+                                    color: AppColors.error,
+                                  ),
                                 ),
                               ],
                             ),
@@ -208,7 +214,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
-                                    color: Colors.white,
+                                    color: AppColors.surface,
                                     strokeWidth: 2,
                                   ),
                                 )

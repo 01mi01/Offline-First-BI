@@ -157,7 +157,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                           'Desactivar',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: AppColors.surface),
                         ),
                       ),
                     ),
@@ -297,7 +297,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                         onChanged: _onToggleActive,
                         activeColor: AppColors.primary,
                         inactiveTrackColor: AppColors.border,
-                        inactiveThumbColor: Colors.white,
+                        inactiveThumbColor: AppColors.surface,
                         trackOutlineColor: MaterialStateProperty.all(
                           Colors.transparent,
                         ),

@@ -52,7 +52,7 @@ class _MaterialsTab extends ConsumerWidget {
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: AppColors.surface),
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -162,7 +162,7 @@ class _UsageTabState extends ConsumerState<_UsageTab> {
               backgroundColor: AppColors.primary,
               shape: const CircleBorder(),
               onPressed: _showRegisterSheet,
-              child: const Icon(Icons.add, color: Colors.white),
+              child: const Icon(Icons.add, color: AppColors.surface),
             )
           : null,
       body: Column(
