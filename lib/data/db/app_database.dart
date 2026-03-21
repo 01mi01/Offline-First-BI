@@ -35,8 +35,8 @@ class UserRoles extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {userId, roleId}
-      ];
+    {userId, roleId},
+  ];
 }
 
 class Modules extends Table {
@@ -52,8 +52,8 @@ class ModulePermissions extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {userId, moduleId}
-      ];
+    {userId, moduleId},
+  ];
 }
 
 class Categories extends Table {
@@ -68,7 +68,8 @@ class Categories extends Table {
 
 class Products extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get categoryId => integer().references(Categories, #id).nullable()();
+  IntColumn get categoryId =>
+      integer().references(Categories, #id).nullable()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
   TextColumn get image => text().nullable()();
@@ -96,11 +97,7 @@ class ProductMaterials extends Table {
   IntColumn get productId => integer().references(Products, #id)();
   IntColumn get materialId => integer().references(Materials, #id)();
   RealColumn get quantityUsed => real()();
-
-  @override
-  List<Set<Column>> get uniqueKeys => [
-        {productId, materialId}
-      ];
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 class Locations extends Table {
@@ -209,38 +206,46 @@ class AuditLogs extends Table {
 
 // Base de datos
 
-@DriftDatabase(tables: [
-  Users,
-  Roles,
-  UserRoles,
-  Modules,
-  ModulePermissions,
-  Categories,
-  Products,
-  Materials,
-  ProductMaterials,
-  Locations,
-  Suppliers,
-  Clients,
-  Events,
-  Sales,
-  SaleItems,
-  Purchases,
-  PurchaseItems,
-  SavedReports,
-  AuditLogs,
-])
+@DriftDatabase(
+  tables: [
+    Users,
+    Roles,
+    UserRoles,
+    Modules,
+    ModulePermissions,
+    Categories,
+    Products,
+    Materials,
+    ProductMaterials,
+    Locations,
+    Suppliers,
+    Clients,
+    Events,
+    Sales,
+    SaleItems,
+    Purchases,
+    PurchaseItems,
+    SavedReports,
+    AuditLogs,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) async {
       await m.createAll();
       await _insertDatosIniciales();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await m.deleteTable('product_materials');
+        await m.createTable(productMaterials);
+      }
     },
   );
 
@@ -283,7 +288,9 @@ class AppDatabase extends _$AppDatabase {
     );
 
     // Rol usuario para el usuario de prueba
-    final rolUsuario = await (select(roles)..where((r) => r.name.equals('usuario'))).getSingle();
+    final rolUsuario = await (select(
+      roles,
+    )..where((r) => r.name.equals('usuario'))).getSingle();
 
     await into(userRoles).insert(
       UserRolesCompanion.insert(userId: testUserId, roleId: rolUsuario.id),

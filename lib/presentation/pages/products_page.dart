@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:offline_first_bi/models/product_model.dart';
 import 'dart:io';
 import '../../application/product_provider.dart';
 import '../../application/category_provider.dart';
-import '../../models/product_model.dart';
+import '../../application/material_provider.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/product_dialog.dart';
 
@@ -143,7 +144,7 @@ class _ToggleBtn extends StatelessWidget {
   }
 }
 
-// Vista de lista — muestra todos los campos
+// Vista de lista — muestra todos los campos incluyendo materiales
 class _ListViewWidget extends ConsumerWidget {
   final List<ProductModel> products;
   final ValueChanged<ProductModel> onEdit;
@@ -205,13 +206,13 @@ class _GridView extends StatelessWidget {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),
-      builder: (_) => _ProductDetail(product: p),
+      builder: (_) => _ProductGridDetail(product: p),
     );
   }
 }
 
-// Tarjeta para la vista de lista
-class _ProductCard extends StatelessWidget {
+// Tarjeta para la vista de lista con materiales vinculados
+class _ProductCard extends ConsumerStatefulWidget {
   final ProductModel product;
   final String categoryName;
   final VoidCallback onEdit;
@@ -223,6 +224,33 @@ class _ProductCard extends StatelessWidget {
   });
 
   @override
+  ConsumerState<_ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends ConsumerState<_ProductCard> {
+  List<String> _materialNames = [];
+  bool _loadingMaterials = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMaterials();
+  }
+
+  // Carga nombres únicos de materiales usados en este producto
+  Future<void> _loadMaterials() async {
+    final names = await ref
+        .read(materialProvider.notifier)
+        .getUniqueMaterialNamesForProduct(widget.product.id);
+    if (mounted) {
+      setState(() {
+        _materialNames = names;
+        _loadingMaterials = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -232,136 +260,192 @@ class _ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Imagen del producto
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: product.image != null
-                ? Image.file(
-                    File(product.image!),
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(),
-                  )
-                : _placeholder(),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Nombre y categoría en la misma línea
-                Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Imagen del producto
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: widget.product.image != null
+                    ? Image.file(
+                        File(widget.product.image!),
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _placeholder(),
+                      )
+                    : _placeholder(),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        product.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: AppColors.textPrimary,
+                    // Nombre y categoría
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.product.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            widget.categoryName,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (widget.product.description != null &&
+                        widget.product.description!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.product.description!,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      'Precio de venta: Bs. ${widget.product.salePrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Categoría en pill
+                    if (widget.product.productionCost != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Costo: Bs. ${widget.product.productionCost!.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 2),
+                    Text(
+                      'Stock: ${widget.product.stock}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: widget.product.isActive
+                            ? AppColors.success.withOpacity(0.1)
+                            : AppColors.error.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        categoryName,
+                        widget.product.isActive ? 'Activo' : 'Inactivo',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: widget.product.isActive
+                              ? AppColors.success
+                              : AppColors.error,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                // Descripción
-                if (product.description != null &&
-                    product.description!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    product.description!,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                const SizedBox(height: 6),
-                // Precio de venta
-                Text(
-                  'Precio de venta: Bs. ${product.salePrice.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 20,
                 ),
-                // Costo de producción
-                if (product.productionCost != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'Costo: Bs. ${product.productionCost!.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 2),
-                // Stock
-                Text(
-                  'Stock: ${product.stock}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Estado activo/inactivo
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: product.isActive
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    product.isActive ? 'Activo' : 'Inactivo',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: product.isActive
-                          ? AppColors.success
-                          : AppColors.error,
-                    ),
-                  ),
-                ),
-              ],
+                onPressed: widget.onEdit,
+              ),
+            ],
+          ),
+
+          // Materiales usados — solo nombres, sin cantidad
+          if (_loadingMaterials) ...[
+            const SizedBox(height: 8),
+            const SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined,
-                color: AppColors.primary, size: 20),
-            onPressed: onEdit,
-          ),
+          ] else if (_materialNames.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Divider(color: AppColors.border),
+            const SizedBox(height: 8),
+            const Text(
+              'Materiales',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: _materialNames
+                  .map(
+                    (name) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -375,8 +459,11 @@ class _ProductCard extends StatelessWidget {
         color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Icon(Icons.inventory_2_outlined,
-          color: AppColors.primary, size: 28),
+      child: const Icon(
+        Icons.inventory_2_outlined,
+        color: AppColors.primary,
+        size: 28,
+      ),
     );
   }
 }
@@ -465,11 +552,11 @@ class _GridCard extends StatelessWidget {
   }
 }
 
-// Detalle de producto
-class _ProductDetail extends StatelessWidget {
+// Detalle simple para la vista de catálogo, sin materiales
+class _ProductGridDetail extends StatelessWidget {
   final ProductModel product;
 
-  const _ProductDetail({required this.product});
+  const _ProductGridDetail({required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -484,7 +571,6 @@ class _ProductDetail extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Imagen con botón cerrar
               Stack(
                 children: [
                   if (product.image != null)
@@ -518,7 +604,6 @@ class _ProductDetail extends StatelessWidget {
                   ),
                 ],
               ),
-              // Info del producto
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -534,6 +619,7 @@ class _ProductDetail extends StatelessWidget {
                     ),
                     if (product.description != null &&
                         product.description!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
                       Text(
                         product.description!,
                         style: const TextStyle(
@@ -552,7 +638,6 @@ class _ProductDetail extends StatelessWidget {
                         color: AppColors.primary,
                       ),
                     ),
-                    
                   ],
                 ),
               ),

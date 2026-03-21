@@ -4,6 +4,7 @@ import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../pages/login_page.dart';
 import '../pages/inventario_page.dart';
+import '../pages/materials_page.dart';
 
 // Opciones del menú lateral con su ícono y etiqueta
 final _menuItems = [
@@ -11,6 +12,11 @@ final _menuItems = [
     'module': 'inventario',
     'label': 'Inventario',
     'icon': Icons.inventory_2_outlined,
+  },
+  {
+    'module': 'materiales',
+    'label': 'Materiales',
+    'icon': Icons.palette_outlined,
   },
   {'module': 'ventas', 'label': 'Ventas', 'icon': Icons.point_of_sale_outlined},
   {
@@ -103,6 +109,13 @@ class MenuDrawer extends ConsumerWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const InventarioPage(),
+                          ),
+                        );
+                      } else if (module == 'materiales') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MaterialsPage(),
                           ),
                         );
                       }

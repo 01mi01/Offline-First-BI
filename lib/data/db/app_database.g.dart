@@ -3173,12 +3173,25 @@ class $ProductMaterialsTable extends ProductMaterials
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     productId,
     materialId,
     quantityUsed,
+    createdAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3222,15 +3235,17 @@ class $ProductMaterialsTable extends ProductMaterials
     } else if (isInserting) {
       context.missing(_quantityUsedMeta);
     }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-    {productId, materialId},
-  ];
   @override
   ProductMaterial map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -3251,6 +3266,10 @@ class $ProductMaterialsTable extends ProductMaterials
         DriftSqlType.double,
         data['${effectivePrefix}quantity_used'],
       )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
     );
   }
 
@@ -3265,11 +3284,13 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
   final int productId;
   final int materialId;
   final double quantityUsed;
+  final DateTime createdAt;
   const ProductMaterial({
     required this.id,
     required this.productId,
     required this.materialId,
     required this.quantityUsed,
+    required this.createdAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3278,6 +3299,7 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     map['product_id'] = Variable<int>(productId);
     map['material_id'] = Variable<int>(materialId);
     map['quantity_used'] = Variable<double>(quantityUsed);
+    map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
 
@@ -3287,6 +3309,7 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       productId: Value(productId),
       materialId: Value(materialId),
       quantityUsed: Value(quantityUsed),
+      createdAt: Value(createdAt),
     );
   }
 
@@ -3300,6 +3323,7 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       productId: serializer.fromJson<int>(json['productId']),
       materialId: serializer.fromJson<int>(json['materialId']),
       quantityUsed: serializer.fromJson<double>(json['quantityUsed']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
   @override
@@ -3310,6 +3334,7 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       'productId': serializer.toJson<int>(productId),
       'materialId': serializer.toJson<int>(materialId),
       'quantityUsed': serializer.toJson<double>(quantityUsed),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
@@ -3318,11 +3343,13 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     int? productId,
     int? materialId,
     double? quantityUsed,
+    DateTime? createdAt,
   }) => ProductMaterial(
     id: id ?? this.id,
     productId: productId ?? this.productId,
     materialId: materialId ?? this.materialId,
     quantityUsed: quantityUsed ?? this.quantityUsed,
+    createdAt: createdAt ?? this.createdAt,
   );
   ProductMaterial copyWithCompanion(ProductMaterialsCompanion data) {
     return ProductMaterial(
@@ -3334,6 +3361,7 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       quantityUsed: data.quantityUsed.present
           ? data.quantityUsed.value
           : this.quantityUsed,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
 
@@ -3343,13 +3371,15 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
           ..write('id: $id, ')
           ..write('productId: $productId, ')
           ..write('materialId: $materialId, ')
-          ..write('quantityUsed: $quantityUsed')
+          ..write('quantityUsed: $quantityUsed, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, productId, materialId, quantityUsed);
+  int get hashCode =>
+      Object.hash(id, productId, materialId, quantityUsed, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3357,7 +3387,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
           other.id == this.id &&
           other.productId == this.productId &&
           other.materialId == this.materialId &&
-          other.quantityUsed == this.quantityUsed);
+          other.quantityUsed == this.quantityUsed &&
+          other.createdAt == this.createdAt);
 }
 
 class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
@@ -3365,17 +3396,20 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
   final Value<int> productId;
   final Value<int> materialId;
   final Value<double> quantityUsed;
+  final Value<DateTime> createdAt;
   const ProductMaterialsCompanion({
     this.id = const Value.absent(),
     this.productId = const Value.absent(),
     this.materialId = const Value.absent(),
     this.quantityUsed = const Value.absent(),
+    this.createdAt = const Value.absent(),
   });
   ProductMaterialsCompanion.insert({
     this.id = const Value.absent(),
     required int productId,
     required int materialId,
     required double quantityUsed,
+    this.createdAt = const Value.absent(),
   }) : productId = Value(productId),
        materialId = Value(materialId),
        quantityUsed = Value(quantityUsed);
@@ -3384,12 +3418,14 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     Expression<int>? productId,
     Expression<int>? materialId,
     Expression<double>? quantityUsed,
+    Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (productId != null) 'product_id': productId,
       if (materialId != null) 'material_id': materialId,
       if (quantityUsed != null) 'quantity_used': quantityUsed,
+      if (createdAt != null) 'created_at': createdAt,
     });
   }
 
@@ -3398,12 +3434,14 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     Value<int>? productId,
     Value<int>? materialId,
     Value<double>? quantityUsed,
+    Value<DateTime>? createdAt,
   }) {
     return ProductMaterialsCompanion(
       id: id ?? this.id,
       productId: productId ?? this.productId,
       materialId: materialId ?? this.materialId,
       quantityUsed: quantityUsed ?? this.quantityUsed,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -3422,6 +3460,9 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     if (quantityUsed.present) {
       map['quantity_used'] = Variable<double>(quantityUsed.value);
     }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
     return map;
   }
 
@@ -3431,7 +3472,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
           ..write('id: $id, ')
           ..write('productId: $productId, ')
           ..write('materialId: $materialId, ')
-          ..write('quantityUsed: $quantityUsed')
+          ..write('quantityUsed: $quantityUsed, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
@@ -11553,6 +11595,7 @@ typedef $$ProductMaterialsTableCreateCompanionBuilder =
       required int productId,
       required int materialId,
       required double quantityUsed,
+      Value<DateTime> createdAt,
     });
 typedef $$ProductMaterialsTableUpdateCompanionBuilder =
     ProductMaterialsCompanion Function({
@@ -11560,6 +11603,7 @@ typedef $$ProductMaterialsTableUpdateCompanionBuilder =
       Value<int> productId,
       Value<int> materialId,
       Value<double> quantityUsed,
+      Value<DateTime> createdAt,
     });
 
 final class $$ProductMaterialsTableReferences
@@ -11629,6 +11673,11 @@ class $$ProductMaterialsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$ProductsTableFilterComposer get productId {
     final $$ProductsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -11695,6 +11744,11 @@ class $$ProductMaterialsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ProductsTableOrderingComposer get productId {
     final $$ProductsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -11758,6 +11812,9 @@ class $$ProductMaterialsTableAnnotationComposer
     column: $table.quantityUsed,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   $$ProductsTableAnnotationComposer get productId {
     final $$ProductsTableAnnotationComposer composer = $composerBuilder(
@@ -11840,11 +11897,13 @@ class $$ProductMaterialsTableTableManager
                 Value<int> productId = const Value.absent(),
                 Value<int> materialId = const Value.absent(),
                 Value<double> quantityUsed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
               }) => ProductMaterialsCompanion(
                 id: id,
                 productId: productId,
                 materialId: materialId,
                 quantityUsed: quantityUsed,
+                createdAt: createdAt,
               ),
           createCompanionCallback:
               ({
@@ -11852,11 +11911,13 @@ class $$ProductMaterialsTableTableManager
                 required int productId,
                 required int materialId,
                 required double quantityUsed,
+                Value<DateTime> createdAt = const Value.absent(),
               }) => ProductMaterialsCompanion.insert(
                 id: id,
                 productId: productId,
                 materialId: materialId,
                 quantityUsed: quantityUsed,
+                createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(

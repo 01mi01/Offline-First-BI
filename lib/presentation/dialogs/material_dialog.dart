@@ -1,77 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import '../../application/product_provider.dart';
-import '../../application/category_provider.dart';
-import '../../models/product_model.dart';
+import '../../application/material_provider.dart';
+import '../../models/material_model.dart';
 import '../../theme/app_theme.dart';
 
-class ProductDialog extends ConsumerStatefulWidget {
-  final ProductModel? product;
+class MaterialDialog extends ConsumerStatefulWidget {
+  final MaterialModel? material;
 
-  const ProductDialog({super.key, this.product});
+  const MaterialDialog({super.key, this.material});
 
   @override
-  ConsumerState<ProductDialog> createState() => _ProductDialogState();
+  ConsumerState<MaterialDialog> createState() => _MaterialDialogState();
 }
 
-class _ProductDialogState extends ConsumerState<ProductDialog> {
+class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
-  late final TextEditingController _salePriceController;
-  late final TextEditingController _costController;
   late final TextEditingController _stockController;
-  String? _imagePath;
-  int? _selectedCategoryId;
+  late final TextEditingController _priceController;
   late bool _isActive;
   bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.product?.name ?? '');
+    _nameController = TextEditingController(text: widget.material?.name ?? '');
     _descController = TextEditingController(
-      text: widget.product?.description ?? '',
-    );
-    _salePriceController = TextEditingController(
-      text: widget.product?.salePrice.toString() ?? '',
-    );
-    _costController = TextEditingController(
-      text: widget.product?.productionCost?.toString() ?? '',
+      text: widget.material?.description ?? '',
     );
     _stockController = TextEditingController(
-      text: widget.product?.stock != null
-          ? widget.product!.stock.toString()
+      text: widget.material?.stock != null
+          ? formatNumber(widget.material!.stock)
           : '',
     );
-
-    _imagePath = widget.product?.image;
-    _selectedCategoryId = widget.product?.categoryId;
-    _isActive = widget.product?.isActive ?? true;
+    _priceController = TextEditingController(
+      text: widget.material?.pricePerUnit != null
+          ? formatNumber(widget.material!.pricePerUnit)
+          : '',
+    );
+    _isActive = widget.material?.isActive ?? true;
 
     _nameController.addListener(_checkChanges);
     _descController.addListener(_checkChanges);
-    _salePriceController.addListener(_checkChanges);
-    _costController.addListener(_checkChanges);
     _stockController.addListener(_checkChanges);
+    _priceController.addListener(_checkChanges);
   }
 
   void _checkChanges() {
     final changed =
-        _nameController.text.trim() != (widget.product?.name ?? '') ||
-        _descController.text.trim() != (widget.product?.description ?? '') ||
-        _salePriceController.text.trim() !=
-            (widget.product?.salePrice.toString() ?? '') ||
-        _costController.text.trim() !=
-            (widget.product?.productionCost?.toString() ?? '') ||
+        _nameController.text.trim() != (widget.material?.name ?? '') ||
+        _descController.text.trim() != (widget.material?.description ?? '') ||
         _stockController.text.trim() !=
-            (widget.product?.stock.toString() ?? '0') ||
-        _imagePath != widget.product?.image ||
-        _selectedCategoryId != widget.product?.categoryId ||
-        _isActive != (widget.product?.isActive ?? true);
+            (widget.material?.stock.toString() ?? '0') ||
+        _priceController.text.trim() !=
+            (widget.material?.pricePerUnit.toString() ?? '') ||
+        _isActive != (widget.material?.isActive ?? true);
     if (changed != _hasChanges) setState(() => _hasChanges = changed);
   }
 
@@ -79,34 +64,21 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
-    _salePriceController.dispose();
-    _costController.dispose();
     _stockController.dispose();
+    _priceController.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _imagePath = picked.path);
-      _checkChanges();
-    }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     await ref
-        .read(productProvider.notifier)
+        .read(materialProvider.notifier)
         .save(
-          id: widget.product?.id,
-          categoryId: _selectedCategoryId,
+          id: widget.material?.id,
           name: _nameController.text.trim(),
           description: _descController.text.trim(),
-          image: _imagePath,
-          salePrice: double.tryParse(_salePriceController.text.trim()) ?? 0,
-          productionCost: double.tryParse(_costController.text.trim()),
-          stock: int.tryParse(_stockController.text.trim()) ?? 0,
+          stock: double.tryParse(_stockController.text.trim()) ?? 0,
+          pricePerUnit: double.tryParse(_priceController.text.trim()) ?? 0,
           isActive: _isActive,
         );
     if (mounted) Navigator.pop(context);
@@ -122,14 +94,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
             borderRadius: BorderRadius.circular(20),
           ),
           title: const Text(
-            '¿Desactivar producto?',
+            '¿Desactivar material?',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
           content: Text(
-            'El producto "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
+            'El material "${_nameController.text.trim()}" no estará disponible para nuevas compras y productos.',
             style: const TextStyle(color: AppColors.textSecondary),
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -188,13 +160,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.product != null;
-    // Solo categorías activas en el dropdown
-    final categories = ref
-        .watch(categoryProvider)
-        .categories
-        .where((c) => c.isActive)
-        .toList();
+    final isEditing = widget.material != null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -210,9 +176,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Título
+              // Título del diálogo
               Text(
-                isEditing ? 'Editar producto' : 'Nuevo producto',
+                isEditing ? 'Editar material' : 'Nuevo material',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -221,62 +187,15 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
               ),
               const SizedBox(height: 24),
 
-              // Selector de imagen
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _imagePath != null
-                        ? Image.file(
-                            File(_imagePath!),
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.add_a_photo_outlined,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
               // Nombre
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
-                  hintText: 'Nombre del producto',
+                  hintText: 'Nombre del material',
                 ),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Categoría
-              DropdownButtonFormField<int>(
-                value: _selectedCategoryId,
-                decoration: const InputDecoration(labelText: 'Categoría'),
-                items: categories
-                    .map(
-                      (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
-                    )
-                    .toList(),
-                onChanged: (val) {
-                  setState(() => _selectedCategoryId = val);
-                  _checkChanges();
-                },
               ),
               const SizedBox(height: 16),
 
@@ -291,44 +210,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Precio de venta y costo de producción
-              TextFormField(
-                controller: _salePriceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Precio de venta',
-                  hintText: '0.00',
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Campo requerido';
-                  final salePrice = double.tryParse(v);
-                  if (salePrice == null) return 'Valor inválido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _costController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Costo de producción',
-                  hintText: '0.00',
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return null;
-                  final cost = double.tryParse(v);
-                  if (cost == null) return 'Valor inválido';
-                  final salePrice =
-                      double.tryParse(_salePriceController.text.trim()) ?? 0;
-                  if (cost >= salePrice) {
-                    return 'Debe ser menor al precio de venta';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Stock
+              // Stock y precio por unidad
               TextFormField(
                 controller: _stockController,
                 keyboardType: TextInputType.number,
@@ -336,11 +218,23 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                 ],
                 decoration: const InputDecoration(
-                  labelText: 'Stock inicial',
+                  labelText: 'Stock',
                   hintText: '0',
                 ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Campo requerido' : null,
+                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Precio por unidad',
+                  hintText: '0',
+                ),
+                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 20),
 
@@ -362,7 +256,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Producto activo',
+                            'Material activo',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
@@ -370,8 +264,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                           ),
                           Text(
                             _isActive
-                                ? 'Disponible para ventas'
-                                : 'No disponible para ventas',
+                                ? 'Disponible en el sistema'
+                                : 'No disponible en el sistema',
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary,
