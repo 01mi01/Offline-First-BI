@@ -62,6 +62,7 @@ class PurchaseRepository {
     required String? description,
     required double totalAmount,
     required DateTime date,
+    required int? locationId,
     String? notes,
     required List<Map<String, dynamic>> items,
   }) async {
@@ -73,6 +74,7 @@ class PurchaseRepository {
               description: Value(description),
               totalAmount: totalAmount,
               date: date,
+              locationId: Value(locationId),
               notes: Value(notes),
             ),
           );
@@ -120,6 +122,7 @@ class PurchaseRepository {
     required String? description,
     required double totalAmount,
     required DateTime date,
+    required int? locationId,
     String? notes,
     required List<Map<String, dynamic>> newItems,
   }) async {
@@ -157,6 +160,7 @@ class PurchaseRepository {
         description: Value(description),
         totalAmount: Value(totalAmount),
         date: Value(date),
+        locationId: Value(locationId),
         notes: Value(notes),
         updatedAt: Value(DateTime.now()),
       ));

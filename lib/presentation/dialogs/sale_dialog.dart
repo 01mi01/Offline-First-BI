@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
 import '../../application/client_provider.dart';
 import '../../application/product_provider.dart';
+import '../../application/location_provider.dart';
+import '../../application/event_provider.dart';
 import '../../models/sale_model.dart';
 import '../../theme/app_theme.dart';
 import 'client_dialog.dart';
@@ -26,6 +28,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   // Mapa de productId -> cantidad
   final Map<int, int> _cartItems = {};
   bool _isLoading = false;
+  int? _selectedLocationId;
+  int? _selectedEventId;
   String? _error;
 
   @override
@@ -38,6 +42,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
           : '';
       _notesController.text = widget.sale!.notes ?? '';
       _loadExistingItems();
+      _selectedLocationId = widget.sale?.locationId;
+      _selectedEventId = widget.sale?.eventId;
     }
     if (widget.sale == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -160,8 +166,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
           .read(saleProvider.notifier)
           .createSale(
             clientId: _selectedClientId,
-            locationId: null,
-            eventId: null,
+            locationId: _selectedLocationId,
+            eventId: _selectedEventId,
             totalAmount: _subtotal,
             discount: discount,
             finalAmount: _total,
@@ -177,8 +183,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
           .editSale(
             saleId: widget.sale!.id,
             clientId: _selectedClientId,
-            locationId: widget.sale!.locationId,
-            eventId: widget.sale!.eventId,
+            locationId: _selectedLocationId,
+            eventId: _selectedEventId,
             totalAmount: _subtotal,
             discount: discount,
             finalAmount: _total,
@@ -291,6 +297,53 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              // Selector de ubicación
+              DropdownButtonFormField<int>(
+                value: _selectedLocationId,
+                decoration: const InputDecoration(labelText: 'Ubicación'),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Sin ubicación'),
+                  ),
+                  ...ref
+                      .watch(locationProvider)
+                      .locations
+                      .where((l) => l.isActive)
+                      .map(
+                        (l) => DropdownMenuItem(
+                          value: l.id,
+                          child: Text('${l.city}, ${l.country}'),
+                        ),
+                      )
+                      .toList(),
+                ],
+                onChanged: (val) => setState(() => _selectedLocationId = val),
+              ),
+              const SizedBox(height: 16),
+
+              // Selector de evento
+              DropdownButtonFormField<int>(
+                value: _selectedEventId,
+                decoration: const InputDecoration(labelText: 'Evento'),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Sin evento'),
+                  ),
+                  ...ref
+                      .watch(eventProvider)
+                      .events
+                      .map(
+                        (e) =>
+                            DropdownMenuItem(value: e.id, child: Text(e.name)),
+                      )
+                      .toList(),
+                ],
+                onChanged: (val) => setState(() => _selectedEventId = val),
               ),
               const SizedBox(height: 20),
 
@@ -649,6 +702,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                     ),
                   ),

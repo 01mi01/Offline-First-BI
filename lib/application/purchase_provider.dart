@@ -55,14 +55,14 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
   }
 
   // Obtiene ítems de una compra
-  Future<List<PurchaseItemModel>> getItemsForPurchase(
-      int purchaseId) async {
+  Future<List<PurchaseItemModel>> getItemsForPurchase(int purchaseId) async {
     return await repository.getItemsForPurchase(purchaseId);
   }
 
   // Crea una nueva compra
   Future<String?> createPurchase({
     required int? supplierId,
+    required int? locationId,
     required bool isMaterial,
     required String? description,
     required double totalAmount,
@@ -73,6 +73,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     try {
       await repository.createPurchase(
         supplierId: supplierId,
+        locationId: locationId,
         isMaterial: isMaterial,
         description: description,
         totalAmount: totalAmount,
@@ -81,7 +82,6 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
         items: items,
       );
       await load();
-      // Recarga materiales para reflejar nuevo stock
       ref.invalidate(materialRepositoryProvider);
       return null;
     } catch (e) {
@@ -93,6 +93,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
   Future<String?> editPurchase({
     required int purchaseId,
     required int? supplierId,
+    required int? locationId,
     required bool isMaterial,
     required String? description,
     required double totalAmount,
@@ -104,6 +105,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
       await repository.editPurchase(
         purchaseId: purchaseId,
         supplierId: supplierId,
+        locationId: locationId,
         isMaterial: isMaterial,
         description: description,
         totalAmount: totalAmount,
@@ -112,7 +114,6 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
         newItems: newItems,
       );
       await load();
-      // Recarga materiales para reflejar stock actualizado
       ref.invalidate(materialRepositoryProvider);
       return null;
     } catch (e) {

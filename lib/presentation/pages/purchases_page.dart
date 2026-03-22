@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
+import '../../application/location_provider.dart';
 import '../../models/purchase_model.dart';
 import '../../models/purchase_item_model.dart';
 import '../../theme/app_theme.dart';
@@ -348,6 +349,19 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                             ? 'Compra de materiales'
                             : 'Gasto general',
                       ),
+                      if (widget.purchase.locationId != null) ...[
+                        const SizedBox(height: 8),
+                        _DetailRow(
+                          label: 'Ubicación',
+                          value: ref
+                                  .watch(locationProvider)
+                                  .locations
+                                  .where((l) => l.id == widget.purchase.locationId)
+                                  .firstOrNull
+                                  ?.city ??
+                              '',
+                        ),
+                      ],
                       if (widget.purchase.description != null &&
                           widget.purchase.description!.isNotEmpty) ...[
                         const SizedBox(height: 8),

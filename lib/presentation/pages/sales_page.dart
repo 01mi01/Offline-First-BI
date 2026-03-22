@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
 import '../../application/client_provider.dart';
+import '../../application/location_provider.dart';
+import '../../application/event_provider.dart';
 import '../../models/sale_model.dart';
 import '../../models/sale_item_model.dart';
 import '../../theme/app_theme.dart';
@@ -289,6 +291,32 @@ class _SaleReceiptDialogState
                           label: 'Fecha',
                           value: _formatDate(widget.sale.date)),
 
+                      if (widget.sale.locationId != null) ...[
+                        const SizedBox(height: 8),
+                        _ReceiptRow(
+                          label: 'Ubicación',
+                          value: ref
+                                  .watch(locationProvider)
+                                  .locations
+                                  .where((l) => l.id == widget.sale.locationId)
+                                  .firstOrNull
+                                  ?.city ??
+                              '',
+                        ),
+                      ],
+                      if (widget.sale.eventId != null) ...[
+                        const SizedBox(height: 8),
+                        _ReceiptRow(
+                          label: 'Evento',
+                          value: ref
+                                  .watch(eventProvider)
+                                  .events
+                                  .where((e) => e.id == widget.sale.eventId)
+                                  .firstOrNull
+                                  ?.name ??
+                              '',
+                        ),
+                      ],
                       if (widget.sale.notes != null &&
                           widget.sale.notes!.isNotEmpty) ...[
                         const SizedBox(height: 8),
