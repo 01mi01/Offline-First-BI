@@ -243,7 +243,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -268,6 +268,20 @@ class AppDatabase extends _$AppDatabase {
             ClientsCompanion.insert(
               name: 'Sin nombre',
               isActive: const Value(true),
+              createdAt: Value(DateTime.now()),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+      }
+      if (from < 5) {
+        final existing = await (select(
+          suppliers,
+        )..where((s) => s.name.equals('Sin proveedor'))).getSingleOrNull();
+        if (existing == null) {
+          await into(suppliers).insert(
+            SuppliersCompanion.insert(
+              name: 'Sin proveedor',
               createdAt: Value(DateTime.now()),
               updatedAt: Value(DateTime.now()),
             ),
@@ -328,6 +342,14 @@ class AppDatabase extends _$AppDatabase {
     await into(clients).insert(
       ClientsCompanion.insert(
         name: 'Sin nombre',
+        createdAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    // Proveedor por defecto para compras sin identificar
+    await into(suppliers).insert(
+      SuppliersCompanion.insert(
+        name: 'Sin proveedor',
         createdAt: Value(DateTime.now()),
         updatedAt: Value(DateTime.now()),
       ),

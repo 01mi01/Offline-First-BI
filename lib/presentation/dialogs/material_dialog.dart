@@ -7,8 +7,15 @@ import '../../theme/app_theme.dart';
 
 class MaterialDialog extends ConsumerStatefulWidget {
   final MaterialModel? material;
+  final Function(
+    int materialId,
+    String materialName,
+    double pricePerUnit,
+    double stock,
+  )?
+  onSaved;
 
-  const MaterialDialog({super.key, this.material});
+  const MaterialDialog({super.key, this.material, this.onSaved});
 
   @override
   ConsumerState<MaterialDialog> createState() => _MaterialDialogState();
@@ -82,6 +89,15 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
           isActive: _isActive,
         );
     if (mounted) Navigator.pop(context);
+    if (widget.onSaved != null) {
+      final materials = ref.read(materialProvider).materials;
+      final saved = materials
+          .where((m) => m.name == _nameController.text.trim())
+          .firstOrNull;
+      if (saved != null) {
+        widget.onSaved!(saved.id, saved.name, saved.pricePerUnit, saved.stock);
+      }
+    }
   }
 
   Future<void> _onToggleActive(bool value) async {

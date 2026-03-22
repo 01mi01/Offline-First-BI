@@ -6,8 +6,9 @@ import '../../theme/app_theme.dart';
 
 class SupplierDialog extends ConsumerStatefulWidget {
   final SupplierModel? supplier;
+  final Function(int supplierId)? onSaved;
 
-  const SupplierDialog({super.key, this.supplier});
+  const SupplierDialog({super.key, this.supplier, this.onSaved});
 
   @override
   ConsumerState<SupplierDialog> createState() => _SupplierDialogState();
@@ -52,7 +53,8 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref
+    setState(() => _saveError = null);
+    final error = await ref
         .read(supplierProvider.notifier)
         .save(
           id: widget.supplier?.id,
@@ -62,7 +64,19 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
               : _contactController.text.trim(),
           isActive: _isActive,
         );
-    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _saveError = error);
+      return;
+    }
+    if (widget.onSaved != null) {
+      final suppliers = ref.read(supplierProvider).suppliers;
+      final saved = suppliers
+          .where((s) => s.name == _nameController.text.trim())
+          .firstOrNull;
+      if (saved != null) widget.onSaved!(saved.id);
+    }
+    Navigator.pop(context);
   }
 
   Future<void> _onToggleActive(bool value) async {
