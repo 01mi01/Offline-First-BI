@@ -243,7 +243,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -258,6 +258,21 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.createTable(sesionLocal);
+      }
+      if (from < 4) {
+        final existing = await (select(
+          clients,
+        )..where((c) => c.name.equals('Sin nombre'))).getSingleOrNull();
+        if (existing == null) {
+          await into(clients).insert(
+            ClientsCompanion.insert(
+              name: 'Sin nombre',
+              isActive: const Value(true),
+              createdAt: Value(DateTime.now()),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
       }
     },
   );
@@ -307,6 +322,15 @@ class AppDatabase extends _$AppDatabase {
 
     await into(userRoles).insert(
       UserRolesCompanion.insert(userId: testUserId, roleId: rolUsuario.id),
+    );
+
+    // Cliente por defecto para ventas sin identificar
+    await into(clients).insert(
+      ClientsCompanion.insert(
+        name: 'Sin nombre',
+        createdAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 

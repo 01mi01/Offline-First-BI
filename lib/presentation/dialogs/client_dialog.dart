@@ -6,8 +6,9 @@ import '../../theme/app_theme.dart';
 
 class ClientDialog extends ConsumerStatefulWidget {
   final ClientModel? client;
+  final Function(int clientId)? onSaved;
 
-  const ClientDialog({super.key, this.client});
+  const ClientDialog({super.key, this.client, this.onSaved});
 
   @override
   ConsumerState<ClientDialog> createState() => _ClientDialogState();
@@ -19,14 +20,15 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
   late final TextEditingController _contactController;
   late bool _isActive;
   bool _hasChanges = false;
+  String? _saveError;
 
   @override
   void initState() {
     super.initState();
-    _nameController =
-        TextEditingController(text: widget.client?.name ?? '');
-    _contactController =
-        TextEditingController(text: widget.client?.contactInfo ?? '');
+    _nameController = TextEditingController(text: widget.client?.name ?? '');
+    _contactController = TextEditingController(
+      text: widget.client?.contactInfo ?? '',
+    );
     _isActive = widget.client?.isActive ?? true;
 
     _nameController.addListener(_checkChanges);
@@ -36,8 +38,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
   void _checkChanges() {
     final changed =
         _nameController.text.trim() != (widget.client?.name ?? '') ||
-        _contactController.text.trim() !=
-            (widget.client?.contactInfo ?? '') ||
+        _contactController.text.trim() != (widget.client?.contactInfo ?? '') ||
         _isActive != (widget.client?.isActive ?? true);
     if (changed != _hasChanges) setState(() => _hasChanges = changed);
   }
@@ -51,7 +52,10 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(clientProvider.notifier).save(
+    setState(() => _saveError = null);
+    final error = await ref
+        .read(clientProvider.notifier)
+        .save(
           id: widget.client?.id,
           name: _nameController.text.trim(),
           contactInfo: _contactController.text.trim().isEmpty
@@ -59,7 +63,19 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
               : _contactController.text.trim(),
           isActive: _isActive,
         );
-    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _saveError = error);
+      return;
+    }
+    if (widget.onSaved != null) {
+      final clients = ref.read(clientProvider).clients;
+      final saved = clients
+          .where((c) => c.name == _nameController.text.trim())
+          .firstOrNull;
+      if (saved != null) widget.onSaved!(saved.id);
+    }
+    Navigator.pop(context);
   }
 
   Future<void> _onToggleActive(bool value) async {
@@ -69,12 +85,14 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
         builder: (ctx) => AlertDialog(
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text(
             '¿Desactivar cliente?',
             style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary),
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           content: Text(
             'El cliente "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
@@ -92,15 +110,16 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50)),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
                           side: const BorderSide(color: AppColors.border),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancelar',
-                            style: TextStyle(
-                                color: AppColors.textSecondary)),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -109,13 +128,15 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.error,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50)),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Desactivar',
-                            style: TextStyle(color: AppColors.surface)),
+                        child: const Text(
+                          'Desactivar',
+                          style: TextStyle(color: AppColors.surface),
+                        ),
                       ),
                     ),
                   ],
@@ -187,7 +208,9 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
               if (isEditing)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -218,15 +241,48 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                         activeColor: AppColors.primary,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: AppColors.surface,
-                        trackOutlineColor:
-                            WidgetStateProperty.all(Colors.transparent),
+                        trackOutlineColor: WidgetStateProperty.all(
+                          Colors.transparent,
+                        ),
                       ),
                     ],
                   ),
                 ),
 
               const SizedBox(height: 24),
+              // Error al guardar
+              if (_saveError != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _saveError!,
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
+              const SizedBox(height: 24),
+              
               // Botones cancelar y guardar
               Row(
                 children: [
@@ -236,14 +292,16 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50)),
+                          borderRadius: BorderRadius.circular(50),
+                        ),
                         side: const BorderSide(color: AppColors.border),
                       ),
                       child: const Text(
                         'Cancelar',
                         style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600),
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -254,7 +312,9 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),

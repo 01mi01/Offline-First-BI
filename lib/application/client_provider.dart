@@ -14,11 +14,7 @@ class ClientState {
   final bool isLoading;
   final String? error;
 
-  ClientState({
-    this.clients = const [],
-    this.isLoading = false,
-    this.error,
-  });
+  ClientState({this.clients = const [], this.isLoading = false, this.error});
 
   ClientState copyWith({
     List<ClientModel>? clients,
@@ -52,24 +48,30 @@ class ClientNotifier extends StateNotifier<ClientState> {
   }
 
   // Guarda o edita un cliente y recarga
-  Future<void> save({
+  Future<String?> save({
     int? id,
     required String name,
     String? contactInfo,
     bool isActive = true,
   }) async {
-    await repository.save(
-      id: id,
-      name: name,
-      contactInfo: contactInfo,
-      isActive: isActive,
-    );
-    await load();
+    try {
+      await repository.save(
+        id: id,
+        name: name,
+        contactInfo: contactInfo,
+        isActive: isActive,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return e.toString().replaceAll('Exception: ', '');
+    }
   }
 }
 
-final clientProvider =
-    StateNotifierProvider<ClientNotifier, ClientState>((ref) {
+final clientProvider = StateNotifierProvider<ClientNotifier, ClientState>((
+  ref,
+) {
   final repository = ref.watch(clientRepositoryProvider);
   return ClientNotifier(repository);
 });

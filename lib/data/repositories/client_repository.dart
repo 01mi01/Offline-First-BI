@@ -20,30 +20,40 @@ class ClientRepository {
 
   // Obtiene todos los clientes incluyendo inactivos
   Future<List<ClientModel>> getAllIncludingInactive() async {
-    final rows = await (database.select(database.clients)
-          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-        .get();
+    final rows = await (database.select(
+      database.clients,
+    )..orderBy([(c) => OrderingTerm.asc(c.name)])).get();
     return rows.map(_toModel).toList();
   }
 
   // Obtiene solo clientes activos para dropdowns
   Future<List<ClientModel>> getActive() async {
-    final rows = await (database.select(database.clients)
-          ..where((c) => c.isActive.equals(true))
-          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-        .get();
+    final rows =
+        await (database.select(database.clients)
+              ..where((c) => c.isActive.equals(true))
+              ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+            .get();
     return rows.map(_toModel).toList();
   }
 
   // Guarda o actualiza un cliente
-  Future<void> save({
+  Future<int> save({
     int? id,
     required String name,
     String? contactInfo,
     bool isActive = true,
   }) async {
+    // Verifica nombre único excluyendo el registro actual
+    final existing = await (database.select(
+      database.clients,
+    )..where((c) => c.name.equals(name))).getSingleOrNull();
+    if (existing != null && existing.id != id) {
+      throw Exception('Ya existe un cliente con ese nombre');
+    }
     final now = DateTime.now();
-    await database.into(database.clients).insertOnConflictUpdate(
+    return await database
+        .into(database.clients)
+        .insertOnConflictUpdate(
           ClientsCompanion(
             id: id != null ? Value(id) : const Value.absent(),
             name: Value(name),

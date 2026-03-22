@@ -6,6 +6,7 @@ import '../pages/login_page.dart';
 import '../pages/inventario_page.dart';
 import '../pages/materials_page.dart';
 import '../pages/clients_suppliers_page.dart';
+import '../pages/sales_page.dart';
 
 // Opciones del menú lateral con su ícono y etiqueta
 final _menuItems = [
@@ -124,6 +125,11 @@ class MenuDrawer extends ConsumerWidget {
                           MaterialPageRoute(
                             builder: (_) => const ClientsSuppliersPage(),
                           ),
+                        );
+                      } else if (module == 'ventas') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SalesPage()),
                         );
                       }
                     },

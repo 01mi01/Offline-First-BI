@@ -19,6 +19,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
   late final TextEditingController _contactController;
   late bool _isActive;
   bool _hasChanges = false;
+  String? _saveError;
 
   @override
   void initState() {
@@ -236,7 +237,35 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
                 ),
 
               const SizedBox(height: 24),
-
+              if (_saveError != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _saveError!,
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               // Botones cancelar y guardar
               Row(
                 children: [

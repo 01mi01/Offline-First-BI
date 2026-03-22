@@ -52,24 +52,30 @@ class SupplierNotifier extends StateNotifier<SupplierState> {
   }
 
   // Guarda o edita un proveedor y recarga
-  Future<void> save({
+  Future<String?> save({
     int? id,
     required String name,
     String? contactInfo,
     bool isActive = true,
   }) async {
-    await repository.save(
-      id: id,
-      name: name,
-      contactInfo: contactInfo,
-      isActive: isActive,
-    );
-    await load();
+    try {
+      await repository.save(
+        id: id,
+        name: name,
+        contactInfo: contactInfo,
+        isActive: isActive,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      return e.toString().replaceAll('Exception: ', '');
+    }
   }
 }
 
-final supplierProvider =
-    StateNotifierProvider<SupplierNotifier, SupplierState>((ref) {
-  final repository = ref.watch(supplierRepositoryProvider);
-  return SupplierNotifier(repository);
-});
+final supplierProvider = StateNotifierProvider<SupplierNotifier, SupplierState>(
+  (ref) {
+    final repository = ref.watch(supplierRepositoryProvider);
+    return SupplierNotifier(repository);
+  },
+);
