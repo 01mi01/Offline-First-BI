@@ -23,18 +23,19 @@ class MaterialRepository {
 
   // Obtiene todos los materiales incluyendo inactivos
   Future<List<MaterialModel>> getAllIncludingInactive() async {
-    final rows = await (database.select(database.materials)
-          ..orderBy([(m) => OrderingTerm.asc(m.name)]))
-        .get();
+    final rows = await (database.select(
+      database.materials,
+    )..orderBy([(m) => OrderingTerm.asc(m.name)])).get();
     return rows.map(_toModel).toList();
   }
 
   // Obtiene solo materiales activos
   Future<List<MaterialModel>> getActive() async {
-    final rows = await (database.select(database.materials)
-          ..where((m) => m.isActive.equals(true))
-          ..orderBy([(m) => OrderingTerm.asc(m.name)]))
-        .get();
+    final rows =
+        await (database.select(database.materials)
+              ..where((m) => m.isActive.equals(true))
+              ..orderBy([(m) => OrderingTerm.asc(m.name)]))
+            .get();
     return rows.map(_toModel).toList();
   }
 
@@ -48,7 +49,9 @@ class MaterialRepository {
     bool isActive = true,
   }) async {
     final now = DateTime.now();
-    await database.into(database.materials).insertOnConflictUpdate(
+    await database
+        .into(database.materials)
+        .insertOnConflictUpdate(
           MaterialsCompanion(
             id: id != null ? Value(id) : const Value.absent(),
             name: Value(name),
@@ -64,46 +67,72 @@ class MaterialRepository {
 
   // Obtiene el log de uso de materiales para un producto
   Future<List<ProductMaterialModel>> getMaterialsForProduct(
-      int productId) async {
-    final rows = await (database.select(database.productMaterials)
-          ..where((pm) => pm.productId.equals(productId))
-          ..orderBy([(pm) => OrderingTerm.desc(pm.createdAt)]))
-        .get();
+    int productId,
+  ) async {
+    final rows =
+        await (database.select(database.productMaterials)
+              ..where((pm) => pm.productId.equals(productId))
+              ..orderBy([(pm) => OrderingTerm.desc(pm.createdAt)]))
+            .get();
 
     final result = <ProductMaterialModel>[];
     for (final row in rows) {
-      final material = await (database.select(database.materials)
-            ..where((m) => m.id.equals(row.materialId)))
-          .getSingleOrNull();
+      final material = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(row.materialId))).getSingleOrNull();
       if (material != null) {
-        result.add(ProductMaterialModel(
-          id: row.id,
-          productId: row.productId,
-          materialId: row.materialId,
-          materialName: material.name,
-          quantityUsed: row.quantityUsed,
-          pricePerUnit: material.pricePerUnit,
-        ));
+        result.add(
+          ProductMaterialModel(
+            id: row.id,
+            productId: row.productId,
+            materialId: row.materialId,
+            materialName: material.name,
+            quantityUsed: row.quantityUsed,
+            pricePerUnit: material.pricePerUnit,
+          ),
+        );
       }
     }
     return result;
   }
 
   // Obtiene nombres únicos de materiales usados en un producto
-  Future<List<String>> getUniqueMaterialNamesForProduct(
-      int productId) async {
-    final rows = await (database.select(database.productMaterials)
-          ..where((pm) => pm.productId.equals(productId)))
-        .get();
+  Future<List<String>> getUniqueMaterialNamesForProduct(int productId) async {
+    final rows = await (database.select(
+      database.productMaterials,
+    )..where((pm) => pm.productId.equals(productId))).get();
 
     final names = <String>{};
     for (final row in rows) {
-      final material = await (database.select(database.materials)
-            ..where((m) => m.id.equals(row.materialId)))
-          .getSingleOrNull();
+      final material = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(row.materialId))).getSingleOrNull();
       if (material != null) names.add(material.name);
     }
     return names.toList();
+  }
+
+  // Obtiene materiales únicos con nombre y precio para un producto
+  Future<List<Map<String, dynamic>>> getMaterialsWithPriceForProduct(
+    int productId,
+  ) async {
+    final rows = await (database.select(
+      database.productMaterials,
+    )..where((pm) => pm.productId.equals(productId))).get();
+
+    final seen = <int>{};
+    final result = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      if (seen.contains(row.materialId)) continue;
+      seen.add(row.materialId);
+      final material = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(row.materialId))).getSingleOrNull();
+      if (material != null) {
+        result.add({'name': material.name, 'price': material.pricePerUnit});
+      }
+    }
+    return result;
   }
 
   // Registra uso de material y descuenta del stock
@@ -112,16 +141,18 @@ class MaterialRepository {
     required int materialId,
     required double quantityUsed,
   }) async {
-    final material = await (database.select(database.materials)
-          ..where((m) => m.id.equals(materialId)))
-        .getSingleOrNull();
+    final material = await (database.select(
+      database.materials,
+    )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
     if (material == null) return 'Material no encontrado';
     if (quantityUsed > material.stock) {
       return 'Stock insuficiente. Disponible: ${_fmt(material.stock)}';
     }
 
-    await database.into(database.productMaterials).insert(
+    await database
+        .into(database.productMaterials)
+        .insert(
           ProductMaterialsCompanion.insert(
             productId: productId,
             materialId: materialId,
@@ -130,12 +161,14 @@ class MaterialRepository {
         );
 
     // Descuenta stock
-    await (database.update(database.materials)
-          ..where((m) => m.id.equals(materialId)))
-        .write(MaterialsCompanion(
-      stock: Value(material.stock - quantityUsed),
-      updatedAt: Value(DateTime.now()),
-    ));
+    await (database.update(
+      database.materials,
+    )..where((m) => m.id.equals(materialId))).write(
+      MaterialsCompanion(
+        stock: Value(material.stock - quantityUsed),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
 
     return null;
   }
@@ -145,15 +178,15 @@ class MaterialRepository {
     required int recordId,
     required double newQuantity,
   }) async {
-    final record = await (database.select(database.productMaterials)
-          ..where((pm) => pm.id.equals(recordId)))
-        .getSingleOrNull();
+    final record = await (database.select(
+      database.productMaterials,
+    )..where((pm) => pm.id.equals(recordId))).getSingleOrNull();
 
     if (record == null) return 'Registro no encontrado';
 
-    final material = await (database.select(database.materials)
-          ..where((m) => m.id.equals(record.materialId)))
-        .getSingleOrNull();
+    final material = await (database.select(
+      database.materials,
+    )..where((m) => m.id.equals(record.materialId))).getSingleOrNull();
 
     if (material == null) return 'Material no encontrado';
 
@@ -168,17 +201,17 @@ class MaterialRepository {
     // Actualiza el registro
     await (database.update(database.productMaterials)
           ..where((pm) => pm.id.equals(recordId)))
-        .write(ProductMaterialsCompanion(
-      quantityUsed: Value(newQuantity),
-    ));
+        .write(ProductMaterialsCompanion(quantityUsed: Value(newQuantity)));
 
     // Ajusta el stock según la diferencia
-    await (database.update(database.materials)
-          ..where((m) => m.id.equals(record.materialId)))
-        .write(MaterialsCompanion(
-      stock: Value(material.stock - difference),
-      updatedAt: Value(DateTime.now()),
-    ));
+    await (database.update(
+      database.materials,
+    )..where((m) => m.id.equals(record.materialId))).write(
+      MaterialsCompanion(
+        stock: Value(material.stock - difference),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
 
     return null;
   }

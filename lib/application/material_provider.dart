@@ -74,14 +74,21 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
 
   // Obtiene log de uso para un producto
   Future<List<ProductMaterialModel>> getMaterialsForProduct(
-      int productId) async {
+    int productId,
+  ) async {
     return await repository.getMaterialsForProduct(productId);
   }
 
   // Obtiene nombres únicos de materiales usados en un producto
-  Future<List<String>> getUniqueMaterialNamesForProduct(
-      int productId) async {
+  Future<List<String>> getUniqueMaterialNamesForProduct(int productId) async {
     return await repository.getUniqueMaterialNamesForProduct(productId);
+  }
+
+  // Obtiene materiales únicos con precio para mostrar en productos
+  Future<List<Map<String, dynamic>>> getMaterialsWithPriceForProduct(
+    int productId,
+  ) async {
+    return await repository.getMaterialsWithPriceForProduct(productId);
   }
 
   // Registra uso de material y descuenta stock
@@ -113,8 +120,9 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
   }
 }
 
-final materialProvider =
-    StateNotifierProvider<MaterialNotifier, MaterialState>((ref) {
-  final repository = ref.watch(materialRepositoryProvider);
-  return MaterialNotifier(repository);
-});
+final materialProvider = StateNotifierProvider<MaterialNotifier, MaterialState>(
+  (ref) {
+    final repository = ref.watch(materialRepositoryProvider);
+    return MaterialNotifier(repository);
+  },
+);

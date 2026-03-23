@@ -228,7 +228,7 @@ class _ProductCard extends ConsumerStatefulWidget {
 }
 
 class _ProductCardState extends ConsumerState<_ProductCard> {
-  List<String> _materialNames = [];
+  List<Map<String, dynamic>> _materials = [];
   bool _loadingMaterials = true;
 
   @override
@@ -237,14 +237,14 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
     _loadMaterials();
   }
 
-  // Carga nombres únicos de materiales usados en este producto
+  // Carga materiales con precio para este producto
   Future<void> _loadMaterials() async {
-    final names = await ref
+    final materials = await ref
         .read(materialProvider.notifier)
-        .getUniqueMaterialNamesForProduct(widget.product.id);
+        .getMaterialsWithPriceForProduct(widget.product.id);
     if (mounted) {
       setState(() {
-        _materialNames = names;
+        _materials = materials;
         _loadingMaterials = false;
       });
     }
@@ -397,7 +397,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
             ],
           ),
 
-          // Materiales usados — solo nombres, sin cantidad
+          // Materiales usados con nombre y precio
           if (_loadingMaterials) ...[
             const SizedBox(height: 8),
             const SizedBox(
@@ -405,7 +405,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
               width: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          ] else if (_materialNames.isNotEmpty) ...[
+          ] else if (_materials.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Divider(color: AppColors.border),
             const SizedBox(height: 8),
@@ -418,32 +418,45 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
               ),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: _materialNames
-                  .map(
-                    (name) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
+            // Lista de materiales con nombre y precio
+            ..._materials.map(
+              (m) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          m['name'] as String,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Bs. ${(m['price'] as double).toStringAsFixed(2)}/u',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  )
-                  .toList(),
+                  ],
+                ),
+              ),
             ),
           ],
         ],
