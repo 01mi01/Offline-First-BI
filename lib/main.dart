@@ -4,9 +4,11 @@ import 'application/auth_provider.dart';
 import 'theme/app_theme.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/home_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('es', null);
   runApp(const ProviderScope(child: MyApp()));
 }
 

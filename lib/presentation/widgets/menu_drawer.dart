@@ -9,6 +9,7 @@ import '../pages/clients_suppliers_page.dart';
 import '../pages/sales_page.dart';
 import '../pages/purchases_page.dart';
 import '../pages/events_page.dart';
+import '../pages/reports_page.dart';
 
 // Opciones del menú lateral con su ícono y etiqueta
 final _menuItems = [
@@ -144,6 +145,13 @@ class MenuDrawer extends ConsumerWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const EventsPage()),
+                        );
+                      } else if (module == 'reportes') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ReportsPage(),
+                          ),
                         );
                       }
                     },

@@ -37,6 +37,7 @@ final lightTheme = ThemeData(
     error: AppColors.error,
   ),
   scaffoldBackgroundColor: AppColors.background,
+  canvasColor: AppColors.background,
 
   // Tipografía
   textTheme: GoogleFonts.interTextTheme(),
