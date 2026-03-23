@@ -14,6 +14,7 @@ class PurchaseRepository {
       id: row.id,
       supplierId: row.supplierId,
       locationId: row.locationId,
+      eventId: row.eventId,
       isMaterial: row.isMaterial,
       description: row.description,
       totalAmount: row.totalAmount,
@@ -25,32 +26,34 @@ class PurchaseRepository {
 
   // Obtiene todas las compras ordenadas por fecha descendente
   Future<List<PurchaseModel>> getAll() async {
-    final rows = await (database.select(database.purchases)
-          ..orderBy([(p) => OrderingTerm.desc(p.date)]))
-        .get();
+    final rows = await (database.select(
+      database.purchases,
+    )..orderBy([(p) => OrderingTerm.desc(p.date)])).get();
     return rows.map(_toModel).toList();
   }
 
   // Obtiene los ítems de una compra con nombre del material
   Future<List<PurchaseItemModel>> getItemsForPurchase(int purchaseId) async {
-    final rows = await (database.select(database.purchaseItems)
-          ..where((pi) => pi.purchaseId.equals(purchaseId)))
-        .get();
+    final rows = await (database.select(
+      database.purchaseItems,
+    )..where((pi) => pi.purchaseId.equals(purchaseId))).get();
 
     final result = <PurchaseItemModel>[];
     for (final row in rows) {
-      final material = await (database.select(database.materials)
-            ..where((m) => m.id.equals(row.materialId)))
-          .getSingleOrNull();
-      result.add(PurchaseItemModel(
-        id: row.id,
-        purchaseId: row.purchaseId,
-        materialId: row.materialId,
-        materialName: material?.name ?? 'Material eliminado',
-        quantity: row.quantity,
-        unitPrice: row.unitPrice,
-        subtotal: row.subtotal,
-      ));
+      final material = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(row.materialId))).getSingleOrNull();
+      result.add(
+        PurchaseItemModel(
+          id: row.id,
+          purchaseId: row.purchaseId,
+          materialId: row.materialId,
+          materialName: material?.name ?? 'Material eliminado',
+          quantity: row.quantity,
+          unitPrice: row.unitPrice,
+          subtotal: row.subtotal,
+        ),
+      );
     }
     return result;
   }
@@ -63,11 +66,14 @@ class PurchaseRepository {
     required double totalAmount,
     required DateTime date,
     required int? locationId,
+    required int? eventId,
     String? notes,
     required List<Map<String, dynamic>> items,
   }) async {
     await database.transaction(() async {
-      final purchaseId = await database.into(database.purchases).insert(
+      final purchaseId = await database
+          .into(database.purchases)
+          .insert(
             PurchasesCompanion.insert(
               supplierId: Value(supplierId),
               isMaterial: Value(isMaterial),
@@ -75,6 +81,7 @@ class PurchaseRepository {
               totalAmount: totalAmount,
               date: date,
               locationId: Value(locationId),
+              eventId: Value(eventId),
               notes: Value(notes),
             ),
           );
@@ -85,7 +92,9 @@ class PurchaseRepository {
           final quantity = item['quantity'] as double;
           final unitPrice = item['unitPrice'] as double;
 
-          await database.into(database.purchaseItems).insert(
+          await database
+              .into(database.purchaseItems)
+              .insert(
                 PurchaseItemsCompanion.insert(
                   purchaseId: purchaseId,
                   materialId: materialId,
@@ -96,18 +105,20 @@ class PurchaseRepository {
               );
 
           // Suma stock y actualiza precio del material
-          final material = await (database.select(database.materials)
-                ..where((m) => m.id.equals(materialId)))
-              .getSingleOrNull();
+          final material = await (database.select(
+            database.materials,
+          )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
           if (material != null) {
-            await (database.update(database.materials)
-                  ..where((m) => m.id.equals(materialId)))
-                .write(MaterialsCompanion(
-              stock: Value(material.stock + quantity),
-              pricePerUnit: Value(unitPrice),
-              updatedAt: Value(DateTime.now()),
-            ));
+            await (database.update(
+              database.materials,
+            )..where((m) => m.id.equals(materialId))).write(
+              MaterialsCompanion(
+                stock: Value(material.stock + quantity),
+                pricePerUnit: Value(unitPrice),
+                updatedAt: Value(DateTime.now()),
+              ),
+            );
           }
         }
       }
@@ -123,47 +134,53 @@ class PurchaseRepository {
     required double totalAmount,
     required DateTime date,
     required int? locationId,
+    required int? eventId,
     String? notes,
     required List<Map<String, dynamic>> newItems,
   }) async {
     await database.transaction(() async {
       // Devuelve el stock de los ítems anteriores
-      final oldItems = await (database.select(database.purchaseItems)
-            ..where((pi) => pi.purchaseId.equals(purchaseId)))
-          .get();
+      final oldItems = await (database.select(
+        database.purchaseItems,
+      )..where((pi) => pi.purchaseId.equals(purchaseId))).get();
 
       for (final oldItem in oldItems) {
-        final material = await (database.select(database.materials)
-              ..where((m) => m.id.equals(oldItem.materialId)))
-            .getSingleOrNull();
+        final material = await (database.select(
+          database.materials,
+        )..where((m) => m.id.equals(oldItem.materialId))).getSingleOrNull();
         if (material != null) {
-          await (database.update(database.materials)
-                ..where((m) => m.id.equals(oldItem.materialId)))
-              .write(MaterialsCompanion(
-            stock: Value(material.stock - oldItem.quantity),
-            updatedAt: Value(DateTime.now()),
-          ));
+          await (database.update(
+            database.materials,
+          )..where((m) => m.id.equals(oldItem.materialId))).write(
+            MaterialsCompanion(
+              stock: Value(material.stock - oldItem.quantity),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
         }
       }
 
       // Elimina ítems anteriores
-      await (database.delete(database.purchaseItems)
-            ..where((pi) => pi.purchaseId.equals(purchaseId)))
-          .go();
+      await (database.delete(
+        database.purchaseItems,
+      )..where((pi) => pi.purchaseId.equals(purchaseId))).go();
 
       // Actualiza la compra
-      await (database.update(database.purchases)
-            ..where((p) => p.id.equals(purchaseId)))
-          .write(PurchasesCompanion(
-        supplierId: Value(supplierId),
-        isMaterial: Value(isMaterial),
-        description: Value(description),
-        totalAmount: Value(totalAmount),
-        date: Value(date),
-        locationId: Value(locationId),
-        notes: Value(notes),
-        updatedAt: Value(DateTime.now()),
-      ));
+      await (database.update(
+        database.purchases,
+      )..where((p) => p.id.equals(purchaseId))).write(
+        PurchasesCompanion(
+          supplierId: Value(supplierId),
+          isMaterial: Value(isMaterial),
+          description: Value(description),
+          totalAmount: Value(totalAmount),
+          date: Value(date),
+          locationId: Value(locationId),
+          eventId: Value(eventId),
+          notes: Value(notes),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
 
       // Inserta nuevos ítems y suma stock con precio actualizado
       if (isMaterial) {
@@ -172,7 +189,9 @@ class PurchaseRepository {
           final quantity = item['quantity'] as double;
           final unitPrice = item['unitPrice'] as double;
 
-          await database.into(database.purchaseItems).insert(
+          await database
+              .into(database.purchaseItems)
+              .insert(
                 PurchaseItemsCompanion.insert(
                   purchaseId: purchaseId,
                   materialId: materialId,
@@ -182,18 +201,20 @@ class PurchaseRepository {
                 ),
               );
 
-          final material = await (database.select(database.materials)
-                ..where((m) => m.id.equals(materialId)))
-              .getSingleOrNull();
+          final material = await (database.select(
+            database.materials,
+          )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
           if (material != null) {
-            await (database.update(database.materials)
-                  ..where((m) => m.id.equals(materialId)))
-                .write(MaterialsCompanion(
-              stock: Value(material.stock + quantity),
-              pricePerUnit: Value(unitPrice),
-              updatedAt: Value(DateTime.now()),
-            ));
+            await (database.update(
+              database.materials,
+            )..where((m) => m.id.equals(materialId))).write(
+              MaterialsCompanion(
+                stock: Value(material.stock + quantity),
+                pricePerUnit: Value(unitPrice),
+                updatedAt: Value(DateTime.now()),
+              ),
+            );
           }
         }
       }

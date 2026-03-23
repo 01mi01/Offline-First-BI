@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/location_provider.dart';
+import '../../application/event_provider.dart';
 import '../../models/purchase_model.dart';
 import '../../models/purchase_item_model.dart';
 import '../../theme/app_theme.dart';
@@ -353,12 +354,29 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                         const SizedBox(height: 8),
                         _DetailRow(
                           label: 'Ubicación',
-                          value: ref
+                          value:
+                              ref
                                   .watch(locationProvider)
                                   .locations
-                                  .where((l) => l.id == widget.purchase.locationId)
+                                  .where(
+                                    (l) => l.id == widget.purchase.locationId,
+                                  )
                                   .firstOrNull
                                   ?.city ??
+                              '',
+                        ),
+                      ],
+                      if (widget.purchase.eventId != null) ...[
+                        const SizedBox(height: 8),
+                        _DetailRow(
+                          label: 'Evento',
+                          value:
+                              ref
+                                  .watch(eventProvider)
+                                  .events
+                                  .where((e) => e.id == widget.purchase.eventId)
+                                  .firstOrNull
+                                  ?.name ??
                               '',
                         ),
                       ],

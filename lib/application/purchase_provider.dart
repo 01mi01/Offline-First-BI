@@ -63,6 +63,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
   Future<String?> createPurchase({
     required int? supplierId,
     required int? locationId,
+    required int? eventId,
     required bool isMaterial,
     required String? description,
     required double totalAmount,
@@ -74,6 +75,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
       await repository.createPurchase(
         supplierId: supplierId,
         locationId: locationId,
+        eventId: eventId,
         isMaterial: isMaterial,
         description: description,
         totalAmount: totalAmount,
@@ -94,6 +96,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     required int purchaseId,
     required int? supplierId,
     required int? locationId,
+    required int? eventId,
     required bool isMaterial,
     required String? description,
     required double totalAmount,
@@ -106,6 +109,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
         purchaseId: purchaseId,
         supplierId: supplierId,
         locationId: locationId,
+        eventId: eventId,
         isMaterial: isMaterial,
         description: description,
         totalAmount: totalAmount,

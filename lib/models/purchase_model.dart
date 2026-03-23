@@ -3,6 +3,7 @@ class PurchaseModel {
   final int id;
   final int? supplierId;
   final int? locationId;
+  final int? eventId;
   final bool isMaterial;
   final String? description;
   final double totalAmount;
@@ -14,6 +15,7 @@ class PurchaseModel {
     required this.id,
     this.supplierId,
     this.locationId,
+    this.eventId,
     required this.isMaterial,
     this.description,
     required this.totalAmount,

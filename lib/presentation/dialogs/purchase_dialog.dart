@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
 import '../dialogs/material_dialog.dart';
 import '../../application/location_provider.dart';
+import '../../application/event_provider.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
   final PurchaseModel? purchase;
@@ -28,6 +29,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   int? _selectedSupplierId;
   bool _isMaterial = true;
   int? _selectedLocationId;
+  int? _selectedEventId;
   final List<Map<String, dynamic>> _materialItems = [];
   bool _isLoading = false;
   String? _error;
@@ -39,6 +41,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       _selectedSupplierId = widget.purchase!.supplierId;
       _isMaterial = widget.purchase!.isMaterial;
       _selectedLocationId = widget.purchase?.locationId;
+      _selectedEventId = widget.purchase?.eventId;
       _descriptionController.text = widget.purchase!.description ?? '';
       _totalController.text = widget.purchase!.totalAmount > 0
           ? formatNumber(widget.purchase!.totalAmount)
@@ -168,6 +171,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
           .createPurchase(
             supplierId: _selectedSupplierId,
             locationId: _selectedLocationId,
+            eventId: _selectedEventId,
             isMaterial: _isMaterial,
             description: _descriptionController.text.trim().isEmpty
                 ? null
@@ -186,6 +190,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
             purchaseId: widget.purchase!.id,
             supplierId: _selectedSupplierId,
             locationId: _selectedLocationId,
+            eventId: _selectedEventId,
             isMaterial: _isMaterial,
             description: _descriptionController.text.trim().isEmpty
                 ? null
@@ -338,6 +343,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ],
               ),
               const SizedBox(height: 20),
+
               // Selector de ubicación
               DropdownButtonFormField<int>(
                 value: _selectedLocationId,
@@ -362,6 +368,29 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 onChanged: (val) => setState(() => _selectedLocationId = val),
               ),
               const SizedBox(height: 20),
+
+              // Selector de evento
+              DropdownButtonFormField<int>(
+                value: _selectedEventId,
+                decoration: const InputDecoration(labelText: 'Evento'),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Sin evento'),
+                  ),
+                  ...ref
+                      .watch(eventProvider)
+                      .events
+                      .map(
+                        (e) =>
+                            DropdownMenuItem(value: e.id, child: Text(e.name)),
+                      )
+                      .toList(),
+                ],
+                onChanged: (val) => setState(() => _selectedEventId = val),
+              ),
+              const SizedBox(height: 20),
+
               // Sección de materiales
               if (_isMaterial) ...[
                 Row(
@@ -689,7 +718,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                 fontWeight: FontWeight.w600,
                               ),
                               textAlign: TextAlign.center,
-                            ), 
+                            ),
                     ),
                   ),
                 ],

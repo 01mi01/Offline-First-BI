@@ -6362,6 +6362,20 @@ class $PurchasesTable extends Purchases
       'REFERENCES locations (id)',
     ),
   );
+  static const VerificationMeta _eventIdMeta = const VerificationMeta(
+    'eventId',
+  );
+  @override
+  late final GeneratedColumn<int> eventId = GeneratedColumn<int>(
+    'event_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES events (id)',
+    ),
+  );
   static const VerificationMeta _isMaterialMeta = const VerificationMeta(
     'isMaterial',
   );
@@ -6445,6 +6459,7 @@ class $PurchasesTable extends Purchases
     id,
     supplierId,
     locationId,
+    eventId,
     isMaterial,
     description,
     totalAmount,
@@ -6478,6 +6493,12 @@ class $PurchasesTable extends Purchases
       context.handle(
         _locationIdMeta,
         locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('event_id')) {
+      context.handle(
+        _eventIdMeta,
+        eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta),
       );
     }
     if (data.containsKey('is_material')) {
@@ -6553,6 +6574,10 @@ class $PurchasesTable extends Purchases
         DriftSqlType.int,
         data['${effectivePrefix}location_id'],
       ),
+      eventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}event_id'],
+      ),
       isMaterial: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_material'],
@@ -6594,6 +6619,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
   final int id;
   final int? supplierId;
   final int? locationId;
+  final int? eventId;
   final bool isMaterial;
   final String? description;
   final double totalAmount;
@@ -6605,6 +6631,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     required this.id,
     this.supplierId,
     this.locationId,
+    this.eventId,
     required this.isMaterial,
     this.description,
     required this.totalAmount,
@@ -6622,6 +6649,9 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     }
     if (!nullToAbsent || locationId != null) {
       map['location_id'] = Variable<int>(locationId);
+    }
+    if (!nullToAbsent || eventId != null) {
+      map['event_id'] = Variable<int>(eventId);
     }
     map['is_material'] = Variable<bool>(isMaterial);
     if (!nullToAbsent || description != null) {
@@ -6648,6 +6678,9 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       locationId: locationId == null && nullToAbsent
           ? const Value.absent()
           : Value(locationId),
+      eventId: eventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eventId),
       isMaterial: Value(isMaterial),
       description: description == null && nullToAbsent
           ? const Value.absent()
@@ -6673,6 +6706,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       id: serializer.fromJson<int>(json['id']),
       supplierId: serializer.fromJson<int?>(json['supplierId']),
       locationId: serializer.fromJson<int?>(json['locationId']),
+      eventId: serializer.fromJson<int?>(json['eventId']),
       isMaterial: serializer.fromJson<bool>(json['isMaterial']),
       description: serializer.fromJson<String?>(json['description']),
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
@@ -6689,6 +6723,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       'id': serializer.toJson<int>(id),
       'supplierId': serializer.toJson<int?>(supplierId),
       'locationId': serializer.toJson<int?>(locationId),
+      'eventId': serializer.toJson<int?>(eventId),
       'isMaterial': serializer.toJson<bool>(isMaterial),
       'description': serializer.toJson<String?>(description),
       'totalAmount': serializer.toJson<double>(totalAmount),
@@ -6703,6 +6738,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     int? id,
     Value<int?> supplierId = const Value.absent(),
     Value<int?> locationId = const Value.absent(),
+    Value<int?> eventId = const Value.absent(),
     bool? isMaterial,
     Value<String?> description = const Value.absent(),
     double? totalAmount,
@@ -6714,6 +6750,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     id: id ?? this.id,
     supplierId: supplierId.present ? supplierId.value : this.supplierId,
     locationId: locationId.present ? locationId.value : this.locationId,
+    eventId: eventId.present ? eventId.value : this.eventId,
     isMaterial: isMaterial ?? this.isMaterial,
     description: description.present ? description.value : this.description,
     totalAmount: totalAmount ?? this.totalAmount,
@@ -6731,6 +6768,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       locationId: data.locationId.present
           ? data.locationId.value
           : this.locationId,
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
       isMaterial: data.isMaterial.present
           ? data.isMaterial.value
           : this.isMaterial,
@@ -6753,6 +6791,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
           ..write('id: $id, ')
           ..write('supplierId: $supplierId, ')
           ..write('locationId: $locationId, ')
+          ..write('eventId: $eventId, ')
           ..write('isMaterial: $isMaterial, ')
           ..write('description: $description, ')
           ..write('totalAmount: $totalAmount, ')
@@ -6769,6 +6808,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     id,
     supplierId,
     locationId,
+    eventId,
     isMaterial,
     description,
     totalAmount,
@@ -6784,6 +6824,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
           other.id == this.id &&
           other.supplierId == this.supplierId &&
           other.locationId == this.locationId &&
+          other.eventId == this.eventId &&
           other.isMaterial == this.isMaterial &&
           other.description == this.description &&
           other.totalAmount == this.totalAmount &&
@@ -6797,6 +6838,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
   final Value<int> id;
   final Value<int?> supplierId;
   final Value<int?> locationId;
+  final Value<int?> eventId;
   final Value<bool> isMaterial;
   final Value<String?> description;
   final Value<double> totalAmount;
@@ -6808,6 +6850,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     this.id = const Value.absent(),
     this.supplierId = const Value.absent(),
     this.locationId = const Value.absent(),
+    this.eventId = const Value.absent(),
     this.isMaterial = const Value.absent(),
     this.description = const Value.absent(),
     this.totalAmount = const Value.absent(),
@@ -6820,6 +6863,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     this.id = const Value.absent(),
     this.supplierId = const Value.absent(),
     this.locationId = const Value.absent(),
+    this.eventId = const Value.absent(),
     this.isMaterial = const Value.absent(),
     this.description = const Value.absent(),
     required double totalAmount,
@@ -6833,6 +6877,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     Expression<int>? id,
     Expression<int>? supplierId,
     Expression<int>? locationId,
+    Expression<int>? eventId,
     Expression<bool>? isMaterial,
     Expression<String>? description,
     Expression<double>? totalAmount,
@@ -6845,6 +6890,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
       if (id != null) 'id': id,
       if (supplierId != null) 'supplier_id': supplierId,
       if (locationId != null) 'location_id': locationId,
+      if (eventId != null) 'event_id': eventId,
       if (isMaterial != null) 'is_material': isMaterial,
       if (description != null) 'description': description,
       if (totalAmount != null) 'total_amount': totalAmount,
@@ -6859,6 +6905,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     Value<int>? id,
     Value<int?>? supplierId,
     Value<int?>? locationId,
+    Value<int?>? eventId,
     Value<bool>? isMaterial,
     Value<String?>? description,
     Value<double>? totalAmount,
@@ -6871,6 +6918,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
       id: id ?? this.id,
       supplierId: supplierId ?? this.supplierId,
       locationId: locationId ?? this.locationId,
+      eventId: eventId ?? this.eventId,
       isMaterial: isMaterial ?? this.isMaterial,
       description: description ?? this.description,
       totalAmount: totalAmount ?? this.totalAmount,
@@ -6892,6 +6940,9 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     }
     if (locationId.present) {
       map['location_id'] = Variable<int>(locationId.value);
+    }
+    if (eventId.present) {
+      map['event_id'] = Variable<int>(eventId.value);
     }
     if (isMaterial.present) {
       map['is_material'] = Variable<bool>(isMaterial.value);
@@ -6923,6 +6974,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
           ..write('id: $id, ')
           ..write('supplierId: $supplierId, ')
           ..write('locationId: $locationId, ')
+          ..write('eventId: $eventId, ')
           ..write('isMaterial: $isMaterial, ')
           ..write('description: $description, ')
           ..write('totalAmount: $totalAmount, ')
@@ -13572,6 +13624,24 @@ final class $$EventsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PurchasesTable, List<Purchase>>
+  _purchasesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.purchases,
+    aliasName: $_aliasNameGenerator(db.events.id, db.purchases.eventId),
+  );
+
+  $$PurchasesTableProcessedTableManager get purchasesRefs {
+    final manager = $$PurchasesTableTableManager(
+      $_db,
+      $_db.purchases,
+    ).filter((f) => f.eventId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_purchasesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$EventsTableFilterComposer
@@ -13657,6 +13727,31 @@ class $$EventsTableFilterComposer
           }) => $$SalesTableFilterComposer(
             $db: $db,
             $table: $db.sales,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> purchasesRefs(
+    Expression<bool> Function($$PurchasesTableFilterComposer f) f,
+  ) {
+    final $$PurchasesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.purchases,
+      getReferencedColumn: (t) => t.eventId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PurchasesTableFilterComposer(
+            $db: $db,
+            $table: $db.purchases,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -13812,6 +13907,31 @@ class $$EventsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> purchasesRefs<T extends Object>(
+    Expression<T> Function($$PurchasesTableAnnotationComposer a) f,
+  ) {
+    final $$PurchasesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.purchases,
+      getReferencedColumn: (t) => t.eventId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PurchasesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.purchases,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$EventsTableTableManager
@@ -13827,7 +13947,11 @@ class $$EventsTableTableManager
           $$EventsTableUpdateCompanionBuilder,
           (Event, $$EventsTableReferences),
           Event,
-          PrefetchHooks Function({bool locationId, bool salesRefs})
+          PrefetchHooks Function({
+            bool locationId,
+            bool salesRefs,
+            bool purchasesRefs,
+          })
         > {
   $$EventsTableTableManager(_$AppDatabase db, $EventsTable table)
     : super(
@@ -13886,60 +14010,86 @@ class $$EventsTableTableManager
                     (e.readTable(table), $$EventsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({locationId = false, salesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (salesRefs) db.sales],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (locationId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.locationId,
-                                referencedTable: $$EventsTableReferences
-                                    ._locationIdTable(db),
-                                referencedColumn: $$EventsTableReferences
-                                    ._locationIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({locationId = false, salesRefs = false, purchasesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (salesRefs) db.sales,
+                    if (purchasesRefs) db.purchases,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (locationId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.locationId,
+                                    referencedTable: $$EventsTableReferences
+                                        ._locationIdTable(db),
+                                    referencedColumn: $$EventsTableReferences
+                                        ._locationIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (salesRefs)
+                        await $_getPrefetchedData<Event, $EventsTable, Sale>(
+                          currentTable: table,
+                          referencedTable: $$EventsTableReferences
+                              ._salesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$EventsTableReferences(db, table, p0).salesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.eventId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (purchasesRefs)
+                        await $_getPrefetchedData<
+                          Event,
+                          $EventsTable,
+                          Purchase
+                        >(
+                          currentTable: table,
+                          referencedTable: $$EventsTableReferences
+                              ._purchasesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$EventsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).purchasesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.eventId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (salesRefs)
-                    await $_getPrefetchedData<Event, $EventsTable, Sale>(
-                      currentTable: table,
-                      referencedTable: $$EventsTableReferences._salesRefsTable(
-                        db,
-                      ),
-                      managerFromTypedResult: (p0) =>
-                          $$EventsTableReferences(db, table, p0).salesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.eventId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -13956,7 +14106,11 @@ typedef $$EventsTableProcessedTableManager =
       $$EventsTableUpdateCompanionBuilder,
       (Event, $$EventsTableReferences),
       Event,
-      PrefetchHooks Function({bool locationId, bool salesRefs})
+      PrefetchHooks Function({
+        bool locationId,
+        bool salesRefs,
+        bool purchasesRefs,
+      })
     >;
 typedef $$SalesTableCreateCompanionBuilder =
     SalesCompanion Function({
@@ -15083,6 +15237,7 @@ typedef $$PurchasesTableCreateCompanionBuilder =
       Value<int> id,
       Value<int?> supplierId,
       Value<int?> locationId,
+      Value<int?> eventId,
       Value<bool> isMaterial,
       Value<String?> description,
       required double totalAmount,
@@ -15096,6 +15251,7 @@ typedef $$PurchasesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int?> supplierId,
       Value<int?> locationId,
+      Value<int?> eventId,
       Value<bool> isMaterial,
       Value<String?> description,
       Value<double> totalAmount,
@@ -15141,6 +15297,24 @@ final class $$PurchasesTableReferences
       $_db.locations,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_locationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $EventsTable _eventIdTable(_$AppDatabase db) => db.events.createAlias(
+    $_aliasNameGenerator(db.purchases.eventId, db.events.id),
+  );
+
+  $$EventsTableProcessedTableManager? get eventId {
+    final $_column = $_itemColumn<int>('event_id');
+    if ($_column == null) return null;
+    final manager = $$EventsTableTableManager(
+      $_db,
+      $_db.events,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_eventIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -15255,6 +15429,29 @@ class $$PurchasesTableFilterComposer
           }) => $$LocationsTableFilterComposer(
             $db: $db,
             $table: $db.locations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$EventsTableFilterComposer get eventId {
+    final $$EventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.events,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EventsTableFilterComposer(
+            $db: $db,
+            $table: $db.events,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -15384,6 +15581,29 @@ class $$PurchasesTableOrderingComposer
     );
     return composer;
   }
+
+  $$EventsTableOrderingComposer get eventId {
+    final $$EventsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.events,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EventsTableOrderingComposer(
+            $db: $db,
+            $table: $db.events,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PurchasesTableAnnotationComposer
@@ -15471,6 +15691,29 @@ class $$PurchasesTableAnnotationComposer
     return composer;
   }
 
+  $$EventsTableAnnotationComposer get eventId {
+    final $$EventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.eventId,
+      referencedTable: $db.events,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.events,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> purchaseItemsRefs<T extends Object>(
     Expression<T> Function($$PurchaseItemsTableAnnotationComposer a) f,
   ) {
@@ -15513,6 +15756,7 @@ class $$PurchasesTableTableManager
           PrefetchHooks Function({
             bool supplierId,
             bool locationId,
+            bool eventId,
             bool purchaseItemsRefs,
           })
         > {
@@ -15532,6 +15776,7 @@ class $$PurchasesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int?> supplierId = const Value.absent(),
                 Value<int?> locationId = const Value.absent(),
+                Value<int?> eventId = const Value.absent(),
                 Value<bool> isMaterial = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<double> totalAmount = const Value.absent(),
@@ -15543,6 +15788,7 @@ class $$PurchasesTableTableManager
                 id: id,
                 supplierId: supplierId,
                 locationId: locationId,
+                eventId: eventId,
                 isMaterial: isMaterial,
                 description: description,
                 totalAmount: totalAmount,
@@ -15556,6 +15802,7 @@ class $$PurchasesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int?> supplierId = const Value.absent(),
                 Value<int?> locationId = const Value.absent(),
+                Value<int?> eventId = const Value.absent(),
                 Value<bool> isMaterial = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 required double totalAmount,
@@ -15567,6 +15814,7 @@ class $$PurchasesTableTableManager
                 id: id,
                 supplierId: supplierId,
                 locationId: locationId,
+                eventId: eventId,
                 isMaterial: isMaterial,
                 description: description,
                 totalAmount: totalAmount,
@@ -15587,6 +15835,7 @@ class $$PurchasesTableTableManager
               ({
                 supplierId = false,
                 locationId = false,
+                eventId = false,
                 purchaseItemsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -15632,6 +15881,19 @@ class $$PurchasesTableTableManager
                                         ._locationIdTable(db),
                                     referencedColumn: $$PurchasesTableReferences
                                         ._locationIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (eventId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.eventId,
+                                    referencedTable: $$PurchasesTableReferences
+                                        ._eventIdTable(db),
+                                    referencedColumn: $$PurchasesTableReferences
+                                        ._eventIdTable(db)
                                         .id,
                                   )
                                   as T;
@@ -15685,6 +15947,7 @@ typedef $$PurchasesTableProcessedTableManager =
       PrefetchHooks Function({
         bool supplierId,
         bool locationId,
+        bool eventId,
         bool purchaseItemsRefs,
       })
     >;

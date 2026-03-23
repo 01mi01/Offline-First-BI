@@ -166,6 +166,7 @@ class Purchases extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get supplierId => integer().references(Suppliers, #id).nullable()();
   IntColumn get locationId => integer().references(Locations, #id).nullable()();
+  IntColumn get eventId => integer().references(Events, #id).nullable()();
   BoolColumn get isMaterial => boolean().withDefault(const Constant(true))();
   TextColumn get description => text().nullable()();
   RealColumn get totalAmount => real()();
@@ -243,7 +244,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
