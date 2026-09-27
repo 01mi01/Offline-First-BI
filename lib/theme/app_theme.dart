@@ -3,11 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 // Colores principales de la aplicación
 class AppColors {
-  //Teal (original)
-  //static const primary = Color(0xFF1A9E98);
-  //static const primaryDark = Color(0xFF137A75);
-  static const primary = Color(0xFF00C3CF);
-  static const primaryDark = Color(0xFF008197);
+  static const primary = Color(0xFF13A09A);
+  // Variante más oscura del acento, para estados presionados/enfatizados.
+  static const primaryDark = Color(0xFF0D7A75);
   static const background = Color(0xFFF2F2F7);
   static const surface = Color(0xFFFFFFFF);
   static const textPrimary = Color(0xFF000000);
@@ -102,6 +100,8 @@ final lightTheme = ThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
+      // Estado presionado/enfocado con la variante oscura del acento.
+      overlayColor: AppColors.primaryDark,
       minimumSize: const Size(double.infinity, 50),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
       elevation: 0,
