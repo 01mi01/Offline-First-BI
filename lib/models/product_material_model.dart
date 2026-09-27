@@ -4,6 +4,7 @@ class ProductMaterialModel {
   final int productId;
   final int materialId;
   final String materialName;
+  final String materialUnit;
   final double quantityUsed;
   final double pricePerUnit;
 
@@ -12,6 +13,7 @@ class ProductMaterialModel {
     required this.productId,
     required this.materialId,
     required this.materialName,
+    required this.materialUnit,
     required this.quantityUsed,
     required this.pricePerUnit,
   });

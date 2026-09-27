@@ -6,6 +6,7 @@ class SaleItemModel {
   final String productName;
   final int quantity;
   final double unitPrice;
+  final String priceType;
   final double subtotal;
 
   SaleItemModel({
@@ -15,6 +16,7 @@ class SaleItemModel {
     required this.productName,
     required this.quantity,
     required this.unitPrice,
+    required this.priceType,
     required this.subtotal,
   });
 }

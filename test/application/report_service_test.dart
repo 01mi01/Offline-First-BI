@@ -58,6 +58,7 @@ SaleItemModel _item({
   required int saleId,
   required int productId,
   int quantity = 1,
+  String priceType = 'A',
 }) {
   return SaleItemModel(
     id: saleId * 10 + productId,
@@ -66,6 +67,7 @@ SaleItemModel _item({
     productName: 'Producto $productId',
     quantity: quantity,
     unitPrice: 10,
+    priceType: priceType,
     subtotal: 10.0 * quantity,
   );
 }

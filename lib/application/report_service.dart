@@ -54,6 +54,13 @@ class ReportService {
         if (!hasCategory) return false;
       }
 
+      // Filtra por banda de precio (A/B) cobrada en algún ítem
+      if (filters.priceType != null) {
+        final items = saleItemsMap[s.id] ?? [];
+        final hasPriceType = items.any((i) => i.priceType == filters.priceType);
+        if (!hasPriceType) return false;
+      }
+
       return true;
     }).toList();
   }

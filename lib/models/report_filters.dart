@@ -8,6 +8,7 @@ class ReportFilters {
   final int? locationId;
   final int? clientId;
   final int? supplierId;
+  final String? priceType;
 
   const ReportFilters({
     this.startDate,
@@ -18,6 +19,7 @@ class ReportFilters {
     this.locationId,
     this.clientId,
     this.supplierId,
+    this.priceType,
   });
 
   bool get hasActive =>
@@ -28,7 +30,8 @@ class ReportFilters {
       eventId != null ||
       locationId != null ||
       clientId != null ||
-      supplierId != null;
+      supplierId != null ||
+      priceType != null;
 
   ReportFilters copyWith({
     DateTime? startDate,
@@ -39,6 +42,7 @@ class ReportFilters {
     int? locationId,
     int? clientId,
     int? supplierId,
+    String? priceType,
     bool clearStartDate = false,
     bool clearEndDate = false,
     bool clearCategory = false,
@@ -47,6 +51,7 @@ class ReportFilters {
     bool clearLocation = false,
     bool clearClient = false,
     bool clearSupplier = false,
+    bool clearPriceType = false,
   }) {
     return ReportFilters(
       startDate: clearStartDate ? null : startDate ?? this.startDate,
@@ -57,6 +62,7 @@ class ReportFilters {
       locationId: clearLocation ? null : locationId ?? this.locationId,
       clientId: clearClient ? null : clientId ?? this.clientId,
       supplierId: clearSupplier ? null : supplierId ?? this.supplierId,
+      priceType: clearPriceType ? null : priceType ?? this.priceType,
     );
   }
 
@@ -72,7 +78,8 @@ class ReportFilters {
           eventId == other.eventId &&
           locationId == other.locationId &&
           clientId == other.clientId &&
-          supplierId == other.supplierId;
+          supplierId == other.supplierId &&
+          priceType == other.priceType;
 
   @override
   int get hashCode => Object.hash(
@@ -84,5 +91,6 @@ class ReportFilters {
     locationId,
     clientId,
     supplierId,
+    priceType,
   );
 }

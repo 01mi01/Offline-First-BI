@@ -101,7 +101,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         .read(productProvider.notifier)
         .save(
           id: widget.product?.id,
-          categoryId: _selectedCategoryId!,
+          // Si no se eligió categoría, el repositorio asigna "Sin categoría":
+          // este campo nunca debe bloquear el guardado.
+          categoryId: _selectedCategoryId,
           name: _nameController.text.trim(),
           description: _descController.text.trim(),
           image: _imagePath,
@@ -289,7 +291,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   setState(() => _selectedCategoryId = val);
                   _checkChanges();
                 },
-                validator: (v) => v == null ? 'Selecciona una categoría' : null,
               ),
               const SizedBox(height: AppSpacing.s16),
 

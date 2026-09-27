@@ -397,7 +397,7 @@ class _SaleReceiptDialogState
                                             ),
                                           ),
                                           Text(
-                                            '${item.quantity} × Bs. ${item.unitPrice.toStringAsFixed(2)}',
+                                            '${item.quantity} × Bs. ${item.unitPrice.toStringAsFixed(2)} (Precio ${item.priceType})',
                                             style: Theme.of(context).textTheme
                                                 .labelMedium?.copyWith(
                                                   color: AppColors

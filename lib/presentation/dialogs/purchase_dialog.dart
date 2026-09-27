@@ -8,6 +8,7 @@ import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
 import '../dialogs/material_dialog.dart';
+import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
 
@@ -855,32 +856,53 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
             ),
             const SizedBox(height: AppSpacing.s16),
 
-            // Cantidad
-            TextFormField(
-              controller: _quantityController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                TextInputFormatter.withFunction((oldValue, newValue) {
-                  if (newValue.text.isEmpty) return newValue;
-                  if (newValue.text == '0') return newValue;
-                  if (newValue.text.startsWith('0') &&
-                      !newValue.text.startsWith('0.'))
-                    return oldValue;
-                  if (double.tryParse(newValue.text) == null &&
-                      newValue.text != '.')
-                    return oldValue;
-                  return newValue;
-                }),
-              ],
-              decoration: const InputDecoration(
-                labelText: 'Cantidad',
-                hintText: '0',
-              ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Campo requerido';
-                final qty = double.tryParse(v);
-                if (qty == null || qty <= 0) return 'Cantidad inválida';
-                return null;
+            // Cantidad: unidades "por pieza" (botella, caja, unidad...) solo
+            // aceptan enteros, porque a un proveedor se le compran piezas
+            // completas, no fracciones.
+            Builder(
+              builder: (context) {
+                final selectedMaterial = materials
+                    .where((m) => m.id == _selectedMaterialId)
+                    .firstOrNull;
+                final discrete =
+                    selectedMaterial != null &&
+                    isDiscreteUnit(selectedMaterial.unit);
+                return TextFormField(
+                  controller: _quantityController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: discrete
+                      ? [FilteringTextInputFormatter.digitsOnly]
+                      : [
+                          TextInputFormatter.withFunction((
+                            oldValue,
+                            newValue,
+                          ) {
+                            if (newValue.text.isEmpty) return newValue;
+                            if (newValue.text == '0') return newValue;
+                            if (newValue.text.startsWith('0') &&
+                                !newValue.text.startsWith('0.')) {
+                              return oldValue;
+                            }
+                            if (double.tryParse(newValue.text) == null &&
+                                newValue.text != '.') {
+                              return oldValue;
+                            }
+                            return newValue;
+                          }),
+                        ],
+                  decoration: InputDecoration(
+                    labelText: selectedMaterial != null
+                        ? 'Cantidad (${selectedMaterial.unit})'
+                        : 'Cantidad',
+                    hintText: '0',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Campo requerido';
+                    final qty = double.tryParse(v);
+                    if (qty == null || qty <= 0) return 'Cantidad inválida';
+                    return null;
+                  },
+                );
               },
             ),
             const SizedBox(height: AppSpacing.s16),

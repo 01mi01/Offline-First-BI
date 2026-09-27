@@ -27,6 +27,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   int? _selectedClientId;
   // Mapa de productId -> cantidad
   final Map<int, int> _cartItems = {};
+  // Mapa de productId -> banda de precio elegida ('A' o 'B')
+  final Map<int, String> _cartPriceTypes = {};
   bool _isLoading = false;
   int? _selectedLocationId;
   int? _selectedEventId;
@@ -68,6 +70,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       setState(() {
         for (final item in items) {
           _cartItems[item.productId] = item.quantity;
+          _cartPriceTypes[item.productId] = item.priceType;
         }
       });
     }
@@ -82,10 +85,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
   double get _subtotal {
     final products = ref.read(productProvider).products;
-    return ref.read(saleRepositoryProvider).calculateSubtotal(
-      products,
-      _cartItems,
-    );
+    return ref
+        .read(saleRepositoryProvider)
+        .calculateSubtotal(products, _cartItems, priceTypes: _cartPriceTypes);
   }
 
   double get _discount => double.tryParse(_discountController.text.trim()) ?? 0;
@@ -154,10 +156,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
           return;
         }
 
+        final priceType = _cartPriceTypes[entry.key] ?? 'A';
+        final unitPrice = priceType == 'B' ? product.priceB : product.priceA;
         items.add({
           'productId': product.id,
           'quantity': entry.value,
-          'unitPrice': product.priceA,
+          'unitPrice': unitPrice,
+          'priceType': priceType,
         });
       }
     }
@@ -379,27 +384,25 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       ),
                       title: Text(
                         p.name,
-                        style: Theme.of(context).textTheme.labelLarge
-                            ?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       subtitle: Text(
-                        'Bs. ${p.priceA.toStringAsFixed(2)}  •  Stock: ${p.stock}',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                        'A: Bs. ${p.priceA.toStringAsFixed(2)}  •  B: Bs. ${p.priceB.toStringAsFixed(2)}  •  Stock: ${p.stock}',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(color: AppColors.textSecondary),
                       ),
                       trailing: GestureDetector(
                         onTap: () {
                           setState(() {
                             if (inCart) {
                               _cartItems.remove(p.id);
+                              _cartPriceTypes.remove(p.id);
                             } else {
                               _cartItems[p.id] = 1;
+                              _cartPriceTypes[p.id] = 'A';
                             }
                           });
                         },
@@ -457,101 +460,122 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product.name,
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                              ),
-                              Text(
-                                'Bs. ${(product.priceA * entry.value).toStringAsFixed(2)}',
-                                style: Theme.of(context).textTheme
-                                    .labelMedium?.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Control de cantidad
                         Row(
                           children: [
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  if (entry.value <= 1) {
-                                    _cartItems.remove(entry.key);
-                                  } else {
-                                    _cartItems[entry.key] = entry.value - 1;
-                                  }
-                                });
-                              },
-                              child: Container(
-                                width: AppSpacing.s28,
-                                height: AppSpacing.s28,
-                                decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: const Icon(
-                                  Icons.remove,
-                                  size: 14,
-                                  color: AppColors.textSecondary,
-                                ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                  ),
+                                  Text(
+                                    'Bs. ${((_cartPriceTypes[entry.key] == 'B' ? product.priceB : product.priceA) * entry.value).toStringAsFixed(2)}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.s10,
-                              ),
-                              child: Text(
-                                '${entry.value}',
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
+                            // Control de cantidad
+                            Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (entry.value <= 1) {
+                                        _cartItems.remove(entry.key);
+                                      } else {
+                                        _cartItems[entry.key] = entry.value - 1;
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    width: AppSpacing.s28,
+                                    height: AppSpacing.s28,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.background,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                      ),
                                     ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                final product = products
-                                    .where((p) => p.id == entry.key)
-                                    .firstOrNull;
-                                if (product == null) return;
-                                if (entry.value >= product.stock) return;
-                                setState(() {
-                                  _cartItems[entry.key] = entry.value + 1;
-                                });
-                              },
-                              child: Container(
-                                width: AppSpacing.s28,
-                                height: AppSpacing.s28,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppColors.primary.withOpacity(0.3),
+                                    child: const Icon(
+                                      Icons.remove,
+                                      size: 14,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.add,
-                                  size: 14,
-                                  color: AppColors.primary,
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.s10,
+                                  ),
+                                  child: Text(
+                                    '${entry.value}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                  ),
                                 ),
-                              ),
+                                GestureDetector(
+                                  onTap: () {
+                                    final product = products
+                                        .where((p) => p.id == entry.key)
+                                        .firstOrNull;
+                                    if (product == null) return;
+                                    if (entry.value >= product.stock) return;
+                                    setState(() {
+                                      _cartItems[entry.key] = entry.value + 1;
+                                    });
+                                  },
+                                  child: Container(
+                                    width: AppSpacing.s28,
+                                    height: AppSpacing.s28,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.primary.withOpacity(
+                                          0.3,
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.add,
+                                      size: 14,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
+                        ),
+                        const SizedBox(height: AppSpacing.s8),
+                        _PriceTypeToggle(
+                          selected: _cartPriceTypes[entry.key] ?? 'A',
+                          onChanged: (type) =>
+                              setState(() => _cartPriceTypes[entry.key] = type),
                         ),
                       ],
                     ),
@@ -617,7 +641,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         valueColor: AppColors.error,
                       ),
                     ],
-                    const Divider(color: AppColors.border, height: AppSpacing.s20),
+                    const Divider(
+                      color: AppColors.border,
+                      height: AppSpacing.s20,
+                    ),
                     _TotalRow(
                       label: 'Total',
                       value: 'Bs. ${_total.toStringAsFixed(2)}',
@@ -648,11 +675,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       Expanded(
                         child: Text(
                           _error!,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.displaySmall?.copyWith(
-                            color: AppColors.error,
-                          ),
+                          style: Theme.of(context).textTheme.displaySmall
+                              ?.copyWith(color: AppColors.error),
                         ),
                       ),
                     ],
@@ -715,6 +739,56 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   }
 }
 
+// Selector de banda de precio (A/B) para un ítem del carrito
+class _PriceTypeToggle extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _PriceTypeToggle({required this.selected, required this.onChanged});
+
+  Widget _segment(String value, String label) {
+    final isSelected = selected == value;
+    return GestureDetector(
+      onTap: () => onChanged(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s10,
+          vertical: AppSpacing.s4,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _segment('A', 'Precio A'),
+        const SizedBox(width: AppSpacing.s6),
+        _segment('B', 'Precio B'),
+      ],
+    );
+  }
+}
+
 // Fila de total reutilizable
 class _TotalRow extends StatelessWidget {
   final String label;
@@ -746,8 +820,10 @@ class _TotalRow extends StatelessWidget {
         Text(
           value,
           style: bold
-              ? const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
-                  .copyWith(color: valueColor ?? AppColors.textPrimary)
+              ? const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ).copyWith(color: valueColor ?? AppColors.textPrimary)
               : textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: valueColor ?? AppColors.textPrimary,

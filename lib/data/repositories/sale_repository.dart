@@ -9,15 +9,22 @@ class SaleRepository {
 
   SaleRepository(this.database);
 
-  // Calcula el subtotal de un carrito según el precio de cada producto
+  // Calcula el subtotal de un carrito según el precio de cada producto y la
+  // banda de precio (A o B) elegida para cada ítem (por defecto A, si no se
+  // especifica para ese producto).
   double calculateSubtotal(
     List<ProductModel> products,
-    Map<int, int> cartItems,
-  ) {
+    Map<int, int> cartItems, {
+    Map<int, String> priceTypes = const {},
+  }) {
     double total = 0;
     for (final entry in cartItems.entries) {
       final product = products.where((p) => p.id == entry.key).firstOrNull;
-      if (product != null) total += product.priceA * entry.value;
+      if (product != null) {
+        final priceType = priceTypes[entry.key] ?? 'A';
+        final unitPrice = priceType == 'B' ? product.priceB : product.priceA;
+        total += unitPrice * entry.value;
+      }
     }
     return total;
   }
@@ -78,6 +85,7 @@ class SaleRepository {
           productName: product?.name ?? 'Producto eliminado',
           quantity: row.quantity,
           unitPrice: row.unitPrice,
+          priceType: row.priceType,
           subtotal: row.subtotal,
         ),
       );
@@ -119,6 +127,7 @@ class SaleRepository {
         final productId = item['productId'] as int;
         final quantity = item['quantity'] as int;
         final unitPrice = item['unitPrice'] as double;
+        final priceType = item['priceType'] as String? ?? 'A';
 
         await database
             .into(database.saleItems)
@@ -128,6 +137,7 @@ class SaleRepository {
                 productId: productId,
                 quantity: quantity,
                 unitPrice: unitPrice,
+                priceType: Value(priceType),
                 subtotal: quantity * unitPrice,
               ),
             );
@@ -215,6 +225,7 @@ class SaleRepository {
         final productId = item['productId'] as int;
         final quantity = item['quantity'] as int;
         final unitPrice = item['unitPrice'] as double;
+        final priceType = item['priceType'] as String? ?? 'A';
 
         await database
             .into(database.saleItems)
@@ -224,6 +235,7 @@ class SaleRepository {
                 productId: productId,
                 quantity: quantity,
                 unitPrice: unitPrice,
+                priceType: Value(priceType),
                 subtotal: quantity * unitPrice,
               ),
             );

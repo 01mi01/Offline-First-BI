@@ -54,7 +54,7 @@ class ProductNotifier extends StateNotifier<ProductState> {
   // Guarda o edita un producto y recarga
   Future<void> save({
     int? id,
-    required int categoryId,
+    int? categoryId,
     required String name,
     String? description,
     String? image,

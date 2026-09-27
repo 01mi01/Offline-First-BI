@@ -41,10 +41,13 @@ class ProductRepository {
     return rows.map(_toModel).toList();
   }
 
-  // Guarda o actualiza un producto
+  // Guarda o actualiza un producto. Si no se indica categoría, se asigna la
+  // categoría "Sin categoría" (creándola si todavía no existe): la categoría
+  // es obligatoria a nivel de esquema, pero el usuario nunca debe verse
+  // bloqueado por no haber elegido una.
   Future<void> save({
     int? id,
-    required int categoryId,
+    int? categoryId,
     required String name,
     String? description,
     String? image,
@@ -58,7 +61,7 @@ class ProductRepository {
     await database.into(database.products).insertOnConflictUpdate(
           ProductsCompanion(
             id: id != null ? Value(id) : const Value.absent(),
-            categoryId: Value(categoryId),
+            categoryId: Value(categoryId ?? await _defaultCategoryId()),
             name: Value(name),
             description: Value(description),
             image: Value(image),
@@ -71,6 +74,17 @@ class ProductRepository {
             updatedAt: Value(now),
           ),
         );
+  }
+
+  // Obtiene el id de la categoría "Sin categoría", creándola si hace falta
+  Future<int> _defaultCategoryId() async {
+    final existing = await (database.select(
+      database.categories,
+    )..where((c) => c.name.equals('Sin categoría'))).getSingleOrNull();
+    if (existing != null) return existing.id;
+    return await database
+        .into(database.categories)
+        .insert(CategoriesCompanion.insert(name: 'Sin categoría'));
   }
 
   // Actualiza el stock de un producto

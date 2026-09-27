@@ -7,6 +7,7 @@ import '../../models/product_material_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/material_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/unit_quantity_input.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -320,6 +321,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
   int? _selectedMaterialId;
+  double _fractionQuantity = 0;
   String? _error;
 
   @override
@@ -329,8 +331,32 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
   }
 
   Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
+    final material = ref
+        .read(materialProvider)
+        .materials
+        .where((m) => m.id == _selectedMaterialId)
+        .firstOrNull;
+    final usesFractions =
+        material != null && isFractionFriendlyUnit(material.unit);
+
+    if (!usesFractions && !_formKey.currentState!.validate()) return;
     if (_selectedMaterialId == null) return;
+
+    final quantity = usesFractions
+        ? _fractionQuantity
+        : double.tryParse(_quantityController.text.trim()) ?? 0;
+
+    if (quantity <= 0) {
+      setState(() => _error = 'Selecciona una cantidad');
+      return;
+    }
+    if (material != null && quantity > material.stock) {
+      setState(
+        () => _error =
+            'Cantidad máxima disponible: ${formatNumber(material.stock)}',
+      );
+      return;
+    }
 
     setState(() => _error = null);
 
@@ -339,7 +365,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         .registerUsage(
           productId: widget.productId,
           materialId: _selectedMaterialId!,
-          quantityUsed: double.tryParse(_quantityController.text.trim()) ?? 0,
+          quantityUsed: quantity,
         );
 
     if (error != null) {
@@ -413,31 +439,41 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
             ],
             const SizedBox(height: AppSpacing.s16),
 
-            // Cantidad con validación de stock
-            TextFormField(
-              controller: _quantityController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Cantidad utilizada',
-                hintText: '0',
-              ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Campo requerido';
-                final qty = double.tryParse(v);
-                if (qty == null || qty <= 0) return 'Cantidad inválida';
-                if (_selectedMaterialId != null) {
-                  final material = ref
-                      .read(materialProvider)
-                      .materials
+            // Cantidad: para unidades tipo envase (botella, bolsa...) se
+            // ofrecen fracciones simples en vez de pedir un decimal exacto.
+            if (_selectedMaterialId != null &&
+                isFractionFriendlyUnit(
+                  materials
                       .where((m) => m.id == _selectedMaterialId)
-                      .firstOrNull;
-                  if (material != null && qty > material.stock) {
-                    return 'Cantidad máxima disponible: ${formatNumber(material.stock)}';
-                  }
-                }
-                return null;
-              },
-            ),
+                      .first
+                      .unit,
+                ))
+              FractionQuantityPicker(
+                unit: materials
+                    .where((m) => m.id == _selectedMaterialId)
+                    .first
+                    .unit,
+                value: _fractionQuantity,
+                onChanged: (v) => setState(() => _fractionQuantity = v),
+                label: 'Cantidad utilizada',
+              )
+            else
+              TextFormField(
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: _selectedMaterialId != null
+                      ? 'Cantidad utilizada (${materials.where((m) => m.id == _selectedMaterialId).first.unit})'
+                      : 'Cantidad utilizada',
+                  hintText: '0',
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Campo requerido';
+                  final qty = double.tryParse(v);
+                  if (qty == null || qty <= 0) return 'Cantidad inválida';
+                  return null;
+                },
+              ),
             const SizedBox(height: AppSpacing.s12),
 
             // Error del servidor
@@ -528,8 +564,11 @@ class _EditUsageSheet extends ConsumerStatefulWidget {
 class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _quantityController;
+  late double _fractionQuantity;
   String? _error;
   bool _hasChanges = false;
+
+  bool get _usesFractions => isFractionFriendlyUnit(widget.entry.materialUnit);
 
   @override
   void initState() {
@@ -538,13 +577,15 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
     _quantityController = TextEditingController(
       text: formatNumber(widget.entry.quantityUsed),
     );
+    _fractionQuantity = widget.entry.quantityUsed;
     _quantityController.addListener(_checkChanges);
   }
 
   void _checkChanges() {
-    final changed =
-        _quantityController.text.trim() !=
-        formatNumber(widget.entry.quantityUsed);
+    final changed = _usesFractions
+        ? _fractionQuantity != widget.entry.quantityUsed
+        : _quantityController.text.trim() !=
+              formatNumber(widget.entry.quantityUsed);
     if (changed != _hasChanges) setState(() => _hasChanges = changed);
   }
 
@@ -555,16 +596,22 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_usesFractions && !_formKey.currentState!.validate()) return;
+
+    final newQuantity = _usesFractions
+        ? _fractionQuantity
+        : double.tryParse(_quantityController.text.trim()) ?? 0;
+
+    if (_usesFractions && newQuantity <= 0) {
+      setState(() => _error = 'Selecciona una cantidad');
+      return;
+    }
 
     setState(() => _error = null);
 
     final error = await ref
         .read(materialProvider.notifier)
-        .editUsage(
-          recordId: widget.entry.id,
-          newQuantity: double.tryParse(_quantityController.text.trim()) ?? 0,
-        );
+        .editUsage(recordId: widget.entry.id, newQuantity: newQuantity);
 
     if (error != null) {
       setState(() => _error = error);
@@ -619,26 +666,45 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
             ),
             const SizedBox(height: AppSpacing.s24),
 
-            // Campo de cantidad
-            TextFormField(
-              controller: _quantityController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Nueva cantidad',
-                hintText: '0',
-                helperText:
-                    'Máximo disponible: ${formatNumber(availableStock)}',
+            // Campo de cantidad: fracciones simples para unidades tipo
+            // envase, número decimal para el resto.
+            if (_usesFractions) ...[
+              FractionQuantityPicker(
+                unit: widget.entry.materialUnit,
+                value: _fractionQuantity,
+                onChanged: (v) {
+                  setState(() => _fractionQuantity = v);
+                  _checkChanges();
+                },
+                label: 'Nueva cantidad',
               ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Campo requerido';
-                final qty = double.tryParse(v);
-                if (qty == null || qty <= 0) return 'Cantidad inválida';
-                if (qty > availableStock) {
-                  return 'Máximo: ${formatNumber(availableStock)}';
-                }
-                return null;
-              },
-            ),
+              const SizedBox(height: AppSpacing.s6),
+              Text(
+                'Máximo disponible: ${formatNumber(availableStock)}',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+              ),
+            ] else
+              TextFormField(
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Nueva cantidad (${widget.entry.materialUnit})',
+                  hintText: '0',
+                  helperText:
+                      'Máximo disponible: ${formatNumber(availableStock)}',
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Campo requerido';
+                  final qty = double.tryParse(v);
+                  if (qty == null || qty <= 0) return 'Cantidad inválida';
+                  if (qty > availableStock) {
+                    return 'Máximo: ${formatNumber(availableStock)}';
+                  }
+                  return null;
+                },
+              ),
             const SizedBox(height: AppSpacing.s12),
 
             // Error del servidor

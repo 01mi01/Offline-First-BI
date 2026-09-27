@@ -47,12 +47,12 @@ class ReportFiltersWidget extends ConsumerWidget {
     }
   }
 
-  void _showDropdownSheet(
+  void _showDropdownSheet<T>(
     BuildContext context,
     String label,
-    int? value,
-    List<DropdownMenuItem<int>> items,
-    ValueChanged<int?> onSelect,
+    T? value,
+    List<DropdownMenuItem<T>> items,
+    ValueChanged<T?> onSelect,
     VoidCallback onClear,
   ) {
     showModalBottomSheet(
@@ -301,6 +301,28 @@ class ReportFiltersWidget extends ConsumerWidget {
                         onChanged(filters.copyWith(clearProduct: true)),
                   ),
                   const SizedBox(width: AppSpacing.s8),
+                  _DropChip<String>(
+                    label: 'Tipo de precio',
+                    value: filters.priceType,
+                    items: const [
+                      DropdownMenuItem(value: 'A', child: Text('Precio A')),
+                      DropdownMenuItem(value: 'B', child: Text('Precio B')),
+                    ],
+                    onTap: () => _showDropdownSheet<String>(
+                      context,
+                      'Tipo de precio',
+                      filters.priceType,
+                      const [
+                        DropdownMenuItem(value: 'A', child: Text('Precio A')),
+                        DropdownMenuItem(value: 'B', child: Text('Precio B')),
+                      ],
+                      (val) => onChanged(filters.copyWith(priceType: val)),
+                      () => onChanged(filters.copyWith(clearPriceType: true)),
+                    ),
+                    onClear: () =>
+                        onChanged(filters.copyWith(clearPriceType: true)),
+                  ),
+                  const SizedBox(width: AppSpacing.s8),
                 ],
 
                 // Solo en compras
@@ -470,10 +492,10 @@ class _DateChip extends StatelessWidget {
 }
 
 // Chip de dropdown
-class _DropChip extends StatelessWidget {
+class _DropChip<T> extends StatelessWidget {
   final String label;
-  final int? value;
-  final List<DropdownMenuItem<int>> items;
+  final T? value;
+  final List<DropdownMenuItem<T>> items;
   final VoidCallback onTap;
   final VoidCallback onClear;
 
