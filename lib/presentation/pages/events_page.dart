@@ -21,13 +21,15 @@ class EventsPage extends ConsumerWidget {
         appBar: CustomAppBar(
           title: 'Eventos',
           showBack: true,
-          bottom: const TabBar(
+          bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primary,
             indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            tabs: [
+            labelStyle: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
+            tabs: const [
               Tab(text: 'Eventos'),
               Tab(text: 'Ubicaciones'),
             ],
@@ -66,7 +68,7 @@ class _EventsTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.s16),
               itemCount: state.events.length,
               itemBuilder: (context, index) {
                 final event = state.events[index];
@@ -122,7 +124,7 @@ class _LocationsTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.s16),
               itemCount: state.locations.length,
               itemBuilder: (context, index) {
                 final loc = state.locations[index];
@@ -184,7 +186,7 @@ class _EventCard extends StatelessWidget {
       barrierColor: Colors.black.withOpacity(0.7),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Container(
@@ -196,24 +198,29 @@ class _EventCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                    0,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           event.name,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                         ),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(AppSpacing.s6),
                           decoration: BoxDecoration(
                             color: AppColors.background,
                             shape: BoxShape.circle,
@@ -228,10 +235,15 @@ class _EventCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
                 Flexible(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s24,
+                      0,
+                      AppSpacing.s24,
+                      AppSpacing.s24,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -239,17 +251,18 @@ class _EventCard extends StatelessWidget {
                           event.endDate != null
                               ? '${_formatDate(event.startDate)} — ${_formatDate(event.endDate!)}'
                               : _formatDate(event.startDate),
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displaySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
                         if (location != null) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.s8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                              horizontal: AppSpacing.s8,
+                              vertical: AppSpacing.s2,
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.1),
@@ -257,23 +270,23 @@ class _EventCard extends StatelessWidget {
                             ),
                             child: Text(
                               '${location!.city}, ${location!.country}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
                             ),
                           ),
                         ],
                         if (event.notes != null && event.notes!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.s12),
                           Text(
                             event.notes!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                              height: 1.6,
-                            ),
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.6,
+                                ),
                           ),
                         ],
                       ],
@@ -293,8 +306,8 @@ class _EventCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showDetail(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+        padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -308,28 +321,29 @@ class _EventCard extends StatelessWidget {
                 children: [
                   Text(
                     event.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.headlineLarge
+                        ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   Text(
                     event.endDate != null
                         ? '${_formatDate(event.startDate)} — ${_formatDate(event.endDate!)}'
                         : _formatDate(event.startDate),
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
                   if (location != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.s4),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                        horizontal: AppSpacing.s8,
+                        vertical: AppSpacing.s2,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
@@ -337,20 +351,21 @@ class _EventCard extends StatelessWidget {
                       ),
                       child: Text(
                         '${location!.city}, ${location!.country}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
                       ),
                     ),
                   ],
                   if (event.notes != null && event.notes!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.s4),
                     Text(
                       event.notes!,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
@@ -388,7 +403,7 @@ class _LocationCard extends StatelessWidget {
       barrierColor: Colors.black.withOpacity(0.7),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Container(
@@ -400,24 +415,29 @@ class _LocationCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                    0,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           '${location.city}, ${location.country}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                         ),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(AppSpacing.s6),
                           decoration: BoxDecoration(
                             color: AppColors.background,
                             shape: BoxShape.circle,
@@ -432,17 +452,22 @@ class _LocationCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
                 Flexible(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s24,
+                      0,
+                      AppSpacing.s24,
+                      AppSpacing.s24,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                            horizontal: AppSpacing.s8,
+                            vertical: AppSpacing.s2,
                           ),
                           decoration: BoxDecoration(
                             color: location.isActive
@@ -452,25 +477,25 @@ class _LocationCard extends StatelessWidget {
                           ),
                           child: Text(
                             location.isActive ? 'Activa' : 'Inactiva',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: location.isActive
-                                  ? AppColors.success
-                                  : AppColors.error,
-                            ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: location.isActive
+                                      ? AppColors.success
+                                      : AppColors.error,
+                                ),
                           ),
                         ),
                         if (location.description != null &&
                             location.description!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.s12),
                           Text(
                             location.description!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                              height: 1.6,
-                            ),
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.6,
+                                ),
                           ),
                         ],
                       ],
@@ -490,8 +515,8 @@ class _LocationCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showDetail(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+        padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -505,30 +530,31 @@ class _LocationCard extends StatelessWidget {
                 children: [
                   Text(
                     '${location.city}, ${location.country}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.headlineLarge
+                        ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                   ),
                   if (location.description != null &&
                       location.description!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
                       location.description!,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.displaySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
+                      horizontal: AppSpacing.s8,
+                      vertical: AppSpacing.s2,
                     ),
                     decoration: BoxDecoration(
                       color: location.isActive
@@ -538,8 +564,7 @@ class _LocationCard extends StatelessWidget {
                     ),
                     child: Text(
                       location.isActive ? 'Activa' : 'Inactiva',
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: location.isActive
                             ? AppColors.success

@@ -137,7 +137,12 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
             SizedBox(
               width: double.infinity,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  0,
+                  AppSpacing.s16,
+                  AppSpacing.s8,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -147,7 +152,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                             borderRadius: BorderRadius.circular(50),
                           ),
                           side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s14,
+                          ),
                         ),
                         onPressed: () => Navigator.pop(ctx, false),
                         child: const Text(
@@ -164,7 +171,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(50),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s14,
+                          ),
                         ),
                         onPressed: () => Navigator.pop(ctx, true),
                         child: const Text(
@@ -198,10 +207,10 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: SingleChildScrollView(
         child: Form(
@@ -213,13 +222,12 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
               // Título
               Text(
                 isEditing ? 'Editar producto' : 'Nuevo producto',
-                style: const TextStyle(
-                  fontSize: 20,
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Selector de imagen
               Center(
@@ -250,7 +258,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Nombre
               TextFormField(
@@ -262,7 +270,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Categoría
               DropdownButtonFormField<int>(
@@ -278,7 +286,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   _checkChanges();
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Descripción
               TextFormField(
@@ -289,7 +297,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Precio de venta y costo de producción
               TextFormField(
@@ -306,7 +314,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
               TextFormField(
                 controller: _costController,
                 keyboardType: TextInputType.number,
@@ -326,7 +334,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Stock
               TextFormField(
@@ -342,14 +350,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Toggle activo/inactivo solo en edición
               if (isEditing)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: AppSpacing.s16,
+                    vertical: AppSpacing.s12,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
@@ -372,8 +380,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                             _isActive
                                 ? 'Disponible para ventas'
                                 : 'No disponible para ventas',
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -393,7 +402,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   ),
                 ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Botones cancelar y guardar
               Row(
@@ -417,16 +426,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _hasChanges ? _save : null,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

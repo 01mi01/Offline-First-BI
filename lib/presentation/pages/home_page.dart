@@ -47,7 +47,7 @@ class HomePage extends ConsumerWidget {
       ),
       endDrawer: const MenuDrawer(),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.s24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -59,7 +59,7 @@ class HomePage extends ConsumerWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.s32),
 
             // Panel de resumen
             Text(
@@ -69,7 +69,7 @@ class HomePage extends ConsumerWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
 
             // Métricas
             Row(
@@ -81,7 +81,7 @@ class HomePage extends ConsumerWidget {
                     icon: Icons.trending_up_rounded,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: _MetricCard(
                     label: 'Gastos',
@@ -91,7 +91,7 @@ class HomePage extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.s12),
             Row(
               children: [
                 Expanded(
@@ -101,7 +101,7 @@ class HomePage extends ConsumerWidget {
                     icon: Icons.inventory_2_outlined,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: _MetricCard(
                     label: 'Stock bajo',
@@ -111,7 +111,7 @@ class HomePage extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.s32),
 
             // Acceso rápido
             Text(
@@ -121,7 +121,7 @@ class HomePage extends ConsumerWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -164,7 +164,7 @@ class HomePage extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.s32),
 
             // Últimas ventas
             if (sales.isNotEmpty) ...[
@@ -175,13 +175,13 @@ class HomePage extends ConsumerWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.s12),
               ...sales
                   .take(3)
                   .map(
                     (s) => Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s10),
+                      padding: const EdgeInsets.all(AppSpacing.s16),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(16),
@@ -192,15 +192,17 @@ class HomePage extends ConsumerWidget {
                         children: [
                           Text(
                             _formatDate(s.date),
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.displaySmall?.copyWith(
                               color: AppColors.textSecondary,
                             ),
                           ),
                           Text(
                             'Bs. ${s.finalAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 15,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.displayMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
                             ),
@@ -250,7 +252,7 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -260,29 +262,27 @@ class _MetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(AppSpacing.s8),
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 15,
+            style: Theme.of(context).textTheme.displayMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.s2),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -307,7 +307,7 @@ class _QuickAccessCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -316,19 +316,18 @@ class _QuickAccessCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpacing.s8),
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: AppColors.primary, size: 20),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.s10),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),

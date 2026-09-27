@@ -8,6 +8,15 @@ class PurchaseRepository {
 
   PurchaseRepository(this.database);
 
+  // Calcula el total de una compra de materiales a partir de sus ítems
+  double calculateMaterialsTotal(List<Map<String, dynamic>> items) {
+    double total = 0;
+    for (final item in items) {
+      total += (item['quantity'] as double) * (item['unitPrice'] as double);
+    }
+    return total;
+  }
+
   // Convierte fila a modelo
   PurchaseModel _toModel(Purchase row) {
     return PurchaseModel(

@@ -50,7 +50,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
           ? () => setState(() => _expanded = !_expanded)
           : null,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s10),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -59,7 +59,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.s14),
               child: Row(
                 children: [
                   Expanded(
@@ -71,11 +71,11 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                             Expanded(
                               child: Text(
                                 widget.supplierName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
                               ),
                             ),
                             _MiniPill(
@@ -88,27 +88,29 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.s4),
                         Text(
                           _formatDate(widget.purchase.date),
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.s4),
                         if (widget.purchase.description != null &&
                             widget.purchase.description!.isNotEmpty)
                           Text(
                             widget.purchase.description!,
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(
                               color: AppColors.textSecondary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.s4),
                         Wrap(
                           spacing: 4,
                           children: [
@@ -129,10 +131,9 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                   ),
                   Text(
                     'Bs. ${widget.purchase.totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.error,
-                      fontSize: 14,
                     ),
                   ),
                   if (widget.purchase.isMaterial)
@@ -165,27 +166,27 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                           .map(
                             (item) => Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 6,
+                                horizontal: AppSpacing.s14,
+                                vertical: AppSpacing.s6,
                               ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
                                       '${item.materialName} × ${formatNumber(item.quantity)}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
+                                      style: Theme.of(context).textTheme
+                                          .labelMedium?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
                                     ),
                                   ),
                                   Text(
                                     'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: Theme.of(context).textTheme
+                                        .labelMedium?.copyWith(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -212,7 +213,10 @@ class _MiniPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s6,
+        vertical: AppSpacing.s2,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),

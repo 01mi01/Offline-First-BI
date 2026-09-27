@@ -121,7 +121,12 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
             SizedBox(
               width: double.infinity,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                0,
+                AppSpacing.s16,
+                AppSpacing.s8,
+              ),
                 child: Row(
                   children: [
                     Expanded(
@@ -131,7 +136,9 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                             borderRadius: BorderRadius.circular(50),
                           ),
                           side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s14,
+                          ),
                         ),
                         onPressed: () => Navigator.pop(ctx, false),
                         child: const Text(
@@ -150,7 +157,9 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(50),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s14,
+                          ),
                         ),
                         onPressed: () => Navigator.pop(ctx, true),
                         child: const Text(
@@ -180,10 +189,10 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: SingleChildScrollView(
         child: Form(
@@ -195,13 +204,12 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
               // Título
               Text(
                 isEditing ? 'Editar categoría' : 'Nueva categoría',
-                style: const TextStyle(
-                  fontSize: 20,
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Selector de imagen
               Center(
@@ -232,7 +240,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Nombre
               TextFormField(
@@ -244,7 +252,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Descripción
               TextFormField(
@@ -255,14 +263,14 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Toggle activo/inactivo solo en edición
               if (isEditing)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: AppSpacing.s16,
+                    vertical: AppSpacing.s12,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
@@ -285,8 +293,9 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                             _isActive
                                 ? 'Visible en el sistema'
                                 : 'Oculta en el sistema',
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -308,7 +317,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
               // Error al guardar
               if (_saveError != null) ...[
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.s12),
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -320,22 +329,23 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                         color: AppColors.error,
                         size: 16,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.s8),
                       Expanded(
                         child: Text(
                           _saveError!,
-                          style: const TextStyle(
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displaySmall?.copyWith(
                             color: AppColors.error,
-                            fontSize: 13,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.s12),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Botones
               Row(
@@ -359,16 +369,14 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _hasChanges ? _save : null,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

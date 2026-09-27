@@ -20,13 +20,15 @@ class MaterialsPage extends ConsumerWidget {
         appBar: CustomAppBar(
           title: 'Materiales',
           showBack: true,
-          bottom: const TabBar(
+          bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primary,
             indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            tabs: [
+            labelStyle: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
+            tabs: const [
               Tab(text: 'Materiales'),
               Tab(text: 'Registro de uso'),
             ],
@@ -64,7 +66,7 @@ class _MaterialsTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.s16),
               itemCount: state.materials.length,
               itemBuilder: (context, index) {
                 final m = state.materials[index];
@@ -169,9 +171,11 @@ class _UsageTabState extends ConsumerState<_UsageTab> {
         children: [
           // Selector de producto
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.s16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s16,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
@@ -224,13 +228,18 @@ class _UsageTabState extends ConsumerState<_UsageTab> {
           else
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  0,
+                  AppSpacing.s16,
+                  AppSpacing.s16,
+                ),
                 itemCount: _usageLog.length,
                 itemBuilder: (context, index) {
                   final entry = _usageLog[index];
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+                    padding: const EdgeInsets.all(AppSpacing.s16),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(16),
@@ -244,18 +253,18 @@ class _UsageTabState extends ConsumerState<_UsageTab> {
                             children: [
                               Text(
                                 entry.materialName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: AppColors.textPrimary,
-                                ),
+                                style: Theme.of(context).textTheme
+                                    .displayMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
                               ),
                               Text(
                                 'Cantidad: ${formatNumber(entry.quantityUsed)}  •  Bs. ${entry.pricePerUnit.toStringAsFixed(2)}/u',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
+                                style: Theme.of(context).textTheme
+                                    .labelMedium?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                               ),
                             ],
                           ),
@@ -344,10 +353,10 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: Form(
         key: _formKey,
@@ -355,15 +364,14 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Registrar el uso de un material',
-              style: TextStyle(
-                fontSize: 20,
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.s24),
 
             // Selector de material con stock visible
             DropdownButtonFormField<int>(
@@ -379,19 +387,20 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
             ),
             // Muestra el stock disponible del material seleccionado
             if (_selectedMaterialId != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.s6),
               Padding(
-                padding: const EdgeInsets.only(left: 4),
+                padding: const EdgeInsets.only(left: AppSpacing.s4),
                 child: Text(
                   'Stock disponible: ${formatNumber(materials.where((m) => m.id == _selectedMaterialId).first.stock)}',
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
 
             // Cantidad con validación de stock
             TextFormField(
@@ -418,12 +427,12 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.s12),
 
             // Error del servidor
             if (_error != null)
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.s12),
                 decoration: BoxDecoration(
                   color: AppColors.error.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
@@ -435,13 +444,14 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                       color: AppColors.error,
                       size: 16,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.s8),
                     Expanded(
                       child: Text(
                         _error!,
-                        style: const TextStyle(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.displaySmall?.copyWith(
                           color: AppColors.error,
-                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -449,7 +459,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                 ),
               ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.s24),
 
             // Botones cancelar y registrar
             Row(
@@ -473,16 +483,14 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _register,
-                    child: const Text(
+                    child: Text(
                       'Registrar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -572,10 +580,10 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: Form(
         key: _formKey,
@@ -583,24 +591,22 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Editar registro de uso',
-              style: TextStyle(
-                fontSize: 20,
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             // Muestra el material que se está editando
             Text(
               widget.entry.materialName,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.s24),
 
             // Campo de cantidad
             TextFormField(
@@ -622,12 +628,12 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.s12),
 
             // Error del servidor
             if (_error != null)
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.s12),
                 decoration: BoxDecoration(
                   color: AppColors.error.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
@@ -639,13 +645,14 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                       color: AppColors.error,
                       size: 16,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.s8),
                     Expanded(
                       child: Text(
                         _error!,
-                        style: const TextStyle(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.displaySmall?.copyWith(
                           color: AppColors.error,
-                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -653,7 +660,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                 ),
               ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.s24),
 
             // Botones cancelar y guardar
             Row(
@@ -677,16 +684,14 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _hasChanges ? _save : null,
-                    child: const Text(
+                    child: Text(
                       'Guardar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -709,8 +714,8 @@ class _MaterialCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -724,9 +729,8 @@ class _MaterialCard extends StatelessWidget {
               children: [
                 Text(
                   material.name,
-                  style: const TextStyle(
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 16,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -734,37 +738,39 @@ class _MaterialCard extends StatelessWidget {
                     material.description!.isNotEmpty)
                   Text(
                     material.description!,
-                    style: const TextStyle(
+                    style: Theme.of(
+                      context,
+                    ).textTheme.displaySmall?.copyWith(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
                     ),
                   ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.s4),
                 Row(
                   children: [
                     Text(
                       'Stock: ${formatNumber(material.stock)}',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
+                      style: Theme.of(context).textTheme.displaySmall
+                          ?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.s8),
                     Text(
                       'Bs. ${material.pricePerUnit.toStringAsFixed(2)}/u',
-                      style: const TextStyle(
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelMedium?.copyWith(
                         color: AppColors.textSecondary,
-                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.s4),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: AppSpacing.s8,
+                    vertical: AppSpacing.s2,
                   ),
                   decoration: BoxDecoration(
                     color: material.isActive
@@ -774,8 +780,7 @@ class _MaterialCard extends StatelessWidget {
                   ),
                   child: Text(
                     material.isActive ? 'Activo' : 'Inactivo',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: material.isActive
                           ? AppColors.success

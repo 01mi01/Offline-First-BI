@@ -17,13 +17,15 @@ class InventarioPage extends ConsumerWidget {
         appBar: CustomAppBar(
           title: 'Inventario',
           showBack: true,
-          bottom: const TabBar(
+          bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primary,
             indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            tabs: [
+            labelStyle: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
+            tabs: const [
               Tab(text: 'Productos'),
               Tab(text: 'Categorías'),
             ],

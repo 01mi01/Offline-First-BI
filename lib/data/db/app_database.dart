@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
+import '../../config/app_config.dart';
 
 part 'app_database.g.dart';
 
@@ -243,6 +244,9 @@ class SesionLocal extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  // Constructor para pruebas: permite inyectar un QueryExecutor (p. ej. NativeDatabase.memory())
+  AppDatabase.forTesting(super.executor);
+
   @override
   int get schemaVersion => 7;
 
@@ -322,26 +326,30 @@ class AppDatabase extends _$AppDatabase {
       ]);
     });
 
-    // Contraseña de prueba: 123456
-    final passwordHash = _hashPassword('123456');
+    // Usuario de prueba (opcional), definido vía --dart-define-from-file.
+    // Ver config/dev.json y config/prod.json.example.
+    if (AppConfig.seedUsername.isNotEmpty &&
+        AppConfig.seedUserEmail.isNotEmpty &&
+        AppConfig.seedUserPassword.isNotEmpty) {
+      final passwordHash = _hashPassword(AppConfig.seedUserPassword);
 
-    // Usuario de prueba con rol usuario
-    final testUserId = await into(users).insert(
-      UsersCompanion.insert(
-        username: 'usuario_prueba',
-        email: 'prueba@test.com',
-        passwordHash: passwordHash,
-      ),
-    );
+      final testUserId = await into(users).insert(
+        UsersCompanion.insert(
+          username: AppConfig.seedUsername,
+          email: AppConfig.seedUserEmail,
+          passwordHash: passwordHash,
+        ),
+      );
 
-    // Rol usuario para el usuario de prueba
-    final rolUsuario = await (select(
-      roles,
-    )..where((r) => r.name.equals('usuario'))).getSingle();
+      // Rol usuario para el usuario de prueba
+      final rolUsuario = await (select(
+        roles,
+      )..where((r) => r.name.equals('usuario'))).getSingle();
 
-    await into(userRoles).insert(
-      UserRolesCompanion.insert(userId: testUserId, roleId: rolUsuario.id),
-    );
+      await into(userRoles).insert(
+        UserRolesCompanion.insert(userId: testUserId, roleId: rolUsuario.id),
+      );
+    }
 
     // Cliente por defecto para ventas sin identificar
     await into(clients).insert(

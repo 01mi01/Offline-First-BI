@@ -34,7 +34,12 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         children: [
           // Barra de toggle lista/catálogo
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s12,
+              AppSpacing.s16,
+              AppSpacing.s4,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -129,7 +134,10 @@ class _ToggleBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         // Tamaño del botón del toggle
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s14,
+          vertical: AppSpacing.s10,
+        ),
         decoration: BoxDecoration(
           color: active ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -156,7 +164,7 @@ class _ListViewWidget extends ConsumerWidget {
     final categories = ref.watch(categoryProvider).categories;
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       itemCount: products.length,
       itemBuilder: (context, index) {
         final p = products[index];
@@ -187,7 +195,7 @@ class _GridView extends StatelessWidget {
     final active = products.where((p) => p.isActive).toList();
 
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
@@ -253,8 +261,8 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -279,7 +287,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       )
                     : _placeholder(),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.s16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,17 +298,17 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                         Expanded(
                           child: Text(
                             widget.product.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                              color: AppColors.textPrimary,
-                            ),
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.s8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
+                            horizontal: AppSpacing.s8,
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
@@ -309,11 +317,11 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                           ),
                           child: Text(
                             widget.categoryName,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -322,49 +330,52 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                     ),
                     if (widget.product.description != null &&
                         widget.product.description!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.s4),
                       Text(
                         widget.product.description!,
-                        style: const TextStyle(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.displaySmall?.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.s6),
                     Text(
                       'Precio de venta: Bs. ${widget.product.salePrice.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
+                      style: Theme.of(context).textTheme.displaySmall
+                          ?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     if (widget.product.productionCost != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.s2),
                       Text(
                         'Costo: Bs. ${widget.product.productionCost!.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.displaySmall?.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
                       'Stock: ${widget.product.stock}',
-                      style: const TextStyle(
+                      style: Theme.of(
+                        context,
+                      ).textTheme.displaySmall?.copyWith(
                         color: AppColors.textSecondary,
-                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.s6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                        horizontal: AppSpacing.s8,
+                        vertical: AppSpacing.s2,
                       ),
                       decoration: BoxDecoration(
                         color: widget.product.isActive
@@ -374,13 +385,13 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       ),
                       child: Text(
                         widget.product.isActive ? 'Activo' : 'Inactivo',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: widget.product.isActive
-                              ? AppColors.success
-                              : AppColors.error,
-                        ),
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: widget.product.isActive
+                                  ? AppColors.success
+                                  : AppColors.error,
+                            ),
                       ),
                     ),
                   ],
@@ -399,29 +410,28 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
           // Materiales usados con nombre y precio
           if (_loadingMaterials) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             const SizedBox(
               height: 16,
               width: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ] else if (_materials.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.s12),
             const Divider(color: AppColors.border),
-            const SizedBox(height: 8),
-            const Text(
+            const SizedBox(height: AppSpacing.s8),
+            Text(
               'Materiales',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             // Lista de materiales con nombre y precio
             ..._materials.map(
               (m) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.only(bottom: AppSpacing.s6),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -435,24 +445,24 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.s8),
                         Text(
                           m['name'] as String,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: Theme.of(context).textTheme.displaySmall
+                              ?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
                       ],
                     ),
                     Text(
                       'Bs. ${(m['price'] as double).toStringAsFixed(2)}/u',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context).textTheme.labelMedium
+                          ?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ],
                 ),
@@ -519,28 +529,27 @@ class _GridCard extends StatelessWidget {
             ),
             // Nombre y precio
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.s12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
                       color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.s2),
                   Text(
                     'Bs. ${product.salePrice.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                    style: Theme.of(context).textTheme.displaySmall
+                        ?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                 ],
               ),
@@ -575,7 +584,7 @@ class _ProductGridDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
@@ -602,7 +611,7 @@ class _ProductGridDetail extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(AppSpacing.s6),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.4),
                           shape: BoxShape.circle,
@@ -618,34 +627,33 @@ class _ProductGridDetail extends StatelessWidget {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpacing.s20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       product.name,
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     if (product.description != null &&
                         product.description!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.s4),
                       Text(
                         product.description!,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 15,
-                          height: 1.5,
-                        ),
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.5,
+                            ),
                       ),
                     ],
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.s4),
                     Text(
                       'Bs. ${product.salePrice.toStringAsFixed(2)}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,

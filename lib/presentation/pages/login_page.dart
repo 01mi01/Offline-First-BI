@@ -52,7 +52,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           children: [
             // Sección superior con el logo y título
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s32,
+              ),
               child: Column(
                 children: [
                   SizedBox(height: screenHeight * 0.08),
@@ -72,7 +74,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.s8),
                   Text(
                     'Ingresa tus datos para acceder a tu cuenta',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -97,7 +99,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(32, 32, 32, 32),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s32,
+                    AppSpacing.s32,
+                    AppSpacing.s32,
+                    AppSpacing.s32,
+                  ),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -112,7 +119,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         TextFormField(
                           controller: _usernameController,
                           style: const TextStyle(fontSize: 16),
@@ -125,7 +132,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           validator: (v) =>
                               v == null || v.isEmpty ? 'Campo requerido' : null,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.s20),
 
                         // Campo contraseña
                         Text(
@@ -136,7 +143,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
@@ -147,7 +154,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             fillColor: AppColors.surface,
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: Padding(
-                              padding: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.only(
+                                right: AppSpacing.s8,
+                              ),
                               child: IconButton(
                                 icon: Icon(
                                   _obscurePassword
@@ -163,12 +172,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           validator: (v) =>
                               v == null || v.isEmpty ? 'Campo requerido' : null,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
 
                         // Error de login
                         if (authState.error != null)
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(AppSpacing.s12),
                             decoration: BoxDecoration(
                               color: AppColors.error.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(12),
@@ -180,7 +189,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   color: AppColors.error,
                                   size: 16,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.s8),
                                 Text(
                                   authState.error!,
                                   style: const TextStyle(
@@ -190,26 +199,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ],
                             ),
                           ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: AppSpacing.s28),
 
                         // Botón iniciar sesión
                         ElevatedButton(
                           onPressed: authState.isLoading ? null : _handleLogin,
                           child: authState.isLoading
                               ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
+                                  height: AppSpacing.s20,
+                                  width: AppSpacing.s20,
                                   child: CircularProgressIndicator(
                                     color: AppColors.surface,
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'Iniciar sesión',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme
+                                      .headlineLarge?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                         ),
                       ],

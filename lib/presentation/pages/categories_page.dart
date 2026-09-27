@@ -31,7 +31,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s12,
+              AppSpacing.s16,
+              AppSpacing.s4,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -129,7 +134,10 @@ class _ToggleBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         // Tamaño del botón del toggle
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s14,
+          vertical: AppSpacing.s10,
+        ),
         decoration: BoxDecoration(
           color: active ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -153,7 +161,7 @@ class _ListViewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final cat = categories[index];
@@ -174,7 +182,7 @@ class _GridView extends StatelessWidget {
     final active = categories.where((c) => c.isActive).toList();
 
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
@@ -207,8 +215,8 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -228,16 +236,15 @@ class _CategoryCard extends StatelessWidget {
                   )
                 : _placeholder(),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.s16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   category.name,
-                  style: const TextStyle(
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 16,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -245,16 +252,17 @@ class _CategoryCard extends StatelessWidget {
                     category.description!.isNotEmpty)
                   Text(
                     category.description!,
-                    style: const TextStyle(
+                    style: Theme.of(
+                      context,
+                    ).textTheme.displaySmall?.copyWith(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
                     ),
                   ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.s4),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: AppSpacing.s8,
+                    vertical: AppSpacing.s2,
                   ),
                   decoration: BoxDecoration(
                     color: category.isActive
@@ -264,8 +272,7 @@ class _CategoryCard extends StatelessWidget {
                   ),
                   child: Text(
                     category.isActive ? 'Activa' : 'Inactiva',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: category.isActive
                           ? AppColors.success
@@ -341,12 +348,11 @@ class _GridCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.s12),
               child: Text(
                 category.name,
-                style: const TextStyle(
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
                   color: AppColors.textPrimary,
                 ),
                 maxLines: 1,
@@ -383,7 +389,7 @@ class _CategoryDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
@@ -413,7 +419,7 @@ class _CategoryDetail extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(AppSpacing.s6),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.4),
                           shape: BoxShape.circle,
@@ -431,28 +437,27 @@ class _CategoryDetail extends StatelessWidget {
 
               // Nombre y descripción
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpacing.s20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       category.name,
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     if (category.description != null &&
                         category.description!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
                       Text(
                         category.description!,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 15,
-                          height: 1.5,
-                        ),
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.5,
+                            ),
                       ),
                     ],
                   ],

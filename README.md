@@ -67,10 +67,20 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-4. Ejecutar la aplicación
+4. Configurar credenciales de entorno
+
+El usuario de prueba que se siembra en la base de datos local ya no está hardcodeado en el código: se inyecta en tiempo de compilación con `--dart-define-from-file`. Copia `config/prod.json.example` como referencia y usa `config/dev.json` (ya incluido, ignorado por git) para desarrollo local.
+
+5. Ejecutar la aplicación
 
 ```bash
-flutter run
+flutter run --dart-define-from-file=config/dev.json
+```
+
+Para un build de producción, crea `config/prod.json` (a partir de `config/prod.json.example`, sin subirlo al repositorio) y ejecuta:
+
+```bash
+flutter build apk --dart-define-from-file=config/prod.json
 ```
 
 ## Equipo 

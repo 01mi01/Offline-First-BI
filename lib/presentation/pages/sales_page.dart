@@ -37,7 +37,7 @@ class SalesPage extends ConsumerWidget {
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.s16),
                   itemCount: state.sales.length,
                   itemBuilder: (context, index) {
                     final sale = state.sales[index];
@@ -98,8 +98,8 @@ class _SaleCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+        padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -114,49 +114,51 @@ class _SaleCard extends StatelessWidget {
                   // Nombre del cliente
                   Text(
                     clientName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.headlineLarge
+                        ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   // Fecha
                   Text(
                     _formatDate(sale.date),
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.s6),
                   // Total y descuento
                   Row(
                     children: [
                       Text(
                         'Bs. ${sale.finalAmount.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
                       ),
                       if (sale.discount > 0) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.s8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                              horizontal: AppSpacing.s8,
+                              vertical: AppSpacing.s2),
                           decoration: BoxDecoration(
                             color: AppColors.success.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             'Desc. Bs. ${sale.discount.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.success,
-                            ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.success,
+                                ),
                           ),
                         ),
                       ],
@@ -233,7 +235,7 @@ class _SaleReceiptDialogState
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
@@ -246,22 +248,27 @@ class _SaleReceiptDialogState
             children: [
               // Encabezado
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s24,
+                  AppSpacing.s24,
+                  AppSpacing.s24,
+                  0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Recibo de venta',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: Theme.of(context).textTheme.displayLarge
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(AppSpacing.s6),
                         decoration: BoxDecoration(
                           color: AppColors.background,
                           shape: BoxShape.circle,
@@ -273,12 +280,17 @@ class _SaleReceiptDialogState
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Contenido scrollable
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s24,
+                    0,
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -286,13 +298,13 @@ class _SaleReceiptDialogState
                       _ReceiptRow(
                           label: 'Cliente',
                           value: widget.clientName),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
                       _ReceiptRow(
                           label: 'Fecha',
                           value: _formatDate(widget.sale.date)),
 
                       if (widget.sale.locationId != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         _ReceiptRow(
                           label: 'Ubicación',
                           value: ref
@@ -305,7 +317,7 @@ class _SaleReceiptDialogState
                         ),
                       ],
                       if (widget.sale.eventId != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         _ReceiptRow(
                           label: 'Evento',
                           value: ref
@@ -319,34 +331,34 @@ class _SaleReceiptDialogState
                       ],
                       if (widget.sale.notes != null &&
                           widget.sale.notes!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         _ReceiptRow(
                             label: 'Notas', value: widget.sale.notes!),
                       ],
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.s16),
                       const Divider(color: AppColors.border),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.s12),
 
                       // Ítems
-                      const Text(
+                      Text(
                         'Productos',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
 
                       if (_loading)
                         const Center(child: CircularProgressIndicator())
                       else
                         ..._items.map((item) => Padding(
                               padding:
-                                  const EdgeInsets.only(bottom: 8),
+                                  const EdgeInsets.only(bottom: AppSpacing.s8),
                               child: Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(AppSpacing.s12),
                                 decoration: BoxDecoration(
                                   color: AppColors.background,
                                   borderRadius:
@@ -368,11 +380,11 @@ class _SaleReceiptDialogState
                                           ),
                                           Text(
                                             '${item.quantity} × Bs. ${item.unitPrice.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color:
-                                                  AppColors.textSecondary,
-                                            ),
+                                            style: Theme.of(context).textTheme
+                                                .labelMedium?.copyWith(
+                                                  color: AppColors
+                                                      .textSecondary,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -389,9 +401,9 @@ class _SaleReceiptDialogState
                               ),
                             )),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.s12),
                       const Divider(color: AppColors.border),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.s12),
 
                       // Totales
                       _ReceiptRow(
@@ -400,7 +412,7 @@ class _SaleReceiptDialogState
                             'Bs. ${widget.sale.totalAmount.toStringAsFixed(2)}',
                       ),
                       if (widget.sale.discount > 0) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppSpacing.s6),
                         _ReceiptRow(
                           label: 'Descuento',
                           value:
@@ -408,7 +420,7 @@ class _SaleReceiptDialogState
                           valueColor: AppColors.error,
                         ),
                       ],
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
                       _ReceiptRow(
                         label: 'Total',
                         value:
@@ -451,20 +463,21 @@ class _ReceiptRow extends StatelessWidget {
           width: 80,
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.displaySmall?.copyWith(color: AppColors.textSecondary),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: bold ? 16 : 13,
-              fontWeight: bold ? FontWeight.bold : FontWeight.w500,
-              color: valueColor ?? AppColors.textPrimary,
-            ),
+            style: (bold
+                    ? Theme.of(context).textTheme.headlineLarge
+                    : Theme.of(context).textTheme.displaySmall)
+                ?.copyWith(
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+                  color: valueColor ?? AppColors.textPrimary,
+                ),
           ),
         ),
       ],

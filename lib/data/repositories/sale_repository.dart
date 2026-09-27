@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../models/sale_item_model.dart';
 
@@ -7,6 +8,32 @@ class SaleRepository {
   final AppDatabase database;
 
   SaleRepository(this.database);
+
+  // Calcula el subtotal de un carrito según el precio de cada producto
+  double calculateSubtotal(
+    List<ProductModel> products,
+    Map<int, int> cartItems,
+  ) {
+    double total = 0;
+    for (final entry in cartItems.entries) {
+      final product = products.where((p) => p.id == entry.key).firstOrNull;
+      if (product != null) total += product.salePrice * entry.value;
+    }
+    return total;
+  }
+
+  // Calcula el total final aplicando el descuento
+  double calculateTotal(double subtotal, double discount) {
+    return (subtotal - discount).clamp(0, double.infinity);
+  }
+
+  // Valida que el descuento no exceda el subtotal
+  String? validateDiscount(double discount, double subtotal) {
+    if (discount > subtotal) {
+      return 'El descuento no puede ser mayor al subtotal';
+    }
+    return null;
+  }
 
   // Convierte fila a modelo
   SaleModel _toModel(Sale row) {
@@ -206,11 +233,12 @@ class SaleRepository {
         )..where((p) => p.id.equals(productId))).getSingleOrNull();
 
         if (product != null) {
+          final newStock = product.stock - quantity;
           await (database.update(
             database.products,
           )..where((p) => p.id.equals(productId))).write(
             ProductsCompanion(
-              stock: Value(product.stock - quantity),
+              stock: Value(newStock < 0 ? 0 : newStock),
               updatedAt: Value(DateTime.now()),
             ),
           );

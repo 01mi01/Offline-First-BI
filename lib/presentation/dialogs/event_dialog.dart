@@ -163,10 +163,10 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: SingleChildScrollView(
         child: Form(
@@ -177,13 +177,12 @@ class _EventDialogState extends ConsumerState<EventDialog> {
             children: [
               Text(
                 isEditing ? 'Editar evento' : 'Nuevo evento',
-                style: const TextStyle(
-                  fontSize: 20,
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Nombre del evento
               TextFormField(
@@ -195,7 +194,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Ubicación con opción de crear nueva
               Row(
@@ -222,11 +221,11 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   GestureDetector(
                     onTap: _showAddLocationSheet,
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSpacing.s12),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -240,15 +239,15 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Fecha de inicio
               GestureDetector(
                 onTap: _pickStartDate,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                    horizontal: AppSpacing.s16,
+                    vertical: AppSpacing.s14,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
@@ -262,7 +261,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                         color: AppColors.textSecondary,
                         size: 18,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.s12),
                       Text(
                         _startDate != null
                             ? 'Inicio: ${_formatDate(_startDate!)}'
@@ -277,15 +276,15 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.s12),
 
               // Fecha de fin
               GestureDetector(
                 onTap: _pickEndDate,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                    horizontal: AppSpacing.s16,
+                    vertical: AppSpacing.s14,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
@@ -302,7 +301,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                             color: AppColors.textSecondary,
                             size: 18,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppSpacing.s12),
                           Text(
                             _endDate != null
                                 ? 'Fin: ${_formatDate(_endDate!)}'
@@ -331,7 +330,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Notas
               TextFormField(
@@ -344,9 +343,9 @@ class _EventDialogState extends ConsumerState<EventDialog> {
               ),
 
               if (_saveError != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.s12),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.s12),
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -358,13 +357,14 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                         color: AppColors.error,
                         size: 16,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.s8),
                       Expanded(
                         child: Text(
                           _saveError!,
-                          style: const TextStyle(
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displaySmall?.copyWith(
                             color: AppColors.error,
-                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -373,7 +373,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                 ),
               ],
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               Row(
                 children: [
@@ -396,16 +396,14 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _hasChanges ? _save : null,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

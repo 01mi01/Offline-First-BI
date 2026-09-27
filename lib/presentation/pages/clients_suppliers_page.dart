@@ -22,13 +22,15 @@ class ClientsSuppliersPage extends ConsumerWidget {
         appBar: CustomAppBar(
           title: 'Contactos',
           showBack: true,
-          bottom: const TabBar(
+          bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primary,
             indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            tabs: [
+            labelStyle: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
+            tabs: const [
               Tab(text: 'Clientes'),
               Tab(text: 'Proveedores'),
             ],
@@ -66,7 +68,7 @@ class _ClientsTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.s16),
               itemCount: state.clients.length,
               itemBuilder: (context, index) {
                 final c = state.clients[index];
@@ -120,7 +122,7 @@ class _SuppliersTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.s16),
               itemCount: state.suppliers.length,
               itemBuilder: (context, index) {
                 final s = state.suppliers[index];
@@ -173,7 +175,7 @@ class _ContactCardState extends State<_ContactCard> {
       barrierColor: Colors.black.withOpacity(0.7),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Container(
@@ -187,24 +189,29 @@ class _ContactCardState extends State<_ContactCard> {
               children: [
                 // Encabezado con nombre y botón cerrar
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                    0,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           widget.name,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                         ),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(AppSpacing.s6),
                           decoration: BoxDecoration(
                             color: AppColors.background,
                             shape: BoxShape.circle,
@@ -219,12 +226,17 @@ class _ContactCardState extends State<_ContactCard> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
 
                 // Contenido scrollable
                 Flexible(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s24,
+                      0,
+                      AppSpacing.s24,
+                      AppSpacing.s24,
+                    ),
                     child:
                         widget.contactInfo != null &&
                             widget.contactInfo!.isNotEmpty
@@ -232,14 +244,16 @@ class _ContactCardState extends State<_ContactCard> {
                             children: [
                               // Texto de contacto
                               Padding(
-                                padding: const EdgeInsets.only(right: 40),
+                                padding: const EdgeInsets.only(
+                                  right: AppSpacing.s40,
+                                ),
                                 child: Text(
                                   widget.contactInfo!,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 15,
-                                    height: 1.6,
-                                  ),
+                                  style: Theme.of(context).textTheme
+                                      .displayMedium?.copyWith(
+                                        color: AppColors.textSecondary,
+                                        height: 1.6,
+                                      ),
                                 ),
                               ),
                               // Botón copiar
@@ -268,7 +282,7 @@ class _ContactCardState extends State<_ContactCard> {
                                     );
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.all(6),
+                                    padding: const EdgeInsets.all(AppSpacing.s6),
                                     decoration: BoxDecoration(
                                       color: AppColors.primary.withOpacity(0.1),
                                       shape: BoxShape.circle,
@@ -302,8 +316,8 @@ class _ContactCardState extends State<_ContactCard> {
     return GestureDetector(
       onTap: () => _showDetail(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+        padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -317,30 +331,31 @@ class _ContactCardState extends State<_ContactCard> {
                 children: [
                   Text(
                     widget.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.headlineLarge
+                        ?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                   ),
                   if (widget.contactInfo != null &&
                       widget.contactInfo!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
                       widget.contactInfo!,
-                      style: const TextStyle(
+                      style: Theme.of(
+                        context,
+                      ).textTheme.displaySmall?.copyWith(
                         color: AppColors.textSecondary,
-                        fontSize: 13,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
+                      horizontal: AppSpacing.s8,
+                      vertical: AppSpacing.s2,
                     ),
                     decoration: BoxDecoration(
                       color: widget.isActive
@@ -350,8 +365,7 @@ class _ContactCardState extends State<_ContactCard> {
                     ),
                     child: Text(
                       widget.isActive ? 'Activo' : 'Inactivo',
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: widget.isActive
                             ? AppColors.success

@@ -48,7 +48,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s10),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -57,7 +57,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.s14),
               child: Row(
                 children: [
                   Expanded(
@@ -66,21 +66,22 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                       children: [
                         Text(
                           widget.clientName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.s4),
                         Text(
                           _formatDate(widget.sale.date),
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.s4),
                         if (widget.locationName != null ||
                             widget.eventName != null)
                           Wrap(
@@ -106,17 +107,18 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                     children: [
                       Text(
                         'Bs. ${widget.sale.finalAmount.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                          fontSize: 14,
-                        ),
+                        style: Theme.of(context).textTheme.labelLarge
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
                       ),
                       if (widget.sale.discount > 0)
                         Text(
                           '-Bs. ${widget.sale.discount.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(
                             color: AppColors.error,
                           ),
                         ),
@@ -151,27 +153,27 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                           .map(
                             (item) => Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 6,
+                                horizontal: AppSpacing.s14,
+                                vertical: AppSpacing.s6,
                               ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
                                       '${item.productName} × ${item.quantity}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
+                                      style: Theme.of(context).textTheme
+                                          .labelMedium?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
                                     ),
                                   ),
                                   Text(
                                     'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: Theme.of(context).textTheme
+                                        .labelMedium?.copyWith(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -198,7 +200,10 @@ class _MiniPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s6,
+        vertical: AppSpacing.s2,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),

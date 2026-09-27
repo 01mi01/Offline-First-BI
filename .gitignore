@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# App config (contiene credenciales, usado con --dart-define-from-file)
+/config/*.json
+!/config/*.json.example

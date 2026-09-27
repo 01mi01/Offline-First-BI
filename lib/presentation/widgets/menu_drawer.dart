@@ -58,7 +58,12 @@ class MenuDrawer extends ConsumerWidget {
             // Encabezado con nombre y rol del usuario
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s24,
+                AppSpacing.s32,
+                AppSpacing.s24,
+                AppSpacing.s24,
+              ),
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
@@ -73,11 +78,11 @@ class MenuDrawer extends ConsumerWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: AppSpacing.s10,
+                      vertical: AppSpacing.s4,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
@@ -98,7 +103,9 @@ class MenuDrawer extends ConsumerWidget {
             // Módulos del menú
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppSpacing.s12,
+                ),
                 itemCount: _menuItems.length,
                 itemBuilder: (context, index) {
                   final item = _menuItems[index];
@@ -167,8 +174,8 @@ class MenuDrawer extends ConsumerWidget {
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
+                  horizontal: AppSpacing.s24,
+                  vertical: AppSpacing.s8,
                 ),
                 leading: Icon(Icons.logout, color: AppColors.error),
                 title: Text(
@@ -209,7 +216,10 @@ class _MenuTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s24,
+        vertical: AppSpacing.s4,
+      ),
       leading: Icon(icon, color: AppColors.primary),
       title: Text(
         label,

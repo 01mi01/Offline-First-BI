@@ -93,10 +93,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   // Recalcula el total a partir de los ítems de material
   void _recalcTotal() {
     if (!_isMaterial) return;
-    double total = 0;
-    for (final item in _materialItems) {
-      total += (item['quantity'] as double) * (item['unitPrice'] as double);
-    }
+    final total = ref
+        .read(purchaseRepositoryProvider)
+        .calculateMaterialsTotal(_materialItems);
     _totalController.text = formatNumber(total);
   }
 
@@ -225,10 +224,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: Form(
         key: _formKey,
@@ -240,19 +239,18 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
               // Título
               Text(
                 isEditing ? 'Editar compra' : 'Nueva compra',
-                style: const TextStyle(
-                  fontSize: 20,
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Toggle material / gasto general
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: AppSpacing.s16,
+                  vertical: AppSpacing.s12,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.background,
@@ -261,26 +259,29 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Compra de materiales',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Compra de materiales',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
-                        ),
-                        Text(
-                          _isMaterial
-                              ? 'Actualiza stock de materiales'
-                              : 'Gasto general del negocio',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                          Text(
+                            _isMaterial
+                                ? 'Actualiza stock de materiales'
+                                : 'Gasto general del negocio',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Switch(
                       value: _isMaterial,
@@ -301,7 +302,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Selector de proveedor
               Row(
@@ -324,11 +325,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           v == null ? 'Selecciona un proveedor' : null,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   GestureDetector(
                     onTap: _showAddSupplierSheet,
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSpacing.s12),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -342,7 +343,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Selector de ubicación
               DropdownButtonFormField<int>(
@@ -389,27 +390,27 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ],
                 onChanged: (val) => setState(() => _selectedEventId = val),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Sección de materiales
               if (_isMaterial) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Materiales',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: Theme.of(context).textTheme.displayMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                     ),
                     GestureDetector(
                       onTap: _showAddMaterialItem,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: AppSpacing.s12,
+                          vertical: AppSpacing.s6,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.1),
@@ -422,14 +423,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                               color: AppColors.primary,
                               size: 16,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSpacing.s4),
                             Text(
                               'Agregar',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                           ],
                         ),
@@ -437,13 +438,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s8),
                 if (_materialItems.isEmpty)
                   Text(
                     'Sin materiales agregados',
-                    style: TextStyle(
+                    style: Theme.of(
+                      context,
+                    ).textTheme.displaySmall?.copyWith(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
                     ),
                   )
                 else
@@ -451,8 +453,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     final index = entry.key;
                     final item = entry.value;
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s8),
+                      padding: const EdgeInsets.all(AppSpacing.s12),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
@@ -471,7 +473,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: AppSpacing.s4),
                                 // Edición inline de cantidad
                                 Row(
                                   children: [
@@ -507,17 +509,19 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
+                                        horizontal: AppSpacing.s10,
                                       ),
                                       child: Text(
                                         formatNumber(
                                           item['quantity'] as double,
                                         ),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14,
-                                          color: AppColors.textPrimary,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textPrimary,
+                                            ),
                                       ),
                                     ),
                                     GestureDetector(
@@ -552,14 +556,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: AppSpacing.s8),
                                     Text(
                                       'Bs. ${((item['quantity'] as double) * (item['unitPrice'] as double)).toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      style: Theme.of(context).textTheme
+                                          .labelMedium?.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -583,7 +587,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       ),
                     );
                   }),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
 
                 // Total calculado automáticamente
                 TextFormField(
@@ -603,7 +607,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   validator: (v) =>
                       v == null || v.isEmpty ? 'Campo requerido' : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
                 TextFormField(
                   controller: _totalController,
                   keyboardType: TextInputType.number,
@@ -628,7 +632,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       v == null || v.isEmpty ? 'Campo requerido' : null,
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Notas
               TextFormField(
@@ -642,9 +646,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
               // Error
               if (_error != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.s12),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.s12),
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -656,13 +660,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         color: AppColors.error,
                         size: 16,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.s8),
                       Expanded(
                         child: Text(
                           _error!,
-                          style: const TextStyle(
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displaySmall?.copyWith(
                             color: AppColors.error,
-                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -671,7 +676,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ),
               ],
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Botones cancelar y registrar
               Row(
@@ -695,7 +700,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -704,8 +709,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       onPressed: _isLoading ? null : _save,
                       child: _isLoading
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
+                              height: AppSpacing.s20,
+                              width: AppSpacing.s20,
                               child: CircularProgressIndicator(
                                 color: AppColors.surface,
                                 strokeWidth: 2,
@@ -713,10 +718,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                             )
                           : Text(
                               isEditing ? 'Guardar' : 'Registrar compra',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: Theme.of(context).textTheme.headlineLarge
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                               textAlign: TextAlign.center,
                             ),
                     ),
@@ -790,10 +793,10 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: Form(
         key: _formKey,
@@ -801,15 +804,14 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Agregar material',
-              style: TextStyle(
-                fontSize: 20,
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.s24),
 
             // Selector de material existente
             DropdownButtonFormField<int>(
@@ -832,7 +834,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
               },
               validator: (v) => v == null ? 'Selecciona un material' : null,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
 
             // Botón crear nuevo material
             GestureDetector(
@@ -840,19 +842,18 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
               child: Row(
                 children: [
                   const Icon(Icons.add, color: AppColors.primary, size: 14),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: AppSpacing.s4),
                   Text(
                     'Crear nuevo material',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: AppColors.primary,
-                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
 
             // Cantidad
             TextFormField(
@@ -882,7 +883,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
 
             // Precio por unidad
             TextFormField(
@@ -912,7 +913,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                 return null;
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.s24),
 
             // Botones
             Row(
@@ -936,7 +937,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -951,12 +952,10 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                       });
                       Navigator.pop(context);
                     },
-                    child: const Text(
+                    child: Text(
                       'Agregar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),

@@ -17,6 +17,23 @@ class AppColors {
   static const success = Color(0xFF34C759);
 }
 
+// Escala de espaciado de la aplicación (padding, gaps entre elementos)
+class AppSpacing {
+  static const double s2 = 2;
+  static const double s4 = 4;
+  static const double s6 = 6;
+  static const double s8 = 8;
+  static const double s10 = 10;
+  static const double s12 = 12;
+  static const double s14 = 14;
+  static const double s16 = 16;
+  static const double s20 = 20;
+  static const double s24 = 24;
+  static const double s28 = 28;
+  static const double s32 = 32;
+  static const double s40 = 40;
+}
+
 // Formatea un número eliminando decimales innecesarios
 String formatNumber(double value) {
   if (value == value.truncateToDouble()) {
@@ -39,8 +56,19 @@ final lightTheme = ThemeData(
   scaffoldBackgroundColor: AppColors.background,
   canvasColor: AppColors.background,
 
-  // Tipografía
-  textTheme: GoogleFonts.interTextTheme(),
+  // Tipografía.
+  // headlineMedium, headlineSmall, titleLarge, titleMedium, titleSmall,
+  // bodyLarge, bodyMedium y bodySmall ya se usan en algunas pantallas con su
+  // tamaño por defecto de Material 3 y no se sobreescriben aquí para no
+  // alterarlas. displayLarge/Medium/Small y headlineLarge no se usaban antes
+  // y se reutilizan para los tamaños adicionales que necesita el resto de la
+  // app; labelLarge/Medium/Small ya cubren 14/12/11 con su valor por defecto.
+  textTheme: GoogleFonts.interTextTheme().copyWith(
+    displayLarge: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.normal),
+    displayMedium: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.normal),
+    displaySmall: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.normal),
+    headlineLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.normal),
+  ),
 
   appBarTheme: const AppBarTheme(
     backgroundColor: AppColors.surface,

@@ -37,7 +37,7 @@ class PurchasesPage extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.s16),
               itemCount: state.purchases.length,
               itemBuilder: (context, index) {
                 final purchase = state.purchases[index];
@@ -106,8 +106,8 @@ class _PurchaseCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
+        padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -124,18 +124,18 @@ class _PurchaseCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           supplierName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: Theme.of(context).textTheme.headlineLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
                         ),
                       ),
                       // Pill material o gasto
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
+                          horizontal: AppSpacing.s8,
+                          vertical: AppSpacing.s2,
                         ),
                         decoration: BoxDecoration(
                           color: purchase.isMaterial
@@ -145,46 +145,48 @@ class _PurchaseCard extends StatelessWidget {
                         ),
                         child: Text(
                           purchase.isMaterial ? 'Material' : 'Gasto',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: purchase.isMaterial
-                                ? AppColors.primary
-                                : AppColors.success,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: purchase.isMaterial
+                                    ? AppColors.primary
+                                    : AppColors.success,
+                              ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   Text(
                     _formatDate(purchase.date),
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
                   if (purchase.description != null &&
                       purchase.description!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
                       purchase.description!,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.displaySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.s6),
                   Text(
                     'Bs. ${purchase.totalAmount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
+                    style: Theme.of(context).textTheme.displayMedium
+                        ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
                   ),
                 ],
               ),
@@ -283,7 +285,7 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
@@ -296,22 +298,27 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
             children: [
               // Encabezado
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s24,
+                  AppSpacing.s24,
+                  AppSpacing.s24,
+                  0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Detalle de compra',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: Theme.of(context).textTheme.displayLarge
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(AppSpacing.s6),
                         decoration: BoxDecoration(
                           color: AppColors.background,
                           shape: BoxShape.circle,
@@ -326,11 +333,16 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s24,
+                    0,
+                    AppSpacing.s24,
+                    AppSpacing.s24,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -338,12 +350,12 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                         label: 'Proveedor',
                         value: widget.supplierName,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
                       _DetailRow(
                         label: 'Fecha',
                         value: _formatDate(widget.purchase.date),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
                       _DetailRow(
                         label: 'Tipo',
                         value: widget.purchase.isMaterial
@@ -351,7 +363,7 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                             : 'Gasto general',
                       ),
                       if (widget.purchase.locationId != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         _DetailRow(
                           label: 'Ubicación',
                           value:
@@ -367,7 +379,7 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                         ),
                       ],
                       if (widget.purchase.eventId != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         _DetailRow(
                           label: 'Evento',
                           value:
@@ -382,7 +394,7 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                       ],
                       if (widget.purchase.description != null &&
                           widget.purchase.description!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         _DetailRow(
                           label: 'Descripción',
                           value: widget.purchase.description!,
@@ -390,7 +402,7 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                       ],
                       if (widget.purchase.notes != null &&
                           widget.purchase.notes!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         _DetailRow(
                           label: 'Notas',
                           value: widget.purchase.notes!,
@@ -398,26 +410,28 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                       ],
 
                       if (widget.purchase.isMaterial) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.s16),
                         const Divider(color: AppColors.border),
-                        const SizedBox(height: 12),
-                        const Text(
+                        const SizedBox(height: AppSpacing.s12),
+                        Text(
                           'Materiales',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: Theme.of(context).textTheme.displayMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         if (_loading)
                           const Center(child: CircularProgressIndicator())
                         else
                           ..._items.map(
                             (item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.s8,
+                              ),
                               child: Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(AppSpacing.s12),
                                 decoration: BoxDecoration(
                                   color: AppColors.background,
                                   borderRadius: BorderRadius.circular(12),
@@ -438,10 +452,11 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                                           ),
                                           Text(
                                             '${formatNumber(item.quantity)} × Bs. ${item.unitPrice.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.textSecondary,
-                                            ),
+                                            style: Theme.of(context).textTheme
+                                                .labelMedium?.copyWith(
+                                                  color: AppColors
+                                                      .textSecondary,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -460,9 +475,9 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                           ),
                       ],
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.s12),
                       const Divider(color: AppColors.border),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
                       _DetailRow(
                         label: 'Total',
                         value:
@@ -505,20 +520,21 @@ class _DetailRow extends StatelessWidget {
           width: 90,
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.displaySmall?.copyWith(color: AppColors.textSecondary),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: bold ? 16 : 13,
-              fontWeight: bold ? FontWeight.bold : FontWeight.w500,
-              color: valueColor ?? AppColors.textPrimary,
-            ),
+            style: (bold
+                    ? Theme.of(context).textTheme.headlineLarge
+                    : Theme.of(context).textTheme.displaySmall)
+                ?.copyWith(
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+                  color: valueColor ?? AppColors.textPrimary,
+                ),
           ),
         ),
       ],

@@ -82,17 +82,16 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
   double get _subtotal {
     final products = ref.read(productProvider).products;
-    double total = 0;
-    for (final entry in _cartItems.entries) {
-      final product = products.where((p) => p.id == entry.key).firstOrNull;
-      if (product != null) total += product.salePrice * entry.value;
-    }
-    return total;
+    return ref.read(saleRepositoryProvider).calculateSubtotal(
+      products,
+      _cartItems,
+    );
   }
 
   double get _discount => double.tryParse(_discountController.text.trim()) ?? 0;
 
-  double get _total => (_subtotal - _discount).clamp(0, double.infinity);
+  double get _total =>
+      ref.read(saleRepositoryProvider).calculateTotal(_subtotal, _discount);
 
   void _showAddClientSheet() {
     showModalBottomSheet(
@@ -122,8 +121,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     }
 
     final discount = _discount;
-    if (discount > _subtotal) {
-      setState(() => _error = 'El descuento no puede ser mayor al subtotal');
+    final discountError = ref
+        .read(saleRepositoryProvider)
+        .validateDiscount(discount, _subtotal);
+    if (discountError != null) {
+      setState(() => _error = discountError);
       return;
     }
 
@@ -235,10 +237,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        left: AppSpacing.s24,
+        right: AppSpacing.s24,
+        top: AppSpacing.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
       child: Form(
         key: _formKey,
@@ -250,13 +252,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
               // Título
               Text(
                 isEditing ? 'Editar venta' : 'Nueva venta',
-                style: const TextStyle(
-                  fontSize: 20,
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Selector de cliente con opción de crear nuevo
               Row(
@@ -279,12 +280,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                           v == null ? 'Selecciona un cliente' : null,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   // Botón para agregar nuevo cliente
                   GestureDetector(
                     onTap: _showAddClientSheet,
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSpacing.s12),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -298,7 +299,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Selector de ubicación
               DropdownButtonFormField<int>(
@@ -323,7 +324,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 ],
                 onChanged: (val) => setState(() => _selectedLocationId = val),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Selector de evento
               DropdownButtonFormField<int>(
@@ -345,18 +346,17 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 ],
                 onChanged: (val) => setState(() => _selectedEventId = val),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.s20),
 
               // Lista de productos activos para agregar
-              const Text(
+              Text(
                 'Productos',
-                style: TextStyle(
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  fontSize: 15,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s8),
               Container(
                 constraints: const BoxConstraints(maxHeight: 200),
                 decoration: BoxDecoration(
@@ -365,7 +365,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(AppSpacing.s8),
                   physics: const AlwaysScrollableScrollPhysics(),
                   shrinkWrap: true,
                   itemCount: products.length,
@@ -375,20 +375,21 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     return ListTile(
                       dense: true,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
+                        horizontal: AppSpacing.s12,
                       ),
                       title: Text(
                         p.name,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.labelLarge
+                            ?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
                       ),
                       subtitle: Text(
                         'Bs. ${p.salePrice.toStringAsFixed(2)}  •  Stock: ${p.stock}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelMedium?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -403,7 +404,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                           });
                         },
                         child: Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.all(AppSpacing.s4),
                           decoration: BoxDecoration(
                             color: inCart
                                 ? AppColors.primary.withOpacity(0.1)
@@ -428,29 +429,28 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Carrito con cantidades
               if (_cartItems.isNotEmpty) ...[
-                const Text(
+                Text(
                   'Carrito',
-                  style: TextStyle(
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s8),
                 ..._cartItems.entries.map((entry) {
                   final product = products
                       .where((p) => p.id == entry.key)
                       .firstOrNull;
                   if (product == null) return const SizedBox();
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.s8),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                      horizontal: AppSpacing.s16,
+                      vertical: AppSpacing.s10,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
@@ -465,19 +465,19 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                             children: [
                               Text(
                                 product.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
                               ),
                               Text(
                                 'Bs. ${(product.salePrice * entry.value).toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context).textTheme
+                                    .labelMedium?.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                             ],
                           ),
@@ -496,8 +496,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                 });
                               },
                               child: Container(
-                                width: 28,
-                                height: 28,
+                                width: AppSpacing.s28,
+                                height: AppSpacing.s28,
                                 decoration: BoxDecoration(
                                   color: AppColors.background,
                                   borderRadius: BorderRadius.circular(8),
@@ -512,15 +512,15 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
+                                horizontal: AppSpacing.s10,
                               ),
                               child: Text(
                                 '${entry.value}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
                               ),
                             ),
                             GestureDetector(
@@ -535,8 +535,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                 });
                               },
                               child: Container(
-                                width: 28,
-                                height: 28,
+                                width: AppSpacing.s28,
+                                height: AppSpacing.s28,
                                 decoration: BoxDecoration(
                                   color: AppColors.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
@@ -557,7 +557,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     ),
                   );
                 }),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
               ],
 
               // Descuento
@@ -583,7 +583,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 ),
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Notas
               TextFormField(
@@ -594,11 +594,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.s16),
 
               // Resumen de totales
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.s16),
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(16),
@@ -610,14 +610,14 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       value: 'Bs. ${_subtotal.toStringAsFixed(2)}',
                     ),
                     if (_discount > 0) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: AppSpacing.s6),
                       _TotalRow(
                         label: 'Descuento',
                         value: '- Bs. ${_discount.toStringAsFixed(2)}',
                         valueColor: AppColors.error,
                       ),
                     ],
-                    const Divider(color: AppColors.border, height: 20),
+                    const Divider(color: AppColors.border, height: AppSpacing.s20),
                     _TotalRow(
                       label: 'Total',
                       value: 'Bs. ${_total.toStringAsFixed(2)}',
@@ -630,9 +630,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
               // Error
               if (_error != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.s12),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.s12),
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -644,13 +644,14 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         color: AppColors.error,
                         size: 16,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.s8),
                       Expanded(
                         child: Text(
                           _error!,
-                          style: const TextStyle(
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displaySmall?.copyWith(
                             color: AppColors.error,
-                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -659,7 +660,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 ),
               ],
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.s24),
 
               // Botones
               Row(
@@ -683,14 +684,14 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _save,
                       child: _isLoading
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
+                              height: AppSpacing.s20,
+                              width: AppSpacing.s20,
                               child: CircularProgressIndicator(
                                 color: AppColors.surface,
                                 strokeWidth: 2,
@@ -698,10 +699,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                             )
                           : Text(
                               isEditing ? 'Guardar' : 'Registrar venta',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: Theme.of(context).textTheme.headlineLarge
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                               textAlign: TextAlign.center,
                             ),
                     ),
@@ -732,24 +731,27 @@ class _TotalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: bold ? 16 : 14,
-            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-            color: AppColors.textSecondary,
-          ),
+          style: (bold ? textTheme.headlineLarge : textTheme.labelLarge)
+              ?.copyWith(
+                fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+                color: AppColors.textSecondary,
+              ),
         ),
         Text(
           value,
-          style: TextStyle(
-            fontSize: bold ? 18 : 14,
-            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-            color: valueColor ?? AppColors.textPrimary,
-          ),
+          style: bold
+              ? const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                  .copyWith(color: valueColor ?? AppColors.textPrimary)
+              : textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? AppColors.textPrimary,
+                ),
         ),
       ],
     );

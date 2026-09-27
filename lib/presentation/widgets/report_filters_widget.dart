@@ -7,70 +7,8 @@ import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/client_provider.dart';
 import '../../application/supplier_provider.dart';
+import '../../models/report_filters.dart';
 import '../../theme/app_theme.dart';
-
-// Modelo de estado de filtros
-class ReportFilters {
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final int? categoryId;
-  final int? productId;
-  final int? eventId;
-  final int? locationId;
-  final int? clientId;
-  final int? supplierId;
-
-  const ReportFilters({
-    this.startDate,
-    this.endDate,
-    this.categoryId,
-    this.productId,
-    this.eventId,
-    this.locationId,
-    this.clientId,
-    this.supplierId,
-  });
-
-  bool get hasActive =>
-      startDate != null ||
-      endDate != null ||
-      categoryId != null ||
-      productId != null ||
-      eventId != null ||
-      locationId != null ||
-      clientId != null ||
-      supplierId != null;
-
-  ReportFilters copyWith({
-    DateTime? startDate,
-    DateTime? endDate,
-    int? categoryId,
-    int? productId,
-    int? eventId,
-    int? locationId,
-    int? clientId,
-    int? supplierId,
-    bool clearStartDate = false,
-    bool clearEndDate = false,
-    bool clearCategory = false,
-    bool clearProduct = false,
-    bool clearEvent = false,
-    bool clearLocation = false,
-    bool clearClient = false,
-    bool clearSupplier = false,
-  }) {
-    return ReportFilters(
-      startDate: clearStartDate ? null : startDate ?? this.startDate,
-      endDate: clearEndDate ? null : endDate ?? this.endDate,
-      categoryId: clearCategory ? null : categoryId ?? this.categoryId,
-      productId: clearProduct ? null : productId ?? this.productId,
-      eventId: clearEvent ? null : eventId ?? this.eventId,
-      locationId: clearLocation ? null : locationId ?? this.locationId,
-      clientId: clearClient ? null : clientId ?? this.clientId,
-      supplierId: clearSupplier ? null : supplierId ?? this.supplierId,
-    );
-  }
-}
 
 class ReportFiltersWidget extends ConsumerWidget {
   final ReportFilters filters;
@@ -156,7 +94,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
             ...items.map(
               (item) => ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -187,18 +125,22 @@ class ReportFiltersWidget extends ConsumerWidget {
 
     return Container(
       color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s12,
+        AppSpacing.s16,
+        AppSpacing.s12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Filtros',
-                style: TextStyle(
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -207,16 +149,15 @@ class ReportFiltersWidget extends ConsumerWidget {
                   onTap: () => onChanged(const ReportFilters()),
                   child: Text(
                     'Limpiar todo',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: AppColors.primary,
-                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
 
           // Fechas
           Row(
@@ -286,7 +227,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                     onClear: () =>
                         onChanged(filters.copyWith(clearClient: true)),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                 ],
                 // Categoría y producto - solo en ventas
                 if (activeTab == 0) ...[
@@ -319,7 +260,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                     onClear: () =>
                         onChanged(filters.copyWith(clearCategory: true)),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   _DropChip(
                     label: 'Producto',
                     value: filters.productId,
@@ -359,7 +300,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                     onClear: () =>
                         onChanged(filters.copyWith(clearProduct: true)),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                 ],
 
                 // Solo en compras
@@ -393,7 +334,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                     onClear: () =>
                         onChanged(filters.copyWith(clearSupplier: true)),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                 ],
 
                 // Evento - ambos tabs
@@ -423,7 +364,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                   ),
                   onClear: () => onChanged(filters.copyWith(clearEvent: true)),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s8),
 
                 // Ubicación - ambos tabs
                 _DropChip(
@@ -485,7 +426,10 @@ class _DateChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s12,
+          vertical: AppSpacing.s8,
+        ),
         decoration: BoxDecoration(
           color: active
               ? AppColors.primary.withOpacity(0.1)
@@ -500,8 +444,7 @@ class _DateChip extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: active ? AppColors.primary : AppColors.textSecondary,
                   fontWeight: active ? FontWeight.w600 : FontWeight.normal,
                 ),
@@ -509,7 +452,7 @@ class _DateChip extends StatelessWidget {
               ),
             ),
             if (onClear != null) ...[
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.s4),
               GestureDetector(
                 onTap: onClear,
                 child: Icon(
@@ -555,7 +498,10 @@ class _DropChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s12,
+          vertical: AppSpacing.s8,
+        ),
         decoration: BoxDecoration(
           color: active
               ? AppColors.primary.withOpacity(0.1)
@@ -570,20 +516,19 @@ class _DropChip extends StatelessWidget {
           children: [
             Text(
               _getLabel(),
-              style: TextStyle(
-                fontSize: 12,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: active ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: active ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppSpacing.s4),
             Icon(
               Icons.arrow_drop_down,
               size: 16,
               color: active ? AppColors.primary : AppColors.textSecondary,
             ),
             if (active) ...[
-              const SizedBox(width: 2),
+              const SizedBox(width: AppSpacing.s2),
               GestureDetector(
                 onTap: onClear,
                 child: const Icon(
