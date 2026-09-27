@@ -20,6 +20,8 @@ class Users extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   BoolColumn get mfaEnabled => boolean().withDefault(const Constant(false))();
   BoolColumn get darkMode => boolean().withDefault(const Constant(false))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -27,12 +29,20 @@ class Users extends Table {
 class Roles extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().unique()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 class UserRoles extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get userId => integer().references(Users, #id)();
   IntColumn get roleId => integer().references(Roles, #id)();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 
   @override
   List<Set<Column>> get uniqueKeys => [
@@ -43,6 +53,10 @@ class UserRoles extends Table {
 class Modules extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().unique()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 class ModulePermissions extends Table {
@@ -53,6 +67,10 @@ class ModulePermissions extends Table {
   BoolColumn get canRead => boolean().withDefault(const Constant(false))();
   BoolColumn get canUpdate => boolean().withDefault(const Constant(false))();
   BoolColumn get canDelete => boolean().withDefault(const Constant(false))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 
   @override
   List<Set<Column>> get uniqueKeys => [
@@ -66,21 +84,25 @@ class Categories extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get image => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 class Products extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get categoryId =>
-      integer().references(Categories, #id).nullable()();
+  IntColumn get categoryId => integer().references(Categories, #id)();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
   TextColumn get image => text().nullable()();
-  RealColumn get salePrice => real()();
+  RealColumn get priceA => real()();
+  RealColumn get priceB => real()();
   RealColumn get productionCost => real().nullable()();
   IntColumn get stock => integer().withDefault(const Constant(0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -89,9 +111,12 @@ class Materials extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
+  TextColumn get unit => text().withDefault(const Constant('unidad'))();
   RealColumn get stock => real().withDefault(const Constant(0))();
   RealColumn get pricePerUnit => real()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -101,7 +126,15 @@ class ProductMaterials extends Table {
   IntColumn get productId => integer().references(Products, #id)();
   IntColumn get materialId => integer().references(Materials, #id)();
   RealColumn get quantityUsed => real()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {productId, materialId},
+  ];
 }
 
 class Locations extends Table {
@@ -110,6 +143,8 @@ class Locations extends Table {
   TextColumn get country => text()();
   TextColumn get description => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -119,6 +154,8 @@ class Suppliers extends Table {
   TextColumn get name => text()();
   TextColumn get contactInfo => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -128,6 +165,8 @@ class Clients extends Table {
   TextColumn get name => text()();
   TextColumn get contactInfo => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -139,6 +178,8 @@ class Events extends Table {
   DateTimeColumn get startDate => dateTime()();
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -153,6 +194,8 @@ class Sales extends Table {
   RealColumn get finalAmount => real()();
   DateTimeColumn get date => dateTime()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -163,7 +206,12 @@ class SaleItems extends Table {
   IntColumn get productId => integer().references(Products, #id)();
   IntColumn get quantity => integer()();
   RealColumn get unitPrice => real()();
+  TextColumn get priceType => text().withDefault(const Constant('A'))();
   RealColumn get subtotal => real()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 class Purchases extends Table {
@@ -176,6 +224,8 @@ class Purchases extends Table {
   RealColumn get totalAmount => real()();
   DateTimeColumn get date => dateTime()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
@@ -187,6 +237,10 @@ class PurchaseItems extends Table {
   RealColumn get quantity => real()();
   RealColumn get unitPrice => real()();
   RealColumn get subtotal => real()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 class SavedReports extends Table {
@@ -194,7 +248,10 @@ class SavedReports extends Table {
   IntColumn get userId => integer().references(Users, #id)();
   TextColumn get name => text()();
   TextColumn get filters => text()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 class AuditLogs extends Table {
@@ -206,13 +263,16 @@ class AuditLogs extends Table {
   IntColumn get recordId => integer().nullable()();
   TextColumn get oldValue => text().nullable()();
   TextColumn get newValue => text().nullable()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 // Tablas que se agregaron para el desarrollo
 class SesionLocal extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get userId => text()();
+  IntColumn get userId => integer().references(Users, #id)();
   TextColumn get username => text()();
   BoolColumn get activa => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime()();
@@ -251,7 +311,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -337,6 +397,149 @@ class AppDatabase extends _$AppDatabase {
           ]);
         });
       }
+      if (from < 9) {
+        // --- sincronizado + supabaseId en todas las tablas excepto
+        // SesionLocal (preparación de esquema para una futura sincronización
+        // con Supabase; todavía no hay lógica de sync, solo las columnas) ---
+        await m.addColumn(users, users.sincronizado);
+        await m.addColumn(users, users.supabaseId);
+        await m.addColumn(roles, roles.sincronizado);
+        await m.addColumn(roles, roles.supabaseId);
+        await m.addColumn(userRoles, userRoles.sincronizado);
+        await m.addColumn(userRoles, userRoles.supabaseId);
+        await m.addColumn(modules, modules.sincronizado);
+        await m.addColumn(modules, modules.supabaseId);
+        await m.addColumn(categories, categories.sincronizado);
+        await m.addColumn(categories, categories.supabaseId);
+        await m.addColumn(products, products.sincronizado);
+        await m.addColumn(products, products.supabaseId);
+        await m.addColumn(materials, materials.sincronizado);
+        await m.addColumn(materials, materials.supabaseId);
+        await m.addColumn(locations, locations.sincronizado);
+        await m.addColumn(locations, locations.supabaseId);
+        await m.addColumn(suppliers, suppliers.sincronizado);
+        await m.addColumn(suppliers, suppliers.supabaseId);
+        await m.addColumn(clients, clients.sincronizado);
+        await m.addColumn(clients, clients.supabaseId);
+        await m.addColumn(events, events.sincronizado);
+        await m.addColumn(events, events.supabaseId);
+        await m.addColumn(sales, sales.sincronizado);
+        await m.addColumn(sales, sales.supabaseId);
+        await m.addColumn(saleItems, saleItems.sincronizado);
+        await m.addColumn(saleItems, saleItems.supabaseId);
+        await m.addColumn(purchases, purchases.sincronizado);
+        await m.addColumn(purchases, purchases.supabaseId);
+        await m.addColumn(purchaseItems, purchaseItems.sincronizado);
+        await m.addColumn(purchaseItems, purchaseItems.supabaseId);
+        await m.addColumn(savedReports, savedReports.sincronizado);
+        await m.addColumn(savedReports, savedReports.supabaseId);
+        await m.addColumn(auditLogs, auditLogs.sincronizado);
+        await m.addColumn(auditLogs, auditLogs.supabaseId);
+        // product_materials y module_permissions ya nacieron con estas
+        // columnas si el dispositivo pasó por la recreación de tabla de la
+        // migración de versión 2 u 8 respectivamente (ambas usan la
+        // definición Dart actual al recrear); solo hace falta agregarlas
+        // aquí si la tabla viene de antes de esa recreación.
+        if (from >= 2) {
+          await m.addColumn(productMaterials, productMaterials.sincronizado);
+          await m.addColumn(productMaterials, productMaterials.supabaseId);
+        }
+        if (from >= 8) {
+          await m.addColumn(modulePermissions, modulePermissions.sincronizado);
+          await m.addColumn(modulePermissions, modulePermissions.supabaseId);
+        }
+
+        // --- created_at / updated_at faltantes ---
+        await m.addColumn(roles, roles.createdAt);
+        await m.addColumn(roles, roles.updatedAt);
+        await m.addColumn(userRoles, userRoles.createdAt);
+        await m.addColumn(userRoles, userRoles.updatedAt);
+        await m.addColumn(modules, modules.createdAt);
+        await m.addColumn(modules, modules.updatedAt);
+        await m.addColumn(saleItems, saleItems.createdAt);
+        await m.addColumn(saleItems, saleItems.updatedAt);
+        await m.addColumn(purchaseItems, purchaseItems.createdAt);
+        await m.addColumn(purchaseItems, purchaseItems.updatedAt);
+        await m.addColumn(savedReports, savedReports.updatedAt);
+        await m.addColumn(auditLogs, auditLogs.updatedAt);
+        if (from >= 8) {
+          await m.addColumn(modulePermissions, modulePermissions.createdAt);
+          await m.addColumn(modulePermissions, modulePermissions.updatedAt);
+        }
+        if (from >= 2) {
+          await m.addColumn(productMaterials, productMaterials.updatedAt);
+        }
+
+        // --- Materials.unit ---
+        await m.addColumn(materials, materials.unit);
+
+        // --- SaleItems.priceType (siempre "A" por ahora: todavía no existe
+        // una UI para elegir entre precio A/B al momento de la venta) ---
+        await m.addColumn(saleItems, saleItems.priceType);
+
+        // --- Products: categoría obligatoria + price_a/price_b ---
+        // Toda venta previa a este cambio usaba un único precio; se preserva
+        // ese valor como price_a y price_b hasta que exista una UI para
+        // diferenciarlos.
+        final sinCategoria = await (select(
+          categories,
+        )..where((c) => c.name.equals('Sin categoría'))).getSingleOrNull();
+        final sinCategoriaId =
+            sinCategoria?.id ??
+            await into(
+              categories,
+            ).insert(CategoriesCompanion.insert(name: 'Sin categoría'));
+
+        await customStatement(
+          'UPDATE products SET category_id = ? WHERE category_id IS NULL',
+          [sinCategoriaId],
+        );
+
+        await m.alterTable(
+          TableMigration(
+            products,
+            newColumns: [products.priceA, products.priceB],
+            columnTransformer: {
+              products.priceA: const CustomExpression<double>('sale_price'),
+              products.priceB: const CustomExpression<double>('sale_price'),
+            },
+          ),
+        );
+
+        // --- ProductMaterials: índice único (productId, materialId) ---
+        // La tabla dejó de ser un historial de uso (ver la vinculación en
+        // MaterialRepository.registerMaterialUsage, que ahora actualiza la
+        // fila existente en vez de insertar una nueva); antes de aplicar el
+        // índice único se conserva solo la fila más reciente por par
+        // producto+material y se descartan los duplicados.
+        if (from >= 2) {
+          await customStatement('''
+            DELETE FROM product_materials
+            WHERE id NOT IN (
+              SELECT id FROM (
+                SELECT id, ROW_NUMBER() OVER (
+                  PARTITION BY product_id, material_id
+                  ORDER BY COALESCE(updated_at, created_at) DESC, id DESC
+                ) AS rn
+                FROM product_materials
+              ) WHERE rn = 1
+            );
+          ''');
+        }
+        await m.alterTable(TableMigration(productMaterials));
+
+        // --- SesionLocal.userId: de TextColumn a IntColumn con FK a Users ---
+        await m.alterTable(
+          TableMigration(
+            sesionLocal,
+            columnTransformer: {
+              sesionLocal.userId: const CustomExpression<int>(
+                'CAST(user_id AS INTEGER)',
+              ),
+            },
+          ),
+        );
+      }
     },
   );
 
@@ -407,6 +610,11 @@ class AppDatabase extends _$AppDatabase {
         ]);
       });
     }
+
+    // Categoría por defecto para productos sin categoría asignada
+    await into(categories).insert(
+      CategoriesCompanion.insert(name: 'Sin categoría'),
+    );
 
     // Cliente por defecto para ventas sin identificar
     await into(clients).insert(

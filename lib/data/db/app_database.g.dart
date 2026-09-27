@@ -99,6 +99,32 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -131,6 +157,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     isActive,
     mfaEnabled,
     darkMode,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -194,6 +222,21 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         darkMode.isAcceptableOrUnknown(data['dark_mode']!, _darkModeMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -243,6 +286,14 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.bool,
         data['${effectivePrefix}dark_mode'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -268,6 +319,8 @@ class User extends DataClass implements Insertable<User> {
   final bool isActive;
   final bool mfaEnabled;
   final bool darkMode;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const User({
@@ -278,6 +331,8 @@ class User extends DataClass implements Insertable<User> {
     required this.isActive,
     required this.mfaEnabled,
     required this.darkMode,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -291,6 +346,10 @@ class User extends DataClass implements Insertable<User> {
     map['is_active'] = Variable<bool>(isActive);
     map['mfa_enabled'] = Variable<bool>(mfaEnabled);
     map['dark_mode'] = Variable<bool>(darkMode);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -307,6 +366,10 @@ class User extends DataClass implements Insertable<User> {
       isActive: Value(isActive),
       mfaEnabled: Value(mfaEnabled),
       darkMode: Value(darkMode),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -327,6 +390,8 @@ class User extends DataClass implements Insertable<User> {
       isActive: serializer.fromJson<bool>(json['isActive']),
       mfaEnabled: serializer.fromJson<bool>(json['mfaEnabled']),
       darkMode: serializer.fromJson<bool>(json['darkMode']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -342,6 +407,8 @@ class User extends DataClass implements Insertable<User> {
       'isActive': serializer.toJson<bool>(isActive),
       'mfaEnabled': serializer.toJson<bool>(mfaEnabled),
       'darkMode': serializer.toJson<bool>(darkMode),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -355,6 +422,8 @@ class User extends DataClass implements Insertable<User> {
     bool? isActive,
     bool? mfaEnabled,
     bool? darkMode,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => User(
@@ -365,6 +434,8 @@ class User extends DataClass implements Insertable<User> {
     isActive: isActive ?? this.isActive,
     mfaEnabled: mfaEnabled ?? this.mfaEnabled,
     darkMode: darkMode ?? this.darkMode,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -381,6 +452,12 @@ class User extends DataClass implements Insertable<User> {
           ? data.mfaEnabled.value
           : this.mfaEnabled,
       darkMode: data.darkMode.present ? data.darkMode.value : this.darkMode,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -396,6 +473,8 @@ class User extends DataClass implements Insertable<User> {
           ..write('isActive: $isActive, ')
           ..write('mfaEnabled: $mfaEnabled, ')
           ..write('darkMode: $darkMode, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -411,6 +490,8 @@ class User extends DataClass implements Insertable<User> {
     isActive,
     mfaEnabled,
     darkMode,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   );
@@ -425,6 +506,8 @@ class User extends DataClass implements Insertable<User> {
           other.isActive == this.isActive &&
           other.mfaEnabled == this.mfaEnabled &&
           other.darkMode == this.darkMode &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -437,6 +520,8 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<bool> isActive;
   final Value<bool> mfaEnabled;
   final Value<bool> darkMode;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const UsersCompanion({
@@ -447,6 +532,8 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.isActive = const Value.absent(),
     this.mfaEnabled = const Value.absent(),
     this.darkMode = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -458,6 +545,8 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.isActive = const Value.absent(),
     this.mfaEnabled = const Value.absent(),
     this.darkMode = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : username = Value(username),
@@ -471,6 +560,8 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<bool>? isActive,
     Expression<bool>? mfaEnabled,
     Expression<bool>? darkMode,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -482,6 +573,8 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (isActive != null) 'is_active': isActive,
       if (mfaEnabled != null) 'mfa_enabled': mfaEnabled,
       if (darkMode != null) 'dark_mode': darkMode,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -495,6 +588,8 @@ class UsersCompanion extends UpdateCompanion<User> {
     Value<bool>? isActive,
     Value<bool>? mfaEnabled,
     Value<bool>? darkMode,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -506,6 +601,8 @@ class UsersCompanion extends UpdateCompanion<User> {
       isActive: isActive ?? this.isActive,
       mfaEnabled: mfaEnabled ?? this.mfaEnabled,
       darkMode: darkMode ?? this.darkMode,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -535,6 +632,12 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (darkMode.present) {
       map['dark_mode'] = Variable<bool>(darkMode.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -554,6 +657,8 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('isActive: $isActive, ')
           ..write('mfaEnabled: $mfaEnabled, ')
           ..write('darkMode: $darkMode, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -589,8 +694,64 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name];
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -614,6 +775,33 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -631,6 +819,22 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -643,17 +847,47 @@ class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
 class Role extends DataClass implements Insertable<Role> {
   final int id;
   final String name;
-  const Role({required this.id, required this.name});
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  const Role({
+    required this.id,
+    required this.name,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
   RolesCompanion toCompanion(bool nullToAbsent) {
-    return RolesCompanion(id: Value(id), name: Value(name));
+    return RolesCompanion(
+      id: Value(id),
+      name: Value(name),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
   }
 
   factory Role.fromJson(
@@ -664,6 +898,10 @@ class Role extends DataClass implements Insertable<Role> {
     return Role(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -672,15 +910,40 @@ class Role extends DataClass implements Insertable<Role> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
-  Role copyWith({int? id, String? name}) =>
-      Role(id: id ?? this.id, name: name ?? this.name);
+  Role copyWith({
+    int? id,
+    String? name,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
+  }) => Role(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
   Role copyWithCompanion(RolesCompanion data) {
     return Role(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -688,40 +951,87 @@ class Role extends DataClass implements Insertable<Role> {
   String toString() {
     return (StringBuffer('Role(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode =>
+      Object.hash(id, name, sincronizado, supabaseId, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Role && other.id == this.id && other.name == this.name);
+      (other is Role &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class RolesCompanion extends UpdateCompanion<Role> {
   final Value<int> id;
   final Value<String> name;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const RolesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
-  RolesCompanion.insert({this.id = const Value.absent(), required String name})
-    : name = Value(name);
+  RolesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : name = Value(name);
   static Insertable<Role> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
-  RolesCompanion copyWith({Value<int>? id, Value<String>? name}) {
-    return RolesCompanion(id: id ?? this.id, name: name ?? this.name);
+  RolesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
+  }) {
+    return RolesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 
   @override
@@ -733,6 +1043,18 @@ class RolesCompanion extends UpdateCompanion<Role> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     return map;
   }
 
@@ -740,7 +1062,11 @@ class RolesCompanion extends UpdateCompanion<Role> {
   String toString() {
     return (StringBuffer('RolesCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -789,8 +1115,65 @@ class $UserRolesTable extends UserRoles
       'REFERENCES roles (id)',
     ),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, userId, roleId];
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    roleId,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -822,6 +1205,33 @@ class $UserRolesTable extends UserRoles
     } else if (isInserting) {
       context.missing(_roleIdMeta);
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -847,6 +1257,22 @@ class $UserRolesTable extends UserRoles
         DriftSqlType.int,
         data['${effectivePrefix}role_id'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -860,10 +1286,18 @@ class UserRole extends DataClass implements Insertable<UserRole> {
   final int id;
   final int userId;
   final int roleId;
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
   const UserRole({
     required this.id,
     required this.userId,
     required this.roleId,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -871,6 +1305,14 @@ class UserRole extends DataClass implements Insertable<UserRole> {
     map['id'] = Variable<int>(id);
     map['user_id'] = Variable<int>(userId);
     map['role_id'] = Variable<int>(roleId);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -879,6 +1321,14 @@ class UserRole extends DataClass implements Insertable<UserRole> {
       id: Value(id),
       userId: Value(userId),
       roleId: Value(roleId),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -891,6 +1341,10 @@ class UserRole extends DataClass implements Insertable<UserRole> {
       id: serializer.fromJson<int>(json['id']),
       userId: serializer.fromJson<int>(json['userId']),
       roleId: serializer.fromJson<int>(json['roleId']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -900,19 +1354,43 @@ class UserRole extends DataClass implements Insertable<UserRole> {
       'id': serializer.toJson<int>(id),
       'userId': serializer.toJson<int>(userId),
       'roleId': serializer.toJson<int>(roleId),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
-  UserRole copyWith({int? id, int? userId, int? roleId}) => UserRole(
+  UserRole copyWith({
+    int? id,
+    int? userId,
+    int? roleId,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
+  }) => UserRole(
     id: id ?? this.id,
     userId: userId ?? this.userId,
     roleId: roleId ?? this.roleId,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   UserRole copyWithCompanion(UserRolesCompanion data) {
     return UserRole(
       id: data.id.present ? data.id.value : this.id,
       userId: data.userId.present ? data.userId.value : this.userId,
       roleId: data.roleId.present ? data.roleId.value : this.roleId,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -921,46 +1399,82 @@ class UserRole extends DataClass implements Insertable<UserRole> {
     return (StringBuffer('UserRole(')
           ..write('id: $id, ')
           ..write('userId: $userId, ')
-          ..write('roleId: $roleId')
+          ..write('roleId: $roleId, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, roleId);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    roleId,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserRole &&
           other.id == this.id &&
           other.userId == this.userId &&
-          other.roleId == this.roleId);
+          other.roleId == this.roleId &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class UserRolesCompanion extends UpdateCompanion<UserRole> {
   final Value<int> id;
   final Value<int> userId;
   final Value<int> roleId;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const UserRolesCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.roleId = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   UserRolesCompanion.insert({
     this.id = const Value.absent(),
     required int userId,
     required int roleId,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : userId = Value(userId),
        roleId = Value(roleId);
   static Insertable<UserRole> custom({
     Expression<int>? id,
     Expression<int>? userId,
     Expression<int>? roleId,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (userId != null) 'user_id': userId,
       if (roleId != null) 'role_id': roleId,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -968,11 +1482,19 @@ class UserRolesCompanion extends UpdateCompanion<UserRole> {
     Value<int>? id,
     Value<int>? userId,
     Value<int>? roleId,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
   }) {
     return UserRolesCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       roleId: roleId ?? this.roleId,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -988,6 +1510,18 @@ class UserRolesCompanion extends UpdateCompanion<UserRole> {
     if (roleId.present) {
       map['role_id'] = Variable<int>(roleId.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     return map;
   }
 
@@ -996,7 +1530,11 @@ class UserRolesCompanion extends UpdateCompanion<UserRole> {
     return (StringBuffer('UserRolesCompanion(')
           ..write('id: $id, ')
           ..write('userId: $userId, ')
-          ..write('roleId: $roleId')
+          ..write('roleId: $roleId, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1030,8 +1568,64 @@ class $ModulesTable extends Modules with TableInfo<$ModulesTable, Module> {
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name];
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1055,6 +1649,33 @@ class $ModulesTable extends Modules with TableInfo<$ModulesTable, Module> {
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1072,6 +1693,22 @@ class $ModulesTable extends Modules with TableInfo<$ModulesTable, Module> {
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -1084,17 +1721,47 @@ class $ModulesTable extends Modules with TableInfo<$ModulesTable, Module> {
 class Module extends DataClass implements Insertable<Module> {
   final int id;
   final String name;
-  const Module({required this.id, required this.name});
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  const Module({
+    required this.id,
+    required this.name,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
   ModulesCompanion toCompanion(bool nullToAbsent) {
-    return ModulesCompanion(id: Value(id), name: Value(name));
+    return ModulesCompanion(
+      id: Value(id),
+      name: Value(name),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
   }
 
   factory Module.fromJson(
@@ -1105,6 +1772,10 @@ class Module extends DataClass implements Insertable<Module> {
     return Module(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -1113,15 +1784,40 @@ class Module extends DataClass implements Insertable<Module> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
-  Module copyWith({int? id, String? name}) =>
-      Module(id: id ?? this.id, name: name ?? this.name);
+  Module copyWith({
+    int? id,
+    String? name,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
+  }) => Module(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
   Module copyWithCompanion(ModulesCompanion data) {
     return Module(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1129,42 +1825,87 @@ class Module extends DataClass implements Insertable<Module> {
   String toString() {
     return (StringBuffer('Module(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode =>
+      Object.hash(id, name, sincronizado, supabaseId, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Module && other.id == this.id && other.name == this.name);
+      (other is Module &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ModulesCompanion extends UpdateCompanion<Module> {
   final Value<int> id;
   final Value<String> name;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const ModulesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   ModulesCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Module> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
-  ModulesCompanion copyWith({Value<int>? id, Value<String>? name}) {
-    return ModulesCompanion(id: id ?? this.id, name: name ?? this.name);
+  ModulesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
+  }) {
+    return ModulesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 
   @override
@@ -1176,6 +1917,18 @@ class ModulesCompanion extends UpdateCompanion<Module> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     return map;
   }
 
@@ -1183,7 +1936,11 @@ class ModulesCompanion extends UpdateCompanion<Module> {
   String toString() {
     return (StringBuffer('ModulesCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1294,6 +2051,55 @@ class $ModulePermissionsTable extends ModulePermissions
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1303,6 +2109,10 @@ class $ModulePermissionsTable extends ModulePermissions
     canRead,
     canUpdate,
     canDelete,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1359,6 +2169,33 @@ class $ModulePermissionsTable extends ModulePermissions
         canDelete.isAcceptableOrUnknown(data['can_delete']!, _canDeleteMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1400,6 +2237,22 @@ class $ModulePermissionsTable extends ModulePermissions
         DriftSqlType.bool,
         data['${effectivePrefix}can_delete'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -1418,6 +2271,10 @@ class ModulePermission extends DataClass
   final bool canRead;
   final bool canUpdate;
   final bool canDelete;
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
   const ModulePermission({
     required this.id,
     required this.userId,
@@ -1426,6 +2283,10 @@ class ModulePermission extends DataClass
     required this.canRead,
     required this.canUpdate,
     required this.canDelete,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1437,6 +2298,14 @@ class ModulePermission extends DataClass
     map['can_read'] = Variable<bool>(canRead);
     map['can_update'] = Variable<bool>(canUpdate);
     map['can_delete'] = Variable<bool>(canDelete);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -1449,6 +2318,14 @@ class ModulePermission extends DataClass
       canRead: Value(canRead),
       canUpdate: Value(canUpdate),
       canDelete: Value(canDelete),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -1465,6 +2342,10 @@ class ModulePermission extends DataClass
       canRead: serializer.fromJson<bool>(json['canRead']),
       canUpdate: serializer.fromJson<bool>(json['canUpdate']),
       canDelete: serializer.fromJson<bool>(json['canDelete']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -1478,6 +2359,10 @@ class ModulePermission extends DataClass
       'canRead': serializer.toJson<bool>(canRead),
       'canUpdate': serializer.toJson<bool>(canUpdate),
       'canDelete': serializer.toJson<bool>(canDelete),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -1489,6 +2374,10 @@ class ModulePermission extends DataClass
     bool? canRead,
     bool? canUpdate,
     bool? canDelete,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => ModulePermission(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -1497,6 +2386,10 @@ class ModulePermission extends DataClass
     canRead: canRead ?? this.canRead,
     canUpdate: canUpdate ?? this.canUpdate,
     canDelete: canDelete ?? this.canDelete,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   ModulePermission copyWithCompanion(ModulePermissionsCompanion data) {
     return ModulePermission(
@@ -1507,6 +2400,14 @@ class ModulePermission extends DataClass
       canRead: data.canRead.present ? data.canRead.value : this.canRead,
       canUpdate: data.canUpdate.present ? data.canUpdate.value : this.canUpdate,
       canDelete: data.canDelete.present ? data.canDelete.value : this.canDelete,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1519,7 +2420,11 @@ class ModulePermission extends DataClass
           ..write('canCreate: $canCreate, ')
           ..write('canRead: $canRead, ')
           ..write('canUpdate: $canUpdate, ')
-          ..write('canDelete: $canDelete')
+          ..write('canDelete: $canDelete, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1533,6 +2438,10 @@ class ModulePermission extends DataClass
     canRead,
     canUpdate,
     canDelete,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1544,7 +2453,11 @@ class ModulePermission extends DataClass
           other.canCreate == this.canCreate &&
           other.canRead == this.canRead &&
           other.canUpdate == this.canUpdate &&
-          other.canDelete == this.canDelete);
+          other.canDelete == this.canDelete &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
@@ -1555,6 +2468,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
   final Value<bool> canRead;
   final Value<bool> canUpdate;
   final Value<bool> canDelete;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const ModulePermissionsCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -1563,6 +2480,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
     this.canRead = const Value.absent(),
     this.canUpdate = const Value.absent(),
     this.canDelete = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   ModulePermissionsCompanion.insert({
     this.id = const Value.absent(),
@@ -1572,6 +2493,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
     this.canRead = const Value.absent(),
     this.canUpdate = const Value.absent(),
     this.canDelete = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : userId = Value(userId),
        moduleId = Value(moduleId);
   static Insertable<ModulePermission> custom({
@@ -1582,6 +2507,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
     Expression<bool>? canRead,
     Expression<bool>? canUpdate,
     Expression<bool>? canDelete,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1591,6 +2520,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
       if (canRead != null) 'can_read': canRead,
       if (canUpdate != null) 'can_update': canUpdate,
       if (canDelete != null) 'can_delete': canDelete,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -1602,6 +2535,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
     Value<bool>? canRead,
     Value<bool>? canUpdate,
     Value<bool>? canDelete,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
   }) {
     return ModulePermissionsCompanion(
       id: id ?? this.id,
@@ -1611,6 +2548,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
       canRead: canRead ?? this.canRead,
       canUpdate: canUpdate ?? this.canUpdate,
       canDelete: canDelete ?? this.canDelete,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -1638,6 +2579,18 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
     if (canDelete.present) {
       map['can_delete'] = Variable<bool>(canDelete.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     return map;
   }
 
@@ -1650,7 +2603,11 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
           ..write('canCreate: $canCreate, ')
           ..write('canRead: $canRead, ')
           ..write('canUpdate: $canUpdate, ')
-          ..write('canDelete: $canDelete')
+          ..write('canDelete: $canDelete, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1720,6 +2677,32 @@ class $CategoriesTable extends Categories
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1750,6 +2733,8 @@ class $CategoriesTable extends Categories
     description,
     image,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -1797,6 +2782,21 @@ class $CategoriesTable extends Categories
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1838,6 +2838,14 @@ class $CategoriesTable extends Categories
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1861,6 +2869,8 @@ class Category extends DataClass implements Insertable<Category> {
   final String? description;
   final String? image;
   final bool isActive;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Category({
@@ -1869,6 +2879,8 @@ class Category extends DataClass implements Insertable<Category> {
     this.description,
     this.image,
     required this.isActive,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -1884,6 +2896,10 @@ class Category extends DataClass implements Insertable<Category> {
       map['image'] = Variable<String>(image);
     }
     map['is_active'] = Variable<bool>(isActive);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1902,6 +2918,10 @@ class Category extends DataClass implements Insertable<Category> {
           ? const Value.absent()
           : Value(image),
       isActive: Value(isActive),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -1920,6 +2940,8 @@ class Category extends DataClass implements Insertable<Category> {
       description: serializer.fromJson<String?>(json['description']),
       image: serializer.fromJson<String?>(json['image']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -1933,6 +2955,8 @@ class Category extends DataClass implements Insertable<Category> {
       'description': serializer.toJson<String?>(description),
       'image': serializer.toJson<String?>(image),
       'isActive': serializer.toJson<bool>(isActive),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -1944,6 +2968,8 @@ class Category extends DataClass implements Insertable<Category> {
     Value<String?> description = const Value.absent(),
     Value<String?> image = const Value.absent(),
     bool? isActive,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Category(
@@ -1952,6 +2978,8 @@ class Category extends DataClass implements Insertable<Category> {
     description: description.present ? description.value : this.description,
     image: image.present ? image.value : this.image,
     isActive: isActive ?? this.isActive,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -1964,6 +2992,12 @@ class Category extends DataClass implements Insertable<Category> {
           : this.description,
       image: data.image.present ? data.image.value : this.image,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1977,6 +3011,8 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('description: $description, ')
           ..write('image: $image, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1984,8 +3020,17 @@ class Category extends DataClass implements Insertable<Category> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, description, image, isActive, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    description,
+    image,
+    isActive,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1995,6 +3040,8 @@ class Category extends DataClass implements Insertable<Category> {
           other.description == this.description &&
           other.image == this.image &&
           other.isActive == this.isActive &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2005,6 +3052,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<String?> description;
   final Value<String?> image;
   final Value<bool> isActive;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const CategoriesCompanion({
@@ -2013,6 +3062,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.description = const Value.absent(),
     this.image = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -2022,6 +3073,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.description = const Value.absent(),
     this.image = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name);
@@ -2031,6 +3084,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<String>? description,
     Expression<String>? image,
     Expression<bool>? isActive,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -2040,6 +3095,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (description != null) 'description': description,
       if (image != null) 'image': image,
       if (isActive != null) 'is_active': isActive,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -2051,6 +3108,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Value<String?>? description,
     Value<String?>? image,
     Value<bool>? isActive,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -2060,6 +3119,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       description: description ?? this.description,
       image: image ?? this.image,
       isActive: isActive ?? this.isActive,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -2083,6 +3144,12 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2100,6 +3167,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('description: $description, ')
           ..write('image: $image, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2132,9 +3201,9 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
   late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
     'category_id',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.int,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES categories (id)',
     ),
@@ -2168,12 +3237,19 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _salePriceMeta = const VerificationMeta(
-    'salePrice',
-  );
+  static const VerificationMeta _priceAMeta = const VerificationMeta('priceA');
   @override
-  late final GeneratedColumn<double> salePrice = GeneratedColumn<double>(
-    'sale_price',
+  late final GeneratedColumn<double> priceA = GeneratedColumn<double>(
+    'price_a',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _priceBMeta = const VerificationMeta('priceB');
+  @override
+  late final GeneratedColumn<double> priceB = GeneratedColumn<double>(
+    'price_b',
     aliasedName,
     false,
     type: DriftSqlType.double,
@@ -2215,6 +3291,32 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2245,10 +3347,13 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     name,
     description,
     image,
-    salePrice,
+    priceA,
+    priceB,
     productionCost,
     stock,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -2272,6 +3377,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         _categoryIdMeta,
         categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
       );
+    } else if (isInserting) {
+      context.missing(_categoryIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -2296,13 +3403,21 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         image.isAcceptableOrUnknown(data['image']!, _imageMeta),
       );
     }
-    if (data.containsKey('sale_price')) {
+    if (data.containsKey('price_a')) {
       context.handle(
-        _salePriceMeta,
-        salePrice.isAcceptableOrUnknown(data['sale_price']!, _salePriceMeta),
+        _priceAMeta,
+        priceA.isAcceptableOrUnknown(data['price_a']!, _priceAMeta),
       );
     } else if (isInserting) {
-      context.missing(_salePriceMeta);
+      context.missing(_priceAMeta);
+    }
+    if (data.containsKey('price_b')) {
+      context.handle(
+        _priceBMeta,
+        priceB.isAcceptableOrUnknown(data['price_b']!, _priceBMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_priceBMeta);
     }
     if (data.containsKey('production_cost')) {
       context.handle(
@@ -2323,6 +3438,21 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       context.handle(
         _isActiveMeta,
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
       );
     }
     if (data.containsKey('created_at')) {
@@ -2353,7 +3483,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       categoryId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}category_id'],
-      ),
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -2366,9 +3496,13 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.string,
         data['${effectivePrefix}image'],
       ),
-      salePrice: attachedDatabase.typeMapping.read(
+      priceA: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
-        data['${effectivePrefix}sale_price'],
+        data['${effectivePrefix}price_a'],
+      )!,
+      priceB: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}price_b'],
       )!,
       productionCost: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
@@ -2382,6 +3516,14 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -2401,26 +3543,32 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
 
 class Product extends DataClass implements Insertable<Product> {
   final int id;
-  final int? categoryId;
+  final int categoryId;
   final String name;
   final String? description;
   final String? image;
-  final double salePrice;
+  final double priceA;
+  final double priceB;
   final double? productionCost;
   final int stock;
   final bool isActive;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Product({
     required this.id,
-    this.categoryId,
+    required this.categoryId,
     required this.name,
     this.description,
     this.image,
-    required this.salePrice,
+    required this.priceA,
+    required this.priceB,
     this.productionCost,
     required this.stock,
     required this.isActive,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -2428,9 +3576,7 @@ class Product extends DataClass implements Insertable<Product> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    if (!nullToAbsent || categoryId != null) {
-      map['category_id'] = Variable<int>(categoryId);
-    }
+    map['category_id'] = Variable<int>(categoryId);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
@@ -2438,12 +3584,17 @@ class Product extends DataClass implements Insertable<Product> {
     if (!nullToAbsent || image != null) {
       map['image'] = Variable<String>(image);
     }
-    map['sale_price'] = Variable<double>(salePrice);
+    map['price_a'] = Variable<double>(priceA);
+    map['price_b'] = Variable<double>(priceB);
     if (!nullToAbsent || productionCost != null) {
       map['production_cost'] = Variable<double>(productionCost);
     }
     map['stock'] = Variable<int>(stock);
     map['is_active'] = Variable<bool>(isActive);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -2454,9 +3605,7 @@ class Product extends DataClass implements Insertable<Product> {
   ProductsCompanion toCompanion(bool nullToAbsent) {
     return ProductsCompanion(
       id: Value(id),
-      categoryId: categoryId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(categoryId),
+      categoryId: Value(categoryId),
       name: Value(name),
       description: description == null && nullToAbsent
           ? const Value.absent()
@@ -2464,12 +3613,17 @@ class Product extends DataClass implements Insertable<Product> {
       image: image == null && nullToAbsent
           ? const Value.absent()
           : Value(image),
-      salePrice: Value(salePrice),
+      priceA: Value(priceA),
+      priceB: Value(priceB),
       productionCost: productionCost == null && nullToAbsent
           ? const Value.absent()
           : Value(productionCost),
       stock: Value(stock),
       isActive: Value(isActive),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -2484,14 +3638,17 @@ class Product extends DataClass implements Insertable<Product> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Product(
       id: serializer.fromJson<int>(json['id']),
-      categoryId: serializer.fromJson<int?>(json['categoryId']),
+      categoryId: serializer.fromJson<int>(json['categoryId']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
       image: serializer.fromJson<String?>(json['image']),
-      salePrice: serializer.fromJson<double>(json['salePrice']),
+      priceA: serializer.fromJson<double>(json['priceA']),
+      priceB: serializer.fromJson<double>(json['priceB']),
       productionCost: serializer.fromJson<double?>(json['productionCost']),
       stock: serializer.fromJson<int>(json['stock']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -2501,14 +3658,17 @@ class Product extends DataClass implements Insertable<Product> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'categoryId': serializer.toJson<int?>(categoryId),
+      'categoryId': serializer.toJson<int>(categoryId),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
       'image': serializer.toJson<String?>(image),
-      'salePrice': serializer.toJson<double>(salePrice),
+      'priceA': serializer.toJson<double>(priceA),
+      'priceB': serializer.toJson<double>(priceB),
       'productionCost': serializer.toJson<double?>(productionCost),
       'stock': serializer.toJson<int>(stock),
       'isActive': serializer.toJson<bool>(isActive),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -2516,28 +3676,34 @@ class Product extends DataClass implements Insertable<Product> {
 
   Product copyWith({
     int? id,
-    Value<int?> categoryId = const Value.absent(),
+    int? categoryId,
     String? name,
     Value<String?> description = const Value.absent(),
     Value<String?> image = const Value.absent(),
-    double? salePrice,
+    double? priceA,
+    double? priceB,
     Value<double?> productionCost = const Value.absent(),
     int? stock,
     bool? isActive,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Product(
     id: id ?? this.id,
-    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    categoryId: categoryId ?? this.categoryId,
     name: name ?? this.name,
     description: description.present ? description.value : this.description,
     image: image.present ? image.value : this.image,
-    salePrice: salePrice ?? this.salePrice,
+    priceA: priceA ?? this.priceA,
+    priceB: priceB ?? this.priceB,
     productionCost: productionCost.present
         ? productionCost.value
         : this.productionCost,
     stock: stock ?? this.stock,
     isActive: isActive ?? this.isActive,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -2552,12 +3718,19 @@ class Product extends DataClass implements Insertable<Product> {
           ? data.description.value
           : this.description,
       image: data.image.present ? data.image.value : this.image,
-      salePrice: data.salePrice.present ? data.salePrice.value : this.salePrice,
+      priceA: data.priceA.present ? data.priceA.value : this.priceA,
+      priceB: data.priceB.present ? data.priceB.value : this.priceB,
       productionCost: data.productionCost.present
           ? data.productionCost.value
           : this.productionCost,
       stock: data.stock.present ? data.stock.value : this.stock,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2571,10 +3744,13 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('name: $name, ')
           ..write('description: $description, ')
           ..write('image: $image, ')
-          ..write('salePrice: $salePrice, ')
+          ..write('priceA: $priceA, ')
+          ..write('priceB: $priceB, ')
           ..write('productionCost: $productionCost, ')
           ..write('stock: $stock, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2588,10 +3764,13 @@ class Product extends DataClass implements Insertable<Product> {
     name,
     description,
     image,
-    salePrice,
+    priceA,
+    priceB,
     productionCost,
     stock,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   );
@@ -2604,24 +3783,30 @@ class Product extends DataClass implements Insertable<Product> {
           other.name == this.name &&
           other.description == this.description &&
           other.image == this.image &&
-          other.salePrice == this.salePrice &&
+          other.priceA == this.priceA &&
+          other.priceB == this.priceB &&
           other.productionCost == this.productionCost &&
           other.stock == this.stock &&
           other.isActive == this.isActive &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
 
 class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<int> id;
-  final Value<int?> categoryId;
+  final Value<int> categoryId;
   final Value<String> name;
   final Value<String?> description;
   final Value<String?> image;
-  final Value<double> salePrice;
+  final Value<double> priceA;
+  final Value<double> priceB;
   final Value<double?> productionCost;
   final Value<int> stock;
   final Value<bool> isActive;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const ProductsCompanion({
@@ -2630,37 +3815,48 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.name = const Value.absent(),
     this.description = const Value.absent(),
     this.image = const Value.absent(),
-    this.salePrice = const Value.absent(),
+    this.priceA = const Value.absent(),
+    this.priceB = const Value.absent(),
     this.productionCost = const Value.absent(),
     this.stock = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
   ProductsCompanion.insert({
     this.id = const Value.absent(),
-    this.categoryId = const Value.absent(),
+    required int categoryId,
     required String name,
     this.description = const Value.absent(),
     this.image = const Value.absent(),
-    required double salePrice,
+    required double priceA,
+    required double priceB,
     this.productionCost = const Value.absent(),
     this.stock = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-  }) : name = Value(name),
-       salePrice = Value(salePrice);
+  }) : categoryId = Value(categoryId),
+       name = Value(name),
+       priceA = Value(priceA),
+       priceB = Value(priceB);
   static Insertable<Product> custom({
     Expression<int>? id,
     Expression<int>? categoryId,
     Expression<String>? name,
     Expression<String>? description,
     Expression<String>? image,
-    Expression<double>? salePrice,
+    Expression<double>? priceA,
+    Expression<double>? priceB,
     Expression<double>? productionCost,
     Expression<int>? stock,
     Expression<bool>? isActive,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -2670,10 +3866,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (name != null) 'name': name,
       if (description != null) 'description': description,
       if (image != null) 'image': image,
-      if (salePrice != null) 'sale_price': salePrice,
+      if (priceA != null) 'price_a': priceA,
+      if (priceB != null) 'price_b': priceB,
       if (productionCost != null) 'production_cost': productionCost,
       if (stock != null) 'stock': stock,
       if (isActive != null) 'is_active': isActive,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -2681,14 +3880,17 @@ class ProductsCompanion extends UpdateCompanion<Product> {
 
   ProductsCompanion copyWith({
     Value<int>? id,
-    Value<int?>? categoryId,
+    Value<int>? categoryId,
     Value<String>? name,
     Value<String?>? description,
     Value<String?>? image,
-    Value<double>? salePrice,
+    Value<double>? priceA,
+    Value<double>? priceB,
     Value<double?>? productionCost,
     Value<int>? stock,
     Value<bool>? isActive,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -2698,10 +3900,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       name: name ?? this.name,
       description: description ?? this.description,
       image: image ?? this.image,
-      salePrice: salePrice ?? this.salePrice,
+      priceA: priceA ?? this.priceA,
+      priceB: priceB ?? this.priceB,
       productionCost: productionCost ?? this.productionCost,
       stock: stock ?? this.stock,
       isActive: isActive ?? this.isActive,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -2725,8 +3930,11 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (image.present) {
       map['image'] = Variable<String>(image.value);
     }
-    if (salePrice.present) {
-      map['sale_price'] = Variable<double>(salePrice.value);
+    if (priceA.present) {
+      map['price_a'] = Variable<double>(priceA.value);
+    }
+    if (priceB.present) {
+      map['price_b'] = Variable<double>(priceB.value);
     }
     if (productionCost.present) {
       map['production_cost'] = Variable<double>(productionCost.value);
@@ -2736,6 +3944,12 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -2754,10 +3968,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('name: $name, ')
           ..write('description: $description, ')
           ..write('image: $image, ')
-          ..write('salePrice: $salePrice, ')
+          ..write('priceA: $priceA, ')
+          ..write('priceB: $priceB, ')
           ..write('productionCost: $productionCost, ')
           ..write('stock: $stock, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2804,6 +4021,16 @@ class $MaterialsTable extends Materials
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('unidad'),
+  );
   static const VerificationMeta _stockMeta = const VerificationMeta('stock');
   @override
   late final GeneratedColumn<double> stock = GeneratedColumn<double>(
@@ -2840,6 +4067,32 @@ class $MaterialsTable extends Materials
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2868,9 +4121,12 @@ class $MaterialsTable extends Materials
     id,
     name,
     description,
+    unit,
     stock,
     pricePerUnit,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -2906,6 +4162,12 @@ class $MaterialsTable extends Materials
         ),
       );
     }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
     if (data.containsKey('stock')) {
       context.handle(
         _stockMeta,
@@ -2927,6 +4189,21 @@ class $MaterialsTable extends Materials
       context.handle(
         _isActiveMeta,
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
       );
     }
     if (data.containsKey('created_at')) {
@@ -2962,6 +4239,10 @@ class $MaterialsTable extends Materials
         DriftSqlType.string,
         data['${effectivePrefix}description'],
       ),
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
       stock: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}stock'],
@@ -2974,6 +4255,14 @@ class $MaterialsTable extends Materials
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -2995,18 +4284,24 @@ class Material extends DataClass implements Insertable<Material> {
   final int id;
   final String name;
   final String? description;
+  final String unit;
   final double stock;
   final double pricePerUnit;
   final bool isActive;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Material({
     required this.id,
     required this.name,
     this.description,
+    required this.unit,
     required this.stock,
     required this.pricePerUnit,
     required this.isActive,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -3018,9 +4313,14 @@ class Material extends DataClass implements Insertable<Material> {
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
     }
+    map['unit'] = Variable<String>(unit);
     map['stock'] = Variable<double>(stock);
     map['price_per_unit'] = Variable<double>(pricePerUnit);
     map['is_active'] = Variable<bool>(isActive);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -3035,9 +4335,14 @@ class Material extends DataClass implements Insertable<Material> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
+      unit: Value(unit),
       stock: Value(stock),
       pricePerUnit: Value(pricePerUnit),
       isActive: Value(isActive),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -3054,9 +4359,12 @@ class Material extends DataClass implements Insertable<Material> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
+      unit: serializer.fromJson<String>(json['unit']),
       stock: serializer.fromJson<double>(json['stock']),
       pricePerUnit: serializer.fromJson<double>(json['pricePerUnit']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -3068,9 +4376,12 @@ class Material extends DataClass implements Insertable<Material> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
+      'unit': serializer.toJson<String>(unit),
       'stock': serializer.toJson<double>(stock),
       'pricePerUnit': serializer.toJson<double>(pricePerUnit),
       'isActive': serializer.toJson<bool>(isActive),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -3080,18 +4391,24 @@ class Material extends DataClass implements Insertable<Material> {
     int? id,
     String? name,
     Value<String?> description = const Value.absent(),
+    String? unit,
     double? stock,
     double? pricePerUnit,
     bool? isActive,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Material(
     id: id ?? this.id,
     name: name ?? this.name,
     description: description.present ? description.value : this.description,
+    unit: unit ?? this.unit,
     stock: stock ?? this.stock,
     pricePerUnit: pricePerUnit ?? this.pricePerUnit,
     isActive: isActive ?? this.isActive,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -3102,11 +4419,18 @@ class Material extends DataClass implements Insertable<Material> {
       description: data.description.present
           ? data.description.value
           : this.description,
+      unit: data.unit.present ? data.unit.value : this.unit,
       stock: data.stock.present ? data.stock.value : this.stock,
       pricePerUnit: data.pricePerUnit.present
           ? data.pricePerUnit.value
           : this.pricePerUnit,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -3118,9 +4442,12 @@ class Material extends DataClass implements Insertable<Material> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
+          ..write('unit: $unit, ')
           ..write('stock: $stock, ')
           ..write('pricePerUnit: $pricePerUnit, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3132,9 +4459,12 @@ class Material extends DataClass implements Insertable<Material> {
     id,
     name,
     description,
+    unit,
     stock,
     pricePerUnit,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   );
@@ -3145,9 +4475,12 @@ class Material extends DataClass implements Insertable<Material> {
           other.id == this.id &&
           other.name == this.name &&
           other.description == this.description &&
+          other.unit == this.unit &&
           other.stock == this.stock &&
           other.pricePerUnit == this.pricePerUnit &&
           other.isActive == this.isActive &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -3156,18 +4489,24 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
   final Value<int> id;
   final Value<String> name;
   final Value<String?> description;
+  final Value<String> unit;
   final Value<double> stock;
   final Value<double> pricePerUnit;
   final Value<bool> isActive;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const MaterialsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
+    this.unit = const Value.absent(),
     this.stock = const Value.absent(),
     this.pricePerUnit = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -3175,9 +4514,12 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     this.id = const Value.absent(),
     required String name,
     this.description = const Value.absent(),
+    this.unit = const Value.absent(),
     this.stock = const Value.absent(),
     required double pricePerUnit,
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name),
@@ -3186,9 +4528,12 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? description,
+    Expression<String>? unit,
     Expression<double>? stock,
     Expression<double>? pricePerUnit,
     Expression<bool>? isActive,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -3196,9 +4541,12 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
+      if (unit != null) 'unit': unit,
       if (stock != null) 'stock': stock,
       if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
       if (isActive != null) 'is_active': isActive,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -3208,9 +4556,12 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     Value<int>? id,
     Value<String>? name,
     Value<String?>? description,
+    Value<String>? unit,
     Value<double>? stock,
     Value<double>? pricePerUnit,
     Value<bool>? isActive,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -3218,9 +4569,12 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      unit: unit ?? this.unit,
       stock: stock ?? this.stock,
       pricePerUnit: pricePerUnit ?? this.pricePerUnit,
       isActive: isActive ?? this.isActive,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -3238,6 +4592,9 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
     if (stock.present) {
       map['stock'] = Variable<double>(stock.value);
     }
@@ -3246,6 +4603,12 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3262,9 +4625,12 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
+          ..write('unit: $unit, ')
           ..write('stock: $stock, ')
           ..write('pricePerUnit: $pricePerUnit, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3330,6 +4696,32 @@ class $ProductMaterialsTable extends ProductMaterials
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -3342,13 +4734,27 @@ class $ProductMaterialsTable extends ProductMaterials
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     productId,
     materialId,
     quantityUsed,
+    sincronizado,
+    supabaseId,
     createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3392,10 +4798,31 @@ class $ProductMaterialsTable extends ProductMaterials
     } else if (isInserting) {
       context.missing(_quantityUsedMeta);
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
     return context;
@@ -3403,6 +4830,10 @@ class $ProductMaterialsTable extends ProductMaterials
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {productId, materialId},
+  ];
   @override
   ProductMaterial map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -3423,10 +4854,22 @@ class $ProductMaterialsTable extends ProductMaterials
         DriftSqlType.double,
         data['${effectivePrefix}quantity_used'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -3441,13 +4884,19 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
   final int productId;
   final int materialId;
   final double quantityUsed;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   const ProductMaterial({
     required this.id,
     required this.productId,
     required this.materialId,
     required this.quantityUsed,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3456,7 +4905,14 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     map['product_id'] = Variable<int>(productId);
     map['material_id'] = Variable<int>(materialId);
     map['quantity_used'] = Variable<double>(quantityUsed);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -3466,7 +4922,14 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       productId: Value(productId),
       materialId: Value(materialId),
       quantityUsed: Value(quantityUsed),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -3480,7 +4943,10 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       productId: serializer.fromJson<int>(json['productId']),
       materialId: serializer.fromJson<int>(json['materialId']),
       quantityUsed: serializer.fromJson<double>(json['quantityUsed']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -3491,7 +4957,10 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       'productId': serializer.toJson<int>(productId),
       'materialId': serializer.toJson<int>(materialId),
       'quantityUsed': serializer.toJson<double>(quantityUsed),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -3500,13 +4969,19 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     int? productId,
     int? materialId,
     double? quantityUsed,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => ProductMaterial(
     id: id ?? this.id,
     productId: productId ?? this.productId,
     materialId: materialId ?? this.materialId,
     quantityUsed: quantityUsed ?? this.quantityUsed,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   ProductMaterial copyWithCompanion(ProductMaterialsCompanion data) {
     return ProductMaterial(
@@ -3518,7 +4993,14 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       quantityUsed: data.quantityUsed.present
           ? data.quantityUsed.value
           : this.quantityUsed,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -3529,14 +5011,25 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
           ..write('productId: $productId, ')
           ..write('materialId: $materialId, ')
           ..write('quantityUsed: $quantityUsed, ')
-          ..write('createdAt: $createdAt')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, productId, materialId, quantityUsed, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    productId,
+    materialId,
+    quantityUsed,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3545,7 +5038,10 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
           other.productId == this.productId &&
           other.materialId == this.materialId &&
           other.quantityUsed == this.quantityUsed &&
-          other.createdAt == this.createdAt);
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
@@ -3553,20 +5049,29 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
   final Value<int> productId;
   final Value<int> materialId;
   final Value<double> quantityUsed;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const ProductMaterialsCompanion({
     this.id = const Value.absent(),
     this.productId = const Value.absent(),
     this.materialId = const Value.absent(),
     this.quantityUsed = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   ProductMaterialsCompanion.insert({
     this.id = const Value.absent(),
     required int productId,
     required int materialId,
     required double quantityUsed,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : productId = Value(productId),
        materialId = Value(materialId),
        quantityUsed = Value(quantityUsed);
@@ -3575,14 +5080,20 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     Expression<int>? productId,
     Expression<int>? materialId,
     Expression<double>? quantityUsed,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (productId != null) 'product_id': productId,
       if (materialId != null) 'material_id': materialId,
       if (quantityUsed != null) 'quantity_used': quantityUsed,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -3591,14 +5102,20 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     Value<int>? productId,
     Value<int>? materialId,
     Value<double>? quantityUsed,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
   }) {
     return ProductMaterialsCompanion(
       id: id ?? this.id,
       productId: productId ?? this.productId,
       materialId: materialId ?? this.materialId,
       quantityUsed: quantityUsed ?? this.quantityUsed,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -3617,8 +5134,17 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     if (quantityUsed.present) {
       map['quantity_used'] = Variable<double>(quantityUsed.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     return map;
   }
@@ -3630,7 +5156,10 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
           ..write('productId: $productId, ')
           ..write('materialId: $materialId, ')
           ..write('quantityUsed: $quantityUsed, ')
-          ..write('createdAt: $createdAt')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -3701,6 +5230,32 @@ class $LocationsTable extends Locations
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -3731,6 +5286,8 @@ class $LocationsTable extends Locations
     country,
     description,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -3780,6 +5337,21 @@ class $LocationsTable extends Locations
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -3821,6 +5393,14 @@ class $LocationsTable extends Locations
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -3844,6 +5424,8 @@ class Location extends DataClass implements Insertable<Location> {
   final String country;
   final String? description;
   final bool isActive;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Location({
@@ -3852,6 +5434,8 @@ class Location extends DataClass implements Insertable<Location> {
     required this.country,
     this.description,
     required this.isActive,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -3865,6 +5449,10 @@ class Location extends DataClass implements Insertable<Location> {
       map['description'] = Variable<String>(description);
     }
     map['is_active'] = Variable<bool>(isActive);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -3881,6 +5469,10 @@ class Location extends DataClass implements Insertable<Location> {
           ? const Value.absent()
           : Value(description),
       isActive: Value(isActive),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -3899,6 +5491,8 @@ class Location extends DataClass implements Insertable<Location> {
       country: serializer.fromJson<String>(json['country']),
       description: serializer.fromJson<String?>(json['description']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -3912,6 +5506,8 @@ class Location extends DataClass implements Insertable<Location> {
       'country': serializer.toJson<String>(country),
       'description': serializer.toJson<String?>(description),
       'isActive': serializer.toJson<bool>(isActive),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -3923,6 +5519,8 @@ class Location extends DataClass implements Insertable<Location> {
     String? country,
     Value<String?> description = const Value.absent(),
     bool? isActive,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Location(
@@ -3931,6 +5529,8 @@ class Location extends DataClass implements Insertable<Location> {
     country: country ?? this.country,
     description: description.present ? description.value : this.description,
     isActive: isActive ?? this.isActive,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -3943,6 +5543,12 @@ class Location extends DataClass implements Insertable<Location> {
           ? data.description.value
           : this.description,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -3956,6 +5562,8 @@ class Location extends DataClass implements Insertable<Location> {
           ..write('country: $country, ')
           ..write('description: $description, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3969,6 +5577,8 @@ class Location extends DataClass implements Insertable<Location> {
     country,
     description,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   );
@@ -3981,6 +5591,8 @@ class Location extends DataClass implements Insertable<Location> {
           other.country == this.country &&
           other.description == this.description &&
           other.isActive == this.isActive &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -3991,6 +5603,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
   final Value<String> country;
   final Value<String?> description;
   final Value<bool> isActive;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const LocationsCompanion({
@@ -3999,6 +5613,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
     this.country = const Value.absent(),
     this.description = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -4008,6 +5624,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
     required String country,
     this.description = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : city = Value(city),
@@ -4018,6 +5636,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
     Expression<String>? country,
     Expression<String>? description,
     Expression<bool>? isActive,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -4027,6 +5647,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
       if (country != null) 'country': country,
       if (description != null) 'description': description,
       if (isActive != null) 'is_active': isActive,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -4038,6 +5660,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
     Value<String>? country,
     Value<String?>? description,
     Value<bool>? isActive,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -4047,6 +5671,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
       country: country ?? this.country,
       description: description ?? this.description,
       isActive: isActive ?? this.isActive,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -4070,6 +5696,12 @@ class LocationsCompanion extends UpdateCompanion<Location> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -4087,6 +5719,8 @@ class LocationsCompanion extends UpdateCompanion<Location> {
           ..write('country: $country, ')
           ..write('description: $description, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4148,6 +5782,32 @@ class $SuppliersTable extends Suppliers
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4177,6 +5837,8 @@ class $SuppliersTable extends Suppliers
     name,
     contactInfo,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -4218,6 +5880,21 @@ class $SuppliersTable extends Suppliers
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4255,6 +5932,14 @@ class $SuppliersTable extends Suppliers
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -4277,6 +5962,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
   final String name;
   final String? contactInfo;
   final bool isActive;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Supplier({
@@ -4284,6 +5971,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     required this.name,
     this.contactInfo,
     required this.isActive,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -4296,6 +5985,10 @@ class Supplier extends DataClass implements Insertable<Supplier> {
       map['contact_info'] = Variable<String>(contactInfo);
     }
     map['is_active'] = Variable<bool>(isActive);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -4311,6 +6004,10 @@ class Supplier extends DataClass implements Insertable<Supplier> {
           ? const Value.absent()
           : Value(contactInfo),
       isActive: Value(isActive),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -4328,6 +6025,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
       name: serializer.fromJson<String>(json['name']),
       contactInfo: serializer.fromJson<String?>(json['contactInfo']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -4340,6 +6039,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
       'name': serializer.toJson<String>(name),
       'contactInfo': serializer.toJson<String?>(contactInfo),
       'isActive': serializer.toJson<bool>(isActive),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -4350,6 +6051,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     String? name,
     Value<String?> contactInfo = const Value.absent(),
     bool? isActive,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Supplier(
@@ -4357,6 +6060,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
     name: name ?? this.name,
     contactInfo: contactInfo.present ? contactInfo.value : this.contactInfo,
     isActive: isActive ?? this.isActive,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -4368,6 +6073,12 @@ class Supplier extends DataClass implements Insertable<Supplier> {
           ? data.contactInfo.value
           : this.contactInfo,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -4380,6 +6091,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
           ..write('name: $name, ')
           ..write('contactInfo: $contactInfo, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4387,8 +6100,16 @@ class Supplier extends DataClass implements Insertable<Supplier> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, contactInfo, isActive, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    contactInfo,
+    isActive,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4397,6 +6118,8 @@ class Supplier extends DataClass implements Insertable<Supplier> {
           other.name == this.name &&
           other.contactInfo == this.contactInfo &&
           other.isActive == this.isActive &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -4406,6 +6129,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
   final Value<String> name;
   final Value<String?> contactInfo;
   final Value<bool> isActive;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const SuppliersCompanion({
@@ -4413,6 +6138,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     this.name = const Value.absent(),
     this.contactInfo = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -4421,6 +6148,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     required String name,
     this.contactInfo = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name);
@@ -4429,6 +6158,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     Expression<String>? name,
     Expression<String>? contactInfo,
     Expression<bool>? isActive,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -4437,6 +6168,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
       if (name != null) 'name': name,
       if (contactInfo != null) 'contact_info': contactInfo,
       if (isActive != null) 'is_active': isActive,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -4447,6 +6180,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     Value<String>? name,
     Value<String?>? contactInfo,
     Value<bool>? isActive,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -4455,6 +6190,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
       name: name ?? this.name,
       contactInfo: contactInfo ?? this.contactInfo,
       isActive: isActive ?? this.isActive,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -4475,6 +6212,12 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -4491,6 +6234,8 @@ class SuppliersCompanion extends UpdateCompanion<Supplier> {
           ..write('name: $name, ')
           ..write('contactInfo: $contactInfo, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4551,6 +6296,32 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, Client> {
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4580,6 +6351,8 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, Client> {
     name,
     contactInfo,
     isActive,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -4621,6 +6394,21 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, Client> {
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4658,6 +6446,14 @@ class $ClientsTable extends Clients with TableInfo<$ClientsTable, Client> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -4680,6 +6476,8 @@ class Client extends DataClass implements Insertable<Client> {
   final String name;
   final String? contactInfo;
   final bool isActive;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Client({
@@ -4687,6 +6485,8 @@ class Client extends DataClass implements Insertable<Client> {
     required this.name,
     this.contactInfo,
     required this.isActive,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -4699,6 +6499,10 @@ class Client extends DataClass implements Insertable<Client> {
       map['contact_info'] = Variable<String>(contactInfo);
     }
     map['is_active'] = Variable<bool>(isActive);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -4714,6 +6518,10 @@ class Client extends DataClass implements Insertable<Client> {
           ? const Value.absent()
           : Value(contactInfo),
       isActive: Value(isActive),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -4731,6 +6539,8 @@ class Client extends DataClass implements Insertable<Client> {
       name: serializer.fromJson<String>(json['name']),
       contactInfo: serializer.fromJson<String?>(json['contactInfo']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -4743,6 +6553,8 @@ class Client extends DataClass implements Insertable<Client> {
       'name': serializer.toJson<String>(name),
       'contactInfo': serializer.toJson<String?>(contactInfo),
       'isActive': serializer.toJson<bool>(isActive),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -4753,6 +6565,8 @@ class Client extends DataClass implements Insertable<Client> {
     String? name,
     Value<String?> contactInfo = const Value.absent(),
     bool? isActive,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Client(
@@ -4760,6 +6574,8 @@ class Client extends DataClass implements Insertable<Client> {
     name: name ?? this.name,
     contactInfo: contactInfo.present ? contactInfo.value : this.contactInfo,
     isActive: isActive ?? this.isActive,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -4771,6 +6587,12 @@ class Client extends DataClass implements Insertable<Client> {
           ? data.contactInfo.value
           : this.contactInfo,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -4783,6 +6605,8 @@ class Client extends DataClass implements Insertable<Client> {
           ..write('name: $name, ')
           ..write('contactInfo: $contactInfo, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4790,8 +6614,16 @@ class Client extends DataClass implements Insertable<Client> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, contactInfo, isActive, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    contactInfo,
+    isActive,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4800,6 +6632,8 @@ class Client extends DataClass implements Insertable<Client> {
           other.name == this.name &&
           other.contactInfo == this.contactInfo &&
           other.isActive == this.isActive &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -4809,6 +6643,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
   final Value<String> name;
   final Value<String?> contactInfo;
   final Value<bool> isActive;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const ClientsCompanion({
@@ -4816,6 +6652,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
     this.name = const Value.absent(),
     this.contactInfo = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -4824,6 +6662,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
     required String name,
     this.contactInfo = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name);
@@ -4832,6 +6672,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
     Expression<String>? name,
     Expression<String>? contactInfo,
     Expression<bool>? isActive,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -4840,6 +6682,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
       if (name != null) 'name': name,
       if (contactInfo != null) 'contact_info': contactInfo,
       if (isActive != null) 'is_active': isActive,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -4850,6 +6694,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
     Value<String>? name,
     Value<String?>? contactInfo,
     Value<bool>? isActive,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -4858,6 +6704,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
       name: name ?? this.name,
       contactInfo: contactInfo ?? this.contactInfo,
       isActive: isActive ?? this.isActive,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -4878,6 +6726,12 @@ class ClientsCompanion extends UpdateCompanion<Client> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -4894,6 +6748,8 @@ class ClientsCompanion extends UpdateCompanion<Client> {
           ..write('name: $name, ')
           ..write('contactInfo: $contactInfo, ')
           ..write('isActive: $isActive, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4973,6 +6829,32 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -5004,6 +6886,8 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     startDate,
     endDate,
     notes,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -5056,6 +6940,21 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -5101,6 +7000,14 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -5125,6 +7032,8 @@ class Event extends DataClass implements Insertable<Event> {
   final DateTime startDate;
   final DateTime? endDate;
   final String? notes;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Event({
@@ -5134,6 +7043,8 @@ class Event extends DataClass implements Insertable<Event> {
     required this.startDate,
     this.endDate,
     this.notes,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -5151,6 +7062,10 @@ class Event extends DataClass implements Insertable<Event> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
@@ -5173,6 +7088,10 @@ class Event extends DataClass implements Insertable<Event> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -5192,6 +7111,8 @@ class Event extends DataClass implements Insertable<Event> {
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       endDate: serializer.fromJson<DateTime?>(json['endDate']),
       notes: serializer.fromJson<String?>(json['notes']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -5206,6 +7127,8 @@ class Event extends DataClass implements Insertable<Event> {
       'startDate': serializer.toJson<DateTime>(startDate),
       'endDate': serializer.toJson<DateTime?>(endDate),
       'notes': serializer.toJson<String?>(notes),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -5218,6 +7141,8 @@ class Event extends DataClass implements Insertable<Event> {
     DateTime? startDate,
     Value<DateTime?> endDate = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Event(
@@ -5227,6 +7152,8 @@ class Event extends DataClass implements Insertable<Event> {
     startDate: startDate ?? this.startDate,
     endDate: endDate.present ? endDate.value : this.endDate,
     notes: notes.present ? notes.value : this.notes,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -5240,6 +7167,12 @@ class Event extends DataClass implements Insertable<Event> {
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       notes: data.notes.present ? data.notes.value : this.notes,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -5254,6 +7187,8 @@ class Event extends DataClass implements Insertable<Event> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -5268,6 +7203,8 @@ class Event extends DataClass implements Insertable<Event> {
     startDate,
     endDate,
     notes,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   );
@@ -5281,6 +7218,8 @@ class Event extends DataClass implements Insertable<Event> {
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
           other.notes == this.notes &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -5292,6 +7231,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
   final Value<DateTime> startDate;
   final Value<DateTime?> endDate;
   final Value<String?> notes;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const EventsCompanion({
@@ -5301,6 +7242,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -5311,6 +7254,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
     required DateTime startDate,
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name),
@@ -5322,6 +7267,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
     Expression<String>? notes,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -5332,6 +7279,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       if (notes != null) 'notes': notes,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -5344,6 +7293,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Value<DateTime>? startDate,
     Value<DateTime?>? endDate,
     Value<String?>? notes,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -5354,6 +7305,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       notes: notes ?? this.notes,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -5380,6 +7333,12 @@ class EventsCompanion extends UpdateCompanion<Event> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -5398,6 +7357,8 @@ class EventsCompanion extends UpdateCompanion<Event> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -5517,6 +7478,32 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -5551,6 +7538,8 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     finalAmount,
     date,
     notes,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -5629,6 +7618,21 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -5686,6 +7690,14 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -5713,6 +7725,8 @@ class Sale extends DataClass implements Insertable<Sale> {
   final double finalAmount;
   final DateTime date;
   final String? notes;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Sale({
@@ -5725,6 +7739,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     required this.finalAmount,
     required this.date,
     this.notes,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -5747,6 +7763,10 @@ class Sale extends DataClass implements Insertable<Sale> {
     map['date'] = Variable<DateTime>(date);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
@@ -5774,6 +7794,10 @@ class Sale extends DataClass implements Insertable<Sale> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -5796,6 +7820,8 @@ class Sale extends DataClass implements Insertable<Sale> {
       finalAmount: serializer.fromJson<double>(json['finalAmount']),
       date: serializer.fromJson<DateTime>(json['date']),
       notes: serializer.fromJson<String?>(json['notes']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -5813,6 +7839,8 @@ class Sale extends DataClass implements Insertable<Sale> {
       'finalAmount': serializer.toJson<double>(finalAmount),
       'date': serializer.toJson<DateTime>(date),
       'notes': serializer.toJson<String?>(notes),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -5828,6 +7856,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     double? finalAmount,
     DateTime? date,
     Value<String?> notes = const Value.absent(),
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Sale(
@@ -5840,6 +7870,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     finalAmount: finalAmount ?? this.finalAmount,
     date: date ?? this.date,
     notes: notes.present ? notes.value : this.notes,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -5860,6 +7892,12 @@ class Sale extends DataClass implements Insertable<Sale> {
           : this.finalAmount,
       date: data.date.present ? data.date.value : this.date,
       notes: data.notes.present ? data.notes.value : this.notes,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -5877,6 +7915,8 @@ class Sale extends DataClass implements Insertable<Sale> {
           ..write('finalAmount: $finalAmount, ')
           ..write('date: $date, ')
           ..write('notes: $notes, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -5894,6 +7934,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     finalAmount,
     date,
     notes,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   );
@@ -5910,6 +7952,8 @@ class Sale extends DataClass implements Insertable<Sale> {
           other.finalAmount == this.finalAmount &&
           other.date == this.date &&
           other.notes == this.notes &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -5924,6 +7968,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<double> finalAmount;
   final Value<DateTime> date;
   final Value<String?> notes;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const SalesCompanion({
@@ -5936,6 +7982,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     this.finalAmount = const Value.absent(),
     this.date = const Value.absent(),
     this.notes = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -5949,6 +7997,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     required double finalAmount,
     required DateTime date,
     this.notes = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : totalAmount = Value(totalAmount),
@@ -5964,6 +8014,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Expression<double>? finalAmount,
     Expression<DateTime>? date,
     Expression<String>? notes,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -5977,6 +8029,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       if (finalAmount != null) 'final_amount': finalAmount,
       if (date != null) 'date': date,
       if (notes != null) 'notes': notes,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -5992,6 +8046,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Value<double>? finalAmount,
     Value<DateTime>? date,
     Value<String?>? notes,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -6005,6 +8061,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       finalAmount: finalAmount ?? this.finalAmount,
       date: date ?? this.date,
       notes: notes ?? this.notes,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -6040,6 +8098,12 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -6061,6 +8125,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
           ..write('finalAmount: $finalAmount, ')
           ..write('date: $date, ')
           ..write('notes: $notes, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -6135,6 +8201,18 @@ class $SaleItemsTable extends SaleItems
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _priceTypeMeta = const VerificationMeta(
+    'priceType',
+  );
+  @override
+  late final GeneratedColumn<String> priceType = GeneratedColumn<String>(
+    'price_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('A'),
+  );
   static const VerificationMeta _subtotalMeta = const VerificationMeta(
     'subtotal',
   );
@@ -6146,6 +8224,55 @@ class $SaleItemsTable extends SaleItems
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6153,7 +8280,12 @@ class $SaleItemsTable extends SaleItems
     productId,
     quantity,
     unitPrice,
+    priceType,
     subtotal,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6202,6 +8334,12 @@ class $SaleItemsTable extends SaleItems
     } else if (isInserting) {
       context.missing(_unitPriceMeta);
     }
+    if (data.containsKey('price_type')) {
+      context.handle(
+        _priceTypeMeta,
+        priceType.isAcceptableOrUnknown(data['price_type']!, _priceTypeMeta),
+      );
+    }
     if (data.containsKey('subtotal')) {
       context.handle(
         _subtotalMeta,
@@ -6209,6 +8347,33 @@ class $SaleItemsTable extends SaleItems
       );
     } else if (isInserting) {
       context.missing(_subtotalMeta);
+    }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     }
     return context;
   }
@@ -6239,10 +8404,30 @@ class $SaleItemsTable extends SaleItems
         DriftSqlType.double,
         data['${effectivePrefix}unit_price'],
       )!,
+      priceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}price_type'],
+      )!,
       subtotal: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}subtotal'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -6258,14 +8443,24 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
   final int productId;
   final int quantity;
   final double unitPrice;
+  final String priceType;
   final double subtotal;
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
   const SaleItem({
     required this.id,
     required this.saleId,
     required this.productId,
     required this.quantity,
     required this.unitPrice,
+    required this.priceType,
     required this.subtotal,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6275,7 +8470,16 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
     map['product_id'] = Variable<int>(productId);
     map['quantity'] = Variable<int>(quantity);
     map['unit_price'] = Variable<double>(unitPrice);
+    map['price_type'] = Variable<String>(priceType);
     map['subtotal'] = Variable<double>(subtotal);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -6286,7 +8490,16 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
       productId: Value(productId),
       quantity: Value(quantity),
       unitPrice: Value(unitPrice),
+      priceType: Value(priceType),
       subtotal: Value(subtotal),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -6301,7 +8514,12 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
       productId: serializer.fromJson<int>(json['productId']),
       quantity: serializer.fromJson<int>(json['quantity']),
       unitPrice: serializer.fromJson<double>(json['unitPrice']),
+      priceType: serializer.fromJson<String>(json['priceType']),
       subtotal: serializer.fromJson<double>(json['subtotal']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -6313,7 +8531,12 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
       'productId': serializer.toJson<int>(productId),
       'quantity': serializer.toJson<int>(quantity),
       'unitPrice': serializer.toJson<double>(unitPrice),
+      'priceType': serializer.toJson<String>(priceType),
       'subtotal': serializer.toJson<double>(subtotal),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -6323,14 +8546,24 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
     int? productId,
     int? quantity,
     double? unitPrice,
+    String? priceType,
     double? subtotal,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => SaleItem(
     id: id ?? this.id,
     saleId: saleId ?? this.saleId,
     productId: productId ?? this.productId,
     quantity: quantity ?? this.quantity,
     unitPrice: unitPrice ?? this.unitPrice,
+    priceType: priceType ?? this.priceType,
     subtotal: subtotal ?? this.subtotal,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   SaleItem copyWithCompanion(SaleItemsCompanion data) {
     return SaleItem(
@@ -6339,7 +8572,16 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
       productId: data.productId.present ? data.productId.value : this.productId,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
+      priceType: data.priceType.present ? data.priceType.value : this.priceType,
       subtotal: data.subtotal.present ? data.subtotal.value : this.subtotal,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -6351,14 +8593,30 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
           ..write('productId: $productId, ')
           ..write('quantity: $quantity, ')
           ..write('unitPrice: $unitPrice, ')
-          ..write('subtotal: $subtotal')
+          ..write('priceType: $priceType, ')
+          ..write('subtotal: $subtotal, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, saleId, productId, quantity, unitPrice, subtotal);
+  int get hashCode => Object.hash(
+    id,
+    saleId,
+    productId,
+    quantity,
+    unitPrice,
+    priceType,
+    subtotal,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6368,7 +8626,12 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
           other.productId == this.productId &&
           other.quantity == this.quantity &&
           other.unitPrice == this.unitPrice &&
-          other.subtotal == this.subtotal);
+          other.priceType == this.priceType &&
+          other.subtotal == this.subtotal &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
@@ -6377,14 +8640,24 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
   final Value<int> productId;
   final Value<int> quantity;
   final Value<double> unitPrice;
+  final Value<String> priceType;
   final Value<double> subtotal;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const SaleItemsCompanion({
     this.id = const Value.absent(),
     this.saleId = const Value.absent(),
     this.productId = const Value.absent(),
     this.quantity = const Value.absent(),
     this.unitPrice = const Value.absent(),
+    this.priceType = const Value.absent(),
     this.subtotal = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   SaleItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -6392,7 +8665,12 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
     required int productId,
     required int quantity,
     required double unitPrice,
+    this.priceType = const Value.absent(),
     required double subtotal,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : saleId = Value(saleId),
        productId = Value(productId),
        quantity = Value(quantity),
@@ -6404,7 +8682,12 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
     Expression<int>? productId,
     Expression<int>? quantity,
     Expression<double>? unitPrice,
+    Expression<String>? priceType,
     Expression<double>? subtotal,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6412,7 +8695,12 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
       if (productId != null) 'product_id': productId,
       if (quantity != null) 'quantity': quantity,
       if (unitPrice != null) 'unit_price': unitPrice,
+      if (priceType != null) 'price_type': priceType,
       if (subtotal != null) 'subtotal': subtotal,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -6422,7 +8710,12 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
     Value<int>? productId,
     Value<int>? quantity,
     Value<double>? unitPrice,
+    Value<String>? priceType,
     Value<double>? subtotal,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
   }) {
     return SaleItemsCompanion(
       id: id ?? this.id,
@@ -6430,7 +8723,12 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
       productId: productId ?? this.productId,
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
+      priceType: priceType ?? this.priceType,
       subtotal: subtotal ?? this.subtotal,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -6452,8 +8750,23 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
     if (unitPrice.present) {
       map['unit_price'] = Variable<double>(unitPrice.value);
     }
+    if (priceType.present) {
+      map['price_type'] = Variable<String>(priceType.value);
+    }
     if (subtotal.present) {
       map['subtotal'] = Variable<double>(subtotal.value);
+    }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     return map;
   }
@@ -6466,7 +8779,12 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
           ..write('productId: $productId, ')
           ..write('quantity: $quantity, ')
           ..write('unitPrice: $unitPrice, ')
-          ..write('subtotal: $subtotal')
+          ..write('priceType: $priceType, ')
+          ..write('subtotal: $subtotal, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -6588,6 +8906,32 @@ class $PurchasesTable extends Purchases
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -6622,6 +8966,8 @@ class $PurchasesTable extends Purchases
     totalAmount,
     date,
     notes,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   ];
@@ -6698,6 +9044,21 @@ class $PurchasesTable extends Purchases
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -6755,6 +9116,14 @@ class $PurchasesTable extends Purchases
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -6782,6 +9151,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
   final double totalAmount;
   final DateTime date;
   final String? notes;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const Purchase({
@@ -6794,6 +9165,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     required this.totalAmount,
     required this.date,
     this.notes,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -6818,6 +9191,10 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     map['date'] = Variable<DateTime>(date);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
@@ -6847,6 +9224,10 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -6869,6 +9250,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
       date: serializer.fromJson<DateTime>(json['date']),
       notes: serializer.fromJson<String?>(json['notes']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -6886,6 +9269,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       'totalAmount': serializer.toJson<double>(totalAmount),
       'date': serializer.toJson<DateTime>(date),
       'notes': serializer.toJson<String?>(notes),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -6901,6 +9286,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     double? totalAmount,
     DateTime? date,
     Value<String?> notes = const Value.absent(),
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => Purchase(
@@ -6913,6 +9300,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     totalAmount: totalAmount ?? this.totalAmount,
     date: date ?? this.date,
     notes: notes.present ? notes.value : this.notes,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -6937,6 +9326,12 @@ class Purchase extends DataClass implements Insertable<Purchase> {
           : this.totalAmount,
       date: data.date.present ? data.date.value : this.date,
       notes: data.notes.present ? data.notes.value : this.notes,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -6954,6 +9349,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
           ..write('totalAmount: $totalAmount, ')
           ..write('date: $date, ')
           ..write('notes: $notes, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -6971,6 +9368,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     totalAmount,
     date,
     notes,
+    sincronizado,
+    supabaseId,
     createdAt,
     updatedAt,
   );
@@ -6987,6 +9386,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
           other.totalAmount == this.totalAmount &&
           other.date == this.date &&
           other.notes == this.notes &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -7001,6 +9402,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
   final Value<double> totalAmount;
   final Value<DateTime> date;
   final Value<String?> notes;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const PurchasesCompanion({
@@ -7013,6 +9416,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     this.totalAmount = const Value.absent(),
     this.date = const Value.absent(),
     this.notes = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -7026,6 +9431,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     required double totalAmount,
     required DateTime date,
     this.notes = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : totalAmount = Value(totalAmount),
@@ -7040,6 +9447,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     Expression<double>? totalAmount,
     Expression<DateTime>? date,
     Expression<String>? notes,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -7053,6 +9462,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
       if (totalAmount != null) 'total_amount': totalAmount,
       if (date != null) 'date': date,
       if (notes != null) 'notes': notes,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -7068,6 +9479,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     Value<double>? totalAmount,
     Value<DateTime>? date,
     Value<String?>? notes,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -7081,6 +9494,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
       totalAmount: totalAmount ?? this.totalAmount,
       date: date ?? this.date,
       notes: notes ?? this.notes,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -7116,6 +9531,12 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -7137,6 +9558,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
           ..write('totalAmount: $totalAmount, ')
           ..write('date: $date, ')
           ..write('notes: $notes, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -7224,6 +9647,55 @@ class $PurchaseItemsTable extends PurchaseItems
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7232,6 +9704,10 @@ class $PurchaseItemsTable extends PurchaseItems
     quantity,
     unitPrice,
     subtotal,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7288,6 +9764,33 @@ class $PurchaseItemsTable extends PurchaseItems
     } else if (isInserting) {
       context.missing(_subtotalMeta);
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -7321,6 +9824,22 @@ class $PurchaseItemsTable extends PurchaseItems
         DriftSqlType.double,
         data['${effectivePrefix}subtotal'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -7337,6 +9856,10 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
   final double quantity;
   final double unitPrice;
   final double subtotal;
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
   const PurchaseItem({
     required this.id,
     required this.purchaseId,
@@ -7344,6 +9867,10 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
     required this.quantity,
     required this.unitPrice,
     required this.subtotal,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7354,6 +9881,14 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
     map['quantity'] = Variable<double>(quantity);
     map['unit_price'] = Variable<double>(unitPrice);
     map['subtotal'] = Variable<double>(subtotal);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -7365,6 +9900,14 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       quantity: Value(quantity),
       unitPrice: Value(unitPrice),
       subtotal: Value(subtotal),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -7380,6 +9923,10 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       quantity: serializer.fromJson<double>(json['quantity']),
       unitPrice: serializer.fromJson<double>(json['unitPrice']),
       subtotal: serializer.fromJson<double>(json['subtotal']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -7392,6 +9939,10 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       'quantity': serializer.toJson<double>(quantity),
       'unitPrice': serializer.toJson<double>(unitPrice),
       'subtotal': serializer.toJson<double>(subtotal),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -7402,6 +9953,10 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
     double? quantity,
     double? unitPrice,
     double? subtotal,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => PurchaseItem(
     id: id ?? this.id,
     purchaseId: purchaseId ?? this.purchaseId,
@@ -7409,6 +9964,10 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
     quantity: quantity ?? this.quantity,
     unitPrice: unitPrice ?? this.unitPrice,
     subtotal: subtotal ?? this.subtotal,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   PurchaseItem copyWithCompanion(PurchaseItemsCompanion data) {
     return PurchaseItem(
@@ -7422,6 +9981,14 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
       subtotal: data.subtotal.present ? data.subtotal.value : this.subtotal,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -7433,14 +10000,28 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
           ..write('materialId: $materialId, ')
           ..write('quantity: $quantity, ')
           ..write('unitPrice: $unitPrice, ')
-          ..write('subtotal: $subtotal')
+          ..write('subtotal: $subtotal, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, purchaseId, materialId, quantity, unitPrice, subtotal);
+  int get hashCode => Object.hash(
+    id,
+    purchaseId,
+    materialId,
+    quantity,
+    unitPrice,
+    subtotal,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7450,7 +10031,11 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
           other.materialId == this.materialId &&
           other.quantity == this.quantity &&
           other.unitPrice == this.unitPrice &&
-          other.subtotal == this.subtotal);
+          other.subtotal == this.subtotal &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
@@ -7460,6 +10045,10 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
   final Value<double> quantity;
   final Value<double> unitPrice;
   final Value<double> subtotal;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const PurchaseItemsCompanion({
     this.id = const Value.absent(),
     this.purchaseId = const Value.absent(),
@@ -7467,6 +10056,10 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     this.quantity = const Value.absent(),
     this.unitPrice = const Value.absent(),
     this.subtotal = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   PurchaseItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -7475,6 +10068,10 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     required double quantity,
     required double unitPrice,
     required double subtotal,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : purchaseId = Value(purchaseId),
        materialId = Value(materialId),
        quantity = Value(quantity),
@@ -7487,6 +10084,10 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     Expression<double>? quantity,
     Expression<double>? unitPrice,
     Expression<double>? subtotal,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7495,6 +10096,10 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
       if (quantity != null) 'quantity': quantity,
       if (unitPrice != null) 'unit_price': unitPrice,
       if (subtotal != null) 'subtotal': subtotal,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -7505,6 +10110,10 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     Value<double>? quantity,
     Value<double>? unitPrice,
     Value<double>? subtotal,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
   }) {
     return PurchaseItemsCompanion(
       id: id ?? this.id,
@@ -7513,6 +10122,10 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
       subtotal: subtotal ?? this.subtotal,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -7537,6 +10150,18 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     if (subtotal.present) {
       map['subtotal'] = Variable<double>(subtotal.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     return map;
   }
 
@@ -7548,7 +10173,11 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
           ..write('materialId: $materialId, ')
           ..write('quantity: $quantity, ')
           ..write('unitPrice: $unitPrice, ')
-          ..write('subtotal: $subtotal')
+          ..write('subtotal: $subtotal, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -7605,6 +10234,32 @@ class $SavedReportsTable extends SavedReports
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -7617,8 +10272,28 @@ class $SavedReportsTable extends SavedReports
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, userId, name, filters, createdAt];
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    name,
+    filters,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -7658,10 +10333,31 @@ class $SavedReportsTable extends SavedReports
     } else if (isInserting) {
       context.missing(_filtersMeta);
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
     return context;
@@ -7689,10 +10385,22 @@ class $SavedReportsTable extends SavedReports
         DriftSqlType.string,
         data['${effectivePrefix}filters'],
       )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -7707,13 +10415,19 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
   final int userId;
   final String name;
   final String filters;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   const SavedReport({
     required this.id,
     required this.userId,
     required this.name,
     required this.filters,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7722,7 +10436,14 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
     map['user_id'] = Variable<int>(userId);
     map['name'] = Variable<String>(name);
     map['filters'] = Variable<String>(filters);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -7732,7 +10453,14 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
       userId: Value(userId),
       name: Value(name),
       filters: Value(filters),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -7746,7 +10474,10 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
       userId: serializer.fromJson<int>(json['userId']),
       name: serializer.fromJson<String>(json['name']),
       filters: serializer.fromJson<String>(json['filters']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -7757,7 +10488,10 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
       'userId': serializer.toJson<int>(userId),
       'name': serializer.toJson<String>(name),
       'filters': serializer.toJson<String>(filters),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -7766,13 +10500,19 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
     int? userId,
     String? name,
     String? filters,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => SavedReport(
     id: id ?? this.id,
     userId: userId ?? this.userId,
     name: name ?? this.name,
     filters: filters ?? this.filters,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   SavedReport copyWithCompanion(SavedReportsCompanion data) {
     return SavedReport(
@@ -7780,7 +10520,14 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
       userId: data.userId.present ? data.userId.value : this.userId,
       name: data.name.present ? data.name.value : this.name,
       filters: data.filters.present ? data.filters.value : this.filters,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -7791,13 +10538,25 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
           ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('filters: $filters, ')
-          ..write('createdAt: $createdAt')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, name, filters, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    name,
+    filters,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7806,7 +10565,10 @@ class SavedReport extends DataClass implements Insertable<SavedReport> {
           other.userId == this.userId &&
           other.name == this.name &&
           other.filters == this.filters &&
-          other.createdAt == this.createdAt);
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class SavedReportsCompanion extends UpdateCompanion<SavedReport> {
@@ -7814,20 +10576,29 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReport> {
   final Value<int> userId;
   final Value<String> name;
   final Value<String> filters;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const SavedReportsCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.name = const Value.absent(),
     this.filters = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   SavedReportsCompanion.insert({
     this.id = const Value.absent(),
     required int userId,
     required String name,
     required String filters,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : userId = Value(userId),
        name = Value(name),
        filters = Value(filters);
@@ -7836,14 +10607,20 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReport> {
     Expression<int>? userId,
     Expression<String>? name,
     Expression<String>? filters,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (userId != null) 'user_id': userId,
       if (name != null) 'name': name,
       if (filters != null) 'filters': filters,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -7852,14 +10629,20 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReport> {
     Value<int>? userId,
     Value<String>? name,
     Value<String>? filters,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
   }) {
     return SavedReportsCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       name: name ?? this.name,
       filters: filters ?? this.filters,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -7878,8 +10661,17 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReport> {
     if (filters.present) {
       map['filters'] = Variable<String>(filters.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     return map;
   }
@@ -7891,7 +10683,10 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReport> {
           ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('filters: $filters, ')
-          ..write('createdAt: $createdAt')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -7992,6 +10787,32 @@ class $AuditLogsTable extends AuditLogs
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -8004,6 +10825,17 @@ class $AuditLogsTable extends AuditLogs
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8014,7 +10846,10 @@ class $AuditLogsTable extends AuditLogs
     recordId,
     oldValue,
     newValue,
+    sincronizado,
+    supabaseId,
     createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8079,10 +10914,31 @@ class $AuditLogsTable extends AuditLogs
         newValue.isAcceptableOrUnknown(data['new_value']!, _newValueMeta),
       );
     }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
     return context;
@@ -8126,10 +10982,22 @@ class $AuditLogsTable extends AuditLogs
         DriftSqlType.string,
         data['${effectivePrefix}new_value'],
       ),
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -8148,7 +11016,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
   final int? recordId;
   final String? oldValue;
   final String? newValue;
+  final bool sincronizado;
+  final String? supabaseId;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   const AuditLog({
     required this.id,
     required this.userId,
@@ -8158,7 +11029,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
     this.recordId,
     this.oldValue,
     this.newValue,
+    required this.sincronizado,
+    this.supabaseId,
     required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8179,7 +11053,14 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
     if (!nullToAbsent || newValue != null) {
       map['new_value'] = Variable<String>(newValue);
     }
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -8201,7 +11082,14 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
       newValue: newValue == null && nullToAbsent
           ? const Value.absent()
           : Value(newValue),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -8219,7 +11107,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
       recordId: serializer.fromJson<int?>(json['recordId']),
       oldValue: serializer.fromJson<String?>(json['oldValue']),
       newValue: serializer.fromJson<String?>(json['newValue']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -8234,7 +11125,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
       'recordId': serializer.toJson<int?>(recordId),
       'oldValue': serializer.toJson<String?>(oldValue),
       'newValue': serializer.toJson<String?>(newValue),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -8247,7 +11141,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
     Value<int?> recordId = const Value.absent(),
     Value<String?> oldValue = const Value.absent(),
     Value<String?> newValue = const Value.absent(),
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => AuditLog(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -8257,7 +11154,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
     recordId: recordId.present ? recordId.value : this.recordId,
     oldValue: oldValue.present ? oldValue.value : this.oldValue,
     newValue: newValue.present ? newValue.value : this.newValue,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   AuditLog copyWithCompanion(AuditLogsCompanion data) {
     return AuditLog(
@@ -8273,7 +11173,14 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
       recordId: data.recordId.present ? data.recordId.value : this.recordId,
       oldValue: data.oldValue.present ? data.oldValue.value : this.oldValue,
       newValue: data.newValue.present ? data.newValue.value : this.newValue,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -8288,7 +11195,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
           ..write('recordId: $recordId, ')
           ..write('oldValue: $oldValue, ')
           ..write('newValue: $newValue, ')
-          ..write('createdAt: $createdAt')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -8303,7 +11213,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
     recordId,
     oldValue,
     newValue,
+    sincronizado,
+    supabaseId,
     createdAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -8317,7 +11230,10 @@ class AuditLog extends DataClass implements Insertable<AuditLog> {
           other.recordId == this.recordId &&
           other.oldValue == this.oldValue &&
           other.newValue == this.newValue &&
-          other.createdAt == this.createdAt);
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
@@ -8329,7 +11245,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
   final Value<int?> recordId;
   final Value<String?> oldValue;
   final Value<String?> newValue;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   const AuditLogsCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -8339,7 +11258,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
     this.recordId = const Value.absent(),
     this.oldValue = const Value.absent(),
     this.newValue = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   AuditLogsCompanion.insert({
     this.id = const Value.absent(),
@@ -8350,7 +11272,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
     this.recordId = const Value.absent(),
     this.oldValue = const Value.absent(),
     this.newValue = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : userId = Value(userId),
        moduleName = Value(moduleName),
        action = Value(action);
@@ -8363,7 +11288,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
     Expression<int>? recordId,
     Expression<String>? oldValue,
     Expression<String>? newValue,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -8374,7 +11302,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
       if (recordId != null) 'record_id': recordId,
       if (oldValue != null) 'old_value': oldValue,
       if (newValue != null) 'new_value': newValue,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -8387,7 +11318,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
     Value<int?>? recordId,
     Value<String?>? oldValue,
     Value<String?>? newValue,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
   }) {
     return AuditLogsCompanion(
       id: id ?? this.id,
@@ -8398,7 +11332,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
       recordId: recordId ?? this.recordId,
       oldValue: oldValue ?? this.oldValue,
       newValue: newValue ?? this.newValue,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -8429,8 +11366,17 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
     if (newValue.present) {
       map['new_value'] = Variable<String>(newValue.value);
     }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     return map;
   }
@@ -8446,7 +11392,10 @@ class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
           ..write('recordId: $recordId, ')
           ..write('oldValue: $oldValue, ')
           ..write('newValue: $newValue, ')
-          ..write('createdAt: $createdAt')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -8473,12 +11422,15 @@ class $SesionLocalTable extends SesionLocal
   );
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
-  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+  late final GeneratedColumn<int> userId = GeneratedColumn<int>(
     'user_id',
     aliasedName,
     false,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
   );
   static const VerificationMeta _usernameMeta = const VerificationMeta(
     'username',
@@ -8582,7 +11534,7 @@ class $SesionLocalTable extends SesionLocal
         data['${effectivePrefix}id'],
       )!,
       userId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
+        DriftSqlType.int,
         data['${effectivePrefix}user_id'],
       )!,
       username: attachedDatabase.typeMapping.read(
@@ -8608,7 +11560,7 @@ class $SesionLocalTable extends SesionLocal
 
 class SesionLocalData extends DataClass implements Insertable<SesionLocalData> {
   final int id;
-  final String userId;
+  final int userId;
   final String username;
   final bool activa;
   final DateTime createdAt;
@@ -8623,7 +11575,7 @@ class SesionLocalData extends DataClass implements Insertable<SesionLocalData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['user_id'] = Variable<String>(userId);
+    map['user_id'] = Variable<int>(userId);
     map['username'] = Variable<String>(username);
     map['activa'] = Variable<bool>(activa);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -8647,7 +11599,7 @@ class SesionLocalData extends DataClass implements Insertable<SesionLocalData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SesionLocalData(
       id: serializer.fromJson<int>(json['id']),
-      userId: serializer.fromJson<String>(json['userId']),
+      userId: serializer.fromJson<int>(json['userId']),
       username: serializer.fromJson<String>(json['username']),
       activa: serializer.fromJson<bool>(json['activa']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -8658,7 +11610,7 @@ class SesionLocalData extends DataClass implements Insertable<SesionLocalData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'userId': serializer.toJson<String>(userId),
+      'userId': serializer.toJson<int>(userId),
       'username': serializer.toJson<String>(username),
       'activa': serializer.toJson<bool>(activa),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -8667,7 +11619,7 @@ class SesionLocalData extends DataClass implements Insertable<SesionLocalData> {
 
   SesionLocalData copyWith({
     int? id,
-    String? userId,
+    int? userId,
     String? username,
     bool? activa,
     DateTime? createdAt,
@@ -8715,7 +11667,7 @@ class SesionLocalData extends DataClass implements Insertable<SesionLocalData> {
 
 class SesionLocalCompanion extends UpdateCompanion<SesionLocalData> {
   final Value<int> id;
-  final Value<String> userId;
+  final Value<int> userId;
   final Value<String> username;
   final Value<bool> activa;
   final Value<DateTime> createdAt;
@@ -8728,7 +11680,7 @@ class SesionLocalCompanion extends UpdateCompanion<SesionLocalData> {
   });
   SesionLocalCompanion.insert({
     this.id = const Value.absent(),
-    required String userId,
+    required int userId,
     required String username,
     this.activa = const Value.absent(),
     required DateTime createdAt,
@@ -8737,7 +11689,7 @@ class SesionLocalCompanion extends UpdateCompanion<SesionLocalData> {
        createdAt = Value(createdAt);
   static Insertable<SesionLocalData> custom({
     Expression<int>? id,
-    Expression<String>? userId,
+    Expression<int>? userId,
     Expression<String>? username,
     Expression<bool>? activa,
     Expression<DateTime>? createdAt,
@@ -8753,7 +11705,7 @@ class SesionLocalCompanion extends UpdateCompanion<SesionLocalData> {
 
   SesionLocalCompanion copyWith({
     Value<int>? id,
-    Value<String>? userId,
+    Value<int>? userId,
     Value<String>? username,
     Value<bool>? activa,
     Value<DateTime>? createdAt,
@@ -8774,7 +11726,7 @@ class SesionLocalCompanion extends UpdateCompanion<SesionLocalData> {
       map['id'] = Variable<int>(id.value);
     }
     if (userId.present) {
-      map['user_id'] = Variable<String>(userId.value);
+      map['user_id'] = Variable<int>(userId.value);
     }
     if (username.present) {
       map['username'] = Variable<String>(username.value);
@@ -8864,6 +11816,8 @@ typedef $$UsersTableCreateCompanionBuilder =
       Value<bool> isActive,
       Value<bool> mfaEnabled,
       Value<bool> darkMode,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -8876,6 +11830,8 @@ typedef $$UsersTableUpdateCompanionBuilder =
       Value<bool> isActive,
       Value<bool> mfaEnabled,
       Value<bool> darkMode,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -8961,6 +11917,24 @@ final class $$UsersTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$SesionLocalTable, List<SesionLocalData>>
+  _sesionLocalRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.sesionLocal,
+    aliasName: $_aliasNameGenerator(db.users.id, db.sesionLocal.userId),
+  );
+
+  $$SesionLocalTableProcessedTableManager get sesionLocalRefs {
+    final manager = $$SesionLocalTableTableManager(
+      $_db,
+      $_db.sesionLocal,
+    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_sesionLocalRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
@@ -9003,6 +11977,16 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<bool> get darkMode => $composableBuilder(
     column: $table.darkMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9115,6 +12099,31 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
     );
     return f(composer);
   }
+
+  Expression<bool> sesionLocalRefs(
+    Expression<bool> Function($$SesionLocalTableFilterComposer f) f,
+  ) {
+    final $$SesionLocalTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sesionLocal,
+      getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SesionLocalTableFilterComposer(
+            $db: $db,
+            $table: $db.sesionLocal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$UsersTableOrderingComposer
@@ -9158,6 +12167,16 @@ class $$UsersTableOrderingComposer
 
   ColumnOrderings<bool> get darkMode => $composableBuilder(
     column: $table.darkMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9205,6 +12224,16 @@ class $$UsersTableAnnotationComposer
 
   GeneratedColumn<bool> get darkMode =>
       $composableBuilder(column: $table.darkMode, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9312,6 +12341,31 @@ class $$UsersTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> sesionLocalRefs<T extends Object>(
+    Expression<T> Function($$SesionLocalTableAnnotationComposer a) f,
+  ) {
+    final $$SesionLocalTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.sesionLocal,
+      getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SesionLocalTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sesionLocal,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$UsersTableTableManager
@@ -9332,6 +12386,7 @@ class $$UsersTableTableManager
             bool modulePermissionsRefs,
             bool savedReportsRefs,
             bool auditLogsRefs,
+            bool sesionLocalRefs,
           })
         > {
   $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
@@ -9354,6 +12409,8 @@ class $$UsersTableTableManager
                 Value<bool> isActive = const Value.absent(),
                 Value<bool> mfaEnabled = const Value.absent(),
                 Value<bool> darkMode = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => UsersCompanion(
@@ -9364,6 +12421,8 @@ class $$UsersTableTableManager
                 isActive: isActive,
                 mfaEnabled: mfaEnabled,
                 darkMode: darkMode,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -9376,6 +12435,8 @@ class $$UsersTableTableManager
                 Value<bool> isActive = const Value.absent(),
                 Value<bool> mfaEnabled = const Value.absent(),
                 Value<bool> darkMode = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => UsersCompanion.insert(
@@ -9386,6 +12447,8 @@ class $$UsersTableTableManager
                 isActive: isActive,
                 mfaEnabled: mfaEnabled,
                 darkMode: darkMode,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -9401,6 +12464,7 @@ class $$UsersTableTableManager
                 modulePermissionsRefs = false,
                 savedReportsRefs = false,
                 auditLogsRefs = false,
+                sesionLocalRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -9409,6 +12473,7 @@ class $$UsersTableTableManager
                     if (modulePermissionsRefs) db.modulePermissions,
                     if (savedReportsRefs) db.savedReports,
                     if (auditLogsRefs) db.auditLogs,
+                    if (sesionLocalRefs) db.sesionLocal,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -9489,6 +12554,27 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (sesionLocalRefs)
+                        await $_getPrefetchedData<
+                          User,
+                          $UsersTable,
+                          SesionLocalData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._sesionLocalRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sesionLocalRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.userId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -9514,12 +12600,27 @@ typedef $$UsersTableProcessedTableManager =
         bool modulePermissionsRefs,
         bool savedReportsRefs,
         bool auditLogsRefs,
+        bool sesionLocalRefs,
       })
     >;
 typedef $$RolesTableCreateCompanionBuilder =
-    RolesCompanion Function({Value<int> id, required String name});
+    RolesCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
 typedef $$RolesTableUpdateCompanionBuilder =
-    RolesCompanion Function({Value<int> id, Value<String> name});
+    RolesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
 
 final class $$RolesTableReferences
     extends BaseReferences<_$AppDatabase, $RolesTable, Role> {
@@ -9559,6 +12660,26 @@ class $$RolesTableFilterComposer extends Composer<_$AppDatabase, $RolesTable> {
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9606,6 +12727,26 @@ class $$RolesTableOrderingComposer
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$RolesTableAnnotationComposer
@@ -9622,6 +12763,22 @@ class $$RolesTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> userRolesRefs<T extends Object>(
     Expression<T> Function($$UserRolesTableAnnotationComposer a) f,
@@ -9679,10 +12836,34 @@ class $$RolesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-              }) => RolesCompanion(id: id, name: name),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => RolesCompanion(
+                id: id,
+                name: name,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
           createCompanionCallback:
-              ({Value<int> id = const Value.absent(), required String name}) =>
-                  RolesCompanion.insert(id: id, name: name),
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => RolesCompanion.insert(
+                id: id,
+                name: name,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) =>
@@ -9734,12 +12915,20 @@ typedef $$UserRolesTableCreateCompanionBuilder =
       Value<int> id,
       required int userId,
       required int roleId,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 typedef $$UserRolesTableUpdateCompanionBuilder =
     UserRolesCompanion Function({
       Value<int> id,
       Value<int> userId,
       Value<int> roleId,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 
 final class $$UserRolesTableReferences
@@ -9794,6 +12983,26 @@ class $$UserRolesTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9858,6 +13067,26 @@ class $$UserRolesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -9916,6 +13145,22 @@ class $$UserRolesTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
@@ -9995,16 +13240,36 @@ class $$UserRolesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> userId = const Value.absent(),
                 Value<int> roleId = const Value.absent(),
-              }) => UserRolesCompanion(id: id, userId: userId, roleId: roleId),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => UserRolesCompanion(
+                id: id,
+                userId: userId,
+                roleId: roleId,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required int userId,
                 required int roleId,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => UserRolesCompanion.insert(
                 id: id,
                 userId: userId,
                 roleId: roleId,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -10087,9 +13352,23 @@ typedef $$UserRolesTableProcessedTableManager =
       PrefetchHooks Function({bool userId, bool roleId})
     >;
 typedef $$ModulesTableCreateCompanionBuilder =
-    ModulesCompanion Function({Value<int> id, required String name});
+    ModulesCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
 typedef $$ModulesTableUpdateCompanionBuilder =
-    ModulesCompanion Function({Value<int> id, Value<String> name});
+    ModulesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
 
 final class $$ModulesTableReferences
     extends BaseReferences<_$AppDatabase, $ModulesTable, Module> {
@@ -10139,6 +13418,26 @@ class $$ModulesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> modulePermissionsRefs(
     Expression<bool> Function($$ModulePermissionsTableFilterComposer f) f,
   ) {
@@ -10183,6 +13482,26 @@ class $$ModulesTableOrderingComposer
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ModulesTableAnnotationComposer
@@ -10199,6 +13518,22 @@ class $$ModulesTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> modulePermissionsRefs<T extends Object>(
     Expression<T> Function($$ModulePermissionsTableAnnotationComposer a) f,
@@ -10257,10 +13592,34 @@ class $$ModulesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-              }) => ModulesCompanion(id: id, name: name),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => ModulesCompanion(
+                id: id,
+                name: name,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
           createCompanionCallback:
-              ({Value<int> id = const Value.absent(), required String name}) =>
-                  ModulesCompanion.insert(id: id, name: name),
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => ModulesCompanion.insert(
+                id: id,
+                name: name,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
@@ -10327,6 +13686,10 @@ typedef $$ModulePermissionsTableCreateCompanionBuilder =
       Value<bool> canRead,
       Value<bool> canUpdate,
       Value<bool> canDelete,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 typedef $$ModulePermissionsTableUpdateCompanionBuilder =
     ModulePermissionsCompanion Function({
@@ -10337,6 +13700,10 @@ typedef $$ModulePermissionsTableUpdateCompanionBuilder =
       Value<bool> canRead,
       Value<bool> canUpdate,
       Value<bool> canDelete,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 
 final class $$ModulePermissionsTableReferences
@@ -10424,6 +13791,26 @@ class $$ModulePermissionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$UsersTableFilterComposer get userId {
     final $$UsersTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -10505,6 +13892,26 @@ class $$ModulePermissionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -10575,6 +13982,22 @@ class $$ModulePermissionsTableAnnotationComposer
 
   GeneratedColumn<bool> get canDelete =>
       $composableBuilder(column: $table.canDelete, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
@@ -10663,6 +14086,10 @@ class $$ModulePermissionsTableTableManager
                 Value<bool> canRead = const Value.absent(),
                 Value<bool> canUpdate = const Value.absent(),
                 Value<bool> canDelete = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => ModulePermissionsCompanion(
                 id: id,
                 userId: userId,
@@ -10671,6 +14098,10 @@ class $$ModulePermissionsTableTableManager
                 canRead: canRead,
                 canUpdate: canUpdate,
                 canDelete: canDelete,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -10681,6 +14112,10 @@ class $$ModulePermissionsTableTableManager
                 Value<bool> canRead = const Value.absent(),
                 Value<bool> canUpdate = const Value.absent(),
                 Value<bool> canDelete = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => ModulePermissionsCompanion.insert(
                 id: id,
                 userId: userId,
@@ -10689,6 +14124,10 @@ class $$ModulePermissionsTableTableManager
                 canRead: canRead,
                 canUpdate: canUpdate,
                 canDelete: canDelete,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -10781,6 +14220,8 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       Value<String?> description,
       Value<String?> image,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -10791,6 +14232,8 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<String?> description,
       Value<String?> image,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -10850,6 +14293,16 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10923,6 +14376,16 @@ class $$CategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -10959,6 +14422,16 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -11025,6 +14498,8 @@ class $$CategoriesTableTableManager
                 Value<String?> description = const Value.absent(),
                 Value<String?> image = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => CategoriesCompanion(
@@ -11033,6 +14508,8 @@ class $$CategoriesTableTableManager
                 description: description,
                 image: image,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -11043,6 +14520,8 @@ class $$CategoriesTableTableManager
                 Value<String?> description = const Value.absent(),
                 Value<String?> image = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => CategoriesCompanion.insert(
@@ -11051,6 +14530,8 @@ class $$CategoriesTableTableManager
                 description: description,
                 image: image,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -11113,28 +14594,34 @@ typedef $$CategoriesTableProcessedTableManager =
 typedef $$ProductsTableCreateCompanionBuilder =
     ProductsCompanion Function({
       Value<int> id,
-      Value<int?> categoryId,
+      required int categoryId,
       required String name,
       Value<String?> description,
       Value<String?> image,
-      required double salePrice,
+      required double priceA,
+      required double priceB,
       Value<double?> productionCost,
       Value<int> stock,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
 typedef $$ProductsTableUpdateCompanionBuilder =
     ProductsCompanion Function({
       Value<int> id,
-      Value<int?> categoryId,
+      Value<int> categoryId,
       Value<String> name,
       Value<String?> description,
       Value<String?> image,
-      Value<double> salePrice,
+      Value<double> priceA,
+      Value<double> priceB,
       Value<double?> productionCost,
       Value<int> stock,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -11148,9 +14635,9 @@ final class $$ProductsTableReferences
         $_aliasNameGenerator(db.products.categoryId, db.categories.id),
       );
 
-  $$CategoriesTableProcessedTableManager? get categoryId {
-    final $_column = $_itemColumn<int>('category_id');
-    if ($_column == null) return null;
+  $$CategoriesTableProcessedTableManager get categoryId {
+    final $_column = $_itemColumn<int>('category_id')!;
+
     final manager = $$CategoriesTableTableManager(
       $_db,
       $_db.categories,
@@ -11233,8 +14720,13 @@ class $$ProductsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get salePrice => $composableBuilder(
-    column: $table.salePrice,
+  ColumnFilters<double> get priceA => $composableBuilder(
+    column: $table.priceA,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get priceB => $composableBuilder(
+    column: $table.priceB,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11250,6 +14742,16 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11366,8 +14868,13 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get salePrice => $composableBuilder(
-    column: $table.salePrice,
+  ColumnOrderings<double> get priceA => $composableBuilder(
+    column: $table.priceA,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get priceB => $composableBuilder(
+    column: $table.priceB,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -11383,6 +14890,16 @@ class $$ProductsTableOrderingComposer
 
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -11443,8 +14960,11 @@ class $$ProductsTableAnnotationComposer
   GeneratedColumn<String> get image =>
       $composableBuilder(column: $table.image, builder: (column) => column);
 
-  GeneratedColumn<double> get salePrice =>
-      $composableBuilder(column: $table.salePrice, builder: (column) => column);
+  GeneratedColumn<double> get priceA =>
+      $composableBuilder(column: $table.priceA, builder: (column) => column);
+
+  GeneratedColumn<double> get priceB =>
+      $composableBuilder(column: $table.priceB, builder: (column) => column);
 
   GeneratedColumn<double> get productionCost => $composableBuilder(
     column: $table.productionCost,
@@ -11456,6 +14976,16 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -11570,14 +15100,17 @@ class $$ProductsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int?> categoryId = const Value.absent(),
+                Value<int> categoryId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> image = const Value.absent(),
-                Value<double> salePrice = const Value.absent(),
+                Value<double> priceA = const Value.absent(),
+                Value<double> priceB = const Value.absent(),
                 Value<double?> productionCost = const Value.absent(),
                 Value<int> stock = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => ProductsCompanion(
@@ -11586,24 +15119,30 @@ class $$ProductsTableTableManager
                 name: name,
                 description: description,
                 image: image,
-                salePrice: salePrice,
+                priceA: priceA,
+                priceB: priceB,
                 productionCost: productionCost,
                 stock: stock,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int?> categoryId = const Value.absent(),
+                required int categoryId,
                 required String name,
                 Value<String?> description = const Value.absent(),
                 Value<String?> image = const Value.absent(),
-                required double salePrice,
+                required double priceA,
+                required double priceB,
                 Value<double?> productionCost = const Value.absent(),
                 Value<int> stock = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => ProductsCompanion.insert(
@@ -11612,10 +15151,13 @@ class $$ProductsTableTableManager
                 name: name,
                 description: description,
                 image: image,
-                salePrice: salePrice,
+                priceA: priceA,
+                priceB: priceB,
                 productionCost: productionCost,
                 stock: stock,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -11746,9 +15288,12 @@ typedef $$MaterialsTableCreateCompanionBuilder =
       Value<int> id,
       required String name,
       Value<String?> description,
+      Value<String> unit,
       Value<double> stock,
       required double pricePerUnit,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -11757,9 +15302,12 @@ typedef $$MaterialsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> name,
       Value<String?> description,
+      Value<String> unit,
       Value<double> stock,
       Value<double> pricePerUnit,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -11837,6 +15385,11 @@ class $$MaterialsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<double> get stock => $composableBuilder(
     column: $table.stock,
     builder: (column) => ColumnFilters(column),
@@ -11849,6 +15402,16 @@ class $$MaterialsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11937,6 +15500,11 @@ class $$MaterialsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get stock => $composableBuilder(
     column: $table.stock,
     builder: (column) => ColumnOrderings(column),
@@ -11949,6 +15517,16 @@ class $$MaterialsTableOrderingComposer
 
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -11983,6 +15561,9 @@ class $$MaterialsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
+
   GeneratedColumn<double> get stock =>
       $composableBuilder(column: $table.stock, builder: (column) => column);
 
@@ -11993,6 +15574,16 @@ class $$MaterialsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -12085,18 +15676,24 @@ class $$MaterialsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> description = const Value.absent(),
+                Value<String> unit = const Value.absent(),
                 Value<double> stock = const Value.absent(),
                 Value<double> pricePerUnit = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => MaterialsCompanion(
                 id: id,
                 name: name,
                 description: description,
+                unit: unit,
                 stock: stock,
                 pricePerUnit: pricePerUnit,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -12105,18 +15702,24 @@ class $$MaterialsTableTableManager
                 Value<int> id = const Value.absent(),
                 required String name,
                 Value<String?> description = const Value.absent(),
+                Value<String> unit = const Value.absent(),
                 Value<double> stock = const Value.absent(),
                 required double pricePerUnit,
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => MaterialsCompanion.insert(
                 id: id,
                 name: name,
                 description: description,
+                unit: unit,
                 stock: stock,
                 pricePerUnit: pricePerUnit,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -12212,7 +15815,10 @@ typedef $$ProductMaterialsTableCreateCompanionBuilder =
       required int productId,
       required int materialId,
       required double quantityUsed,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 typedef $$ProductMaterialsTableUpdateCompanionBuilder =
     ProductMaterialsCompanion Function({
@@ -12220,7 +15826,10 @@ typedef $$ProductMaterialsTableUpdateCompanionBuilder =
       Value<int> productId,
       Value<int> materialId,
       Value<double> quantityUsed,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 
 final class $$ProductMaterialsTableReferences
@@ -12290,8 +15899,23 @@ class $$ProductMaterialsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12361,8 +15985,23 @@ class $$ProductMaterialsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -12430,8 +16069,21 @@ class $$ProductMaterialsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$ProductsTableAnnotationComposer get productId {
     final $$ProductsTableAnnotationComposer composer = $composerBuilder(
@@ -12514,13 +16166,19 @@ class $$ProductMaterialsTableTableManager
                 Value<int> productId = const Value.absent(),
                 Value<int> materialId = const Value.absent(),
                 Value<double> quantityUsed = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => ProductMaterialsCompanion(
                 id: id,
                 productId: productId,
                 materialId: materialId,
                 quantityUsed: quantityUsed,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -12528,13 +16186,19 @@ class $$ProductMaterialsTableTableManager
                 required int productId,
                 required int materialId,
                 required double quantityUsed,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => ProductMaterialsCompanion.insert(
                 id: id,
                 productId: productId,
                 materialId: materialId,
                 quantityUsed: quantityUsed,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -12627,6 +16291,8 @@ typedef $$LocationsTableCreateCompanionBuilder =
       required String country,
       Value<String?> description,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -12637,6 +16303,8 @@ typedef $$LocationsTableUpdateCompanionBuilder =
       Value<String> country,
       Value<String?> description,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -12733,6 +16401,16 @@ class $$LocationsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12856,6 +16534,16 @@ class $$LocationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -12892,6 +16580,16 @@ class $$LocationsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -13012,6 +16710,8 @@ class $$LocationsTableTableManager
                 Value<String> country = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => LocationsCompanion(
@@ -13020,6 +16720,8 @@ class $$LocationsTableTableManager
                 country: country,
                 description: description,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -13030,6 +16732,8 @@ class $$LocationsTableTableManager
                 required String country,
                 Value<String?> description = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => LocationsCompanion.insert(
@@ -13038,6 +16742,8 @@ class $$LocationsTableTableManager
                 country: country,
                 description: description,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -13156,6 +16862,8 @@ typedef $$SuppliersTableCreateCompanionBuilder =
       required String name,
       Value<String?> contactInfo,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -13165,6 +16873,8 @@ typedef $$SuppliersTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> contactInfo,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -13218,6 +16928,16 @@ class $$SuppliersTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13286,6 +17006,16 @@ class $$SuppliersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -13319,6 +17049,16 @@ class $$SuppliersTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -13384,6 +17124,8 @@ class $$SuppliersTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> contactInfo = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => SuppliersCompanion(
@@ -13391,6 +17133,8 @@ class $$SuppliersTableTableManager
                 name: name,
                 contactInfo: contactInfo,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -13400,6 +17144,8 @@ class $$SuppliersTableTableManager
                 required String name,
                 Value<String?> contactInfo = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => SuppliersCompanion.insert(
@@ -13407,6 +17153,8 @@ class $$SuppliersTableTableManager
                 name: name,
                 contactInfo: contactInfo,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -13472,6 +17220,8 @@ typedef $$ClientsTableCreateCompanionBuilder =
       required String name,
       Value<String?> contactInfo,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -13481,6 +17231,8 @@ typedef $$ClientsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> contactInfo,
       Value<bool> isActive,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -13535,6 +17287,16 @@ class $$ClientsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13603,6 +17365,16 @@ class $$ClientsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -13636,6 +17408,16 @@ class $$ClientsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -13701,6 +17483,8 @@ class $$ClientsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> contactInfo = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => ClientsCompanion(
@@ -13708,6 +17492,8 @@ class $$ClientsTableTableManager
                 name: name,
                 contactInfo: contactInfo,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -13717,6 +17503,8 @@ class $$ClientsTableTableManager
                 required String name,
                 Value<String?> contactInfo = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => ClientsCompanion.insert(
@@ -13724,6 +17512,8 @@ class $$ClientsTableTableManager
                 name: name,
                 contactInfo: contactInfo,
                 isActive: isActive,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -13784,6 +17574,8 @@ typedef $$EventsTableCreateCompanionBuilder =
       required DateTime startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -13795,6 +17587,8 @@ typedef $$EventsTableUpdateCompanionBuilder =
       Value<DateTime> startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -13889,6 +17683,16 @@ class $$EventsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14010,6 +17814,16 @@ class $$EventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -14067,6 +17881,16 @@ class $$EventsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -14186,6 +18010,8 @@ class $$EventsTableTableManager
                 Value<DateTime> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => EventsCompanion(
@@ -14195,6 +18021,8 @@ class $$EventsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -14206,6 +18034,8 @@ class $$EventsTableTableManager
                 required DateTime startDate,
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => EventsCompanion.insert(
@@ -14215,6 +18045,8 @@ class $$EventsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -14337,6 +18169,8 @@ typedef $$SalesTableCreateCompanionBuilder =
       required double finalAmount,
       required DateTime date,
       Value<String?> notes,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -14351,6 +18185,8 @@ typedef $$SalesTableUpdateCompanionBuilder =
       Value<double> finalAmount,
       Value<DateTime> date,
       Value<String?> notes,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -14465,6 +18301,16 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14612,6 +18458,16 @@ class $$SalesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -14722,6 +18578,16 @@ class $$SalesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -14866,6 +18732,8 @@ class $$SalesTableTableManager
                 Value<double> finalAmount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => SalesCompanion(
@@ -14878,6 +18746,8 @@ class $$SalesTableTableManager
                 finalAmount: finalAmount,
                 date: date,
                 notes: notes,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -14892,6 +18762,8 @@ class $$SalesTableTableManager
                 required double finalAmount,
                 required DateTime date,
                 Value<String?> notes = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => SalesCompanion.insert(
@@ -14904,6 +18776,8 @@ class $$SalesTableTableManager
                 finalAmount: finalAmount,
                 date: date,
                 notes: notes,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -15034,7 +18908,12 @@ typedef $$SaleItemsTableCreateCompanionBuilder =
       required int productId,
       required int quantity,
       required double unitPrice,
+      Value<String> priceType,
       required double subtotal,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 typedef $$SaleItemsTableUpdateCompanionBuilder =
     SaleItemsCompanion Function({
@@ -15043,7 +18922,12 @@ typedef $$SaleItemsTableUpdateCompanionBuilder =
       Value<int> productId,
       Value<int> quantity,
       Value<double> unitPrice,
+      Value<String> priceType,
       Value<double> subtotal,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 
 final class $$SaleItemsTableReferences
@@ -15112,8 +18996,33 @@ class $$SaleItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get priceType => $composableBuilder(
+    column: $table.priceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<double> get subtotal => $composableBuilder(
     column: $table.subtotal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15188,8 +19097,33 @@ class $$SaleItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get priceType => $composableBuilder(
+    column: $table.priceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get subtotal => $composableBuilder(
     column: $table.subtotal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -15258,8 +19192,27 @@ class $$SaleItemsTableAnnotationComposer
   GeneratedColumn<double> get unitPrice =>
       $composableBuilder(column: $table.unitPrice, builder: (column) => column);
 
+  GeneratedColumn<String> get priceType =>
+      $composableBuilder(column: $table.priceType, builder: (column) => column);
+
   GeneratedColumn<double> get subtotal =>
       $composableBuilder(column: $table.subtotal, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$SalesTableAnnotationComposer get saleId {
     final $$SalesTableAnnotationComposer composer = $composerBuilder(
@@ -15341,14 +19294,24 @@ class $$SaleItemsTableTableManager
                 Value<int> productId = const Value.absent(),
                 Value<int> quantity = const Value.absent(),
                 Value<double> unitPrice = const Value.absent(),
+                Value<String> priceType = const Value.absent(),
                 Value<double> subtotal = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => SaleItemsCompanion(
                 id: id,
                 saleId: saleId,
                 productId: productId,
                 quantity: quantity,
                 unitPrice: unitPrice,
+                priceType: priceType,
                 subtotal: subtotal,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -15357,14 +19320,24 @@ class $$SaleItemsTableTableManager
                 required int productId,
                 required int quantity,
                 required double unitPrice,
+                Value<String> priceType = const Value.absent(),
                 required double subtotal,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => SaleItemsCompanion.insert(
                 id: id,
                 saleId: saleId,
                 productId: productId,
                 quantity: quantity,
                 unitPrice: unitPrice,
+                priceType: priceType,
                 subtotal: subtotal,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -15457,6 +19430,8 @@ typedef $$PurchasesTableCreateCompanionBuilder =
       required double totalAmount,
       required DateTime date,
       Value<String?> notes,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -15471,6 +19446,8 @@ typedef $$PurchasesTableUpdateCompanionBuilder =
       Value<double> totalAmount,
       Value<DateTime> date,
       Value<String?> notes,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -15593,6 +19570,16 @@ class $$PurchasesTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15740,6 +19727,16 @@ class $$PurchasesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -15852,6 +19849,16 @@ class $$PurchasesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -15996,6 +20003,8 @@ class $$PurchasesTableTableManager
                 Value<double> totalAmount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => PurchasesCompanion(
@@ -16008,6 +20017,8 @@ class $$PurchasesTableTableManager
                 totalAmount: totalAmount,
                 date: date,
                 notes: notes,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -16022,6 +20033,8 @@ class $$PurchasesTableTableManager
                 required double totalAmount,
                 required DateTime date,
                 Value<String?> notes = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => PurchasesCompanion.insert(
@@ -16034,6 +20047,8 @@ class $$PurchasesTableTableManager
                 totalAmount: totalAmount,
                 date: date,
                 notes: notes,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -16173,6 +20188,10 @@ typedef $$PurchaseItemsTableCreateCompanionBuilder =
       required double quantity,
       required double unitPrice,
       required double subtotal,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 typedef $$PurchaseItemsTableUpdateCompanionBuilder =
     PurchaseItemsCompanion Function({
@@ -16182,6 +20201,10 @@ typedef $$PurchaseItemsTableUpdateCompanionBuilder =
       Value<double> quantity,
       Value<double> unitPrice,
       Value<double> subtotal,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 
 final class $$PurchaseItemsTableReferences
@@ -16257,6 +20280,26 @@ class $$PurchaseItemsTableFilterComposer
 
   ColumnFilters<double> get subtotal => $composableBuilder(
     column: $table.subtotal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16336,6 +20379,26 @@ class $$PurchaseItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$PurchasesTableOrderingComposer get purchaseId {
     final $$PurchasesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -16403,6 +20466,22 @@ class $$PurchaseItemsTableAnnotationComposer
 
   GeneratedColumn<double> get subtotal =>
       $composableBuilder(column: $table.subtotal, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$PurchasesTableAnnotationComposer get purchaseId {
     final $$PurchasesTableAnnotationComposer composer = $composerBuilder(
@@ -16485,6 +20564,10 @@ class $$PurchaseItemsTableTableManager
                 Value<double> quantity = const Value.absent(),
                 Value<double> unitPrice = const Value.absent(),
                 Value<double> subtotal = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => PurchaseItemsCompanion(
                 id: id,
                 purchaseId: purchaseId,
@@ -16492,6 +20575,10 @@ class $$PurchaseItemsTableTableManager
                 quantity: quantity,
                 unitPrice: unitPrice,
                 subtotal: subtotal,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -16501,6 +20588,10 @@ class $$PurchaseItemsTableTableManager
                 required double quantity,
                 required double unitPrice,
                 required double subtotal,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => PurchaseItemsCompanion.insert(
                 id: id,
                 purchaseId: purchaseId,
@@ -16508,6 +20599,10 @@ class $$PurchaseItemsTableTableManager
                 quantity: quantity,
                 unitPrice: unitPrice,
                 subtotal: subtotal,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -16595,7 +20690,10 @@ typedef $$SavedReportsTableCreateCompanionBuilder =
       required int userId,
       required String name,
       required String filters,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 typedef $$SavedReportsTableUpdateCompanionBuilder =
     SavedReportsCompanion Function({
@@ -16603,7 +20701,10 @@ typedef $$SavedReportsTableUpdateCompanionBuilder =
       Value<int> userId,
       Value<String> name,
       Value<String> filters,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 
 final class $$SavedReportsTableReferences
@@ -16653,8 +20754,23 @@ class $$SavedReportsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16706,8 +20822,23 @@ class $$SavedReportsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -16753,8 +20884,21 @@ class $$SavedReportsTableAnnotationComposer
   GeneratedColumn<String> get filters =>
       $composableBuilder(column: $table.filters, builder: (column) => column);
 
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
@@ -16812,13 +20956,19 @@ class $$SavedReportsTableTableManager
                 Value<int> userId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> filters = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => SavedReportsCompanion(
                 id: id,
                 userId: userId,
                 name: name,
                 filters: filters,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -16826,13 +20976,19 @@ class $$SavedReportsTableTableManager
                 required int userId,
                 required String name,
                 required String filters,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => SavedReportsCompanion.insert(
                 id: id,
                 userId: userId,
                 name: name,
                 filters: filters,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -16911,7 +21067,10 @@ typedef $$AuditLogsTableCreateCompanionBuilder =
       Value<int?> recordId,
       Value<String?> oldValue,
       Value<String?> newValue,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 typedef $$AuditLogsTableUpdateCompanionBuilder =
     AuditLogsCompanion Function({
@@ -16923,7 +21082,10 @@ typedef $$AuditLogsTableUpdateCompanionBuilder =
       Value<int?> recordId,
       Value<String?> oldValue,
       Value<String?> newValue,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
     });
 
 final class $$AuditLogsTableReferences
@@ -16993,8 +21155,23 @@ class $$AuditLogsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17066,8 +21243,23 @@ class $$AuditLogsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -17129,8 +21321,21 @@ class $$AuditLogsTableAnnotationComposer
   GeneratedColumn<String> get newValue =>
       $composableBuilder(column: $table.newValue, builder: (column) => column);
 
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
@@ -17192,7 +21397,10 @@ class $$AuditLogsTableTableManager
                 Value<int?> recordId = const Value.absent(),
                 Value<String?> oldValue = const Value.absent(),
                 Value<String?> newValue = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => AuditLogsCompanion(
                 id: id,
                 userId: userId,
@@ -17202,7 +21410,10 @@ class $$AuditLogsTableTableManager
                 recordId: recordId,
                 oldValue: oldValue,
                 newValue: newValue,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -17214,7 +21425,10 @@ class $$AuditLogsTableTableManager
                 Value<int?> recordId = const Value.absent(),
                 Value<String?> oldValue = const Value.absent(),
                 Value<String?> newValue = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
               }) => AuditLogsCompanion.insert(
                 id: id,
                 userId: userId,
@@ -17224,7 +21438,10 @@ class $$AuditLogsTableTableManager
                 recordId: recordId,
                 oldValue: oldValue,
                 newValue: newValue,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -17296,7 +21513,7 @@ typedef $$AuditLogsTableProcessedTableManager =
 typedef $$SesionLocalTableCreateCompanionBuilder =
     SesionLocalCompanion Function({
       Value<int> id,
-      required String userId,
+      required int userId,
       required String username,
       Value<bool> activa,
       required DateTime createdAt,
@@ -17304,11 +21521,34 @@ typedef $$SesionLocalTableCreateCompanionBuilder =
 typedef $$SesionLocalTableUpdateCompanionBuilder =
     SesionLocalCompanion Function({
       Value<int> id,
-      Value<String> userId,
+      Value<int> userId,
       Value<String> username,
       Value<bool> activa,
       Value<DateTime> createdAt,
     });
+
+final class $$SesionLocalTableReferences
+    extends BaseReferences<_$AppDatabase, $SesionLocalTable, SesionLocalData> {
+  $$SesionLocalTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $UsersTable _userIdTable(_$AppDatabase db) => db.users.createAlias(
+    $_aliasNameGenerator(db.sesionLocal.userId, db.users.id),
+  );
+
+  $$UsersTableProcessedTableManager get userId {
+    final $_column = $_itemColumn<int>('user_id')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
 
 class $$SesionLocalTableFilterComposer
     extends Composer<_$AppDatabase, $SesionLocalTable> {
@@ -17321,11 +21561,6 @@ class $$SesionLocalTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get userId => $composableBuilder(
-    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17343,6 +21578,29 @@ class $$SesionLocalTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$UsersTableFilterComposer get userId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$SesionLocalTableOrderingComposer
@@ -17356,11 +21614,6 @@ class $$SesionLocalTableOrderingComposer
   });
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get userId => $composableBuilder(
-    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -17378,6 +21631,29 @@ class $$SesionLocalTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$UsersTableOrderingComposer get userId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$SesionLocalTableAnnotationComposer
@@ -17392,9 +21668,6 @@ class $$SesionLocalTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get userId =>
-      $composableBuilder(column: $table.userId, builder: (column) => column);
-
   GeneratedColumn<String> get username =>
       $composableBuilder(column: $table.username, builder: (column) => column);
 
@@ -17403,6 +21676,29 @@ class $$SesionLocalTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get userId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$SesionLocalTableTableManager
@@ -17416,12 +21712,9 @@ class $$SesionLocalTableTableManager
           $$SesionLocalTableAnnotationComposer,
           $$SesionLocalTableCreateCompanionBuilder,
           $$SesionLocalTableUpdateCompanionBuilder,
-          (
-            SesionLocalData,
-            BaseReferences<_$AppDatabase, $SesionLocalTable, SesionLocalData>,
-          ),
+          (SesionLocalData, $$SesionLocalTableReferences),
           SesionLocalData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool userId})
         > {
   $$SesionLocalTableTableManager(_$AppDatabase db, $SesionLocalTable table)
     : super(
@@ -17437,7 +21730,7 @@ class $$SesionLocalTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<String> userId = const Value.absent(),
+                Value<int> userId = const Value.absent(),
                 Value<String> username = const Value.absent(),
                 Value<bool> activa = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -17451,7 +21744,7 @@ class $$SesionLocalTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required String userId,
+                required int userId,
                 required String username,
                 Value<bool> activa = const Value.absent(),
                 required DateTime createdAt,
@@ -17463,9 +21756,54 @@ class $$SesionLocalTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SesionLocalTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({userId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (userId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.userId,
+                                referencedTable: $$SesionLocalTableReferences
+                                    ._userIdTable(db),
+                                referencedColumn: $$SesionLocalTableReferences
+                                    ._userIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -17480,12 +21818,9 @@ typedef $$SesionLocalTableProcessedTableManager =
       $$SesionLocalTableAnnotationComposer,
       $$SesionLocalTableCreateCompanionBuilder,
       $$SesionLocalTableUpdateCompanionBuilder,
-      (
-        SesionLocalData,
-        BaseReferences<_$AppDatabase, $SesionLocalTable, SesionLocalData>,
-      ),
+      (SesionLocalData, $$SesionLocalTableReferences),
       SesionLocalData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool userId})
     >;
 
 class $AppDatabaseManager {

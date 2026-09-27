@@ -7,13 +7,15 @@ import 'package:offline_first_bi/models/product_model.dart';
 
 ProductModel _product({
   required int id,
-  double salePrice = 10,
+  double price = 10,
   int stock = 100,
 }) {
   return ProductModel(
     id: id,
+    categoryId: 1,
     name: 'Producto $id',
-    salePrice: salePrice,
+    priceA: price,
+    priceB: price,
     stock: stock,
     isActive: true,
     createdAt: DateTime(2024, 1, 1),
@@ -38,14 +40,14 @@ void main() {
     });
 
     test('calculateSubtotal sums price * quantity for each cart item', () {
-      final products = [_product(id: 1, salePrice: 10), _product(id: 2, salePrice: 5)];
+      final products = [_product(id: 1, price: 10), _product(id: 2, price: 5)];
       final cart = {1: 3, 2: 2}; // 3*10 + 2*5 = 40
 
       expect(repository.calculateSubtotal(products, cart), 40);
     });
 
     test('calculateSubtotal ignores cart entries with no matching product', () {
-      final products = [_product(id: 1, salePrice: 10)];
+      final products = [_product(id: 1, price: 10)];
       final cart = {1: 2, 99: 5}; // product 99 does not exist
 
       expect(repository.calculateSubtotal(products, cart), 20);
@@ -96,10 +98,22 @@ void main() {
       repository = SaleRepository(db);
       // Dos productos con stock inicial conocido
       await db.into(db.products).insert(
-        ProductsCompanion.insert(name: 'Producto 1', salePrice: 10, stock: const Value(10)),
+        ProductsCompanion.insert(
+          categoryId: 1,
+          name: 'Producto 1',
+          priceA: 10,
+          priceB: 10,
+          stock: const Value(10),
+        ),
       );
       await db.into(db.products).insert(
-        ProductsCompanion.insert(name: 'Producto 2', salePrice: 5, stock: const Value(5)),
+        ProductsCompanion.insert(
+          categoryId: 1,
+          name: 'Producto 2',
+          priceA: 5,
+          priceB: 5,
+          stock: const Value(5),
+        ),
       );
     });
 

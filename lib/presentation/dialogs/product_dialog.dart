@@ -21,7 +21,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
-  late final TextEditingController _salePriceController;
+  late final TextEditingController _priceController;
   late final TextEditingController _costController;
   late final TextEditingController _stockController;
   String? _imagePath;
@@ -36,8 +36,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     _descController = TextEditingController(
       text: widget.product?.description ?? '',
     );
-    _salePriceController = TextEditingController(
-      text: widget.product?.salePrice.toString() ?? '',
+    _priceController = TextEditingController(
+      text: widget.product?.priceA.toString() ?? '',
     );
     _costController = TextEditingController(
       text: widget.product?.productionCost?.toString() ?? '',
@@ -54,7 +54,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
     _nameController.addListener(_checkChanges);
     _descController.addListener(_checkChanges);
-    _salePriceController.addListener(_checkChanges);
+    _priceController.addListener(_checkChanges);
     _costController.addListener(_checkChanges);
     _stockController.addListener(_checkChanges);
   }
@@ -63,8 +63,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     final changed =
         _nameController.text.trim() != (widget.product?.name ?? '') ||
         _descController.text.trim() != (widget.product?.description ?? '') ||
-        _salePriceController.text.trim() !=
-            (widget.product?.salePrice.toString() ?? '') ||
+        _priceController.text.trim() !=
+            (widget.product?.priceA.toString() ?? '') ||
         _costController.text.trim() !=
             (widget.product?.productionCost?.toString() ?? '') ||
         _stockController.text.trim() !=
@@ -79,7 +79,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
-    _salePriceController.dispose();
+    _priceController.dispose();
     _costController.dispose();
     _stockController.dispose();
     super.dispose();
@@ -96,15 +96,19 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final price = double.tryParse(_priceController.text.trim()) ?? 0;
     await ref
         .read(productProvider.notifier)
         .save(
           id: widget.product?.id,
-          categoryId: _selectedCategoryId,
+          categoryId: _selectedCategoryId!,
           name: _nameController.text.trim(),
           description: _descController.text.trim(),
           image: _imagePath,
-          salePrice: double.tryParse(_salePriceController.text.trim()) ?? 0,
+          // La app todavía no tiene una UI para diferenciar precio A/B, así
+          // que por ahora ambos quedan iguales al único precio ingresado.
+          priceA: price,
+          priceB: price,
           productionCost: double.tryParse(_costController.text.trim()),
           stock: int.tryParse(_stockController.text.trim()) ?? 0,
           isActive: _isActive,
@@ -285,6 +289,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   setState(() => _selectedCategoryId = val);
                   _checkChanges();
                 },
+                validator: (v) => v == null ? 'Selecciona una categoría' : null,
               ),
               const SizedBox(height: AppSpacing.s16),
 
@@ -301,7 +306,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
               // Precio de venta y costo de producción
               TextFormField(
-                controller: _salePriceController,
+                controller: _priceController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Precio de venta',
@@ -309,8 +314,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                 ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Campo requerido';
-                  final salePrice = double.tryParse(v);
-                  if (salePrice == null) return 'Valor inválido';
+                  final price = double.tryParse(v);
+                  if (price == null) return 'Valor inválido';
                   return null;
                 },
               ),
@@ -326,9 +331,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   if (v == null || v.isEmpty) return null;
                   final cost = double.tryParse(v);
                   if (cost == null) return 'Valor inválido';
-                  final salePrice =
-                      double.tryParse(_salePriceController.text.trim()) ?? 0;
-                  if (cost >= salePrice) {
+                  final price =
+                      double.tryParse(_priceController.text.trim()) ?? 0;
+                  if (cost >= price) {
                     return 'Debe ser menor al precio de venta';
                   }
                   return null;

@@ -70,12 +70,13 @@ SaleItemModel _item({
   );
 }
 
-ProductModel _product({required int id, int? categoryId}) {
+ProductModel _product({required int id, int categoryId = 1}) {
   return ProductModel(
     id: id,
     categoryId: categoryId,
     name: 'Producto $id',
-    salePrice: 10,
+    priceA: 10,
+    priceB: 10,
     stock: 100,
     isActive: true,
     createdAt: DateTime(2024, 1, 1),

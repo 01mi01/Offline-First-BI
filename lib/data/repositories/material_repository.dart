@@ -135,7 +135,11 @@ class MaterialRepository {
     return result;
   }
 
-  // Registra uso de material y descuenta del stock
+  // Vincula un material a un producto y descuenta del stock. product_materials
+  // es la receta del producto (una fila por par producto+material, con
+  // índice único), no un historial: si el par ya existe, esto actualiza esa
+  // fila en vez de crear un duplicado, delegando en editMaterialUsage para
+  // reutilizar su ajuste de stock por diferencia.
   Future<String?> registerMaterialUsage({
     required int productId,
     required int materialId,
@@ -146,6 +150,18 @@ class MaterialRepository {
     )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
     if (material == null) return 'Material no encontrado';
+
+    final existing = await (database.select(database.productMaterials)..where(
+          (pm) =>
+              pm.productId.equals(productId) &
+              pm.materialId.equals(materialId),
+        ))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      return editMaterialUsage(recordId: existing.id, newQuantity: quantityUsed);
+    }
+
     if (quantityUsed > material.stock) {
       return 'Stock insuficiente. Disponible: ${_fmt(material.stock)}';
     }
@@ -201,7 +217,10 @@ class MaterialRepository {
     // Actualiza el registro
     await (database.update(database.productMaterials)
           ..where((pm) => pm.id.equals(recordId)))
-        .write(ProductMaterialsCompanion(quantityUsed: Value(newQuantity)));
+        .write(ProductMaterialsCompanion(
+      quantityUsed: Value(newQuantity),
+      updatedAt: Value(DateTime.now()),
+    ));
 
     // Ajusta el stock según la diferencia
     await (database.update(

@@ -17,7 +17,7 @@ class SaleRepository {
     double total = 0;
     for (final entry in cartItems.entries) {
       final product = products.where((p) => p.id == entry.key).firstOrNull;
-      if (product != null) total += product.salePrice * entry.value;
+      if (product != null) total += product.priceA * entry.value;
     }
     return total;
   }

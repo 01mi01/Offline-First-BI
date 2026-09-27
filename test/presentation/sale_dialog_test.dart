@@ -42,8 +42,10 @@ void main() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     await db.into(db.products).insert(
       ProductsCompanion.insert(
+        categoryId: 1,
         name: 'Producto Test',
-        salePrice: 20.0,
+        priceA: 20.0,
+        priceB: 20.0,
         stock: const Value(50),
       ),
     );

@@ -1,11 +1,12 @@
 // Modelo de producto
 class ProductModel {
   final int id;
-  final int? categoryId;
+  final int categoryId;
   final String name;
   final String? description;
   final String? image;
-  final double salePrice;
+  final double priceA;
+  final double priceB;
   final double? productionCost;
   final int stock;
   final bool isActive;
@@ -13,11 +14,12 @@ class ProductModel {
 
   ProductModel({
     required this.id,
-    this.categoryId,
+    required this.categoryId,
     required this.name,
     this.description,
     this.image,
-    required this.salePrice,
+    required this.priceA,
+    required this.priceB,
     this.productionCost,
     required this.stock,
     required this.isActive,

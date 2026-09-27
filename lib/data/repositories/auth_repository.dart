@@ -59,7 +59,7 @@ class AuthRepository {
           .into(database.sesionLocal)
           .insert(
             SesionLocalCompanion.insert(
-              userId: user.id.toString(),
+              userId: user.id,
               username: user.username,
               createdAt: DateTime.now(),
             ),
@@ -78,12 +78,10 @@ class AuthRepository {
       if (sesiones.isEmpty) return null;
 
       final sesion = sesiones.first;
-      final userId = int.tryParse(sesion.userId);
-      if (userId == null) return null;
 
       final user =
           await (database.select(database.users)
-                ..where((u) => u.id.equals(userId))
+                ..where((u) => u.id.equals(sesion.userId))
                 ..where((u) => u.isActive.equals(true)))
               .getSingleOrNull();
 

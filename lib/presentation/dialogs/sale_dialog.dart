@@ -157,7 +157,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         items.add({
           'productId': product.id,
           'quantity': entry.value,
-          'unitPrice': product.salePrice,
+          'unitPrice': product.priceA,
         });
       }
     }
@@ -386,7 +386,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                             ),
                       ),
                       subtitle: Text(
-                        'Bs. ${p.salePrice.toStringAsFixed(2)}  •  Stock: ${p.stock}',
+                        'Bs. ${p.priceA.toStringAsFixed(2)}  •  Stock: ${p.stock}',
                         style: Theme.of(
                           context,
                         ).textTheme.labelMedium?.copyWith(
@@ -472,7 +472,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                     ),
                               ),
                               Text(
-                                'Bs. ${(product.salePrice * entry.value).toStringAsFixed(2)}',
+                                'Bs. ${(product.priceA * entry.value).toStringAsFixed(2)}',
                                 style: Theme.of(context).textTheme
                                     .labelMedium?.copyWith(
                                       color: AppColors.primary,

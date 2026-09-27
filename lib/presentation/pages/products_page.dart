@@ -347,7 +347,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                     ],
                     const SizedBox(height: AppSpacing.s6),
                     Text(
-                      'Precio de venta: Bs. ${widget.product.salePrice.toStringAsFixed(2)}',
+                      'Precio de venta: Bs. ${widget.product.priceA.toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.displaySmall
                           ?.copyWith(
                             color: AppColors.primary,
@@ -547,7 +547,7 @@ class _GridCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.s2),
                   Text(
-                    'Bs. ${product.salePrice.toStringAsFixed(2)}',
+                    'Bs. ${product.priceA.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.displaySmall
                         ?.copyWith(
                           color: AppColors.primary,
@@ -655,7 +655,7 @@ class _ProductGridDetail extends StatelessWidget {
                     ],
                     const SizedBox(height: AppSpacing.s4),
                     Text(
-                      'Bs. ${product.salePrice.toStringAsFixed(2)}',
+                      'Bs. ${product.priceA.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
