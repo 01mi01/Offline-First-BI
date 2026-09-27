@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
+import '../../application/module_permission_provider.dart';
 import '../../theme/app_theme.dart';
 import '../pages/login_page.dart';
 import '../pages/inventario_page.dart';
@@ -49,6 +50,14 @@ class MenuDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final readableModules = ref.watch(readableModulesProvider);
+    final visibleItems = readableModules.when(
+      data: (moduleNames) => _menuItems
+          .where((item) => moduleNames.contains(item['module'] as String))
+          .toList(),
+      loading: () => const <Map<String, Object>>[],
+      error: (_, _) => const <Map<String, Object>>[],
+    );
 
     return Drawer(
       backgroundColor: AppColors.surface,
@@ -106,9 +115,9 @@ class MenuDrawer extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(
                   vertical: AppSpacing.s12,
                 ),
-                itemCount: _menuItems.length,
+                itemCount: visibleItems.length,
                 itemBuilder: (context, index) {
-                  final item = _menuItems[index];
+                  final item = visibleItems[index];
                   return _MenuTile(
                     icon: item['icon'] as IconData,
                     label: item['label'] as String,

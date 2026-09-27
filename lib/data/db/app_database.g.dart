@@ -1234,23 +1234,76 @@ class $ModulePermissionsTable extends ModulePermissions
       'REFERENCES modules (id)',
     ),
   );
-  static const VerificationMeta _hasAccessMeta = const VerificationMeta(
-    'hasAccess',
+  static const VerificationMeta _canCreateMeta = const VerificationMeta(
+    'canCreate',
   );
   @override
-  late final GeneratedColumn<bool> hasAccess = GeneratedColumn<bool>(
-    'has_access',
+  late final GeneratedColumn<bool> canCreate = GeneratedColumn<bool>(
+    'can_create',
     aliasedName,
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("has_access" IN (0, 1))',
+      'CHECK ("can_create" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _canReadMeta = const VerificationMeta(
+    'canRead',
+  );
+  @override
+  late final GeneratedColumn<bool> canRead = GeneratedColumn<bool>(
+    'can_read',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("can_read" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _canUpdateMeta = const VerificationMeta(
+    'canUpdate',
+  );
+  @override
+  late final GeneratedColumn<bool> canUpdate = GeneratedColumn<bool>(
+    'can_update',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("can_update" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _canDeleteMeta = const VerificationMeta(
+    'canDelete',
+  );
+  @override
+  late final GeneratedColumn<bool> canDelete = GeneratedColumn<bool>(
+    'can_delete',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("can_delete" IN (0, 1))',
     ),
     defaultValue: const Constant(false),
   );
   @override
-  List<GeneratedColumn> get $columns => [id, userId, moduleId, hasAccess];
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    moduleId,
+    canCreate,
+    canRead,
+    canUpdate,
+    canDelete,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1282,10 +1335,28 @@ class $ModulePermissionsTable extends ModulePermissions
     } else if (isInserting) {
       context.missing(_moduleIdMeta);
     }
-    if (data.containsKey('has_access')) {
+    if (data.containsKey('can_create')) {
       context.handle(
-        _hasAccessMeta,
-        hasAccess.isAcceptableOrUnknown(data['has_access']!, _hasAccessMeta),
+        _canCreateMeta,
+        canCreate.isAcceptableOrUnknown(data['can_create']!, _canCreateMeta),
+      );
+    }
+    if (data.containsKey('can_read')) {
+      context.handle(
+        _canReadMeta,
+        canRead.isAcceptableOrUnknown(data['can_read']!, _canReadMeta),
+      );
+    }
+    if (data.containsKey('can_update')) {
+      context.handle(
+        _canUpdateMeta,
+        canUpdate.isAcceptableOrUnknown(data['can_update']!, _canUpdateMeta),
+      );
+    }
+    if (data.containsKey('can_delete')) {
+      context.handle(
+        _canDeleteMeta,
+        canDelete.isAcceptableOrUnknown(data['can_delete']!, _canDeleteMeta),
       );
     }
     return context;
@@ -1313,9 +1384,21 @@ class $ModulePermissionsTable extends ModulePermissions
         DriftSqlType.int,
         data['${effectivePrefix}module_id'],
       )!,
-      hasAccess: attachedDatabase.typeMapping.read(
+      canCreate: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
-        data['${effectivePrefix}has_access'],
+        data['${effectivePrefix}can_create'],
+      )!,
+      canRead: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}can_read'],
+      )!,
+      canUpdate: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}can_update'],
+      )!,
+      canDelete: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}can_delete'],
       )!,
     );
   }
@@ -1331,12 +1414,18 @@ class ModulePermission extends DataClass
   final int id;
   final int userId;
   final int moduleId;
-  final bool hasAccess;
+  final bool canCreate;
+  final bool canRead;
+  final bool canUpdate;
+  final bool canDelete;
   const ModulePermission({
     required this.id,
     required this.userId,
     required this.moduleId,
-    required this.hasAccess,
+    required this.canCreate,
+    required this.canRead,
+    required this.canUpdate,
+    required this.canDelete,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1344,7 +1433,10 @@ class ModulePermission extends DataClass
     map['id'] = Variable<int>(id);
     map['user_id'] = Variable<int>(userId);
     map['module_id'] = Variable<int>(moduleId);
-    map['has_access'] = Variable<bool>(hasAccess);
+    map['can_create'] = Variable<bool>(canCreate);
+    map['can_read'] = Variable<bool>(canRead);
+    map['can_update'] = Variable<bool>(canUpdate);
+    map['can_delete'] = Variable<bool>(canDelete);
     return map;
   }
 
@@ -1353,7 +1445,10 @@ class ModulePermission extends DataClass
       id: Value(id),
       userId: Value(userId),
       moduleId: Value(moduleId),
-      hasAccess: Value(hasAccess),
+      canCreate: Value(canCreate),
+      canRead: Value(canRead),
+      canUpdate: Value(canUpdate),
+      canDelete: Value(canDelete),
     );
   }
 
@@ -1366,7 +1461,10 @@ class ModulePermission extends DataClass
       id: serializer.fromJson<int>(json['id']),
       userId: serializer.fromJson<int>(json['userId']),
       moduleId: serializer.fromJson<int>(json['moduleId']),
-      hasAccess: serializer.fromJson<bool>(json['hasAccess']),
+      canCreate: serializer.fromJson<bool>(json['canCreate']),
+      canRead: serializer.fromJson<bool>(json['canRead']),
+      canUpdate: serializer.fromJson<bool>(json['canUpdate']),
+      canDelete: serializer.fromJson<bool>(json['canDelete']),
     );
   }
   @override
@@ -1376,7 +1474,10 @@ class ModulePermission extends DataClass
       'id': serializer.toJson<int>(id),
       'userId': serializer.toJson<int>(userId),
       'moduleId': serializer.toJson<int>(moduleId),
-      'hasAccess': serializer.toJson<bool>(hasAccess),
+      'canCreate': serializer.toJson<bool>(canCreate),
+      'canRead': serializer.toJson<bool>(canRead),
+      'canUpdate': serializer.toJson<bool>(canUpdate),
+      'canDelete': serializer.toJson<bool>(canDelete),
     };
   }
 
@@ -1384,19 +1485,28 @@ class ModulePermission extends DataClass
     int? id,
     int? userId,
     int? moduleId,
-    bool? hasAccess,
+    bool? canCreate,
+    bool? canRead,
+    bool? canUpdate,
+    bool? canDelete,
   }) => ModulePermission(
     id: id ?? this.id,
     userId: userId ?? this.userId,
     moduleId: moduleId ?? this.moduleId,
-    hasAccess: hasAccess ?? this.hasAccess,
+    canCreate: canCreate ?? this.canCreate,
+    canRead: canRead ?? this.canRead,
+    canUpdate: canUpdate ?? this.canUpdate,
+    canDelete: canDelete ?? this.canDelete,
   );
   ModulePermission copyWithCompanion(ModulePermissionsCompanion data) {
     return ModulePermission(
       id: data.id.present ? data.id.value : this.id,
       userId: data.userId.present ? data.userId.value : this.userId,
       moduleId: data.moduleId.present ? data.moduleId.value : this.moduleId,
-      hasAccess: data.hasAccess.present ? data.hasAccess.value : this.hasAccess,
+      canCreate: data.canCreate.present ? data.canCreate.value : this.canCreate,
+      canRead: data.canRead.present ? data.canRead.value : this.canRead,
+      canUpdate: data.canUpdate.present ? data.canUpdate.value : this.canUpdate,
+      canDelete: data.canDelete.present ? data.canDelete.value : this.canDelete,
     );
   }
 
@@ -1406,13 +1516,24 @@ class ModulePermission extends DataClass
           ..write('id: $id, ')
           ..write('userId: $userId, ')
           ..write('moduleId: $moduleId, ')
-          ..write('hasAccess: $hasAccess')
+          ..write('canCreate: $canCreate, ')
+          ..write('canRead: $canRead, ')
+          ..write('canUpdate: $canUpdate, ')
+          ..write('canDelete: $canDelete')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, moduleId, hasAccess);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    moduleId,
+    canCreate,
+    canRead,
+    canUpdate,
+    canDelete,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1420,38 +1541,56 @@ class ModulePermission extends DataClass
           other.id == this.id &&
           other.userId == this.userId &&
           other.moduleId == this.moduleId &&
-          other.hasAccess == this.hasAccess);
+          other.canCreate == this.canCreate &&
+          other.canRead == this.canRead &&
+          other.canUpdate == this.canUpdate &&
+          other.canDelete == this.canDelete);
 }
 
 class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
   final Value<int> id;
   final Value<int> userId;
   final Value<int> moduleId;
-  final Value<bool> hasAccess;
+  final Value<bool> canCreate;
+  final Value<bool> canRead;
+  final Value<bool> canUpdate;
+  final Value<bool> canDelete;
   const ModulePermissionsCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.moduleId = const Value.absent(),
-    this.hasAccess = const Value.absent(),
+    this.canCreate = const Value.absent(),
+    this.canRead = const Value.absent(),
+    this.canUpdate = const Value.absent(),
+    this.canDelete = const Value.absent(),
   });
   ModulePermissionsCompanion.insert({
     this.id = const Value.absent(),
     required int userId,
     required int moduleId,
-    this.hasAccess = const Value.absent(),
+    this.canCreate = const Value.absent(),
+    this.canRead = const Value.absent(),
+    this.canUpdate = const Value.absent(),
+    this.canDelete = const Value.absent(),
   }) : userId = Value(userId),
        moduleId = Value(moduleId);
   static Insertable<ModulePermission> custom({
     Expression<int>? id,
     Expression<int>? userId,
     Expression<int>? moduleId,
-    Expression<bool>? hasAccess,
+    Expression<bool>? canCreate,
+    Expression<bool>? canRead,
+    Expression<bool>? canUpdate,
+    Expression<bool>? canDelete,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (userId != null) 'user_id': userId,
       if (moduleId != null) 'module_id': moduleId,
-      if (hasAccess != null) 'has_access': hasAccess,
+      if (canCreate != null) 'can_create': canCreate,
+      if (canRead != null) 'can_read': canRead,
+      if (canUpdate != null) 'can_update': canUpdate,
+      if (canDelete != null) 'can_delete': canDelete,
     });
   }
 
@@ -1459,13 +1598,19 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
     Value<int>? id,
     Value<int>? userId,
     Value<int>? moduleId,
-    Value<bool>? hasAccess,
+    Value<bool>? canCreate,
+    Value<bool>? canRead,
+    Value<bool>? canUpdate,
+    Value<bool>? canDelete,
   }) {
     return ModulePermissionsCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       moduleId: moduleId ?? this.moduleId,
-      hasAccess: hasAccess ?? this.hasAccess,
+      canCreate: canCreate ?? this.canCreate,
+      canRead: canRead ?? this.canRead,
+      canUpdate: canUpdate ?? this.canUpdate,
+      canDelete: canDelete ?? this.canDelete,
     );
   }
 
@@ -1481,8 +1626,17 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
     if (moduleId.present) {
       map['module_id'] = Variable<int>(moduleId.value);
     }
-    if (hasAccess.present) {
-      map['has_access'] = Variable<bool>(hasAccess.value);
+    if (canCreate.present) {
+      map['can_create'] = Variable<bool>(canCreate.value);
+    }
+    if (canRead.present) {
+      map['can_read'] = Variable<bool>(canRead.value);
+    }
+    if (canUpdate.present) {
+      map['can_update'] = Variable<bool>(canUpdate.value);
+    }
+    if (canDelete.present) {
+      map['can_delete'] = Variable<bool>(canDelete.value);
     }
     return map;
   }
@@ -1493,7 +1647,10 @@ class ModulePermissionsCompanion extends UpdateCompanion<ModulePermission> {
           ..write('id: $id, ')
           ..write('userId: $userId, ')
           ..write('moduleId: $moduleId, ')
-          ..write('hasAccess: $hasAccess')
+          ..write('canCreate: $canCreate, ')
+          ..write('canRead: $canRead, ')
+          ..write('canUpdate: $canUpdate, ')
+          ..write('canDelete: $canDelete')
           ..write(')'))
         .toString();
   }
@@ -10166,14 +10323,20 @@ typedef $$ModulePermissionsTableCreateCompanionBuilder =
       Value<int> id,
       required int userId,
       required int moduleId,
-      Value<bool> hasAccess,
+      Value<bool> canCreate,
+      Value<bool> canRead,
+      Value<bool> canUpdate,
+      Value<bool> canDelete,
     });
 typedef $$ModulePermissionsTableUpdateCompanionBuilder =
     ModulePermissionsCompanion Function({
       Value<int> id,
       Value<int> userId,
       Value<int> moduleId,
-      Value<bool> hasAccess,
+      Value<bool> canCreate,
+      Value<bool> canRead,
+      Value<bool> canUpdate,
+      Value<bool> canDelete,
     });
 
 final class $$ModulePermissionsTableReferences
@@ -10241,8 +10404,23 @@ class $$ModulePermissionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get hasAccess => $composableBuilder(
-    column: $table.hasAccess,
+  ColumnFilters<bool> get canCreate => $composableBuilder(
+    column: $table.canCreate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get canRead => $composableBuilder(
+    column: $table.canRead,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get canUpdate => $composableBuilder(
+    column: $table.canUpdate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get canDelete => $composableBuilder(
+    column: $table.canDelete,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10307,8 +10485,23 @@ class $$ModulePermissionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get hasAccess => $composableBuilder(
-    column: $table.hasAccess,
+  ColumnOrderings<bool> get canCreate => $composableBuilder(
+    column: $table.canCreate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get canRead => $composableBuilder(
+    column: $table.canRead,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get canUpdate => $composableBuilder(
+    column: $table.canUpdate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get canDelete => $composableBuilder(
+    column: $table.canDelete,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -10371,8 +10564,17 @@ class $$ModulePermissionsTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<bool> get hasAccess =>
-      $composableBuilder(column: $table.hasAccess, builder: (column) => column);
+  GeneratedColumn<bool> get canCreate =>
+      $composableBuilder(column: $table.canCreate, builder: (column) => column);
+
+  GeneratedColumn<bool> get canRead =>
+      $composableBuilder(column: $table.canRead, builder: (column) => column);
+
+  GeneratedColumn<bool> get canUpdate =>
+      $composableBuilder(column: $table.canUpdate, builder: (column) => column);
+
+  GeneratedColumn<bool> get canDelete =>
+      $composableBuilder(column: $table.canDelete, builder: (column) => column);
 
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
@@ -10457,24 +10659,36 @@ class $$ModulePermissionsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> userId = const Value.absent(),
                 Value<int> moduleId = const Value.absent(),
-                Value<bool> hasAccess = const Value.absent(),
+                Value<bool> canCreate = const Value.absent(),
+                Value<bool> canRead = const Value.absent(),
+                Value<bool> canUpdate = const Value.absent(),
+                Value<bool> canDelete = const Value.absent(),
               }) => ModulePermissionsCompanion(
                 id: id,
                 userId: userId,
                 moduleId: moduleId,
-                hasAccess: hasAccess,
+                canCreate: canCreate,
+                canRead: canRead,
+                canUpdate: canUpdate,
+                canDelete: canDelete,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required int userId,
                 required int moduleId,
-                Value<bool> hasAccess = const Value.absent(),
+                Value<bool> canCreate = const Value.absent(),
+                Value<bool> canRead = const Value.absent(),
+                Value<bool> canUpdate = const Value.absent(),
+                Value<bool> canDelete = const Value.absent(),
               }) => ModulePermissionsCompanion.insert(
                 id: id,
                 userId: userId,
                 moduleId: moduleId,
-                hasAccess: hasAccess,
+                canCreate: canCreate,
+                canRead: canRead,
+                canUpdate: canUpdate,
+                canDelete: canDelete,
               ),
           withReferenceMapper: (p0) => p0
               .map(

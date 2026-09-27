@@ -49,7 +49,10 @@ class ModulePermissions extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get userId => integer().references(Users, #id)();
   IntColumn get moduleId => integer().references(Modules, #id)();
-  BoolColumn get hasAccess => boolean().withDefault(const Constant(false))();
+  BoolColumn get canCreate => boolean().withDefault(const Constant(false))();
+  BoolColumn get canRead => boolean().withDefault(const Constant(false))();
+  BoolColumn get canUpdate => boolean().withDefault(const Constant(false))();
+  BoolColumn get canDelete => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column>> get uniqueKeys => [
@@ -248,7 +251,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -297,6 +300,43 @@ class AppDatabase extends _$AppDatabase {
         await (update(suppliers)..where((s) => s.name.equals('Sin proveedor')))
             .write(SuppliersCompanion(name: const Value('Sin nombre')));
       }
+      if (from < 8) {
+        // El módulo "materiales" antes vivía solo dentro de "inventario";
+        // ahora es su propio módulo independiente.
+        final existingMateriales = await (select(
+          modules,
+        )..where((mo) => mo.name.equals('materiales'))).getSingleOrNull();
+        if (existingMateriales == null) {
+          await into(modules).insert(ModulesCompanion.insert(name: 'materiales'));
+        }
+
+        // module_permissions pasa de un único booleano hasAccess a cuatro
+        // banderas CRUD; la tabla nunca llegó a usarse, así que se recrea
+        // igual que product_materials en la migración de la versión 2.
+        await m.deleteTable('module_permissions');
+        await m.createTable(modulePermissions);
+
+        // Otorga acceso CRUD completo a todos los usuarios existentes sobre
+        // todos los módulos (incluyendo el nuevo "materiales"), preservando
+        // el acceso total que tenían implícitamente antes de que el sistema
+        // de permisos empezara a aplicarse.
+        final allUsers = await select(users).get();
+        final allModules = await select(modules).get();
+        await batch((b) {
+          b.insertAll(modulePermissions, [
+            for (final u in allUsers)
+              for (final mod in allModules)
+                ModulePermissionsCompanion.insert(
+                  userId: u.id,
+                  moduleId: mod.id,
+                  canCreate: const Value(true),
+                  canRead: const Value(true),
+                  canUpdate: const Value(true),
+                  canDelete: const Value(true),
+                ),
+          ]);
+        });
+      }
     },
   );
 
@@ -314,6 +354,7 @@ class AppDatabase extends _$AppDatabase {
     await batch((b) {
       b.insertAll(modules, [
         ModulesCompanion.insert(name: 'inventario'),
+        ModulesCompanion.insert(name: 'materiales'),
         ModulesCompanion.insert(name: 'ventas'),
         ModulesCompanion.insert(name: 'compras'),
         ModulesCompanion.insert(name: 'clientes'),
@@ -349,6 +390,22 @@ class AppDatabase extends _$AppDatabase {
       await into(userRoles).insert(
         UserRolesCompanion.insert(userId: testUserId, roleId: rolUsuario.id),
       );
+
+      // Permisos CRUD completos para el usuario de prueba en todos los módulos
+      final allModules = await select(modules).get();
+      await batch((b) {
+        b.insertAll(modulePermissions, [
+          for (final mod in allModules)
+            ModulePermissionsCompanion.insert(
+              userId: testUserId,
+              moduleId: mod.id,
+              canCreate: const Value(true),
+              canRead: const Value(true),
+              canUpdate: const Value(true),
+              canDelete: const Value(true),
+            ),
+        ]);
+      });
     }
 
     // Cliente por defecto para ventas sin identificar
