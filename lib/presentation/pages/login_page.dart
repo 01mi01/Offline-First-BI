@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import 'home_page.dart';
+import '../navigation/main_navigation_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -34,9 +34,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     final state = ref.read(authProvider);
     if (state.user != null && mounted) {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainNavigationPage()),
+      );
     }
   }
 
