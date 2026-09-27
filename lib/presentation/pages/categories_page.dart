@@ -23,6 +23,9 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'categories_page_fab',
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, ref, null),

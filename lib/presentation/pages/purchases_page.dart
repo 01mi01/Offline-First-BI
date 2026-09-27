@@ -15,13 +15,31 @@ class PurchasesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(title: 'Compras', showBack: true),
+      body: const PurchasesListBody(),
+    );
+  }
+}
+
+// Contenido de la lista de compras, sin AppBar propia. Se usa tanto en
+// PurchasesPage (con AppBar y back) como embebido en el tab "Ventas y
+// Compras" de la navegación inferior (sin AppBar).
+class PurchasesListBody extends ConsumerWidget {
+  const PurchasesListBody({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(purchaseProvider);
     final suppliers = ref.watch(supplierProvider).suppliers;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: 'Compras', showBack: true),
       floatingActionButton: FloatingActionButton(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'purchases_list_body_fab',
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),

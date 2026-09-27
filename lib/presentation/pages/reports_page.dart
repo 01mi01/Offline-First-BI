@@ -13,14 +13,30 @@ import '../widgets/report_sale_card.dart';
 import '../widgets/report_purchase_card.dart';
 import 'report_detail_page.dart';
 
-class ReportsPage extends ConsumerStatefulWidget {
+class ReportsPage extends ConsumerWidget {
   const ReportsPage({super.key});
 
   @override
-  ConsumerState<ReportsPage> createState() => _ReportsPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(title: 'Reportes', showBack: true),
+      body: const ReportsBody(),
+    );
+  }
 }
 
-class _ReportsPageState extends ConsumerState<ReportsPage>
+// Contenido de reportes (filtros + tabs Ventas/Compras), sin AppBar propia.
+// Se usa tanto en ReportsPage (con AppBar y back) como embebido en el sub-tab
+// "Reportes" del tab "Reportes + BI" de la navegación inferior (sin AppBar).
+class ReportsBody extends ConsumerStatefulWidget {
+  const ReportsBody({super.key});
+
+  @override
+  ConsumerState<ReportsBody> createState() => _ReportsBodyState();
+}
+
+class _ReportsBodyState extends ConsumerState<ReportsBody>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   ReportFilters _filters = const ReportFilters();
@@ -50,61 +66,59 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     if (saleState.isLoading ||
         purchaseState.isLoading ||
         saleItemsMapAsync.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
     final filteredSales = ref.watch(filteredSalesProvider(_filters));
     final filteredPurchases = ref.watch(filteredPurchasesProvider(_filters));
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
-        title: 'Reportes',
-        showBack: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelStyle: Theme.of(
-            context,
-          ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Ventas'),
-            Tab(text: 'Compras'),
-          ],
+    return Column(
+      children: [
+        // Tabs Ventas/Compras, embebidos en el contenido (sin AppBar propia)
+        Material(
+          color: AppColors.background,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
+            tabs: const [
+              Tab(text: 'Ventas'),
+              Tab(text: 'Compras'),
+            ],
+          ),
         ),
-      ),
-      body: Column(
-        children: [
-          // Panel de filtros
-          ReportFiltersWidget(
-            filters: _filters,
-            onChanged: (f) => setState(() => _filters = f),
-            activeTab: _currentTab,
-          ),
 
-          // Tabs de contenido
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                Container(
-                  key: ValueKey(_filters.hashCode),
-                  color: AppColors.background,
-                  child: _SalesTab(sales: filteredSales),
-                ),
-                Container(
-                  key: ValueKey(_filters.hashCode + 1),
-                  color: AppColors.background,
-                  child: _PurchasesTab(purchases: filteredPurchases),
-                ),
-              ],
-            ),
+        // Panel de filtros
+        ReportFiltersWidget(
+          filters: _filters,
+          onChanged: (f) => setState(() => _filters = f),
+          activeTab: _currentTab,
+        ),
+
+        // Tabs de contenido
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              Container(
+                key: ValueKey(_filters.hashCode),
+                color: AppColors.background,
+                child: _SalesTab(sales: filteredSales),
+              ),
+              Container(
+                key: ValueKey(_filters.hashCode + 1),
+                color: AppColors.background,
+                child: _PurchasesTab(purchases: filteredPurchases),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

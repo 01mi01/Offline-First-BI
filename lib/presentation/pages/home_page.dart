@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
+import '../../application/module_permission_provider.dart';
 import '../../application/sale_provider.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/product_provider.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/menu_drawer.dart';
 import '../widgets/app_bar_widget.dart';
 import '../pages/sales_page.dart';
 import '../pages/purchases_page.dart';
@@ -21,6 +21,7 @@ class HomePage extends ConsumerWidget {
     final sales = ref.watch(saleProvider).sales;
     final purchases = ref.watch(purchaseProvider).purchases;
     final products = ref.watch(productProvider).products;
+    final readableModules = ref.watch(readableModulesProvider).valueOrNull ?? [];
 
     // Métricas rápidas
     final totalIngresos = sales.fold(0.0, (sum, s) => sum + s.finalAmount);
@@ -28,24 +29,49 @@ class HomePage extends ConsumerWidget {
     final productosActivos = products.where((p) => p.isActive).length;
     final stockBajo = products.where((p) => p.isActive && p.stock <= 3).length;
 
+    // Tarjetas de acceso rápido, solo para módulos que el usuario puede leer
+    final quickAccessCards = <_QuickAccessCard>[
+      if (readableModules.contains('ventas'))
+        _QuickAccessCard(
+          label: 'Ventas',
+          icon: Icons.point_of_sale_outlined,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SalesPage()),
+          ),
+        ),
+      if (readableModules.contains('compras'))
+        _QuickAccessCard(
+          label: 'Compras',
+          icon: Icons.shopping_bag_outlined,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PurchasesPage()),
+          ),
+        ),
+      if (readableModules.contains('inventario'))
+        _QuickAccessCard(
+          label: 'Inventario',
+          icon: Icons.inventory_2_outlined,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const InventarioPage()),
+          ),
+        ),
+      if (readableModules.contains('reportes'))
+        _QuickAccessCard(
+          label: 'Reportes',
+          icon: Icons.bar_chart_outlined,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReportsPage()),
+          ),
+        ),
+    ];
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
-        title: 'Inicio',
-        actions: [
-          Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(
-                Icons.menu,
-                color: AppColors.textPrimary,
-                size: 28,
-              ),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-            ),
-          ),
-        ],
-      ),
-      endDrawer: const MenuDrawer(),
+      appBar: const CustomAppBar(title: 'Inicio'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.s24),
         child: Column(
@@ -113,58 +139,29 @@ class HomePage extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.s32),
 
-            // Acceso rápido
-            Text(
-              'Acceso rápido',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+            // Acceso rápido — solo se muestra si hay algo que mostrar, y
+            // solo con las tarjetas de los módulos accesibles (reflow, sin
+            // relleno para simular tarjetas que el usuario no tiene).
+            if (quickAccessCards.isNotEmpty) ...[
+              Text(
+                'Acceso rápido',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s16),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.6,
-              children: [
-                _QuickAccessCard(
-                  label: 'Ventas',
-                  icon: Icons.point_of_sale_outlined,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SalesPage()),
-                  ),
-                ),
-                _QuickAccessCard(
-                  label: 'Compras',
-                  icon: Icons.shopping_bag_outlined,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PurchasesPage()),
-                  ),
-                ),
-                _QuickAccessCard(
-                  label: 'Inventario',
-                  icon: Icons.inventory_2_outlined,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const InventarioPage()),
-                  ),
-                ),
-                _QuickAccessCard(
-                  label: 'Reportes',
-                  icon: Icons.bar_chart_outlined,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ReportsPage()),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s32),
+              const SizedBox(height: AppSpacing.s16),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.6,
+                children: quickAccessCards,
+              ),
+              const SizedBox(height: AppSpacing.s32),
+            ],
 
             // Últimas ventas
             if (sales.isNotEmpty) ...[

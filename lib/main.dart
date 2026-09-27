@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'application/auth_provider.dart';
 import 'theme/app_theme.dart';
 import 'presentation/pages/login_page.dart';
-import 'presentation/pages/home_page.dart';
+import 'presentation/navigation/main_navigation_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
@@ -29,7 +29,7 @@ class MyApp extends ConsumerWidget {
               body: Center(child: CircularProgressIndicator()),
             )
           : authState.user != null
-              ? const HomePage()
+              ? const MainNavigationPage()
               : const LoginPage(),
     );
   }

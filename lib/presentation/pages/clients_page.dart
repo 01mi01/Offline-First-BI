@@ -2,49 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
-import '../../application/supplier_provider.dart';
 import '../../models/client_model.dart';
-import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/client_dialog.dart';
-import '../dialogs/supplier_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 
-class ClientsSuppliersPage extends ConsumerWidget {
-  const ClientsSuppliersPage({super.key});
+// Página de Clientes, con su propio módulo de permisos ("clientes"),
+// independiente de Proveedores.
+class ClientsPage extends ConsumerWidget {
+  const ClientsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: CustomAppBar(
-          title: 'Contactos',
-          showBack: true,
-          bottom: TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: Theme.of(
-              context,
-            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
-            tabs: const [
-              Tab(text: 'Clientes'),
-              Tab(text: 'Proveedores'),
-            ],
-          ),
-        ),
-        body: const TabBarView(children: [_ClientsTab(), _SuppliersTab()]),
-      ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(title: 'Clientes', showBack: true),
+      body: const ClientsListBody(),
     );
   }
 }
 
-// Tab de clientes
-class _ClientsTab extends ConsumerWidget {
-  const _ClientsTab();
+// Contenido de la lista de clientes, sin AppBar propia.
+class ClientsListBody extends ConsumerWidget {
+  const ClientsListBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,6 +33,9 @@ class _ClientsTab extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'clients_list_body_fab',
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
@@ -72,7 +55,7 @@ class _ClientsTab extends ConsumerWidget {
               itemCount: state.clients.length,
               itemBuilder: (context, index) {
                 final c = state.clients[index];
-                return _ContactCard(
+                return ContactCard(
                   name: c.name,
                   contactInfo: c.contactInfo,
                   isActive: c.isActive,
@@ -96,68 +79,16 @@ class _ClientsTab extends ConsumerWidget {
   }
 }
 
-// Tab de proveedores
-class _SuppliersTab extends ConsumerWidget {
-  const _SuppliersTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(supplierProvider);
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        shape: const CircleBorder(),
-        onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
-      ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.suppliers.isEmpty
-          ? Center(
-              child: Text(
-                'No hay proveedores registrados',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.s16),
-              itemCount: state.suppliers.length,
-              itemBuilder: (context, index) {
-                final s = state.suppliers[index];
-                return _ContactCard(
-                  name: s.name,
-                  contactInfo: s.contactInfo,
-                  isActive: s.isActive,
-                  onEdit: () => _showDialog(context, s),
-                );
-              },
-            ),
-    );
-  }
-
-  void _showDialog(BuildContext context, SupplierModel? supplier) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => SupplierDialog(supplier: supplier),
-    );
-  }
-}
-
-// Tarjeta reutilizable para clientes y proveedores
-class _ContactCard extends StatefulWidget {
+// Tarjeta reutilizable para clientes y proveedores (misma presentación en
+// ambas páginas).
+class ContactCard extends StatefulWidget {
   final String name;
   final String? contactInfo;
   final bool isActive;
   final VoidCallback onEdit;
 
-  const _ContactCard({
+  const ContactCard({
+    super.key,
     required this.name,
     required this.contactInfo,
     required this.isActive,
@@ -165,10 +96,10 @@ class _ContactCard extends StatefulWidget {
   });
 
   @override
-  State<_ContactCard> createState() => _ContactCardState();
+  State<ContactCard> createState() => _ContactCardState();
 }
 
-class _ContactCardState extends State<_ContactCard> {
+class _ContactCardState extends State<ContactCard> {
   void _showDetail(BuildContext context) {
     showDialog(
       context: context,

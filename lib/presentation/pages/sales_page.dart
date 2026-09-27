@@ -15,13 +15,31 @@ class SalesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(title: 'Ventas', showBack: true),
+      body: const SalesListBody(),
+    );
+  }
+}
+
+// Contenido de la lista de ventas, sin AppBar propia. Se usa tanto en
+// SalesPage (con AppBar y back) como embebido en el tab "Ventas y Compras"
+// de la navegación inferior (sin AppBar).
+class SalesListBody extends ConsumerWidget {
+  const SalesListBody({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(saleProvider);
     final clients = ref.watch(clientProvider).clients;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: 'Ventas', showBack: true),
       floatingActionButton: FloatingActionButton(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'sales_list_body_fab',
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),

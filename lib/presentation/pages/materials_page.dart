@@ -8,6 +8,9 @@ import '../../theme/app_theme.dart';
 import '../dialogs/material_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 
+// Página de Materiales: lista de materiales y registro de uso por producto,
+// como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
+// tab "Inventario" de la navegación inferior.
 class MaterialsPage extends ConsumerWidget {
   const MaterialsPage({super.key});
 
@@ -34,15 +37,15 @@ class MaterialsPage extends ConsumerWidget {
             ],
           ),
         ),
-        body: const TabBarView(children: [_MaterialsTab(), _UsageTab()]),
+        body: const TabBarView(children: [MaterialsListTab(), MaterialsUsageTab()]),
       ),
     );
   }
 }
 
-// Tab de lista de materiales
-class _MaterialsTab extends ConsumerWidget {
-  const _MaterialsTab();
+// Tab de lista de materiales, sin AppBar propia (la aporta MaterialsPage).
+class MaterialsListTab extends ConsumerWidget {
+  const MaterialsListTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,6 +54,9 @@ class _MaterialsTab extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'materials_list_tab_fab',
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
@@ -92,15 +98,16 @@ class _MaterialsTab extends ConsumerWidget {
   }
 }
 
-// Tab de registro de uso de materiales por producto
-class _UsageTab extends ConsumerStatefulWidget {
-  const _UsageTab();
+// Tab de registro de uso de materiales por producto. Se usa como sub-tab
+// dentro del tab "Inventario" de la navegación inferior; no tiene AppBar propia.
+class MaterialsUsageTab extends ConsumerStatefulWidget {
+  const MaterialsUsageTab({super.key});
 
   @override
-  ConsumerState<_UsageTab> createState() => _UsageTabState();
+  ConsumerState<MaterialsUsageTab> createState() => _MaterialsUsageTabState();
 }
 
-class _UsageTabState extends ConsumerState<_UsageTab> {
+class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
   int? _selectedProductId;
   List<ProductMaterialModel> _usageLog = [];
   bool _loading = false;
@@ -161,6 +168,10 @@ class _UsageTabState extends ConsumerState<_UsageTab> {
       backgroundColor: AppColors.background,
       floatingActionButton: _selectedProductId != null
           ? FloatingActionButton(
+              // Tag único: evita colisiones de Hero cuando varias pestañas
+              // con FAB conviven montadas a la vez bajo el shell de
+              // navegación inferior.
+              heroTag: 'materials_usage_tab_fab',
               backgroundColor: AppColors.primary,
               shape: const CircleBorder(),
               onPressed: _showRegisterSheet,
