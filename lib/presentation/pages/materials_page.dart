@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
 import '../../application/product_provider.dart';
+import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
 import '../../models/product_material_model.dart';
 import '../../theme/app_theme.dart';
@@ -336,8 +338,14 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         .materials
         .where((m) => m.id == _selectedMaterialId)
         .firstOrNull;
-    final usesFractions =
-        material != null && isFractionFriendlyUnit(material.unit);
+    final unit = material != null
+        ? ref
+              .read(unitProvider)
+              .units
+              .where((u) => u.id == material.unitId)
+              .firstOrNull
+        : null;
+    final usesFractions = unit != null && isFractionFriendlyUnitType(unit.type);
 
     if (!usesFractions && !_formKey.currentState!.validate()) return;
     if (_selectedMaterialId == null) return;
@@ -387,6 +395,13 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         .materials
         .where((m) => m.isActive && m.stock > 0)
         .toList();
+    final units = ref.watch(unitProvider).units;
+    final selectedMaterial = _selectedMaterialId != null
+        ? materials.where((m) => m.id == _selectedMaterialId).firstOrNull
+        : null;
+    final selectedUnit = selectedMaterial != null
+        ? units.where((u) => u.id == selectedMaterial.unitId).firstOrNull
+        : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -440,19 +455,12 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
             const SizedBox(height: AppSpacing.s16),
 
             // Cantidad: para unidades tipo envase (botella, bolsa...) se
-            // ofrecen fracciones simples en vez de pedir un decimal exacto.
-            if (_selectedMaterialId != null &&
-                isFractionFriendlyUnit(
-                  materials
-                      .where((m) => m.id == _selectedMaterialId)
-                      .first
-                      .unit,
-                ))
+            // ofrecen fracciones simples en vez de pedir un decimal exacto;
+            // para unidades "por pieza" (unidad genérica) se exige un entero.
+            if (selectedUnit != null &&
+                isFractionFriendlyUnitType(selectedUnit.type))
               FractionQuantityPicker(
-                unit: materials
-                    .where((m) => m.id == _selectedMaterialId)
-                    .first
-                    .unit,
+                unit: selectedUnit.name,
                 value: _fractionQuantity,
                 onChanged: (v) => setState(() => _fractionQuantity = v),
                 label: 'Cantidad utilizada',
@@ -461,9 +469,14 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
               TextFormField(
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
+                inputFormatters:
+                    selectedUnit != null &&
+                        isDiscreteUnit(selectedUnit.type, selectedUnit.name)
+                    ? [FilteringTextInputFormatter.digitsOnly]
+                    : null,
                 decoration: InputDecoration(
-                  labelText: _selectedMaterialId != null
-                      ? 'Cantidad utilizada (${materials.where((m) => m.id == _selectedMaterialId).first.unit})'
+                  labelText: selectedUnit != null
+                      ? 'Cantidad utilizada (${selectedUnit.name})'
                       : 'Cantidad utilizada',
                   hintText: '0',
                 ),
@@ -471,6 +484,11 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                   if (v == null || v.isEmpty) return 'Campo requerido';
                   final qty = double.tryParse(v);
                   if (qty == null || qty <= 0) return 'Cantidad inválida';
+                  if (selectedUnit != null &&
+                      isDiscreteUnit(selectedUnit.type, selectedUnit.name) &&
+                      qty != qty.roundToDouble()) {
+                    return 'Debe ser un número entero';
+                  }
                   return null;
                 },
               ),
@@ -568,7 +586,13 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   String? _error;
   bool _hasChanges = false;
 
-  bool get _usesFractions => isFractionFriendlyUnit(widget.entry.materialUnit);
+  bool get _usesFractions =>
+      isFractionFriendlyUnitType(widget.entry.materialUnitType);
+
+  bool get _isDiscrete => isDiscreteUnit(
+    widget.entry.materialUnitType,
+    widget.entry.materialUnitName,
+  );
 
   @override
   void initState() {
@@ -670,7 +694,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
             // envase, número decimal para el resto.
             if (_usesFractions) ...[
               FractionQuantityPicker(
-                unit: widget.entry.materialUnit,
+                unit: widget.entry.materialUnitName,
                 value: _fractionQuantity,
                 onChanged: (v) {
                   setState(() => _fractionQuantity = v);
@@ -689,8 +713,11 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
               TextFormField(
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
+                inputFormatters: _isDiscrete
+                    ? [FilteringTextInputFormatter.digitsOnly]
+                    : null,
                 decoration: InputDecoration(
-                  labelText: 'Nueva cantidad (${widget.entry.materialUnit})',
+                  labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
                   hintText: '0',
                   helperText:
                       'Máximo disponible: ${formatNumber(availableStock)}',
@@ -701,6 +728,9 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                   if (qty == null || qty <= 0) return 'Cantidad inválida';
                   if (qty > availableStock) {
                     return 'Máximo: ${formatNumber(availableStock)}';
+                  }
+                  if (_isDiscrete && qty != qty.roundToDouble()) {
+                    return 'Debe ser un número entero';
                   }
                   return null;
                 },

@@ -53,9 +53,13 @@ void main() {
     setUp(() async {
       db = AppDatabase.forTesting(NativeDatabase.memory());
       repository = PurchaseRepository(db);
+      final unit = await (db.select(
+        db.units,
+      )..where((u) => u.name.equals('unidad'))).getSingle();
       await db.into(db.materials).insert(
         MaterialsCompanion.insert(
           name: 'Material 1',
+          unitId: unit.id,
           pricePerUnit: 2.0,
           stock: const Value(10.0),
         ),

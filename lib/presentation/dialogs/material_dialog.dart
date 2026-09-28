@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
+import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/unit_quantity_input.dart';
 
 class MaterialDialog extends ConsumerStatefulWidget {
   final MaterialModel? material;
@@ -28,7 +28,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   late final TextEditingController _descController;
   late final TextEditingController _stockController;
   late final TextEditingController _priceController;
-  late String _selectedUnit;
+  int? _selectedUnitId;
   late bool _isActive;
   bool _hasChanges = false;
 
@@ -49,7 +49,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
           ? formatNumber(widget.material!.pricePerUnit)
           : '',
     );
-    _selectedUnit = widget.material?.unit ?? 'unidad';
+    _selectedUnitId = widget.material?.unitId;
     _isActive = widget.material?.isActive ?? true;
 
     _nameController.addListener(_checkChanges);
@@ -66,7 +66,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
             (widget.material?.stock.toString() ?? '0') ||
         _priceController.text.trim() !=
             (widget.material?.pricePerUnit.toString() ?? '') ||
-        _selectedUnit != (widget.material?.unit ?? 'unidad') ||
+        _selectedUnitId != widget.material?.unitId ||
         _isActive != (widget.material?.isActive ?? true);
     if (changed != _hasChanges) setState(() => _hasChanges = changed);
   }
@@ -88,7 +88,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
           id: widget.material?.id,
           name: _nameController.text.trim(),
           description: _descController.text.trim(),
-          unit: _selectedUnit,
+          unitId: _selectedUnitId!,
           stock: double.tryParse(_stockController.text.trim()) ?? 0,
           pricePerUnit: double.tryParse(_priceController.text.trim()) ?? 0,
           isActive: _isActive,
@@ -191,6 +191,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.material != null;
+    final units = ref.watch(unitProvider).units;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -240,18 +241,19 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
               const SizedBox(height: AppSpacing.s16),
 
               // Unidad de medida
-              DropdownButtonFormField<String>(
-                value: _selectedUnit,
+              DropdownButtonFormField<int>(
+                value: _selectedUnitId,
                 decoration: const InputDecoration(labelText: 'Unidad'),
-                items: {
-                  ...commonMaterialUnits,
-                  _selectedUnit,
-                }.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                items: units
+                    .map(
+                      (u) => DropdownMenuItem(value: u.id, child: Text(u.name)),
+                    )
+                    .toList(),
                 onChanged: (val) {
-                  if (val == null) return;
-                  setState(() => _selectedUnit = val);
+                  setState(() => _selectedUnitId = val);
                   _checkChanges();
                 },
+                validator: (v) => v == null ? 'Selecciona una unidad' : null,
               ),
               const SizedBox(height: AppSpacing.s16),
 

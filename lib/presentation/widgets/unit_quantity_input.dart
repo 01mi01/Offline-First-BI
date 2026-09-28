@@ -1,57 +1,32 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-// Unidades comunes ofrecidas al crear/editar un material. La lista es solo
-// una sugerencia: el campo sigue siendo de texto libre para no bloquear
-// unidades no contempladas aquí.
-const List<String> commonMaterialUnits = [
-  'unidad',
-  'botella',
-  'bolsa',
-  'paquete',
-  'caja',
-  'frasco',
-  'lata',
-  'rollo',
-  'metro',
-  'litro',
-  'kg',
-  'gramo',
-];
+// Clasificación del comportamiento de entrada de cantidad según el tipo de
+// unidad (Units.type, ver app_database.dart): "contenedor" (botella, bolsa...)
+// admite fracciones simples porque pensar en decimales no es natural para
+// alguien sin formación técnica; "medida" (metro, kg...) y "otros" (comodín)
+// usan un número plano.
+const String unitTypeContenedor = 'contenedor';
+const String unitTypeMedida = 'medida';
+const String unitTypeOtros = 'otros';
 
-// Unidades tipo "envase": tiene más sentido para alguien sin formación
-// técnica pensar en fracciones del envase completo (un cuarto, la mitad...)
-// que teclear un decimal exacto. El resto de unidades (metro, litro, kg,
-// unidad genérica, etc.) se quedan con un número simple.
-const Set<String> _fractionFriendlyUnits = {
-  'botella',
-  'bolsa',
-  'paquete',
-  'caja',
-  'frasco',
-  'lata',
-  'rollo',
-};
+bool isFractionFriendlyUnitType(String type) => type == unitTypeContenedor;
 
-// Unidades "por pieza": al comprar materiales se adquieren en cantidades
-// enteras (no tiene sentido comprar "media caja" a un proveedor), así que la
-// cantidad de compra se restringe a números enteros para estas unidades.
-const Set<String> _discreteUnits = {
-  'unidad',
-  'botella',
-  'bolsa',
-  'paquete',
-  'caja',
-  'frasco',
-  'lata',
-  'rollo',
-};
+// Unidades tipo "medida" que, a pesar de admitir un campo numérico plano
+// (no fracciones tipo envase), siguen siendo intrínsecamente contables: no
+// tiene sentido "2.5 unidades", a diferencia de metro/litro/kg/gramo que sí
+// son cantidades continuas reales. Lista chica y explícita a propósito: es
+// la única excepción conocida dentro de "medida".
+const Set<String> _wholeNumberMedidaUnitNames = {'unidad'};
 
-bool isFractionFriendlyUnit(String unit) =>
-    _fractionFriendlyUnits.contains(unit.trim().toLowerCase());
-
-bool isDiscreteUnit(String unit) =>
-    _discreteUnits.contains(unit.trim().toLowerCase());
+// Al comprar o consumir materiales en unidades "por pieza" (contenedores, o
+// la unidad genérica "unidad") las cantidades son números enteros: no tiene
+// sentido comprar "media caja" a un proveedor ni usar "2.5 unidades" en una
+// receta. Unidades "medida" continuas (metro, litro, kg, gramo) sí admiten
+// decimales.
+bool isDiscreteUnit(String type, String name) =>
+    type == unitTypeContenedor ||
+    _wholeNumberMedidaUnitNames.contains(name.trim().toLowerCase());
 
 // Selector de fracciones de un envase (un cuarto / la mitad / tres cuartos /
 // entera), para unidades como "botella" donde pensar en decimales no es

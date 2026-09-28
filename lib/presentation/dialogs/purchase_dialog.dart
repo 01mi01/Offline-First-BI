@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/material_provider.dart';
+import '../../application/unit_provider.dart';
 import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
@@ -791,6 +792,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
         .materials
         .where((m) => m.isActive)
         .toList();
+    final units = ref.watch(unitProvider).units;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -864,9 +866,14 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                 final selectedMaterial = materials
                     .where((m) => m.id == _selectedMaterialId)
                     .firstOrNull;
+                final selectedUnit = selectedMaterial != null
+                    ? units
+                          .where((u) => u.id == selectedMaterial.unitId)
+                          .firstOrNull
+                    : null;
                 final discrete =
-                    selectedMaterial != null &&
-                    isDiscreteUnit(selectedMaterial.unit);
+                    selectedUnit != null &&
+                    isDiscreteUnit(selectedUnit.type, selectedUnit.name);
                 return TextFormField(
                   controller: _quantityController,
                   keyboardType: TextInputType.number,
@@ -891,8 +898,8 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                           }),
                         ],
                   decoration: InputDecoration(
-                    labelText: selectedMaterial != null
-                        ? 'Cantidad (${selectedMaterial.unit})'
+                    labelText: selectedUnit != null
+                        ? 'Cantidad (${selectedUnit.name})'
                         : 'Cantidad',
                     hintText: '0',
                   ),

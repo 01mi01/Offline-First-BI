@@ -14,7 +14,7 @@ class MaterialRepository {
       id: row.id,
       name: row.name,
       description: row.description,
-      unit: row.unit,
+      unitId: row.unitId,
       stock: row.stock,
       pricePerUnit: row.pricePerUnit,
       isActive: row.isActive,
@@ -45,7 +45,7 @@ class MaterialRepository {
     int? id,
     required String name,
     String? description,
-    required String unit,
+    required int unitId,
     required double stock,
     required double pricePerUnit,
     bool isActive = true,
@@ -58,7 +58,7 @@ class MaterialRepository {
             id: id != null ? Value(id) : const Value.absent(),
             name: Value(name),
             description: Value(description),
-            unit: Value(unit),
+            unitId: Value(unitId),
             stock: Value(stock),
             pricePerUnit: Value(pricePerUnit),
             isActive: Value(isActive),
@@ -80,17 +80,25 @@ class MaterialRepository {
 
     final result = <ProductMaterialModel>[];
     for (final row in rows) {
-      final material = await (database.select(
-        database.materials,
-      )..where((m) => m.id.equals(row.materialId))).getSingleOrNull();
-      if (material != null) {
+      final materialWithUnit =
+          await (database.select(database.materials).join([
+                innerJoin(
+                  database.units,
+                  database.units.id.equalsExp(database.materials.unitId),
+                ),
+              ])..where(database.materials.id.equals(row.materialId)))
+              .getSingleOrNull();
+      if (materialWithUnit != null) {
+        final material = materialWithUnit.readTable(database.materials);
+        final unit = materialWithUnit.readTable(database.units);
         result.add(
           ProductMaterialModel(
             id: row.id,
             productId: row.productId,
             materialId: row.materialId,
             materialName: material.name,
-            materialUnit: material.unit,
+            materialUnitName: unit.name,
+            materialUnitType: unit.type,
             quantityUsed: row.quantityUsed,
             pricePerUnit: material.pricePerUnit,
           ),

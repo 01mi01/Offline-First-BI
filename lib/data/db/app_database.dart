@@ -107,11 +107,24 @@ class Products extends Table {
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
+// Unidades de medida para materiales. "type" clasifica el comportamiento de
+// entrada de cantidad: "contenedor" (botella, bolsa...) admite fracciones
+// simples, "medida" (metro, kg...) y "otros" (comodín) usan un número plano.
+class Units extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().unique()();
+  TextColumn get type => text()();
+  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
+  TextColumn get supabaseId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+}
+
 class Materials extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
-  TextColumn get unit => text().withDefault(const Constant('unidad'))();
+  IntColumn get unitId => integer().references(Units, #id)();
   RealColumn get stock => real().withDefault(const Constant(0))();
   RealColumn get pricePerUnit => real()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
@@ -289,6 +302,7 @@ class SesionLocal extends Table {
     ModulePermissions,
     Categories,
     Products,
+    Units,
     Materials,
     ProductMaterials,
     Locations,
@@ -311,7 +325,26 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
+
+  // Semilla de unidades: nombre + tipo ("contenedor" admite fracciones
+  // simples en la UI, "medida"/"otros" usan un número plano). Se usa tanto
+  // al crear la base desde cero como al migrar instalaciones existentes.
+  static const List<(String, String)> _unitSeeds = [
+    ('botella', 'contenedor'),
+    ('bolsa', 'contenedor'),
+    ('paquete', 'contenedor'),
+    ('caja', 'contenedor'),
+    ('frasco', 'contenedor'),
+    ('lata', 'contenedor'),
+    ('rollo', 'contenedor'),
+    ('unidad', 'medida'),
+    ('metro', 'medida'),
+    ('litro', 'medida'),
+    ('kg', 'medida'),
+    ('gramo', 'medida'),
+    ('otro', 'otros'),
+  ];
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -471,7 +504,12 @@ class AppDatabase extends _$AppDatabase {
         }
 
         // --- Materials.unit ---
-        await m.addColumn(materials, materials.unit);
+        // Se referencia por SQL crudo (no como materials.unit) porque esa
+        // columna dejó de existir en la clase Dart: la migración de v10 la
+        // reemplaza por materials.unitId (ver el bloque `if (from < 10)`).
+        await customStatement(
+          "ALTER TABLE materials ADD COLUMN unit TEXT NOT NULL DEFAULT 'unidad'",
+        );
 
         // --- SaleItems.priceType (siempre "A" por ahora: todavía no existe
         // una UI para elegir entre precio A/B al momento de la venta) ---
@@ -535,6 +573,34 @@ class AppDatabase extends _$AppDatabase {
             columnTransformer: {
               sesionLocal.userId: const CustomExpression<int>(
                 'CAST(user_id AS INTEGER)',
+              ),
+            },
+          ),
+        );
+      }
+      if (from < 10) {
+        // --- Materials.unit (texto libre) -> Materials.unitId (FK a Units) ---
+        await m.createTable(units);
+        await batch((b) {
+          b.insertAll(units, [
+            for (final (name, type) in _unitSeeds)
+              UnitsCompanion.insert(name: name, type: type),
+          ]);
+        });
+
+        // Cada material se mapea a la unidad sembrada cuyo nombre coincide
+        // (sin distinguir mayúsculas) con su texto libre anterior; si no hay
+        // coincidencia, cae en la unidad comodín "otro".
+        await m.alterTable(
+          TableMigration(
+            materials,
+            newColumns: [materials.unitId],
+            columnTransformer: {
+              materials.unitId: const CustomExpression<int>(
+                "COALESCE("
+                "(SELECT id FROM units WHERE LOWER(name) = LOWER(unit)), "
+                "(SELECT id FROM units WHERE name = 'otro')"
+                ")",
               ),
             },
           ),
@@ -615,6 +681,14 @@ class AppDatabase extends _$AppDatabase {
     await into(categories).insert(
       CategoriesCompanion.insert(name: 'Sin categoría'),
     );
+
+    // Unidades de medida para materiales
+    await batch((b) {
+      b.insertAll(units, [
+        for (final (name, type) in _unitSeeds)
+          UnitsCompanion.insert(name: name, type: type),
+      ]);
+    });
 
     // Cliente por defecto para ventas sin identificar
     await into(clients).insert(

@@ -3982,6 +3982,464 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   }
 }
 
+class $UnitsTable extends Units with TableInfo<$UnitsTable, Unit> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UnitsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    type,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'units';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Unit> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Unit map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Unit(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $UnitsTable createAlias(String alias) {
+    return $UnitsTable(attachedDatabase, alias);
+  }
+}
+
+class Unit extends DataClass implements Insertable<Unit> {
+  final int id;
+  final String name;
+  final String type;
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  const Unit({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['type'] = Variable<String>(type);
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  UnitsCompanion toCompanion(bool nullToAbsent) {
+    return UnitsCompanion(
+      id: Value(id),
+      name: Value(name),
+      type: Value(type),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory Unit.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Unit(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      type: serializer.fromJson<String>(json['type']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'type': serializer.toJson<String>(type),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  Unit copyWith({
+    int? id,
+    String? name,
+    String? type,
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
+  }) => Unit(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    type: type ?? this.type,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  Unit copyWithCompanion(UnitsCompanion data) {
+    return Unit(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      type: data.type.present ? data.type.value : this.type,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Unit(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    type,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Unit &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.type == this.type &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class UnitsCompanion extends UpdateCompanion<Unit> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> type;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
+  const UnitsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.type = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  UnitsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String type,
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : name = Value(name),
+       type = Value(type);
+  static Insertable<Unit> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? type,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (type != null) 'type': type,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  UnitsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? type,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
+  }) {
+    return UnitsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UnitsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $MaterialsTable extends Materials
     with TableInfo<$MaterialsTable, Material> {
   @override
@@ -4021,15 +4479,17 @@ class $MaterialsTable extends Materials
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  static const VerificationMeta _unitIdMeta = const VerificationMeta('unitId');
   @override
-  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
-    'unit',
+  late final GeneratedColumn<int> unitId = GeneratedColumn<int>(
+    'unit_id',
     aliasedName,
     false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('unidad'),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES units (id)',
+    ),
   );
   static const VerificationMeta _stockMeta = const VerificationMeta('stock');
   @override
@@ -4121,7 +4581,7 @@ class $MaterialsTable extends Materials
     id,
     name,
     description,
-    unit,
+    unitId,
     stock,
     pricePerUnit,
     isActive,
@@ -4162,11 +4622,13 @@ class $MaterialsTable extends Materials
         ),
       );
     }
-    if (data.containsKey('unit')) {
+    if (data.containsKey('unit_id')) {
       context.handle(
-        _unitMeta,
-        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+        _unitIdMeta,
+        unitId.isAcceptableOrUnknown(data['unit_id']!, _unitIdMeta),
       );
+    } else if (isInserting) {
+      context.missing(_unitIdMeta);
     }
     if (data.containsKey('stock')) {
       context.handle(
@@ -4239,9 +4701,9 @@ class $MaterialsTable extends Materials
         DriftSqlType.string,
         data['${effectivePrefix}description'],
       ),
-      unit: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}unit'],
+      unitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}unit_id'],
       )!,
       stock: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
@@ -4284,7 +4746,7 @@ class Material extends DataClass implements Insertable<Material> {
   final int id;
   final String name;
   final String? description;
-  final String unit;
+  final int unitId;
   final double stock;
   final double pricePerUnit;
   final bool isActive;
@@ -4296,7 +4758,7 @@ class Material extends DataClass implements Insertable<Material> {
     required this.id,
     required this.name,
     this.description,
-    required this.unit,
+    required this.unitId,
     required this.stock,
     required this.pricePerUnit,
     required this.isActive,
@@ -4313,7 +4775,7 @@ class Material extends DataClass implements Insertable<Material> {
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
     }
-    map['unit'] = Variable<String>(unit);
+    map['unit_id'] = Variable<int>(unitId);
     map['stock'] = Variable<double>(stock);
     map['price_per_unit'] = Variable<double>(pricePerUnit);
     map['is_active'] = Variable<bool>(isActive);
@@ -4335,7 +4797,7 @@ class Material extends DataClass implements Insertable<Material> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
-      unit: Value(unit),
+      unitId: Value(unitId),
       stock: Value(stock),
       pricePerUnit: Value(pricePerUnit),
       isActive: Value(isActive),
@@ -4359,7 +4821,7 @@ class Material extends DataClass implements Insertable<Material> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
-      unit: serializer.fromJson<String>(json['unit']),
+      unitId: serializer.fromJson<int>(json['unitId']),
       stock: serializer.fromJson<double>(json['stock']),
       pricePerUnit: serializer.fromJson<double>(json['pricePerUnit']),
       isActive: serializer.fromJson<bool>(json['isActive']),
@@ -4376,7 +4838,7 @@ class Material extends DataClass implements Insertable<Material> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
-      'unit': serializer.toJson<String>(unit),
+      'unitId': serializer.toJson<int>(unitId),
       'stock': serializer.toJson<double>(stock),
       'pricePerUnit': serializer.toJson<double>(pricePerUnit),
       'isActive': serializer.toJson<bool>(isActive),
@@ -4391,7 +4853,7 @@ class Material extends DataClass implements Insertable<Material> {
     int? id,
     String? name,
     Value<String?> description = const Value.absent(),
-    String? unit,
+    int? unitId,
     double? stock,
     double? pricePerUnit,
     bool? isActive,
@@ -4403,7 +4865,7 @@ class Material extends DataClass implements Insertable<Material> {
     id: id ?? this.id,
     name: name ?? this.name,
     description: description.present ? description.value : this.description,
-    unit: unit ?? this.unit,
+    unitId: unitId ?? this.unitId,
     stock: stock ?? this.stock,
     pricePerUnit: pricePerUnit ?? this.pricePerUnit,
     isActive: isActive ?? this.isActive,
@@ -4419,7 +4881,7 @@ class Material extends DataClass implements Insertable<Material> {
       description: data.description.present
           ? data.description.value
           : this.description,
-      unit: data.unit.present ? data.unit.value : this.unit,
+      unitId: data.unitId.present ? data.unitId.value : this.unitId,
       stock: data.stock.present ? data.stock.value : this.stock,
       pricePerUnit: data.pricePerUnit.present
           ? data.pricePerUnit.value
@@ -4442,7 +4904,7 @@ class Material extends DataClass implements Insertable<Material> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
-          ..write('unit: $unit, ')
+          ..write('unitId: $unitId, ')
           ..write('stock: $stock, ')
           ..write('pricePerUnit: $pricePerUnit, ')
           ..write('isActive: $isActive, ')
@@ -4459,7 +4921,7 @@ class Material extends DataClass implements Insertable<Material> {
     id,
     name,
     description,
-    unit,
+    unitId,
     stock,
     pricePerUnit,
     isActive,
@@ -4475,7 +4937,7 @@ class Material extends DataClass implements Insertable<Material> {
           other.id == this.id &&
           other.name == this.name &&
           other.description == this.description &&
-          other.unit == this.unit &&
+          other.unitId == this.unitId &&
           other.stock == this.stock &&
           other.pricePerUnit == this.pricePerUnit &&
           other.isActive == this.isActive &&
@@ -4489,7 +4951,7 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
   final Value<int> id;
   final Value<String> name;
   final Value<String?> description;
-  final Value<String> unit;
+  final Value<int> unitId;
   final Value<double> stock;
   final Value<double> pricePerUnit;
   final Value<bool> isActive;
@@ -4501,7 +4963,7 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
-    this.unit = const Value.absent(),
+    this.unitId = const Value.absent(),
     this.stock = const Value.absent(),
     this.pricePerUnit = const Value.absent(),
     this.isActive = const Value.absent(),
@@ -4514,7 +4976,7 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     this.id = const Value.absent(),
     required String name,
     this.description = const Value.absent(),
-    this.unit = const Value.absent(),
+    required int unitId,
     this.stock = const Value.absent(),
     required double pricePerUnit,
     this.isActive = const Value.absent(),
@@ -4523,12 +4985,13 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : name = Value(name),
+       unitId = Value(unitId),
        pricePerUnit = Value(pricePerUnit);
   static Insertable<Material> custom({
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? description,
-    Expression<String>? unit,
+    Expression<int>? unitId,
     Expression<double>? stock,
     Expression<double>? pricePerUnit,
     Expression<bool>? isActive,
@@ -4541,7 +5004,7 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
-      if (unit != null) 'unit': unit,
+      if (unitId != null) 'unit_id': unitId,
       if (stock != null) 'stock': stock,
       if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
       if (isActive != null) 'is_active': isActive,
@@ -4556,7 +5019,7 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     Value<int>? id,
     Value<String>? name,
     Value<String?>? description,
-    Value<String>? unit,
+    Value<int>? unitId,
     Value<double>? stock,
     Value<double>? pricePerUnit,
     Value<bool>? isActive,
@@ -4569,7 +5032,7 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
-      unit: unit ?? this.unit,
+      unitId: unitId ?? this.unitId,
       stock: stock ?? this.stock,
       pricePerUnit: pricePerUnit ?? this.pricePerUnit,
       isActive: isActive ?? this.isActive,
@@ -4592,8 +5055,8 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
-    if (unit.present) {
-      map['unit'] = Variable<String>(unit.value);
+    if (unitId.present) {
+      map['unit_id'] = Variable<int>(unitId.value);
     }
     if (stock.present) {
       map['stock'] = Variable<double>(stock.value);
@@ -4625,7 +5088,7 @@ class MaterialsCompanion extends UpdateCompanion<Material> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
-          ..write('unit: $unit, ')
+          ..write('unitId: $unitId, ')
           ..write('stock: $stock, ')
           ..write('pricePerUnit: $pricePerUnit, ')
           ..write('isActive: $isActive, ')
@@ -11764,6 +12227,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ModulePermissionsTable(this);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $ProductsTable products = $ProductsTable(this);
+  late final $UnitsTable units = $UnitsTable(this);
   late final $MaterialsTable materials = $MaterialsTable(this);
   late final $ProductMaterialsTable productMaterials = $ProductMaterialsTable(
     this,
@@ -11791,6 +12255,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     modulePermissions,
     categories,
     products,
+    units,
     materials,
     productMaterials,
     locations,
@@ -15283,12 +15748,338 @@ typedef $$ProductsTableProcessedTableManager =
         bool saleItemsRefs,
       })
     >;
+typedef $$UnitsTableCreateCompanionBuilder =
+    UnitsCompanion Function({
+      Value<int> id,
+      required String name,
+      required String type,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
+typedef $$UnitsTableUpdateCompanionBuilder =
+    UnitsCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> type,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
+
+final class $$UnitsTableReferences
+    extends BaseReferences<_$AppDatabase, $UnitsTable, Unit> {
+  $$UnitsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$MaterialsTable, List<Material>>
+  _materialsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.materials,
+    aliasName: $_aliasNameGenerator(db.units.id, db.materials.unitId),
+  );
+
+  $$MaterialsTableProcessedTableManager get materialsRefs {
+    final manager = $$MaterialsTableTableManager(
+      $_db,
+      $_db.materials,
+    ).filter((f) => f.unitId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_materialsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$UnitsTableFilterComposer extends Composer<_$AppDatabase, $UnitsTable> {
+  $$UnitsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> materialsRefs(
+    Expression<bool> Function($$MaterialsTableFilterComposer f) f,
+  ) {
+    final $$MaterialsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.materials,
+      getReferencedColumn: (t) => t.unitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MaterialsTableFilterComposer(
+            $db: $db,
+            $table: $db.materials,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$UnitsTableOrderingComposer
+    extends Composer<_$AppDatabase, $UnitsTable> {
+  $$UnitsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UnitsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UnitsTable> {
+  $$UnitsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> materialsRefs<T extends Object>(
+    Expression<T> Function($$MaterialsTableAnnotationComposer a) f,
+  ) {
+    final $$MaterialsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.materials,
+      getReferencedColumn: (t) => t.unitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MaterialsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.materials,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$UnitsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UnitsTable,
+          Unit,
+          $$UnitsTableFilterComposer,
+          $$UnitsTableOrderingComposer,
+          $$UnitsTableAnnotationComposer,
+          $$UnitsTableCreateCompanionBuilder,
+          $$UnitsTableUpdateCompanionBuilder,
+          (Unit, $$UnitsTableReferences),
+          Unit,
+          PrefetchHooks Function({bool materialsRefs})
+        > {
+  $$UnitsTableTableManager(_$AppDatabase db, $UnitsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UnitsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UnitsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UnitsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => UnitsCompanion(
+                id: id,
+                name: name,
+                type: type,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String type,
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => UnitsCompanion.insert(
+                id: id,
+                name: name,
+                type: type,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$UnitsTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({materialsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (materialsRefs) db.materials],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (materialsRefs)
+                    await $_getPrefetchedData<Unit, $UnitsTable, Material>(
+                      currentTable: table,
+                      referencedTable: $$UnitsTableReferences
+                          ._materialsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$UnitsTableReferences(db, table, p0).materialsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.unitId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$UnitsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UnitsTable,
+      Unit,
+      $$UnitsTableFilterComposer,
+      $$UnitsTableOrderingComposer,
+      $$UnitsTableAnnotationComposer,
+      $$UnitsTableCreateCompanionBuilder,
+      $$UnitsTableUpdateCompanionBuilder,
+      (Unit, $$UnitsTableReferences),
+      Unit,
+      PrefetchHooks Function({bool materialsRefs})
+    >;
 typedef $$MaterialsTableCreateCompanionBuilder =
     MaterialsCompanion Function({
       Value<int> id,
       required String name,
       Value<String?> description,
-      Value<String> unit,
+      required int unitId,
       Value<double> stock,
       required double pricePerUnit,
       Value<bool> isActive,
@@ -15302,7 +16093,7 @@ typedef $$MaterialsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> name,
       Value<String?> description,
-      Value<String> unit,
+      Value<int> unitId,
       Value<double> stock,
       Value<double> pricePerUnit,
       Value<bool> isActive,
@@ -15315,6 +16106,24 @@ typedef $$MaterialsTableUpdateCompanionBuilder =
 final class $$MaterialsTableReferences
     extends BaseReferences<_$AppDatabase, $MaterialsTable, Material> {
   $$MaterialsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $UnitsTable _unitIdTable(_$AppDatabase db) => db.units.createAlias(
+    $_aliasNameGenerator(db.materials.unitId, db.units.id),
+  );
+
+  $$UnitsTableProcessedTableManager get unitId {
+    final $_column = $_itemColumn<int>('unit_id')!;
+
+    final manager = $$UnitsTableTableManager(
+      $_db,
+      $_db.units,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_unitIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static MultiTypedResultKey<$ProductMaterialsTable, List<ProductMaterial>>
   _productMaterialsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -15385,11 +16194,6 @@ class $$MaterialsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get unit => $composableBuilder(
-    column: $table.unit,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<double> get stock => $composableBuilder(
     column: $table.stock,
     builder: (column) => ColumnFilters(column),
@@ -15424,6 +16228,29 @@ class $$MaterialsTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$UnitsTableFilterComposer get unitId {
+    final $$UnitsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unitId,
+      referencedTable: $db.units,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UnitsTableFilterComposer(
+            $db: $db,
+            $table: $db.units,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<bool> productMaterialsRefs(
     Expression<bool> Function($$ProductMaterialsTableFilterComposer f) f,
@@ -15500,11 +16327,6 @@ class $$MaterialsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get unit => $composableBuilder(
-    column: $table.unit,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<double> get stock => $composableBuilder(
     column: $table.stock,
     builder: (column) => ColumnOrderings(column),
@@ -15539,6 +16361,29 @@ class $$MaterialsTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$UnitsTableOrderingComposer get unitId {
+    final $$UnitsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unitId,
+      referencedTable: $db.units,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UnitsTableOrderingComposer(
+            $db: $db,
+            $table: $db.units,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$MaterialsTableAnnotationComposer
@@ -15560,9 +16405,6 @@ class $$MaterialsTableAnnotationComposer
     column: $table.description,
     builder: (column) => column,
   );
-
-  GeneratedColumn<String> get unit =>
-      $composableBuilder(column: $table.unit, builder: (column) => column);
 
   GeneratedColumn<double> get stock =>
       $composableBuilder(column: $table.stock, builder: (column) => column);
@@ -15590,6 +16432,29 @@ class $$MaterialsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$UnitsTableAnnotationComposer get unitId {
+    final $$UnitsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.unitId,
+      referencedTable: $db.units,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UnitsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.units,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<T> productMaterialsRefs<T extends Object>(
     Expression<T> Function($$ProductMaterialsTableAnnotationComposer a) f,
@@ -15656,6 +16521,7 @@ class $$MaterialsTableTableManager
           (Material, $$MaterialsTableReferences),
           Material,
           PrefetchHooks Function({
+            bool unitId,
             bool productMaterialsRefs,
             bool purchaseItemsRefs,
           })
@@ -15676,7 +16542,7 @@ class $$MaterialsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> description = const Value.absent(),
-                Value<String> unit = const Value.absent(),
+                Value<int> unitId = const Value.absent(),
                 Value<double> stock = const Value.absent(),
                 Value<double> pricePerUnit = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
@@ -15688,7 +16554,7 @@ class $$MaterialsTableTableManager
                 id: id,
                 name: name,
                 description: description,
-                unit: unit,
+                unitId: unitId,
                 stock: stock,
                 pricePerUnit: pricePerUnit,
                 isActive: isActive,
@@ -15702,7 +16568,7 @@ class $$MaterialsTableTableManager
                 Value<int> id = const Value.absent(),
                 required String name,
                 Value<String?> description = const Value.absent(),
-                Value<String> unit = const Value.absent(),
+                required int unitId,
                 Value<double> stock = const Value.absent(),
                 required double pricePerUnit,
                 Value<bool> isActive = const Value.absent(),
@@ -15714,7 +16580,7 @@ class $$MaterialsTableTableManager
                 id: id,
                 name: name,
                 description: description,
-                unit: unit,
+                unitId: unitId,
                 stock: stock,
                 pricePerUnit: pricePerUnit,
                 isActive: isActive,
@@ -15732,14 +16598,49 @@ class $$MaterialsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({productMaterialsRefs = false, purchaseItemsRefs = false}) {
+              ({
+                unitId = false,
+                productMaterialsRefs = false,
+                purchaseItemsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (productMaterialsRefs) db.productMaterials,
                     if (purchaseItemsRefs) db.purchaseItems,
                   ],
-                  addJoins: null,
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (unitId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.unitId,
+                                    referencedTable: $$MaterialsTableReferences
+                                        ._unitIdTable(db),
+                                    referencedColumn: $$MaterialsTableReferences
+                                        ._unitIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (productMaterialsRefs)
@@ -15805,6 +16706,7 @@ typedef $$MaterialsTableProcessedTableManager =
       (Material, $$MaterialsTableReferences),
       Material,
       PrefetchHooks Function({
+        bool unitId,
         bool productMaterialsRefs,
         bool purchaseItemsRefs,
       })
@@ -21840,6 +22742,8 @@ class $AppDatabaseManager {
       $$CategoriesTableTableManager(_db, _db.categories);
   $$ProductsTableTableManager get products =>
       $$ProductsTableTableManager(_db, _db.products);
+  $$UnitsTableTableManager get units =>
+      $$UnitsTableTableManager(_db, _db.units);
   $$MaterialsTableTableManager get materials =>
       $$MaterialsTableTableManager(_db, _db.materials);
   $$ProductMaterialsTableTableManager get productMaterials =>
