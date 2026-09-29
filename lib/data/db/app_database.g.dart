@@ -5159,6 +5159,32 @@ class $ProductMaterialsTable extends ProductMaterials
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isCanceledMeta = const VerificationMeta(
+    'isCanceled',
+  );
+  @override
+  late final GeneratedColumn<bool> isCanceled = GeneratedColumn<bool>(
+    'is_canceled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_canceled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _canceledAtMeta = const VerificationMeta(
+    'canceledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> canceledAt = GeneratedColumn<DateTime>(
+    'canceled_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
     'sincronizado',
   );
@@ -5214,6 +5240,8 @@ class $ProductMaterialsTable extends ProductMaterials
     productId,
     materialId,
     quantityUsed,
+    isCanceled,
+    canceledAt,
     sincronizado,
     supabaseId,
     createdAt,
@@ -5260,6 +5288,18 @@ class $ProductMaterialsTable extends ProductMaterials
       );
     } else if (isInserting) {
       context.missing(_quantityUsedMeta);
+    }
+    if (data.containsKey('is_canceled')) {
+      context.handle(
+        _isCanceledMeta,
+        isCanceled.isAcceptableOrUnknown(data['is_canceled']!, _isCanceledMeta),
+      );
+    }
+    if (data.containsKey('canceled_at')) {
+      context.handle(
+        _canceledAtMeta,
+        canceledAt.isAcceptableOrUnknown(data['canceled_at']!, _canceledAtMeta),
+      );
     }
     if (data.containsKey('sincronizado')) {
       context.handle(
@@ -5317,6 +5357,14 @@ class $ProductMaterialsTable extends ProductMaterials
         DriftSqlType.double,
         data['${effectivePrefix}quantity_used'],
       )!,
+      isCanceled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_canceled'],
+      )!,
+      canceledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}canceled_at'],
+      ),
       sincronizado: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}sincronizado'],
@@ -5347,6 +5395,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
   final int productId;
   final int materialId;
   final double quantityUsed;
+  final bool isCanceled;
+  final DateTime? canceledAt;
   final bool sincronizado;
   final String? supabaseId;
   final DateTime createdAt;
@@ -5356,6 +5406,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     required this.productId,
     required this.materialId,
     required this.quantityUsed,
+    required this.isCanceled,
+    this.canceledAt,
     required this.sincronizado,
     this.supabaseId,
     required this.createdAt,
@@ -5368,6 +5420,10 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     map['product_id'] = Variable<int>(productId);
     map['material_id'] = Variable<int>(materialId);
     map['quantity_used'] = Variable<double>(quantityUsed);
+    map['is_canceled'] = Variable<bool>(isCanceled);
+    if (!nullToAbsent || canceledAt != null) {
+      map['canceled_at'] = Variable<DateTime>(canceledAt);
+    }
     map['sincronizado'] = Variable<bool>(sincronizado);
     if (!nullToAbsent || supabaseId != null) {
       map['supabase_id'] = Variable<String>(supabaseId);
@@ -5385,6 +5441,10 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       productId: Value(productId),
       materialId: Value(materialId),
       quantityUsed: Value(quantityUsed),
+      isCanceled: Value(isCanceled),
+      canceledAt: canceledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(canceledAt),
       sincronizado: Value(sincronizado),
       supabaseId: supabaseId == null && nullToAbsent
           ? const Value.absent()
@@ -5406,6 +5466,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       productId: serializer.fromJson<int>(json['productId']),
       materialId: serializer.fromJson<int>(json['materialId']),
       quantityUsed: serializer.fromJson<double>(json['quantityUsed']),
+      isCanceled: serializer.fromJson<bool>(json['isCanceled']),
+      canceledAt: serializer.fromJson<DateTime?>(json['canceledAt']),
       sincronizado: serializer.fromJson<bool>(json['sincronizado']),
       supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -5420,6 +5482,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       'productId': serializer.toJson<int>(productId),
       'materialId': serializer.toJson<int>(materialId),
       'quantityUsed': serializer.toJson<double>(quantityUsed),
+      'isCanceled': serializer.toJson<bool>(isCanceled),
+      'canceledAt': serializer.toJson<DateTime?>(canceledAt),
       'sincronizado': serializer.toJson<bool>(sincronizado),
       'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -5432,6 +5496,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     int? productId,
     int? materialId,
     double? quantityUsed,
+    bool? isCanceled,
+    Value<DateTime?> canceledAt = const Value.absent(),
     bool? sincronizado,
     Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
@@ -5441,6 +5507,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     productId: productId ?? this.productId,
     materialId: materialId ?? this.materialId,
     quantityUsed: quantityUsed ?? this.quantityUsed,
+    isCanceled: isCanceled ?? this.isCanceled,
+    canceledAt: canceledAt.present ? canceledAt.value : this.canceledAt,
     sincronizado: sincronizado ?? this.sincronizado,
     supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
@@ -5456,6 +5524,12 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
       quantityUsed: data.quantityUsed.present
           ? data.quantityUsed.value
           : this.quantityUsed,
+      isCanceled: data.isCanceled.present
+          ? data.isCanceled.value
+          : this.isCanceled,
+      canceledAt: data.canceledAt.present
+          ? data.canceledAt.value
+          : this.canceledAt,
       sincronizado: data.sincronizado.present
           ? data.sincronizado.value
           : this.sincronizado,
@@ -5474,6 +5548,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
           ..write('productId: $productId, ')
           ..write('materialId: $materialId, ')
           ..write('quantityUsed: $quantityUsed, ')
+          ..write('isCanceled: $isCanceled, ')
+          ..write('canceledAt: $canceledAt, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
@@ -5488,6 +5564,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
     productId,
     materialId,
     quantityUsed,
+    isCanceled,
+    canceledAt,
     sincronizado,
     supabaseId,
     createdAt,
@@ -5501,6 +5579,8 @@ class ProductMaterial extends DataClass implements Insertable<ProductMaterial> {
           other.productId == this.productId &&
           other.materialId == this.materialId &&
           other.quantityUsed == this.quantityUsed &&
+          other.isCanceled == this.isCanceled &&
+          other.canceledAt == this.canceledAt &&
           other.sincronizado == this.sincronizado &&
           other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
@@ -5512,6 +5592,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
   final Value<int> productId;
   final Value<int> materialId;
   final Value<double> quantityUsed;
+  final Value<bool> isCanceled;
+  final Value<DateTime?> canceledAt;
   final Value<bool> sincronizado;
   final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
@@ -5521,6 +5603,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     this.productId = const Value.absent(),
     this.materialId = const Value.absent(),
     this.quantityUsed = const Value.absent(),
+    this.isCanceled = const Value.absent(),
+    this.canceledAt = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -5531,6 +5615,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     required int productId,
     required int materialId,
     required double quantityUsed,
+    this.isCanceled = const Value.absent(),
+    this.canceledAt = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -5543,6 +5629,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     Expression<int>? productId,
     Expression<int>? materialId,
     Expression<double>? quantityUsed,
+    Expression<bool>? isCanceled,
+    Expression<DateTime>? canceledAt,
     Expression<bool>? sincronizado,
     Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
@@ -5553,6 +5641,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
       if (productId != null) 'product_id': productId,
       if (materialId != null) 'material_id': materialId,
       if (quantityUsed != null) 'quantity_used': quantityUsed,
+      if (isCanceled != null) 'is_canceled': isCanceled,
+      if (canceledAt != null) 'canceled_at': canceledAt,
       if (sincronizado != null) 'sincronizado': sincronizado,
       if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
@@ -5565,6 +5655,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     Value<int>? productId,
     Value<int>? materialId,
     Value<double>? quantityUsed,
+    Value<bool>? isCanceled,
+    Value<DateTime?>? canceledAt,
     Value<bool>? sincronizado,
     Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
@@ -5575,6 +5667,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
       productId: productId ?? this.productId,
       materialId: materialId ?? this.materialId,
       quantityUsed: quantityUsed ?? this.quantityUsed,
+      isCanceled: isCanceled ?? this.isCanceled,
+      canceledAt: canceledAt ?? this.canceledAt,
       sincronizado: sincronizado ?? this.sincronizado,
       supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
@@ -5596,6 +5690,12 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
     }
     if (quantityUsed.present) {
       map['quantity_used'] = Variable<double>(quantityUsed.value);
+    }
+    if (isCanceled.present) {
+      map['is_canceled'] = Variable<bool>(isCanceled.value);
+    }
+    if (canceledAt.present) {
+      map['canceled_at'] = Variable<DateTime>(canceledAt.value);
     }
     if (sincronizado.present) {
       map['sincronizado'] = Variable<bool>(sincronizado.value);
@@ -5619,6 +5719,8 @@ class ProductMaterialsCompanion extends UpdateCompanion<ProductMaterial> {
           ..write('productId: $productId, ')
           ..write('materialId: $materialId, ')
           ..write('quantityUsed: $quantityUsed, ')
+          ..write('isCanceled: $isCanceled, ')
+          ..write('canceledAt: $canceledAt, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
@@ -7941,6 +8043,32 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isCanceledMeta = const VerificationMeta(
+    'isCanceled',
+  );
+  @override
+  late final GeneratedColumn<bool> isCanceled = GeneratedColumn<bool>(
+    'is_canceled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_canceled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _canceledAtMeta = const VerificationMeta(
+    'canceledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> canceledAt = GeneratedColumn<DateTime>(
+    'canceled_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
     'sincronizado',
   );
@@ -8001,6 +8129,8 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     finalAmount,
     date,
     notes,
+    isCanceled,
+    canceledAt,
     sincronizado,
     supabaseId,
     createdAt,
@@ -8081,6 +8211,18 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('is_canceled')) {
+      context.handle(
+        _isCanceledMeta,
+        isCanceled.isAcceptableOrUnknown(data['is_canceled']!, _isCanceledMeta),
+      );
+    }
+    if (data.containsKey('canceled_at')) {
+      context.handle(
+        _canceledAtMeta,
+        canceledAt.isAcceptableOrUnknown(data['canceled_at']!, _canceledAtMeta),
+      );
+    }
     if (data.containsKey('sincronizado')) {
       context.handle(
         _sincronizadoMeta,
@@ -8153,6 +8295,14 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      isCanceled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_canceled'],
+      )!,
+      canceledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}canceled_at'],
+      ),
       sincronizado: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}sincronizado'],
@@ -8188,6 +8338,8 @@ class Sale extends DataClass implements Insertable<Sale> {
   final double finalAmount;
   final DateTime date;
   final String? notes;
+  final bool isCanceled;
+  final DateTime? canceledAt;
   final bool sincronizado;
   final String? supabaseId;
   final DateTime createdAt;
@@ -8202,6 +8354,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     required this.finalAmount,
     required this.date,
     this.notes,
+    required this.isCanceled,
+    this.canceledAt,
     required this.sincronizado,
     this.supabaseId,
     required this.createdAt,
@@ -8226,6 +8380,10 @@ class Sale extends DataClass implements Insertable<Sale> {
     map['date'] = Variable<DateTime>(date);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    map['is_canceled'] = Variable<bool>(isCanceled);
+    if (!nullToAbsent || canceledAt != null) {
+      map['canceled_at'] = Variable<DateTime>(canceledAt);
     }
     map['sincronizado'] = Variable<bool>(sincronizado);
     if (!nullToAbsent || supabaseId != null) {
@@ -8257,6 +8415,10 @@ class Sale extends DataClass implements Insertable<Sale> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      isCanceled: Value(isCanceled),
+      canceledAt: canceledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(canceledAt),
       sincronizado: Value(sincronizado),
       supabaseId: supabaseId == null && nullToAbsent
           ? const Value.absent()
@@ -8283,6 +8445,8 @@ class Sale extends DataClass implements Insertable<Sale> {
       finalAmount: serializer.fromJson<double>(json['finalAmount']),
       date: serializer.fromJson<DateTime>(json['date']),
       notes: serializer.fromJson<String?>(json['notes']),
+      isCanceled: serializer.fromJson<bool>(json['isCanceled']),
+      canceledAt: serializer.fromJson<DateTime?>(json['canceledAt']),
       sincronizado: serializer.fromJson<bool>(json['sincronizado']),
       supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -8302,6 +8466,8 @@ class Sale extends DataClass implements Insertable<Sale> {
       'finalAmount': serializer.toJson<double>(finalAmount),
       'date': serializer.toJson<DateTime>(date),
       'notes': serializer.toJson<String?>(notes),
+      'isCanceled': serializer.toJson<bool>(isCanceled),
+      'canceledAt': serializer.toJson<DateTime?>(canceledAt),
       'sincronizado': serializer.toJson<bool>(sincronizado),
       'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -8319,6 +8485,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     double? finalAmount,
     DateTime? date,
     Value<String?> notes = const Value.absent(),
+    bool? isCanceled,
+    Value<DateTime?> canceledAt = const Value.absent(),
     bool? sincronizado,
     Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
@@ -8333,6 +8501,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     finalAmount: finalAmount ?? this.finalAmount,
     date: date ?? this.date,
     notes: notes.present ? notes.value : this.notes,
+    isCanceled: isCanceled ?? this.isCanceled,
+    canceledAt: canceledAt.present ? canceledAt.value : this.canceledAt,
     sincronizado: sincronizado ?? this.sincronizado,
     supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
@@ -8355,6 +8525,12 @@ class Sale extends DataClass implements Insertable<Sale> {
           : this.finalAmount,
       date: data.date.present ? data.date.value : this.date,
       notes: data.notes.present ? data.notes.value : this.notes,
+      isCanceled: data.isCanceled.present
+          ? data.isCanceled.value
+          : this.isCanceled,
+      canceledAt: data.canceledAt.present
+          ? data.canceledAt.value
+          : this.canceledAt,
       sincronizado: data.sincronizado.present
           ? data.sincronizado.value
           : this.sincronizado,
@@ -8378,6 +8554,8 @@ class Sale extends DataClass implements Insertable<Sale> {
           ..write('finalAmount: $finalAmount, ')
           ..write('date: $date, ')
           ..write('notes: $notes, ')
+          ..write('isCanceled: $isCanceled, ')
+          ..write('canceledAt: $canceledAt, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
@@ -8397,6 +8575,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     finalAmount,
     date,
     notes,
+    isCanceled,
+    canceledAt,
     sincronizado,
     supabaseId,
     createdAt,
@@ -8415,6 +8595,8 @@ class Sale extends DataClass implements Insertable<Sale> {
           other.finalAmount == this.finalAmount &&
           other.date == this.date &&
           other.notes == this.notes &&
+          other.isCanceled == this.isCanceled &&
+          other.canceledAt == this.canceledAt &&
           other.sincronizado == this.sincronizado &&
           other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
@@ -8431,6 +8613,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<double> finalAmount;
   final Value<DateTime> date;
   final Value<String?> notes;
+  final Value<bool> isCanceled;
+  final Value<DateTime?> canceledAt;
   final Value<bool> sincronizado;
   final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
@@ -8445,6 +8629,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     this.finalAmount = const Value.absent(),
     this.date = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isCanceled = const Value.absent(),
+    this.canceledAt = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -8460,6 +8646,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     required double finalAmount,
     required DateTime date,
     this.notes = const Value.absent(),
+    this.isCanceled = const Value.absent(),
+    this.canceledAt = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -8477,6 +8665,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Expression<double>? finalAmount,
     Expression<DateTime>? date,
     Expression<String>? notes,
+    Expression<bool>? isCanceled,
+    Expression<DateTime>? canceledAt,
     Expression<bool>? sincronizado,
     Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
@@ -8492,6 +8682,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       if (finalAmount != null) 'final_amount': finalAmount,
       if (date != null) 'date': date,
       if (notes != null) 'notes': notes,
+      if (isCanceled != null) 'is_canceled': isCanceled,
+      if (canceledAt != null) 'canceled_at': canceledAt,
       if (sincronizado != null) 'sincronizado': sincronizado,
       if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
@@ -8509,6 +8701,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Value<double>? finalAmount,
     Value<DateTime>? date,
     Value<String?>? notes,
+    Value<bool>? isCanceled,
+    Value<DateTime?>? canceledAt,
     Value<bool>? sincronizado,
     Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
@@ -8524,6 +8718,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       finalAmount: finalAmount ?? this.finalAmount,
       date: date ?? this.date,
       notes: notes ?? this.notes,
+      isCanceled: isCanceled ?? this.isCanceled,
+      canceledAt: canceledAt ?? this.canceledAt,
       sincronizado: sincronizado ?? this.sincronizado,
       supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
@@ -8561,6 +8757,12 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (isCanceled.present) {
+      map['is_canceled'] = Variable<bool>(isCanceled.value);
+    }
+    if (canceledAt.present) {
+      map['canceled_at'] = Variable<DateTime>(canceledAt.value);
+    }
     if (sincronizado.present) {
       map['sincronizado'] = Variable<bool>(sincronizado.value);
     }
@@ -8588,6 +8790,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
           ..write('finalAmount: $finalAmount, ')
           ..write('date: $date, ')
           ..write('notes: $notes, ')
+          ..write('isCanceled: $isCanceled, ')
+          ..write('canceledAt: $canceledAt, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
@@ -16717,6 +16921,8 @@ typedef $$ProductMaterialsTableCreateCompanionBuilder =
       required int productId,
       required int materialId,
       required double quantityUsed,
+      Value<bool> isCanceled,
+      Value<DateTime?> canceledAt,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
       Value<DateTime> createdAt,
@@ -16728,6 +16934,8 @@ typedef $$ProductMaterialsTableUpdateCompanionBuilder =
       Value<int> productId,
       Value<int> materialId,
       Value<double> quantityUsed,
+      Value<bool> isCanceled,
+      Value<DateTime?> canceledAt,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
       Value<DateTime> createdAt,
@@ -16798,6 +17006,16 @@ class $$ProductMaterialsTableFilterComposer
 
   ColumnFilters<double> get quantityUsed => $composableBuilder(
     column: $table.quantityUsed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCanceled => $composableBuilder(
+    column: $table.isCanceled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get canceledAt => $composableBuilder(
+    column: $table.canceledAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16887,6 +17105,16 @@ class $$ProductMaterialsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isCanceled => $composableBuilder(
+    column: $table.isCanceled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get canceledAt => $composableBuilder(
+    column: $table.canceledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get sincronizado => $composableBuilder(
     column: $table.sincronizado,
     builder: (column) => ColumnOrderings(column),
@@ -16968,6 +17196,16 @@ class $$ProductMaterialsTableAnnotationComposer
 
   GeneratedColumn<double> get quantityUsed => $composableBuilder(
     column: $table.quantityUsed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isCanceled => $composableBuilder(
+    column: $table.isCanceled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get canceledAt => $composableBuilder(
+    column: $table.canceledAt,
     builder: (column) => column,
   );
 
@@ -17068,6 +17306,8 @@ class $$ProductMaterialsTableTableManager
                 Value<int> productId = const Value.absent(),
                 Value<int> materialId = const Value.absent(),
                 Value<double> quantityUsed = const Value.absent(),
+                Value<bool> isCanceled = const Value.absent(),
+                Value<DateTime?> canceledAt = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -17077,6 +17317,8 @@ class $$ProductMaterialsTableTableManager
                 productId: productId,
                 materialId: materialId,
                 quantityUsed: quantityUsed,
+                isCanceled: isCanceled,
+                canceledAt: canceledAt,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,
                 createdAt: createdAt,
@@ -17088,6 +17330,8 @@ class $$ProductMaterialsTableTableManager
                 required int productId,
                 required int materialId,
                 required double quantityUsed,
+                Value<bool> isCanceled = const Value.absent(),
+                Value<DateTime?> canceledAt = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -17097,6 +17341,8 @@ class $$ProductMaterialsTableTableManager
                 productId: productId,
                 materialId: materialId,
                 quantityUsed: quantityUsed,
+                isCanceled: isCanceled,
+                canceledAt: canceledAt,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,
                 createdAt: createdAt,
@@ -19071,6 +19317,8 @@ typedef $$SalesTableCreateCompanionBuilder =
       required double finalAmount,
       required DateTime date,
       Value<String?> notes,
+      Value<bool> isCanceled,
+      Value<DateTime?> canceledAt,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
       Value<DateTime> createdAt,
@@ -19087,6 +19335,8 @@ typedef $$SalesTableUpdateCompanionBuilder =
       Value<double> finalAmount,
       Value<DateTime> date,
       Value<String?> notes,
+      Value<bool> isCanceled,
+      Value<DateTime?> canceledAt,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
       Value<DateTime> createdAt,
@@ -19203,6 +19453,16 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCanceled => $composableBuilder(
+    column: $table.isCanceled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get canceledAt => $composableBuilder(
+    column: $table.canceledAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19360,6 +19620,16 @@ class $$SalesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isCanceled => $composableBuilder(
+    column: $table.isCanceled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get canceledAt => $composableBuilder(
+    column: $table.canceledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get sincronizado => $composableBuilder(
     column: $table.sincronizado,
     builder: (column) => ColumnOrderings(column),
@@ -19480,6 +19750,16 @@ class $$SalesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get isCanceled => $composableBuilder(
+    column: $table.isCanceled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get canceledAt => $composableBuilder(
+    column: $table.canceledAt,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get sincronizado => $composableBuilder(
     column: $table.sincronizado,
@@ -19634,6 +19914,8 @@ class $$SalesTableTableManager
                 Value<double> finalAmount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isCanceled = const Value.absent(),
+                Value<DateTime?> canceledAt = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -19648,6 +19930,8 @@ class $$SalesTableTableManager
                 finalAmount: finalAmount,
                 date: date,
                 notes: notes,
+                isCanceled: isCanceled,
+                canceledAt: canceledAt,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,
                 createdAt: createdAt,
@@ -19664,6 +19948,8 @@ class $$SalesTableTableManager
                 required double finalAmount,
                 required DateTime date,
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isCanceled = const Value.absent(),
+                Value<DateTime?> canceledAt = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -19678,6 +19964,8 @@ class $$SalesTableTableManager
                 finalAmount: finalAmount,
                 date: date,
                 notes: notes,
+                isCanceled: isCanceled,
+                canceledAt: canceledAt,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,
                 createdAt: createdAt,

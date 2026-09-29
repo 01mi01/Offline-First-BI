@@ -9,6 +9,7 @@ import '../../models/sale_item_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/sale_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 
 class SalesPage extends ConsumerWidget {
   const SalesPage({super.key});
@@ -66,6 +67,7 @@ class SalesListBody extends ConsumerWidget {
                       sale: sale,
                       clientName: client?.name ?? 'Sin nombre',
                       onEdit: () => _showDialog(context, sale),
+                      onCancel: () => _confirmCancel(context, ref, sale),
                       onTap: () => _showReceipt(context, ref, sale,
                           client?.name ?? 'Sin nombre'),
                     );
@@ -87,6 +89,28 @@ class SalesListBody extends ConsumerWidget {
     );
   }
 
+  // Cancela una venta (no la borra): devuelve el stock y la deja en el
+  // historial marcada como cancelada.
+  Future<void> _confirmCancel(
+    BuildContext context,
+    WidgetRef ref,
+    SaleModel sale,
+  ) async {
+    final confirmed = await confirmCancellation(
+      context,
+      title: '¿Cancelar venta?',
+      message:
+          'Se devolverá al inventario lo vendido. La venta seguirá en la '
+          'lista, marcada como cancelada, y ya no se podrá editar.',
+      confirmLabel: 'Cancelar venta',
+    );
+    if (!confirmed) return;
+    final error = await ref.read(saleProvider.notifier).cancelSale(sale.id);
+    if (error != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    }
+  }
+
   void _showReceipt(BuildContext context, WidgetRef ref, SaleModel sale,
       String clientName) {
     showDialog(
@@ -103,12 +127,14 @@ class _SaleCard extends StatelessWidget {
   final SaleModel sale;
   final String clientName;
   final VoidCallback onEdit;
+  final VoidCallback onCancel;
   final VoidCallback onTap;
 
   const _SaleCard({
     required this.sale,
     required this.clientName,
     required this.onEdit,
+    required this.onCancel,
     required this.onTap,
   });
 
@@ -130,14 +156,26 @@ class _SaleCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nombre del cliente
-                  Text(
-                    clientName,
-                    style: Theme.of(context).textTheme.headlineLarge
-                        ?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                  // Nombre del cliente (+ etiqueta si la venta está cancelada)
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          clientName,
+                          style: Theme.of(context).textTheme.headlineLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: sale.isCanceled
+                                    ? AppColors.textSecondary
+                                    : AppColors.textPrimary,
+                              ),
                         ),
+                      ),
+                      if (sale.isCanceled) ...[
+                        const SizedBox(width: AppSpacing.s8),
+                        const CanceledBadge(),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.s4),
                   // Fecha
@@ -158,7 +196,12 @@ class _SaleCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.displayMedium
                             ?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                              color: sale.isCanceled
+                                  ? AppColors.textSecondary
+                                  : AppColors.primary,
+                              decoration: sale.isCanceled
+                                  ? TextDecoration.lineThrough
+                                  : null,
                             ),
                       ),
                       if (sale.discount > 0) ...[
@@ -186,11 +229,21 @@ class _SaleCard extends StatelessWidget {
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.edit_outlined,
-                  color: AppColors.primary, size: 20),
-              onPressed: onEdit,
-            ),
+            // Una venta cancelada es solo historial: sin editar ni cancelar.
+            if (!sale.isCanceled) ...[
+              IconButton(
+                icon: const Icon(Icons.edit_outlined,
+                    color: AppColors.primary, size: 20),
+                tooltip: 'Editar venta',
+                onPressed: onEdit,
+              ),
+              IconButton(
+                icon: const Icon(Icons.cancel_outlined,
+                    color: AppColors.error, size: 20),
+                tooltip: 'Cancelar venta',
+                onPressed: onCancel,
+              ),
+            ],
           ],
         ),
       ),
@@ -313,6 +366,22 @@ class _SaleReceiptDialogState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (widget.sale.isCanceled) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.s12),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Venta cancelada: su stock fue devuelto al inventario.',
+                            style: Theme.of(context).textTheme.displaySmall
+                                ?.copyWith(color: AppColors.error),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.s12),
+                      ],
                       // Info del cliente y fecha
                       _ReceiptRow(
                           label: 'Cliente',

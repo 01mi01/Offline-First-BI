@@ -18,7 +18,12 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
-    final sales = ref.watch(saleProvider).sales;
+    // Las ventas canceladas no cuentan como ingreso ni como "últimas ventas".
+    final sales = ref
+        .watch(saleProvider)
+        .sales
+        .where((s) => !s.isCanceled)
+        .toList();
     final purchases = ref.watch(purchaseProvider).purchases;
     final products = ref.watch(productProvider).products;
     final readableModules = ref.watch(readableModulesProvider).valueOrNull ?? [];

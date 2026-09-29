@@ -89,6 +89,31 @@ ProductModel _product({required int id, int categoryId = 1}) {
 void main() {
   final service = ReportService();
 
+  group('filterSales and canceled sales', () {
+    test('a canceled sale is left out of reports (it is no longer income)', () {
+      final active = _sale(id: 1, date: DateTime(2024, 1, 5));
+      final canceled = SaleModel(
+        id: 2,
+        totalAmount: 100,
+        discount: 0,
+        finalAmount: 100,
+        date: DateTime(2024, 1, 6),
+        createdAt: DateTime(2024, 1, 6),
+        isCanceled: true,
+        canceledAt: DateTime(2024, 1, 7),
+      );
+
+      final result = service.filterSales(
+        sales: [active, canceled],
+        products: const [],
+        saleItemsMap: const {},
+        filters: const ReportFilters(),
+      );
+
+      expect(result.map((s) => s.id), [1]);
+    });
+  });
+
   group('filterSales', () {
     final s1 = _sale(
       id: 1,

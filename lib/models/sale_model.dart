@@ -11,6 +11,10 @@ class SaleModel {
   final String? notes;
   final DateTime createdAt;
 
+  // Una venta cancelada se conserva como historial (su stock ya se devolvió).
+  final bool isCanceled;
+  final DateTime? canceledAt;
+
   SaleModel({
     required this.id,
     this.clientId,
@@ -22,5 +26,7 @@ class SaleModel {
     required this.date,
     this.notes,
     required this.createdAt,
+    this.isCanceled = false,
+    this.canceledAt,
   });
 }

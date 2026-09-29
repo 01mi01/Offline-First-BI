@@ -97,7 +97,7 @@ class SaleNotifier extends StateNotifier<SaleState> {
     required List<Map<String, dynamic>> newItems,
   }) async {
     try {
-      await repository.editSale(
+      final error = await repository.editSale(
         saleId: saleId,
         clientId: clientId,
         locationId: locationId,
@@ -111,10 +111,27 @@ class SaleNotifier extends StateNotifier<SaleState> {
       );
       await load();
       ref.invalidate(productRepositoryProvider);
-      return null;
+      return error;
     } catch (e) {
       return e.toString();
     }
+  }
+
+  // Cancela una venta: devuelve su stock y la deja marcada como cancelada
+  Future<String?> cancelSale(int saleId) async {
+    try {
+      final error = await repository.cancelSale(saleId);
+      await load();
+      ref.invalidate(productRepositoryProvider);
+      return error;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  // Unidades de cada producto que una venta ya tiene apartadas
+  Future<Map<int, int>> getReservedQuantities(int saleId) async {
+    return await repository.getReservedQuantities(saleId);
   }
 }
 

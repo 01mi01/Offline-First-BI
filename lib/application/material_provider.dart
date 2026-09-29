@@ -120,6 +120,13 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
     await load();
     return error;
   }
+
+  // Cancela un registro de uso y devuelve el stock al material
+  Future<String?> cancelUsage(int recordId) async {
+    final error = await repository.cancelMaterialUsage(recordId);
+    await load();
+    return error;
+  }
 }
 
 final materialProvider = StateNotifierProvider<MaterialNotifier, MaterialState>(

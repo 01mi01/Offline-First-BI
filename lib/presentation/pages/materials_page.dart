@@ -9,6 +9,7 @@ import '../../models/product_material_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/material_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/unit_quantity_input.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
@@ -151,6 +152,28 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
     );
   }
 
+  // Cancela un registro de uso (no lo borra): devuelve la cantidad al stock
+  // del material y deja el registro en el historial marcado como cancelado.
+  Future<void> _confirmCancel(ProductMaterialModel entry) async {
+    final confirmed = await confirmCancellation(
+      context,
+      title: '¿Cancelar registro de uso?',
+      message:
+          'Se devolverá ${formatNumber(entry.quantityUsed)} '
+          '${unitLabel(entry.materialUnitName, entry.quantityUsed)} de '
+          '"${entry.materialName}" al stock. El registro seguirá en la lista, '
+          'marcado como cancelado, y ya no se podrá editar.',
+      confirmLabel: 'Cancelar registro',
+    );
+    if (!confirmed) return;
+    final error = await ref.read(materialProvider.notifier).cancelUsage(entry.id);
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    }
+    if (_selectedProductId != null) _loadUsageLog(_selectedProductId!);
+  }
+
   void _showEditSheet(ProductMaterialModel entry) {
     showModalBottomSheet(
       context: context,
@@ -273,13 +296,25 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                entry.materialName,
-                                style: Theme.of(context).textTheme
-                                    .displayMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      entry.materialName,
+                                      style: Theme.of(context).textTheme
+                                          .displayMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: entry.isCanceled
+                                                ? AppColors.textSecondary
+                                                : AppColors.textPrimary,
+                                          ),
                                     ),
+                                  ),
+                                  if (entry.isCanceled) ...[
+                                    const SizedBox(width: AppSpacing.s8),
+                                    const CanceledBadge(label: 'Cancelado'),
+                                  ],
+                                ],
                               ),
                               Text(
                                 'Cantidad: ${formatNumber(entry.quantityUsed)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}  •  Bs. ${entry.pricePerUnit.toStringAsFixed(2)} / ${entry.materialUnitName}',
@@ -291,15 +326,27 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                             ],
                           ),
                         ),
-                        // Botón editar registro
-                        IconButton(
-                          icon: const Icon(
-                            Icons.edit_outlined,
-                            color: AppColors.primary,
-                            size: 20,
+                        // Un registro cancelado es solo historial: sin acciones.
+                        if (!entry.isCanceled) ...[
+                          IconButton(
+                            icon: const Icon(
+                              Icons.edit_outlined,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                            tooltip: 'Editar registro',
+                            onPressed: () => _showEditSheet(entry),
                           ),
-                          onPressed: () => _showEditSheet(entry),
-                        ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.cancel_outlined,
+                              color: AppColors.error,
+                              size: 20,
+                            ),
+                            tooltip: 'Cancelar registro',
+                            onPressed: () => _confirmCancel(entry),
+                          ),
+                        ],
                       ],
                     ),
                   );

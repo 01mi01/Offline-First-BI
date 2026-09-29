@@ -6,6 +6,7 @@ import '../../application/client_provider.dart';
 import '../../application/product_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
+import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../theme/app_theme.dart';
 import 'client_dialog.dart';
@@ -29,6 +30,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   final Map<int, int> _cartItems = {};
   // Mapa de productId -> banda de precio elegida ('A' o 'B')
   final Map<int, String> _cartPriceTypes = {};
+  // Al editar: unidades de cada producto que ESTA venta ya tiene apartadas
+  // del inventario (productId -> cantidad). Vuelven al stock al guardar, así
+  // que cuentan como disponibles.
+  final Map<int, int> _reservedByThisSale = {};
   bool _isLoading = false;
   int? _selectedLocationId;
   int? _selectedEventId;
@@ -66,14 +71,31 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     final items = await ref
         .read(saleProvider.notifier)
         .getItemsForSale(widget.sale!.id);
+    final reserved = await ref
+        .read(saleProvider.notifier)
+        .getReservedQuantities(widget.sale!.id);
     if (mounted) {
       setState(() {
+        _reservedByThisSale
+          ..clear()
+          ..addAll(reserved);
         for (final item in items) {
           _cartItems[item.productId] = item.quantity;
           _cartPriceTypes[item.productId] = item.priceType;
         }
       });
     }
+  }
+
+  // Stock que se puede ofrecer de un producto: el actual más lo que esta
+  // venta (si se está editando) ya tiene apartado.
+  int _availableStock(ProductModel product) {
+    return ref
+        .read(saleRepositoryProvider)
+        .availableStock(
+          currentStock: product.stock,
+          reservedByThisSale: _reservedByThisSale[product.id] ?? 0,
+        );
   }
 
   @override
@@ -144,9 +166,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       final product = products.where((p) => p.id == entry.key).firstOrNull;
       if (product != null) {
         // Valida stock disponible
-        final availableStock = widget.sale != null
-            ? product.stock + (await _getOriginalQuantity(entry.key))
-            : product.stock;
+        final availableStock = _availableStock(product);
 
         if (entry.value > availableStock) {
           setState(() {
@@ -212,19 +232,6 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         Navigator.pop(context);
       }
     }
-  }
-
-  // Obtiene la cantidad original de un producto en la venta que se está editando
-  Future<int> _getOriginalQuantity(int productId) async {
-    if (widget.sale == null) return 0;
-    final items = await ref
-        .read(saleProvider.notifier)
-        .getItemsForSale(widget.sale!.id);
-    return items
-            .where((i) => i.productId == productId)
-            .map((i) => i.quantity)
-            .firstOrNull ??
-        0;
   }
 
   @override
@@ -391,7 +398,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         ),
                       ),
                       subtitle: Text(
-                        'A: Bs. ${p.priceA.toStringAsFixed(2)}  •  B: Bs. ${p.priceB.toStringAsFixed(2)}  •  Stock: ${p.stock}',
+                        'A: Bs. ${p.priceA.toStringAsFixed(2)}  •  B: Bs. ${p.priceB.toStringAsFixed(2)}  •  Stock: ${_availableStock(p)}',
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(color: AppColors.textSecondary),
                       ),
@@ -544,7 +551,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                         .where((p) => p.id == entry.key)
                                         .firstOrNull;
                                     if (product == null) return;
-                                    if (entry.value >= product.stock) return;
+                                    if (entry.value >= _availableStock(product)) return;
                                     setState(() {
                                       _cartItems[entry.key] = entry.value + 1;
                                     });

@@ -101,6 +101,8 @@ class MaterialRepository {
             materialUnitType: unit.type,
             quantityUsed: row.quantityUsed,
             pricePerUnit: material.pricePerUnit,
+            isCanceled: row.isCanceled,
+            canceledAt: row.canceledAt,
           ),
         );
       }
@@ -110,9 +112,13 @@ class MaterialRepository {
 
   // Obtiene nombres únicos de materiales usados en un producto
   Future<List<String>> getUniqueMaterialNamesForProduct(int productId) async {
-    final rows = await (database.select(
-      database.productMaterials,
-    )..where((pm) => pm.productId.equals(productId))).get();
+    final rows =
+        await (database.select(database.productMaterials)..where(
+              (pm) =>
+                  pm.productId.equals(productId) &
+                  pm.isCanceled.equals(false),
+            ))
+            .get();
 
     final names = <String>{};
     for (final row in rows) {
@@ -128,9 +134,13 @@ class MaterialRepository {
   Future<List<Map<String, dynamic>>> getMaterialsWithPriceForProduct(
     int productId,
   ) async {
-    final rows = await (database.select(
-      database.productMaterials,
-    )..where((pm) => pm.productId.equals(productId))).get();
+    final rows =
+        await (database.select(database.productMaterials)..where(
+              (pm) =>
+                  pm.productId.equals(productId) &
+                  pm.isCanceled.equals(false),
+            ))
+            .get();
 
     final seen = <int>{};
     final result = <Map<String, dynamic>>[];
@@ -169,6 +179,36 @@ class MaterialRepository {
               pm.materialId.equals(materialId),
         ))
         .getSingleOrNull();
+
+    if (existing != null && existing.isCanceled) {
+      // El par producto+material es único: volver a registrar el uso de un
+      // registro cancelado reactiva esa misma fila.
+      if (quantityUsed > material.stock) {
+        return 'Stock insuficiente. Disponible: ${_fmt(material.stock)}';
+      }
+      final now = DateTime.now();
+      await database.transaction(() async {
+        await (database.update(
+          database.productMaterials,
+        )..where((pm) => pm.id.equals(existing.id))).write(
+          ProductMaterialsCompanion(
+            quantityUsed: Value(quantityUsed),
+            isCanceled: const Value(false),
+            canceledAt: const Value(null),
+            updatedAt: Value(now),
+          ),
+        );
+        await (database.update(
+          database.materials,
+        )..where((m) => m.id.equals(materialId))).write(
+          MaterialsCompanion(
+            stock: Value(material.stock - quantityUsed),
+            updatedAt: Value(now),
+          ),
+        );
+      });
+      return null;
+    }
 
     if (existing != null) {
       return editMaterialUsage(recordId: existing.id, newQuantity: quantityUsed);
@@ -211,6 +251,9 @@ class MaterialRepository {
     )..where((pm) => pm.id.equals(recordId))).getSingleOrNull();
 
     if (record == null) return 'Registro no encontrado';
+    if (record.isCanceled) {
+      return 'El registro está cancelado y no se puede editar';
+    }
 
     final material = await (database.select(
       database.materials,
@@ -245,6 +288,47 @@ class MaterialRepository {
     );
 
     return null;
+  }
+
+  // Cancela un registro de uso en vez de borrarlo: devuelve al material la
+  // cantidad que había descontado y marca el registro como cancelado,
+  // conservándolo como historial. Devuelve un mensaje de error, o null si
+  // salió bien.
+  Future<String?> cancelMaterialUsage(int recordId) async {
+    return database.transaction(() async {
+      final record = await (database.select(
+        database.productMaterials,
+      )..where((pm) => pm.id.equals(recordId))).getSingleOrNull();
+
+      if (record == null) return 'Registro no encontrado';
+      if (record.isCanceled) return 'El registro ya está cancelado';
+
+      final material = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(record.materialId))).getSingleOrNull();
+
+      if (material == null) return 'Material no encontrado';
+
+      final now = DateTime.now();
+      await (database.update(
+        database.materials,
+      )..where((m) => m.id.equals(record.materialId))).write(
+        MaterialsCompanion(
+          stock: Value(material.stock + record.quantityUsed),
+          updatedAt: Value(now),
+        ),
+      );
+      await (database.update(
+        database.productMaterials,
+      )..where((pm) => pm.id.equals(recordId))).write(
+        ProductMaterialsCompanion(
+          isCanceled: const Value(true),
+          canceledAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+      return null;
+    });
   }
 
   // Formatea número eliminando decimales innecesarios

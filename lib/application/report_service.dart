@@ -53,6 +53,8 @@ class ReportService {
     final lineFilters = _hasLineFilters(filters);
 
     return sales.where((s) {
+      // Una venta cancelada ya no es un ingreso: su stock se devolvió.
+      if (s.isCanceled) return false;
       if (filters.startDate != null && s.date.isBefore(filters.startDate!)) {
         return false;
       }

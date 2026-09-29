@@ -42,6 +42,29 @@ class SaleRepository {
     return null;
   }
 
+  // Stock que se puede ofrecer de un producto al armar una venta. Al editar
+  // una venta existente, las unidades que ESA venta ya tiene apartadas
+  // ([reservedByThisSale]) vuelven al inventario antes de aplicar la nueva
+  // cantidad (ver editSale), así que también están disponibles: con 3 en
+  // stock y 2 en la venta editada se pueden ofrecer 5, no 3. Para una venta
+  // nueva no hay nada apartado.
+  int availableStock({required int currentStock, int reservedByThisSale = 0}) {
+    return currentStock + reservedByThisSale;
+  }
+
+  // Cantidad de cada producto (productId -> unidades) que una venta ya tiene
+  // apartada del inventario.
+  Future<Map<int, int>> getReservedQuantities(int saleId) async {
+    final rows = await (database.select(
+      database.saleItems,
+    )..where((si) => si.saleId.equals(saleId))).get();
+    final reserved = <int, int>{};
+    for (final row in rows) {
+      reserved[row.productId] = (reserved[row.productId] ?? 0) + row.quantity;
+    }
+    return reserved;
+  }
+
   // Convierte fila a modelo
   SaleModel _toModel(Sale row) {
     return SaleModel(
@@ -55,6 +78,8 @@ class SaleRepository {
       date: row.date,
       notes: row.notes,
       createdAt: row.createdAt,
+      isCanceled: row.isCanceled,
+      canceledAt: row.canceledAt,
     );
   }
 
@@ -162,8 +187,53 @@ class SaleRepository {
     });
   }
 
-  // Edita una venta existente y ajusta stock
-  Future<void> editSale({
+  // Cancela una venta en vez de borrarla: devuelve al inventario lo vendido y
+  // la marca como cancelada, conservándola como historial. Devuelve un
+  // mensaje de error, o null si salió bien.
+  Future<String?> cancelSale(int saleId) async {
+    return database.transaction(() async {
+      final sale = await (database.select(
+        database.sales,
+      )..where((s) => s.id.equals(saleId))).getSingleOrNull();
+      if (sale == null) return 'Venta no encontrada';
+      if (sale.isCanceled) return 'La venta ya está cancelada';
+
+      final items = await (database.select(
+        database.saleItems,
+      )..where((si) => si.saleId.equals(saleId))).get();
+
+      for (final item in items) {
+        final product = await (database.select(
+          database.products,
+        )..where((p) => p.id.equals(item.productId))).getSingleOrNull();
+        if (product == null) continue;
+        await (database.update(
+          database.products,
+        )..where((p) => p.id.equals(item.productId))).write(
+          ProductsCompanion(
+            stock: Value(product.stock + item.quantity),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+
+      final now = DateTime.now();
+      await (database.update(
+        database.sales,
+      )..where((s) => s.id.equals(saleId))).write(
+        SalesCompanion(
+          isCanceled: const Value(true),
+          canceledAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+      return null;
+    });
+  }
+
+  // Edita una venta existente y ajusta stock. Devuelve un mensaje de error
+  // (p. ej. si la venta está cancelada), o null si salió bien.
+  Future<String?> editSale({
     required int saleId,
     required int? clientId,
     required int? locationId,
@@ -175,7 +245,15 @@ class SaleRepository {
     String? notes,
     required List<Map<String, dynamic>> newItems,
   }) async {
-    await database.transaction(() async {
+    return database.transaction(() async {
+      final current = await (database.select(
+        database.sales,
+      )..where((s) => s.id.equals(saleId))).getSingleOrNull();
+      if (current == null) return 'Venta no encontrada';
+      if (current.isCanceled) {
+        return 'La venta está cancelada y no se puede editar';
+      }
+
       // Obtiene los ítems anteriores para ajustar stock
       final oldItems = await (database.select(
         database.saleItems,
@@ -256,6 +334,7 @@ class SaleRepository {
           );
         }
       }
+      return null;
     });
   }
 }

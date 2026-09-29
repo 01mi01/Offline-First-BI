@@ -139,6 +139,11 @@ class ProductMaterials extends Table {
   IntColumn get productId => integer().references(Products, #id)();
   IntColumn get materialId => integer().references(Materials, #id)();
   RealColumn get quantityUsed => real()();
+  // Un registro cancelado ya no descuenta stock (se devolvió al cancelarlo)
+  // pero se conserva como historial; el par producto+material sigue siendo
+  // único, así que volver a registrar el uso reactiva esta misma fila.
+  BoolColumn get isCanceled => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get canceledAt => dateTime().nullable()();
   BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
   TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -207,6 +212,10 @@ class Sales extends Table {
   RealColumn get finalAmount => real()();
   DateTimeColumn get date => dateTime()();
   TextColumn get notes => text().nullable()();
+  // Una venta cancelada se conserva como historial: su stock ya fue devuelto
+  // y no cuenta como ingreso ni se puede seguir editando.
+  BoolColumn get isCanceled => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get canceledAt => dateTime().nullable()();
   BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
   TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -325,7 +334,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
@@ -568,7 +577,15 @@ class AppDatabase extends _$AppDatabase {
             );
           ''');
         }
-        await m.alterTable(TableMigration(productMaterials));
+        await m.alterTable(
+          TableMigration(
+            productMaterials,
+            newColumns: [
+              productMaterials.isCanceled,
+              productMaterials.canceledAt,
+            ],
+          ),
+        );
 
         // --- SesionLocal.userId: de TextColumn a IntColumn con FK a Users ---
         await m.alterTable(
@@ -659,6 +676,19 @@ class AppDatabase extends _$AppDatabase {
               updatedAt: Value(DateTime.now()),
             ),
           );
+        }
+      }
+      if (from < 13) {
+        // Cancelación de ventas y de registros de uso de material (en vez de
+        // borrarlos): se conservan como historial con su estado.
+        await m.addColumn(sales, sales.isCanceled);
+        await m.addColumn(sales, sales.canceledAt);
+        // Desde la versión 9 product_materials se recrea con la definición
+        // vigente (ya trae estas columnas); solo hace falta agregarlas si la
+        // tabla viene de una versión 9 o posterior.
+        if (from >= 9) {
+          await m.addColumn(productMaterials, productMaterials.isCanceled);
+          await m.addColumn(productMaterials, productMaterials.canceledAt);
         }
       }
     },
