@@ -397,83 +397,67 @@ void main() {
     expect(actualPurchaseIds(f), expected, reason: reason ?? f.toString());
   }
 
-  group('known bugs (documented, not fixed here)', () {
-    // KNOWN BUG in report_service.dart:25-27 (filterSales) and the identical
-    // logic duplicated at report_service.dart:77-79 (filterPurchases):
-    //   if (filters.endDate != null &&
-    //       s.date.isAfter(filters.endDate!.add(const Duration(days: 1)))) {
-    //     return false;
-    //   }
-    // `endDate.add(Duration(days: 1))` is meant to be an EXCLUSIVE upper
-    // threshold (the instant right after the last inclusive moment of
-    // endDate's day). But DateTime.isAfter treats an exact match as NOT
-    // after, so a record whose `date` is exactly that threshold instant
-    // (midnight on the day right after endDate, with no time-of-day
-    // component) is not excluded and leaks into the filtered result -- one
-    // full day past the requested end date. This is realistic: dates picked
-    // via showDatePicker (see ReportFiltersWidget) and many seeded/manual
-    // dates in this app carry no time component.
+  group('regression: endDate + 1 day boundary (previously a known bug)', () {
+    // Previously a KNOWN BUG in report_service.dart's date-range check: it
+    // used `s.date.isAfter(filters.endDate!.add(const Duration(days: 1)))`,
+    // an exclusive upper threshold that DateTime.isAfter treats an exact
+    // match against as NOT after -- so a record dated exactly at midnight on
+    // the day right after endDate leaked into the filtered result, one full
+    // day past the requested end date. Realistic because dates picked via
+    // showDatePicker (see ReportFiltersWidget) and many seeded/manual dates
+    // in this app carry no time component.
     //
     // Discovered while seeding this file's S4/PU4 boundary fixtures at
-    // exactly rangeEnd + 1 day; per instructions the fixtures were moved off
-    // that exact boundary (see the comments on S4/PU4 above) so the rest of
-    // the suite isn't contaminated, and these two tests pin the bug on its
-    // own instead. Not fixed here per "add new test files only, do not
-    // modify app code".
-    test(
-      'a sale dated exactly at endDate + 1 day (midnight) is incorrectly included',
-      () {
-        final oneDayAfterEndDate = rangeEnd.add(const Duration(days: 1));
-        final leakingSale = SaleModel(
-          id: 90001,
-          clientId: null,
-          locationId: null,
-          eventId: null,
-          totalAmount: 1,
-          discount: 0,
-          finalAmount: 1,
-          date: oneDayAfterEndDate,
-          createdAt: oneDayAfterEndDate,
-        );
+    // exactly rangeEnd + 1 day; the fixtures were moved off that exact
+    // boundary (see the comments on S4/PU4 above) so the rest of the suite
+    // wasn't contaminated, and these two tests pin the exact repro on their
+    // own. Now fixed in report_service.dart (endExclusive computed from
+    // filters.endDate truncated to date-only, compared with isBefore), so
+    // these are kept as permanent regression tests instead of being deleted.
+    test('a sale dated exactly at endDate + 1 day (midnight) is excluded', () {
+      final oneDayAfterEndDate = rangeEnd.add(const Duration(days: 1));
+      final leakingSale = SaleModel(
+        id: 90001,
+        clientId: null,
+        locationId: null,
+        eventId: null,
+        totalAmount: 1,
+        discount: 0,
+        finalAmount: 1,
+        date: oneDayAfterEndDate,
+        createdAt: oneDayAfterEndDate,
+      );
 
-        final result = service.filterSales(
-          sales: [leakingSale],
-          products: const [],
-          saleItemsMap: const {},
-          filters: ReportFilters(startDate: rangeStart, endDate: rangeEnd),
-        );
+      final result = service.filterSales(
+        sales: [leakingSale],
+        products: const [],
+        saleItemsMap: const {},
+        filters: ReportFilters(startDate: rangeStart, endDate: rangeEnd),
+      );
 
-        // Spec-correct expectation: a sale one full day after endDate must
-        // NOT be in range. This currently fails because of the bug above.
-        expect(result, isEmpty);
-      },
-      skip: 'KNOWN BUG report_service.dart:25-27 - see comment above this group',
-    );
+      expect(result, isEmpty);
+    });
 
-    test(
-      'a purchase dated exactly at endDate + 1 day (midnight) is incorrectly included',
-      () {
-        final oneDayAfterEndDate = rangeEnd.add(const Duration(days: 1));
-        final leakingPurchase = PurchaseModel(
-          id: 90002,
-          supplierId: null,
-          locationId: null,
-          eventId: null,
-          isMaterial: false,
-          totalAmount: 1,
-          date: oneDayAfterEndDate,
-          createdAt: oneDayAfterEndDate,
-        );
+    test('a purchase dated exactly at endDate + 1 day (midnight) is excluded', () {
+      final oneDayAfterEndDate = rangeEnd.add(const Duration(days: 1));
+      final leakingPurchase = PurchaseModel(
+        id: 90002,
+        supplierId: null,
+        locationId: null,
+        eventId: null,
+        isMaterial: false,
+        totalAmount: 1,
+        date: oneDayAfterEndDate,
+        createdAt: oneDayAfterEndDate,
+      );
 
-        final result = service.filterPurchases(
-          purchases: [leakingPurchase],
-          filters: ReportFilters(startDate: rangeStart, endDate: rangeEnd),
-        );
+      final result = service.filterPurchases(
+        purchases: [leakingPurchase],
+        filters: ReportFilters(startDate: rangeStart, endDate: rangeEnd),
+      );
 
-        expect(result, isEmpty);
-      },
-      skip: 'KNOWN BUG report_service.dart:77-79 - see comment above this group',
-    );
+      expect(result, isEmpty);
+    });
   });
 
   test('fixture sanity: 5 sales and 5 purchases were seeded with distinct tags', () {
