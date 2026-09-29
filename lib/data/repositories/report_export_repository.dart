@@ -18,6 +18,12 @@ class ReportExportRepository {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
+  String _bs(double amount) => 'Bs. ${amount.toStringAsFixed(2)}';
+
+  // Cantidad sin ceros sobrantes: 2 -> "2", 0.5 -> "0.5".
+  String _qty(double value) =>
+      value == value.truncateToDouble() ? value.toInt().toString() : '$value';
+
   // Fuente empaquetada para todo el texto de los PDF. La fuente por defecto
   // del paquete pdf (Helvetica) no soporta Unicode, así que las tildes y la ñ
   // salían rotas; Roboto (los mismos assets de la UI) sí las soporta.
@@ -56,27 +62,40 @@ class ReportExportRepository {
           pw.SizedBox(height: 16),
           _pdfSummary([
             'Total ventas: ${summary.count}',
-            'Ingresos: Bs. ${summary.totalAmount.toStringAsFixed(2)}',
+            'Descuentos: ${_bs(summary.totalDiscount)}',
+            'Ingresos: ${_bs(summary.totalAmount)}',
           ]),
           pw.SizedBox(height: 16),
           pw.Table(
             border: pw.TableBorder.all(color: PdfColors.grey300),
             columnWidths: {
-              0: const pw.FlexColumnWidth(1.5),
-              1: const pw.FlexColumnWidth(2),
-              2: const pw.FlexColumnWidth(1.5),
-              3: const pw.FlexColumnWidth(1.5),
-              4: const pw.FlexColumnWidth(1),
+              0: const pw.FlexColumnWidth(1.4),
+              1: const pw.FlexColumnWidth(1.8),
+              2: const pw.FlexColumnWidth(1.4),
+              3: const pw.FlexColumnWidth(1.4),
+              4: const pw.FlexColumnWidth(1.1),
+              5: const pw.FlexColumnWidth(1.1),
+              6: const pw.FlexColumnWidth(1.1),
             },
             children: [
-              _pdfHeaderRow(['Fecha', 'Cliente', 'Ubicación', 'Evento', 'Total']),
+              _pdfHeaderRow([
+                'Fecha',
+                'Cliente',
+                'Ubicación',
+                'Evento',
+                'Subtotal',
+                'Descuento',
+                'Total',
+              ]),
               ...rows.map(
                 (r) => _pdfRow([
                   _fmtShort(r.sale.date),
                   r.clientName,
                   r.locationName ?? '-',
                   r.eventName ?? '-',
-                  'Bs. ${r.netAmount.toStringAsFixed(2)}',
+                  _bs(r.subtotalAmount),
+                  _bs(r.discountAmount),
+                  _bs(r.netAmount),
                 ]),
               ),
             ],
@@ -91,18 +110,23 @@ class ReportExportRepository {
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey300),
               columnWidths: {
-                0: const pw.FlexColumnWidth(1.5),
-                1: const pw.FlexColumnWidth(2),
-                2: const pw.FlexColumnWidth(1.5),
-                3: const pw.FlexColumnWidth(0.8),
-                4: const pw.FlexColumnWidth(0.8),
-                5: const pw.FlexColumnWidth(1.2),
+                0: const pw.FlexColumnWidth(1.4),
+                1: const pw.FlexColumnWidth(1.8),
+                2: const pw.FlexColumnWidth(1.4),
+                3: const pw.FlexColumnWidth(0.7),
+                4: const pw.FlexColumnWidth(1.1),
+                5: const pw.FlexColumnWidth(0.7),
+                6: const pw.FlexColumnWidth(1.2),
               },
               children: [
+                // El descuento es de la venta completa y ya figura en la
+                // tabla de arriba; cada línea muestra su importe bruto
+                // (precio x cantidad), sin repartirle el descuento.
                 _pdfHeaderRow([
                   'Fecha',
                   'Producto',
                   'Categoría',
+                  'Tipo',
                   'Precio',
                   'Cant.',
                   'Total',
@@ -114,8 +138,9 @@ class ReportExportRepository {
                       line.item.productName,
                       line.categoryName,
                       line.item.priceType,
+                      _bs(line.item.unitPrice),
                       '${line.item.quantity}',
-                      'Bs. ${line.netAmount.toStringAsFixed(2)}',
+                      _bs(line.subtotal),
                     ]),
               ],
             ),
@@ -183,6 +208,45 @@ class ReportExportRepository {
               ),
             ],
           ),
+          if (rows.any((r) => r.items.isNotEmpty)) ...[
+            pw.SizedBox(height: 16),
+            pw.Text(
+              'Detalle de materiales',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1.4),
+                1: const pw.FlexColumnWidth(1.8),
+                2: const pw.FlexColumnWidth(2),
+                3: const pw.FlexColumnWidth(0.9),
+                4: const pw.FlexColumnWidth(1.2),
+                5: const pw.FlexColumnWidth(1.2),
+              },
+              children: [
+                _pdfHeaderRow([
+                  'Fecha',
+                  'Proveedor',
+                  'Material',
+                  'Cant.',
+                  'Precio unit.',
+                  'Subtotal',
+                ]),
+                for (final r in rows)
+                  for (final item in r.items)
+                    _pdfRow([
+                      _fmtShort(r.purchase.date),
+                      r.supplierName,
+                      item.materialName,
+                      _qty(item.quantity),
+                      _bs(item.unitPrice),
+                      _bs(item.subtotal),
+                    ]),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -224,7 +288,10 @@ class ReportExportRepository {
     }
 
     // Hoja de detalle: una fila por línea de venta incluida en el reporte,
-    // para analizar la demanda por producto y categoría.
+    // para analizar la demanda por producto y categoría. El descuento es de
+    // la venta completa y solo figura en la hoja "Reporte" (una vez por
+    // venta); aquí cada línea lleva su subtotal bruto, así que sumar la hoja
+    // no cuenta el descuento varias veces.
     if (rows.any((r) => r.lines != null)) {
       final detail = excel['Detalle'];
       detail.appendRow([
@@ -236,8 +303,6 @@ class ReportExportRepository {
         xl.TextCellValue('Cantidad'),
         xl.TextCellValue('Precio unitario'),
         xl.TextCellValue('Subtotal'),
-        xl.TextCellValue('Descuento'),
-        xl.TextCellValue('Total'),
       ]);
       for (final r in rows) {
         for (final line in r.lines ?? const <SaleLineReport>[]) {
@@ -250,8 +315,6 @@ class ReportExportRepository {
             xl.IntCellValue(line.item.quantity),
             xl.DoubleCellValue(line.item.unitPrice),
             xl.DoubleCellValue(line.subtotal),
-            xl.DoubleCellValue(line.discountShare),
-            xl.DoubleCellValue(line.netAmount),
           ]);
         }
       }
@@ -293,6 +356,31 @@ class ReportExportRepository {
         xl.DoubleCellValue(r.purchase.totalAmount),
         xl.TextCellValue(r.purchase.notes ?? ''),
       ]);
+    }
+
+    // Hoja de detalle: una fila por línea de material de cada compra.
+    if (rows.any((r) => r.items.isNotEmpty)) {
+      final detail = excel['Detalle'];
+      detail.appendRow([
+        xl.TextCellValue('Fecha'),
+        xl.TextCellValue('Proveedor'),
+        xl.TextCellValue('Material'),
+        xl.TextCellValue('Cantidad'),
+        xl.TextCellValue('Precio unitario'),
+        xl.TextCellValue('Subtotal'),
+      ]);
+      for (final r in rows) {
+        for (final item in r.items) {
+          detail.appendRow([
+            xl.TextCellValue(_fmtShort(r.purchase.date)),
+            xl.TextCellValue(r.supplierName),
+            xl.TextCellValue(item.materialName),
+            xl.DoubleCellValue(item.quantity),
+            xl.DoubleCellValue(item.unitPrice),
+            xl.DoubleCellValue(item.subtotal),
+          ]);
+        }
+      }
     }
 
     final bytes = excel.save();

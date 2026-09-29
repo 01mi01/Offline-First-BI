@@ -4,6 +4,7 @@ import 'package:offline_first_bi/models/client_model.dart';
 import 'package:offline_first_bi/models/event_model.dart';
 import 'package:offline_first_bi/models/location_model.dart';
 import 'package:offline_first_bi/models/product_model.dart';
+import 'package:offline_first_bi/models/purchase_item_model.dart';
 import 'package:offline_first_bi/models/purchase_model.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/models/sale_item_model.dart';
@@ -606,6 +607,44 @@ void main() {
       expect(rows.first.supplierName, 'Proveedor X');
       expect(rows.first.locationName, 'Cochabamba, Bolivia');
       expect(rows.first.eventName, 'Expo');
+      expect(rows.first.items, isEmpty);
+    });
+
+    test('attaches each purchase its own material lines (none for a general expense)', () {
+      final material = _purchase(id: 1, date: DateTime(2024, 1, 1));
+      final expense = _purchase(id: 2, date: DateTime(2024, 1, 2));
+      final otherPurchaseItem = PurchaseItemModel(
+        id: 9,
+        purchaseId: 3,
+        materialId: 1,
+        materialName: 'Ajeno',
+        quantity: 1,
+        unitPrice: 1,
+        subtotal: 1,
+      );
+      final item = PurchaseItemModel(
+        id: 1,
+        purchaseId: 1,
+        materialId: 1,
+        materialName: 'Vidrio fino',
+        quantity: 2,
+        unitPrice: 3.5,
+        subtotal: 7,
+      );
+
+      final rows = service.buildPurchaseRows(
+        purchases: [material, expense],
+        suppliers: const [],
+        locations: const [],
+        events: const [],
+        itemsByPurchase: {
+          1: [item],
+          3: [otherPurchaseItem],
+        },
+      );
+
+      expect(rows[0].items, [item]);
+      expect(rows[1].items, isEmpty);
     });
   });
 }

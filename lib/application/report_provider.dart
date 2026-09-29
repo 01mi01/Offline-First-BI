@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/report_export_repository.dart';
+import '../models/purchase_item_model.dart';
 import '../models/purchase_model.dart';
 import '../models/report_filters.dart';
 import '../models/report_models.dart';
@@ -28,6 +29,20 @@ final saleItemsMapProvider =
   final map = <int, List<SaleItemModel>>{};
   for (final sale in sales) {
     map[sale.id] = await notifier.getItemsForSale(sale.id);
+  }
+  return map;
+});
+
+// Ítems de material de todas las compras, agrupados por compra, para los
+// reportes de compras.
+final purchaseItemsMapProvider =
+    FutureProvider.autoDispose<Map<int, List<PurchaseItemModel>>>((ref) async {
+  final purchases = ref.watch(purchaseProvider).purchases;
+  final notifier = ref.read(purchaseProvider.notifier);
+  final map = <int, List<PurchaseItemModel>>{};
+  for (final purchase in purchases) {
+    if (!purchase.isMaterial) continue;
+    map[purchase.id] = await notifier.getItemsForPurchase(purchase.id);
   }
   return map;
 });
@@ -91,10 +106,12 @@ final purchaseReportRowsProvider = Provider.autoDispose
   final suppliers = ref.watch(supplierProvider).suppliers;
   final locations = ref.watch(locationProvider).locations;
   final events = ref.watch(eventProvider).events;
+  final itemsByPurchase = ref.watch(purchaseItemsMapProvider).valueOrNull ?? {};
   return ref.watch(reportServiceProvider).buildPurchaseRows(
     purchases: purchases,
     suppliers: suppliers,
     locations: locations,
     events: events,
+    itemsByPurchase: itemsByPurchase,
   );
 });

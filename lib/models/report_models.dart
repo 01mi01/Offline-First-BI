@@ -1,3 +1,4 @@
+import 'purchase_item_model.dart';
 import 'sale_item_model.dart';
 import 'sale_model.dart';
 import 'purchase_model.dart';
@@ -86,17 +87,22 @@ class SaleReportRow {
       sale.finalAmount;
 }
 
-// Compra enriquecida con los nombres de sus entidades relacionadas
+// Compra enriquecida con los nombres de sus entidades relacionadas.
+//
+// [items] son las líneas de material de la compra (vacío para un gasto
+// general, que no tiene ítems).
 class PurchaseReportRow {
   final PurchaseModel purchase;
   final String supplierName;
   final String? locationName;
   final String? eventName;
+  final List<PurchaseItemModel> items;
 
   const PurchaseReportRow({
     required this.purchase,
     required this.supplierName,
     this.locationName,
     this.eventName,
+    this.items = const [],
   });
 }

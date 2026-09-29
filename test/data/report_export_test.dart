@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:excel/excel.dart' as xl;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/data/repositories/report_export_repository.dart';
+import 'package:offline_first_bi/models/purchase_item_model.dart';
 import 'package:offline_first_bi/models/purchase_model.dart';
 import 'package:offline_first_bi/models/report_models.dart';
 import 'package:offline_first_bi/models/sale_item_model.dart';
@@ -245,7 +246,8 @@ void main() {
       expect(row[2]!.value, xl.TextCellValue('Marcador'));
       expect(row[3]!.value, xl.TextCellValue('Sin categoría'));
       expect(row[4]!.value, xl.TextCellValue('B'));
-      expect(_cellNum(row[9]!.value), 18);
+      expect(_cellNum(row[6]!.value), 10); // precio unitario
+      expect(_cellNum(row[7]!.value), 20); // subtotal bruto de la línea
       // Acuarela (la otra línea de la venta) no debe aparecer.
       final text = detail.rows.expand((r) => r).whereType<xl.Data>().join(' ');
       expect(text, isNot(contains('Acuarela')));
@@ -373,6 +375,274 @@ void main() {
         ),
       );
       expect(pdf.text, '\uFFFD');
+    });
+  });
+
+  // Venta multi-producto con descuento: Collar 3 x 8 (B) = 24 y Pulsera
+  // 1 x 16 (A) = 16 -> subtotal 40, descuento 4, total 36. discountShare se
+  // pasa prorrateado (2.4 / 1.6) tal como lo entrega ReportService; los
+  // exports no deben mostrarlo por línea.
+  group('sales exports: line totals and sale-level discount', () {
+    SaleReportRow multiProductSale() => SaleReportRow(
+      sale: buildSale(1, DateTime(2024, 3, 5), 36, 4),
+      clientName: 'Ana',
+      lines: [
+        SaleLineReport(
+          item: SaleItemModel(
+            id: 1,
+            saleId: 1,
+            productId: 1,
+            productName: 'Collar',
+            quantity: 3,
+            unitPrice: 8,
+            priceType: 'B',
+            subtotal: 24,
+          ),
+          categoryId: 1,
+          categoryName: 'Bisutería',
+          discountShare: 2.4,
+        ),
+        SaleLineReport(
+          item: SaleItemModel(
+            id: 2,
+            saleId: 1,
+            productId: 2,
+            productName: 'Pulsera',
+            quantity: 1,
+            unitPrice: 16,
+            priceType: 'A',
+            subtotal: 16,
+          ),
+          categoryId: 1,
+          categoryName: 'Bisutería',
+          discountShare: 1.6,
+        ),
+      ],
+    );
+
+    const summary = SalesSummary(count: 1, totalAmount: 36, totalDiscount: 4);
+
+    // package:pdf escribe cada palabra como una operación de texto aparte
+    // ('Bs.' y '24.00' son dos runs), así que los montos y textos de varias
+    // palabras se comprueban sobre el texto unido; las palabras sueltas,
+    // sobre los runs.
+    Future<PdfText> salesPdf() async {
+      await repository.exportSalesPdf(
+        title: 'Reporte de Ventas',
+        rows: [multiProductSale()],
+        summary: summary,
+      );
+      return PdfText.extract(
+        await File(fakeShare.shareCalls.last.single.path).readAsBytes(),
+      );
+    }
+
+    test('PDF: each product line shows its own gross total, not the discounted sale total', () async {
+      final text = (await salesPdf()).text;
+
+      expect(text, contains('Bs. 24.00')); // Collar: 3 x 8
+      expect(text, contains('Bs. 16.00')); // Pulsera: 1 x 16
+      // Ni el total de la venta con descuento (36) ni el neto prorrateado por
+      // línea (21.60 / 14.40) deben aparecer como total de una línea.
+      expect(text, isNot(contains('Bs. 21.60')));
+      expect(text, isNot(contains('Bs. 14.40')));
+      expect(text, isNot(contains('Bs. 23.00')));
+    });
+
+    test('PDF: the "Precio" column shows the unit price amount, not the price-type letter', () async {
+      final pdf = await salesPdf();
+
+      expect(pdf.text, contains('Bs. 8.00'));
+      expect(pdf.text, contains('Bs. 16.00'));
+      // La letra del tipo de precio sigue visible, pero en su propia columna.
+      expect(pdf.runs, contains('Tipo'));
+      expect(pdf.runs, contains('B'));
+      expect(pdf.runs, contains('A'));
+    });
+
+    test('PDF: the sale-level discount is shown (summary and sale table)', () async {
+      final pdf = await salesPdf();
+
+      expect(pdf.text, contains('Descuentos: Bs. 4.00')); // resumen
+      expect(pdf.runs, contains('Descuento')); // columna de la tabla
+      expect(pdf.runs, contains('Subtotal'));
+      expect(pdf.text, contains('Bs. 40.00')); // subtotal de la venta
+      expect(pdf.text, contains('Bs. 36.00')); // total de la venta
+      // El descuento de la venta figura en el resumen y en su fila, y en
+      // ningún otro lado (ninguna línea de producto lo repite).
+      expect('Bs. 4.00'.allMatches(pdf.text), hasLength(2));
+    });
+
+    test('Excel "Reporte": the discount appears once, at sale level', () async {
+      await repository.exportSalesExcel(title: 'Multi', rows: [multiProductSale()]);
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      final sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
+
+      expect(sheet.rows, hasLength(2)); // encabezado + 1 venta
+      final data = sheet.rows[1];
+      expect(_cellNum(data[4]!.value), 40); // subtotal
+      expect(_cellNum(data[5]!.value), 4); // descuento
+      expect(_cellNum(data[6]!.value), 36); // total
+    });
+
+    test('Excel "Detalle": keeps one row per line but carries no per-line discount', () async {
+      await repository.exportSalesExcel(title: 'Multi', rows: [multiProductSale()]);
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      final detail = xl.Excel.decodeBytes(bytes).tables['Detalle']!;
+
+      expect(detail.rows.first.map((c) => c!.value), [
+        xl.TextCellValue('Fecha'),
+        xl.TextCellValue('Cliente'),
+        xl.TextCellValue('Producto'),
+        xl.TextCellValue('Categoría'),
+        xl.TextCellValue('Tipo de precio'),
+        xl.TextCellValue('Cantidad'),
+        xl.TextCellValue('Precio unitario'),
+        xl.TextCellValue('Subtotal'),
+      ]);
+      expect(detail.rows, hasLength(3)); // encabezado + 2 líneas
+
+      final collar = detail.rows[1];
+      expect(collar[2]!.value, xl.TextCellValue('Collar'));
+      expect(_cellNum(collar[5]!.value), 3);
+      expect(_cellNum(collar[6]!.value), 8);
+      expect(_cellNum(collar[7]!.value), 24);
+
+      final pulsera = detail.rows[2];
+      expect(pulsera[2]!.value, xl.TextCellValue('Pulsera'));
+      expect(_cellNum(pulsera[7]!.value), 16);
+
+      // Sumar las líneas da el subtotal de la venta; el descuento (4) solo
+      // existe en la hoja "Reporte", así que no se cuenta dos veces.
+      final lineSum = _cellNum(collar[7]!.value) + _cellNum(pulsera[7]!.value);
+      expect(lineSum, 40);
+    });
+  });
+
+  group('purchases exports: material line items', () {
+    PurchaseReportRow materialPurchase() => PurchaseReportRow(
+      purchase: PurchaseModel(
+        id: 1,
+        isMaterial: true,
+        totalAmount: 12,
+        date: DateTime(2024, 3, 5),
+        createdAt: DateTime(2024, 3, 5),
+      ),
+      supplierName: 'Andino',
+      items: [
+        PurchaseItemModel(
+          id: 1,
+          purchaseId: 1,
+          materialId: 1,
+          materialName: 'Vidrio fino',
+          quantity: 2,
+          unitPrice: 3.5,
+          subtotal: 7,
+        ),
+        PurchaseItemModel(
+          id: 2,
+          purchaseId: 1,
+          materialId: 2,
+          materialName: 'Hilo',
+          quantity: 2.5,
+          unitPrice: 2,
+          subtotal: 5,
+        ),
+      ],
+    );
+
+    // Un gasto general no tiene ítems: solo aporta su fila de resumen.
+    PurchaseReportRow generalExpense() => PurchaseReportRow(
+      purchase: PurchaseModel(
+        id: 2,
+        isMaterial: false,
+        description: 'Alquiler',
+        totalAmount: 50,
+        date: DateTime(2024, 3, 6),
+        createdAt: DateTime(2024, 3, 6),
+      ),
+      supplierName: 'Sin proveedor',
+    );
+
+    const summary = PurchasesSummary(count: 2, totalAmount: 62, materialCount: 1);
+
+    test('PDF: lists material, quantity, unit price and subtotal for each line', () async {
+      await repository.exportPurchasesPdf(
+        title: 'Reporte de Compras',
+        rows: [materialPurchase(), generalExpense()],
+        summary: summary,
+      );
+      final pdf = PdfText.extract(
+        await File(fakeShare.shareCalls.single.single.path).readAsBytes(),
+      );
+
+      expect(pdf.text, contains('Detalle de materiales'));
+      for (final header in ['Material', 'Cant.', 'Precio', 'unit.', 'Subtotal']) {
+        expect(pdf.runs, contains(header));
+      }
+      expect(pdf.text, contains('Vidrio fino'));
+      expect(pdf.runs, contains('2')); // cantidad entera sin decimales
+      expect(pdf.text, contains('Bs. 3.50'));
+      expect(pdf.text, contains('Bs. 7.00'));
+      expect(pdf.runs, contains('Hilo'));
+      expect(pdf.runs, contains('2.5'));
+      expect(pdf.text, contains('Bs. 2.00'));
+      expect(pdf.text, contains('Bs. 5.00'));
+    });
+
+    test('PDF: without any material lines there is no detail section', () async {
+      await repository.exportPurchasesPdf(
+        title: 'Solo gastos',
+        rows: [generalExpense()],
+        summary: const PurchasesSummary(count: 1, totalAmount: 50, materialCount: 0),
+      );
+      final text = PdfText.extract(
+        await File(fakeShare.shareCalls.single.single.path).readAsBytes(),
+      ).text;
+
+      expect(text, isNot(contains('Detalle de materiales')));
+    });
+
+    test('Excel: a "Detalle" sheet has one row per material line', () async {
+      await repository.exportPurchasesExcel(
+        title: 'Compras',
+        rows: [materialPurchase(), generalExpense()],
+      );
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      final excel = xl.Excel.decodeBytes(bytes);
+
+      // La hoja de resumen se mantiene igual (una fila por compra).
+      expect(excel.tables['Reporte']!.rows, hasLength(3));
+
+      final detail = excel.tables['Detalle']!;
+      expect(detail.rows.first.map((c) => c!.value), [
+        xl.TextCellValue('Fecha'),
+        xl.TextCellValue('Proveedor'),
+        xl.TextCellValue('Material'),
+        xl.TextCellValue('Cantidad'),
+        xl.TextCellValue('Precio unitario'),
+        xl.TextCellValue('Subtotal'),
+      ]);
+      expect(detail.rows, hasLength(3)); // encabezado + 2 líneas (el gasto no aporta)
+
+      final vidrio = detail.rows[1];
+      expect(vidrio[1]!.value, xl.TextCellValue('Andino'));
+      expect(vidrio[2]!.value, xl.TextCellValue('Vidrio fino'));
+      expect(_cellNum(vidrio[3]!.value), 2);
+      expect(_cellNum(vidrio[4]!.value), 3.5);
+      expect(_cellNum(vidrio[5]!.value), 7);
+
+      final hilo = detail.rows[2];
+      expect(hilo[2]!.value, xl.TextCellValue('Hilo'));
+      expect(_cellNum(hilo[3]!.value), 2.5);
+      expect(_cellNum(hilo[4]!.value), 2);
+      expect(_cellNum(hilo[5]!.value), 5);
+    });
+
+    test('Excel: without any material lines there is no "Detalle" sheet', () async {
+      await repository.exportPurchasesExcel(title: 'Solo gastos', rows: [generalExpense()]);
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      expect(xl.Excel.decodeBytes(bytes).tables.containsKey('Detalle'), isFalse);
     });
   });
 

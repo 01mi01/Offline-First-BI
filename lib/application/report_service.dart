@@ -3,6 +3,7 @@ import '../models/client_model.dart';
 import '../models/event_model.dart';
 import '../models/location_model.dart';
 import '../models/product_model.dart';
+import '../models/purchase_item_model.dart';
 import '../models/purchase_model.dart';
 import '../models/report_filters.dart';
 import '../models/report_models.dart';
@@ -201,12 +202,15 @@ class ReportService {
     }).toList();
   }
 
-  // Enriquece compras con el nombre de proveedor, ubicación y evento
+  // Enriquece compras con el nombre de proveedor, ubicación y evento, y con
+  // sus líneas de material ([itemsByPurchase], indexado por id de compra; una
+  // compra sin entrada, como un gasto general, queda sin ítems).
   List<PurchaseReportRow> buildPurchaseRows({
     required List<PurchaseModel> purchases,
     required List<SupplierModel> suppliers,
     required List<LocationModel> locations,
     required List<EventModel> events,
+    Map<int, List<PurchaseItemModel>>? itemsByPurchase,
   }) {
     return purchases.map((p) {
       final supplier = suppliers
@@ -223,6 +227,7 @@ class ReportService {
             ? '${location.city}, ${location.country}'
             : null,
         eventName: event?.name,
+        items: itemsByPurchase?[p.id] ?? const [],
       );
     }).toList();
   }
