@@ -12,6 +12,7 @@ import '../pages/purchases_page.dart';
 import '../pages/inventario_page.dart';
 import '../pages/reports_page.dart';
 import '../../config/date_formatters.dart';
+import '../widgets/profile_button.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -77,7 +78,10 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Inicio'),
+      appBar: const CustomAppBar(
+            title: 'Inicio',
+            actions: [ProfileButton()],
+          ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.s24),
         child: Column(

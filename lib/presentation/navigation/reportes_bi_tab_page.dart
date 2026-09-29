@@ -7,6 +7,7 @@ import '../pages/reports_page.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/landing_card.dart';
 import 'nav_resolver.dart';
+import '../widgets/profile_button.dart';
 
 // Tab "Reportes + Business Intelligence" de la navegación inferior: pantalla
 // de aterrizaje con tarjetas (Reportes, Business Intelligence), mostrando
@@ -24,7 +25,10 @@ class ReportesBiTabPage extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(title: 'Reportes'),
+          appBar: const CustomAppBar(
+            title: 'Reportes',
+            actions: [ProfileButton()],
+          ),
           body: cards.isEmpty
               ? Center(
                   child: Text(

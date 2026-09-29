@@ -31,13 +31,20 @@ bool isDiscreteUnit(String type, String name) =>
 
 // Nombre de la unidad concordado con la cantidad para mostrarlo junto a un
 // stock o una cantidad ("1 botella", "5 botellas", "2 unidades"). El símbolo
-// "kg" es invariable.
+// "kg" es invariable. Los nombres de varias palabras ("metro cuadrado")
+// concuerdan palabra por palabra: "3 metros cuadrados".
 String unitLabel(String name, double quantity) {
   final unit = name.trim();
   if (quantity == 1 || unit.isEmpty) return unit;
-  final lower = unit.toLowerCase();
-  if (lower == 'kg') return unit;
-  return 'aeiou'.contains(lower[lower.length - 1]) ? '${unit}s' : '${unit}es';
+  if (unit.toLowerCase() == 'kg') return unit;
+  return unit.split(RegExp(r'\s+')).map(_pluralizeWord).join(' ');
+}
+
+String _pluralizeWord(String word) {
+  if (word.isEmpty) return word;
+  return 'aeiouáéíóú'.contains(word[word.length - 1].toLowerCase())
+      ? '${word}s'
+      : '${word}es';
 }
 
 // Selector de fracciones de un envase (un cuarto / la mitad / tres cuartos /

@@ -8,6 +8,7 @@ import '../pages/products_page.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/landing_card.dart';
 import 'nav_resolver.dart';
+import '../widgets/profile_button.dart';
 
 // Tab "Inventario" de la navegación inferior: pantalla de aterrizaje con
 // tarjetas (Productos, Categorías, Materiales), mostrando solo las que el
@@ -27,7 +28,10 @@ class InventarioTabPage extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(title: 'Inventario'),
+          appBar: const CustomAppBar(
+            title: 'Inventario',
+            actions: [ProfileButton()],
+          ),
           body: cards.isEmpty
               ? Center(
                   child: Text(

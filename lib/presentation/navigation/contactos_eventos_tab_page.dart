@@ -8,6 +8,7 @@ import '../pages/suppliers_page.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/landing_card.dart';
 import 'nav_resolver.dart';
+import '../widgets/profile_button.dart';
 
 // Tab "Clientes, Proveedores y Eventos" de la navegación inferior: pantalla
 // de aterrizaje con tarjetas que llevan a cada página existente, mostrando
@@ -25,7 +26,10 @@ class ContactosEventosTabPage extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(title: 'Contactos y eventos'),
+          appBar: const CustomAppBar(
+            title: 'Contactos y eventos',
+            actions: [ProfileButton()],
+          ),
           body: cards.isEmpty
               ? Center(
                   child: Text(

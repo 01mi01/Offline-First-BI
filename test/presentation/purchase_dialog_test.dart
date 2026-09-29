@@ -145,8 +145,8 @@ void main() {
     (tester) async {
       await _openPurchaseDialog(tester, db);
 
-      // Cambia el switch a "gasto general"
-      await tester.tap(find.byType(Switch));
+      // Cambia a "Gasto general"
+      await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -183,7 +183,7 @@ void main() {
     (tester) async {
       await _openPurchaseDialog(tester, db);
 
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),
@@ -214,7 +214,7 @@ void main() {
       await tester.tap(find.text('Prov Uno').last);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),

@@ -260,61 +260,47 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
               ),
               const SizedBox(height: AppSpacing.s24),
 
-              // Toggle material / gasto general
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s16,
-                  vertical: AppSpacing.s12,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Compra de materiales',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            _isMaterial
-                                ? 'Actualiza stock de materiales'
-                                : 'Gasto general del negocio',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: _isMaterial,
-                      onChanged: (val) {
-                        setState(() {
-                          _error = null;
-                          _isMaterial = val;
-                          _materialItems.clear();
-                          _totalController.clear();
-                        });
-                      },
-                      activeColor: AppColors.primary,
-                      inactiveTrackColor: AppColors.border,
-                      inactiveThumbColor: AppColors.surface,
-                      trackOutlineColor: WidgetStateProperty.all(
-                        Colors.transparent,
-                      ),
+              // Tipo de compra: dos opciones, cada una con su propio nombre
+              // (no una etiqueta fija con un subtítulo que cambia).
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<bool>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment<bool>(value: true, label: Text('Materiales')),
+                    ButtonSegment<bool>(
+                      value: false,
+                      label: Text('Gasto general'),
                     ),
                   ],
+                  selected: {_isMaterial},
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _error = null;
+                      _isMaterial = selection.first;
+                      _materialItems.clear();
+                      _totalController.clear();
+                    });
+                  },
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? AppColors.primary.withOpacity(0.1)
+                          : AppColors.surface,
+                    ),
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                    ),
+                    side: WidgetStateProperty.resolveWith(
+                      (states) => BorderSide(
+                        color: states.contains(WidgetState.selected)
+                            ? AppColors.primary
+                            : AppColors.border,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.s20),

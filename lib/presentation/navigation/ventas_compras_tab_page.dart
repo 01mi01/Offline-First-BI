@@ -7,6 +7,7 @@ import '../pages/sales_page.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/landing_card.dart';
 import 'nav_resolver.dart';
+import '../widgets/profile_button.dart';
 
 // Tab "Ventas y Compras" de la navegación inferior: pantalla de aterrizaje
 // con tarjetas (Ventas, Compras), mostrando solo las que el usuario puede
@@ -24,7 +25,10 @@ class VentasComprasTabPage extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(title: 'Ventas y Compras'),
+          appBar: const CustomAppBar(
+            title: 'Ventas y Compras',
+            actions: [ProfileButton()],
+          ),
           body: cards.isEmpty
               ? Center(
                   child: Text(

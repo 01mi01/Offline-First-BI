@@ -336,7 +336,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
@@ -358,6 +358,11 @@ class AppDatabase extends _$AppDatabase {
     ('litro', 'medida'),
     ('kg', 'medida'),
     ('gramo', 'medida'),
+    ('centímetro', 'medida'),
+    ('milímetro', 'medida'),
+    ('mililitro', 'medida'),
+    ('metro cuadrado', 'medida'),
+    ('tira', 'contenedor'),
     ('otro', 'otros'),
   ];
 
@@ -709,6 +714,21 @@ class AppDatabase extends _$AppDatabase {
         await (update(suppliers)
               ..where((s) => s.name.equals(DefaultRecords.supplier)))
             .write(const SuppliersCompanion(isActive: Value(true)));
+      }
+      if (from < 15) {
+        // Nuevas unidades sembradas (centímetro, milímetro, mililitro, metro
+        // cuadrado y tira). Solo se agregan las que faltan, para no chocar
+        // con el nombre único ni duplicar las que ya existen.
+        final existing = (await select(units).get())
+            .map((u) => u.name.toLowerCase())
+            .toSet();
+        await batch((b) {
+          b.insertAll(units, [
+            for (final (name, type) in _unitSeeds)
+              if (!existing.contains(name.toLowerCase()))
+                UnitsCompanion.insert(name: name, type: type),
+          ]);
+        });
       }
     },
   );

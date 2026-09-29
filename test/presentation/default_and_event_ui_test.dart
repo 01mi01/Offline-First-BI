@@ -174,8 +174,8 @@ void main() {
           findsOneWidget,
         );
 
-        // Compra de materiales -> gasto general
-        await tester.tap(find.byType(Switch).first);
+        // Materiales -> Gasto general
+        await tester.tap(find.text('Gasto general'));
         await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Descripción del gasto'),
