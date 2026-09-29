@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   # Estado
   flutter_riverpod: ^2.4.9
   # Base de datos local
@@ -23,7 +25,7 @@ dependencies:
   qr_flutter: ^4.1.0
   # Utilidades
   uuid: ^4.2.2
-  intl: ^0.19.0
+  intl: ^0.20.2
   flutter_svg: ^2.0.10
   image_picker: ^1.1.2
   # Reportes
@@ -32,7 +34,6 @@ dependencies:
   share_plus: ^10.1.2
   permission_handler: ^11.3.1
   # UI
-  google_fonts: ^6.1.0
   fl_chart: ^0.68.0
 
 dev_dependencies:
@@ -47,3 +48,15 @@ flutter:
   
   assets:
     - assets/images/
+
+  # Tipografía empaquetada con la app (sin descargas en tiempo de ejecución:
+  # la app es offline-first). Roboto, licencia Apache 2.0 en
+  # assets/fonts/roboto/LICENSE.txt.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/roboto/roboto-regular.ttf
+        - asset: assets/fonts/roboto/roboto-medium.ttf
+          weight: 500
+        - asset: assets/fonts/roboto/roboto-bold.ttf
+          weight: 700

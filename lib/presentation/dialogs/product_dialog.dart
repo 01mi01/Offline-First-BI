@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +6,7 @@ import '../../application/product_provider.dart';
 import '../../application/category_provider.dart';
 import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/unit_quantity_input.dart';
 
 class ProductDialog extends ConsumerStatefulWidget {
   final ProductModel? product;
@@ -21,7 +21,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
-  late final TextEditingController _priceController;
+  late final TextEditingController _priceAController;
+  late final TextEditingController _priceBController;
   late final TextEditingController _costController;
   late final TextEditingController _stockController;
   String? _imagePath;
@@ -36,11 +37,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     _descController = TextEditingController(
       text: widget.product?.description ?? '',
     );
-    _priceController = TextEditingController(
-      text: widget.product?.priceA.toString() ?? '',
+    _priceAController = TextEditingController(
+      text: _formatPrice(widget.product?.priceA),
+    );
+    _priceBController = TextEditingController(
+      text: _formatPrice(widget.product?.priceB),
     );
     _costController = TextEditingController(
-      text: widget.product?.productionCost?.toString() ?? '',
+      text: _formatPrice(widget.product?.productionCost),
     );
     _stockController = TextEditingController(
       text: widget.product?.stock != null
@@ -54,19 +58,26 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
     _nameController.addListener(_checkChanges);
     _descController.addListener(_checkChanges);
-    _priceController.addListener(_checkChanges);
+    _priceAController.addListener(_checkChanges);
+    _priceBController.addListener(_checkChanges);
     _costController.addListener(_checkChanges);
     _stockController.addListener(_checkChanges);
   }
+
+  // Muestra los precios sin ".0" sobrante ("50" en vez de "50.0").
+  static String _formatPrice(double? value) =>
+      value == null ? '' : formatNumber(value);
 
   void _checkChanges() {
     final changed =
         _nameController.text.trim() != (widget.product?.name ?? '') ||
         _descController.text.trim() != (widget.product?.description ?? '') ||
-        _priceController.text.trim() !=
-            (widget.product?.priceA.toString() ?? '') ||
+        _priceAController.text.trim() !=
+            _formatPrice(widget.product?.priceA) ||
+        _priceBController.text.trim() !=
+            _formatPrice(widget.product?.priceB) ||
         _costController.text.trim() !=
-            (widget.product?.productionCost?.toString() ?? '') ||
+            _formatPrice(widget.product?.productionCost) ||
         _stockController.text.trim() !=
             (widget.product?.stock.toString() ?? '0') ||
         _imagePath != widget.product?.image ||
@@ -79,7 +90,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
-    _priceController.dispose();
+    _priceAController.dispose();
+    _priceBController.dispose();
     _costController.dispose();
     _stockController.dispose();
     super.dispose();
@@ -96,7 +108,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final price = double.tryParse(_priceController.text.trim()) ?? 0;
+    final priceA = double.tryParse(_priceAController.text.trim()) ?? 0;
+    final priceB = double.tryParse(_priceBController.text.trim()) ?? 0;
     await ref
         .read(productProvider.notifier)
         .save(
@@ -107,15 +120,20 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
           name: _nameController.text.trim(),
           description: _descController.text.trim(),
           image: _imagePath,
-          // La app todavía no tiene una UI para diferenciar precio A/B, así
-          // que por ahora ambos quedan iguales al único precio ingresado.
-          priceA: price,
-          priceB: price,
+          priceA: priceA,
+          priceB: priceB,
           productionCost: double.tryParse(_costController.text.trim()),
-          stock: int.tryParse(_stockController.text.trim()) ?? 0,
+          stock: int.parse(_stockController.text.trim()),
           isActive: _isActive,
         );
     if (mounted) Navigator.pop(context);
+  }
+
+  String? _validatePrice(String? v) {
+    if (v == null || v.isEmpty) return 'Campo requerido';
+    final price = double.tryParse(v);
+    if (price == null) return 'Valor inválido';
+    return null;
   }
 
   Future<void> _onToggleActive(bool value) async {
@@ -305,25 +323,36 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
               ),
               const SizedBox(height: AppSpacing.s16),
 
-              // Precio de venta y costo de producción
+              // Precios de venta (A y B, independientes) y costo de producción
               TextFormField(
-                controller: _priceController,
-                keyboardType: TextInputType.number,
+                controller: _priceAController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
-                  labelText: 'Precio de venta',
+                  labelText: 'Precio A',
                   hintText: '0.00',
                 ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Campo requerido';
-                  final price = double.tryParse(v);
-                  if (price == null) return 'Valor inválido';
-                  return null;
-                },
+                validator: _validatePrice,
+              ),
+              const SizedBox(height: AppSpacing.s16),
+              TextFormField(
+                controller: _priceBController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Precio B',
+                  hintText: '0.00',
+                ),
+                validator: _validatePrice,
               ),
               const SizedBox(height: AppSpacing.s16),
               TextFormField(
                 controller: _costController,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Costo de producción',
                   hintText: '0.00',
@@ -332,29 +361,25 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   if (v == null || v.isEmpty) return null;
                   final cost = double.tryParse(v);
                   if (cost == null) return 'Valor inválido';
-                  final price =
-                      double.tryParse(_priceController.text.trim()) ?? 0;
-                  if (cost >= price) {
-                    return 'Debe ser menor al precio de venta';
+                  // El costo debe ser menor que ambos precios de venta.
+                  final priceA =
+                      double.tryParse(_priceAController.text.trim()) ?? 0;
+                  final priceB =
+                      double.tryParse(_priceBController.text.trim()) ?? 0;
+                  if (cost >= priceA || cost >= priceB) {
+                    return 'Debe ser menor a los precios de venta';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: AppSpacing.s16),
 
-              // Stock
-              TextFormField(
+              // Stock: siempre un número entero (un "." se rechaza con aviso en
+              // vez de descartarse o guardarse como 0).
+              WholeNumberQuantityField(
                 controller: _stockController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Stock inicial',
-                  hintText: '0',
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Campo requerido' : null,
+                labelText: 'Stock',
+                allowZero: true,
               ),
               const SizedBox(height: AppSpacing.s20),
 

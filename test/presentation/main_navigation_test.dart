@@ -2,7 +2,6 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/application/module_permission_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
@@ -44,10 +43,6 @@ Widget _wrap(
 }
 
 void main() {
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
-
   late AppDatabase db;
 
   setUp(() async {

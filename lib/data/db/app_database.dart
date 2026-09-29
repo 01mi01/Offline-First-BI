@@ -325,7 +325,11 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
+
+  // Nombre del proveedor por defecto: las compras sin proveedor elegido se
+  // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
+  static const String defaultSupplierName = 'Sin proveedor';
 
   // Semilla de unidades: nombre + tipo ("contenedor" admite fracciones
   // simples en la UI, "medida"/"otros" usan un número plano). Se usa tanto
@@ -606,6 +610,40 @@ class AppDatabase extends _$AppDatabase {
           ),
         );
       }
+      if (from < 11) {
+        // El proveedor por defecto pasa de llamarse "Sin nombre" a
+        // "Sin proveedor". Si el usuario ya tiene uno con el nombre nuevo se
+        // respeta y no se toca nada; si no existe ninguno se crea.
+        final alreadyRenamed = await (select(
+          suppliers,
+        )..where((s) => s.name.equals(defaultSupplierName))).getSingleOrNull();
+        if (alreadyRenamed == null) {
+          final legacyDefault =
+              await (select(suppliers)
+                    ..where((s) => s.name.equals('Sin nombre'))
+                    ..orderBy([(s) => OrderingTerm.asc(s.id)])
+                    ..limit(1))
+                  .getSingleOrNull();
+          if (legacyDefault != null) {
+            await (update(suppliers)
+                  ..where((s) => s.id.equals(legacyDefault.id)))
+                .write(
+                  SuppliersCompanion(
+                    name: Value(defaultSupplierName),
+                    updatedAt: Value(DateTime.now()),
+                  ),
+                );
+          } else {
+            await into(suppliers).insert(
+              SuppliersCompanion.insert(
+                name: defaultSupplierName,
+                createdAt: Value(DateTime.now()),
+                updatedAt: Value(DateTime.now()),
+              ),
+            );
+          }
+        }
+      }
     },
   );
 
@@ -698,10 +736,10 @@ class AppDatabase extends _$AppDatabase {
         updatedAt: Value(DateTime.now()),
       ),
     );
-    // Proveedor por defecto para compras sin identificar
+    // Proveedor por defecto para compras sin proveedor elegido
     await into(suppliers).insert(
       SuppliersCompanion.insert(
-        name: 'Sin nombre',
+        name: defaultSupplierName,
         createdAt: Value(DateTime.now()),
         updatedAt: Value(DateTime.now()),
       ),

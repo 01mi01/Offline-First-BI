@@ -7,15 +7,16 @@ import '../generated_migrations/schema.dart';
 import '../generated_migrations/schema_v8.dart' as v8;
 import '../generated_migrations/schema_v9.dart' as v9;
 import '../generated_migrations/schema_v10.dart' as v10;
+import '../generated_migrations/schema_v11.dart' as v11;
 
 // Verifica la migración real (onUpgrade) contra snapshots de esquema
-// generados por Drift (drift_schemas/drift_schema_v{8,9,10}.json vía
+// generados por Drift (drift_schemas/drift_schema_v{8,9,10,11}.json vía
 // `dart run drift_dev schema generate`). A diferencia del resto de la suite
 // (que solo abre bases de datos en blanco vía onCreate), esto ejecuta el SQL
 // de migración de verdad sobre datos con la forma exacta de cada versión.
 //
 // migrateAndValidate siempre migra hasta el schemaVersion actual de
-// AppDatabase (ahora 10), sin importar en qué versión "lógica" se centre
+// AppDatabase (ahora 11), sin importar en qué versión "lógica" se centre
 // cada test — por eso los tests con datos de v8 también apuntan a 10.
 void main() {
   late SchemaVerifier verifier;
@@ -25,14 +26,14 @@ void main() {
   });
 
   test(
-    'migrating a v8 database all the way to the live schema (v10) produces '
+    'migrating a v8 database all the way to the live schema (v11) produces '
     'exactly the expected schema',
     () async {
       final connection = await verifier.startAt(8);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 10);
+      await verifier.migrateAndValidate(db, 11);
     },
   );
 
@@ -63,10 +64,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 10);
+      await verifier.migrateAndValidate(dbForMigration, 11);
       await dbForMigration.close();
 
-      final checkDb = v10.DatabaseAtV10(schema.newConnection());
+      final checkDb = v11.DatabaseAtV11(schema.newConnection());
       addTearDown(checkDb.close);
 
       final productWithCategory = await (checkDb.select(
@@ -127,10 +128,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 10);
+      await verifier.migrateAndValidate(dbForMigration, 11);
       await dbForMigration.close();
 
-      final checkDb = v10.DatabaseAtV10(schema.newConnection());
+      final checkDb = v11.DatabaseAtV11(schema.newConnection());
       addTearDown(checkDb.close);
 
       final allRows = await checkDb.select(checkDb.productMaterials).get();
@@ -152,7 +153,7 @@ void main() {
       // debe ser rechazada por la base de datos.
       await expectLater(
         checkDb.into(checkDb.productMaterials).insert(
-          v10.ProductMaterialsCompanion.insert(
+          v11.ProductMaterialsCompanion.insert(
             productId: 1,
             materialId: 1,
             quantityUsed: 1,
@@ -180,10 +181,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 10);
+      await verifier.migrateAndValidate(dbForMigration, 11);
       await dbForMigration.close();
 
-      final checkDb = v10.DatabaseAtV10(schema.newConnection());
+      final checkDb = v11.DatabaseAtV11(schema.newConnection());
       addTearDown(checkDb.close);
 
       final session = await (checkDb.select(
@@ -202,7 +203,7 @@ void main() {
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 10);
+      await verifier.migrateAndValidate(db, 11);
     },
   );
 
@@ -212,7 +213,7 @@ void main() {
       final connection = await verifier.startAt(9);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
-      await verifier.migrateAndValidate(db, 10);
+      await verifier.migrateAndValidate(db, 11);
 
       final rows = await db.select(db.units).get();
       final byName = {for (final u in rows) u.name: u.type};
@@ -261,10 +262,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 10);
+      await verifier.migrateAndValidate(dbForMigration, 11);
       await dbForMigration.close();
 
-      final checkDb = v10.DatabaseAtV10(schema.newConnection());
+      final checkDb = v11.DatabaseAtV11(schema.newConnection());
       addTearDown(checkDb.close);
 
       final botellaUnit = await (checkDb.select(
@@ -283,6 +284,102 @@ void main() {
         checkDb.materials,
       )..where((m) => m.id.equals(unmatchedRowId))).getSingle();
       expect(unmatchedMaterial.unitId, otroUnit.id);
+    },
+  );
+
+  // --- v10 -> v11: el proveedor por defecto pasa de "Sin nombre" a
+  // "Sin proveedor" ---
+  test(
+    'Suppliers: the default "Sin nombre" supplier is renamed in place to '
+    '"Sin proveedor" (same id, so existing purchases keep pointing at it)',
+    () async {
+      final schema = await verifier.schemaAt(10);
+      addTearDown(schema.close);
+
+      final oldDb = v10.DatabaseAtV10(schema.newConnection());
+      final defaultId = await oldDb
+          .into(oldDb.suppliers)
+          .insert(v10.SuppliersCompanion.insert(name: 'Sin nombre'));
+      final otherId = await oldDb
+          .into(oldDb.suppliers)
+          .insert(v10.SuppliersCompanion.insert(name: 'Proveedor Andino'));
+      final purchaseId = await oldDb.into(oldDb.purchases).insert(
+        v10.PurchasesCompanion.insert(
+          supplierId: Value(defaultId),
+          totalAmount: 10,
+          date: 1704067200,
+        ),
+      );
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 11);
+      await dbForMigration.close();
+
+      final checkDb = v11.DatabaseAtV11(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final suppliers = await checkDb.select(checkDb.suppliers).get();
+      final byId = {for (final s in suppliers) s.id: s.name};
+      expect(byId[defaultId], 'Sin proveedor');
+      expect(byId[otherId], 'Proveedor Andino');
+      expect(byId.values.where((n) => n == 'Sin nombre'), isEmpty);
+
+      final purchase = await (checkDb.select(
+        checkDb.purchases,
+      )..where((p) => p.id.equals(purchaseId))).getSingle();
+      expect(purchase.supplierId, defaultId);
+    },
+  );
+
+  test(
+    'Suppliers: when no default supplier exists at all, "Sin proveedor" is '
+    'created by the migration',
+    () async {
+      final schema = await verifier.schemaAt(10);
+      addTearDown(schema.close);
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 11);
+      await dbForMigration.close();
+
+      final checkDb = v11.DatabaseAtV11(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final names = (await checkDb.select(checkDb.suppliers).get())
+          .map((s) => s.name)
+          .toList();
+      expect(names, ['Sin proveedor']);
+    },
+  );
+
+  test(
+    'Suppliers: an existing "Sin proveedor" is respected — a separate '
+    '"Sin nombre" supplier is left untouched',
+    () async {
+      final schema = await verifier.schemaAt(10);
+      addTearDown(schema.close);
+
+      final oldDb = v10.DatabaseAtV10(schema.newConnection());
+      await oldDb
+          .into(oldDb.suppliers)
+          .insert(v10.SuppliersCompanion.insert(name: 'Sin proveedor'));
+      await oldDb
+          .into(oldDb.suppliers)
+          .insert(v10.SuppliersCompanion.insert(name: 'Sin nombre'));
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 11);
+      await dbForMigration.close();
+
+      final checkDb = v11.DatabaseAtV11(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final names = (await checkDb.select(checkDb.suppliers).get())
+          .map((s) => s.name)
+          .toList();
+      expect(names, unorderedEquals(['Sin proveedor', 'Sin nombre']));
     },
   );
 }

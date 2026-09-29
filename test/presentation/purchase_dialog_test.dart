@@ -3,11 +3,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/purchase_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
+import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 Future<void> _openPurchaseDialog(WidgetTester tester, AppDatabase db) async {
@@ -45,14 +45,15 @@ Future<void> _openPurchaseDialog(WidgetTester tester, AppDatabase db) async {
   await tester.pumpAndSettle();
 }
 
+Future<int> _defaultSupplierId(AppDatabase db) async {
+  final row = await (db.select(
+    db.suppliers,
+  )..where((s) => s.name.equals(AppDatabase.defaultSupplierName))).getSingle();
+  return row.id;
+}
+
 void main() {
   late AppDatabase db;
-
-  setUpAll(() {
-    // Evita que GoogleFonts intente descargar la fuente por red durante las
-    // pruebas (bloqueado por el entorno de pruebas de Flutter).
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -81,11 +82,8 @@ void main() {
 
       expect(find.text('Nueva compra'), findsOneWidget);
 
-      // Selecciona el proveedor por defecto ("Sin nombre")
-      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Sin nombre').last);
-      await tester.pumpAndSettle();
+      // No se elige proveedor: la compra no debe quedar bloqueada y se asigna
+      // al proveedor por defecto "Sin proveedor".
 
       // Abre la hoja para agregar un material
       await tester.ensureVisible(find.text('Agregar'));
@@ -129,6 +127,11 @@ void main() {
       expect(purchases, hasLength(1));
       expect(purchases.first.isMaterial, isTrue);
       expect(purchases.first.totalAmount, 12.0);
+      expect(
+        purchases.first.supplierId,
+        await _defaultSupplierId(db),
+        reason: 'sin proveedor elegido se asigna "Sin proveedor"',
+      );
 
       final material = await (db.select(
         db.materials,
@@ -141,11 +144,6 @@ void main() {
     'registering a general expense purchase does not touch material stock',
     (tester) async {
       await _openPurchaseDialog(tester, db);
-
-      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Sin nombre').last);
-      await tester.pumpAndSettle();
 
       // Cambia el switch a "gasto general"
       await tester.tap(find.byType(Switch));
@@ -170,6 +168,7 @@ void main() {
       expect(purchases, hasLength(1));
       expect(purchases.first.isMaterial, isFalse);
       expect(purchases.first.totalAmount, 50.0);
+      expect(purchases.first.supplierId, await _defaultSupplierId(db));
 
       final material = await (db.select(
         db.materials,
@@ -177,4 +176,136 @@ void main() {
       expect(material.stock, 100); // sin cambios
     },
   );
+
+  testWidgets(
+    'the form does not require a supplier: no "Selecciona un proveedor" '
+    'error is shown when submitting without one',
+    (tester) async {
+      await _openPurchaseDialog(tester, db);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),
+        'Pasajes',
+      );
+      await tester.enterText(find.widgetWithText(TextFormField, '0'), '20');
+      await tester.ensureVisible(find.text('Registrar compra'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Registrar compra'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Selecciona un proveedor'), findsNothing);
+      expect(find.byType(PurchaseDialog), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'an explicitly picked supplier is kept, not replaced by "Sin proveedor"',
+    (tester) async {
+      final chosenId = await db
+          .into(db.suppliers)
+          .insert(SuppliersCompanion.insert(name: 'Prov Uno'));
+
+      await _openPurchaseDialog(tester, db);
+
+      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Prov Uno').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),
+        'Pasajes',
+      );
+      await tester.enterText(find.widgetWithText(TextFormField, '0'), '20');
+      await tester.ensureVisible(find.text('Registrar compra'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Registrar compra'));
+      await tester.pumpAndSettle();
+
+      final purchases = await PurchaseRepository(db).getAll();
+      expect(purchases, hasLength(1));
+      expect(purchases.first.supplierId, chosenId);
+    },
+  );
+
+  group('purchase quantity field: decimals per unit type', () {
+    Future<void> addMaterial(String name, String unitName) async {
+      final unit = await (db.select(
+        db.units,
+      )..where((u) => u.name.equals(unitName))).getSingle();
+      await db.into(db.materials).insert(
+        MaterialsCompanion.insert(
+          name: name,
+          unitId: unit.id,
+          pricePerUnit: 4.0,
+          stock: const Value(10.0),
+        ),
+      );
+    }
+
+    // Abre la hoja "Agregar material" y elige el material indicado.
+    Future<Finder> openAddSheetWith(WidgetTester tester, String material) async {
+      await _openPurchaseDialog(tester, db);
+      await tester.ensureVisible(find.text('Agregar'));
+      await tester.tap(find.text('Agregar'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(material).last);
+      await tester.pumpAndSettle();
+
+      // Primer TextFormField de la hoja con hint "0" = cantidad.
+      return find.widgetWithText(TextFormField, '0').first;
+    }
+
+    Future<void> expectDecimalRejected(
+      WidgetTester tester,
+      Finder quantity,
+    ) async {
+      // El usuario escribe "2" y luego intenta el punto de "2.5".
+      await tester.enterText(quantity, '2');
+      await tester.pump();
+      await tester.enterText(quantity, '2.');
+      await tester.pump();
+
+      final text = tester.widget<TextFormField>(quantity).controller!.text;
+      expect(text, '2', reason: 'el "." no debe registrarse ni fundirse en "25"');
+      expect(find.text(wholeNumberOnlyMessage), findsOneWidget);
+    }
+
+    testWidgets('unidad rejects a decimal with visible feedback', (tester) async {
+      // "Tela" (unidad) ya existe en el setUp.
+      final quantity = await openAddSheetWith(tester, 'Tela');
+      expect(find.text('Cantidad (unidad)'), findsOneWidget);
+      await expectDecimalRejected(tester, quantity);
+    });
+
+    testWidgets('botella (contenedor) rejects a decimal with visible feedback', (
+      tester,
+    ) async {
+      await addMaterial('Pintura', 'botella');
+      final quantity = await openAddSheetWith(tester, 'Pintura');
+      expect(find.text('Cantidad (botella)'), findsOneWidget);
+      await expectDecimalRejected(tester, quantity);
+    });
+
+    testWidgets('metro (medida continua) still accepts a plain decimal', (
+      tester,
+    ) async {
+      await addMaterial('Cinta', 'metro');
+      final quantity = await openAddSheetWith(tester, 'Cinta');
+      expect(find.text('Cantidad (metro)'), findsOneWidget);
+
+      await tester.enterText(quantity, '3.5');
+      await tester.pump();
+
+      expect(tester.widget<TextFormField>(quantity).controller!.text, '3.5');
+      expect(find.text(wholeNumberOnlyMessage), findsNothing);
+    });
+  });
 }

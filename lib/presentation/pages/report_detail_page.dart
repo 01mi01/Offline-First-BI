@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/report_provider.dart';
-import '../../models/sale_model.dart';
+import '../../models/report_models.dart';
 import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_bar_widget.dart';
@@ -13,14 +13,14 @@ enum ReportType { sales, purchases }
 class ReportDetailPage extends ConsumerStatefulWidget {
   final String title;
   final ReportType type;
-  final List<SaleModel> sales;
+  final List<SaleReportRow> saleRows;
   final List<PurchaseModel> purchases;
 
   const ReportDetailPage({
     super.key,
     required this.title,
     required this.type,
-    required this.sales,
+    required this.saleRows,
     required this.purchases,
   });
 
@@ -36,11 +36,12 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
     try {
       final exportRepository = ref.read(reportExportRepositoryProvider);
       if (widget.type == ReportType.sales) {
-        final rows = ref.read(saleReportRowsProvider(widget.sales));
-        final summary = ref.read(salesSummaryProvider(widget.sales));
+        final summary = ref
+            .read(reportServiceProvider)
+            .summarizeSaleRows(widget.saleRows);
         await exportRepository.exportSalesPdf(
           title: widget.title,
-          rows: rows,
+          rows: widget.saleRows,
           summary: summary,
         );
       } else {
@@ -71,10 +72,9 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
     try {
       final exportRepository = ref.read(reportExportRepositoryProvider);
       if (widget.type == ReportType.sales) {
-        final rows = ref.read(saleReportRowsProvider(widget.sales));
         await exportRepository.exportSalesExcel(
           title: widget.title,
-          rows: rows,
+          rows: widget.saleRows,
         );
       } else {
         final rows = ref.read(purchaseReportRowsProvider(widget.purchases));
@@ -154,7 +154,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
         ],
       ),
       body: widget.type == ReportType.sales
-          ? _SalesDetailList(sales: widget.sales)
+          ? _SalesDetailList(rows: widget.saleRows)
           : _PurchasesDetailList(purchases: widget.purchases),
     );
   }
@@ -162,14 +162,13 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
 
 // Lista detallada de ventas
 class _SalesDetailList extends ConsumerWidget {
-  final List<SaleModel> sales;
+  final List<SaleReportRow> rows;
 
-  const _SalesDetailList({required this.sales});
+  const _SalesDetailList({required this.rows});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(salesSummaryProvider(sales));
-    final rows = ref.watch(saleReportRowsProvider(sales));
+    final summary = ref.watch(reportServiceProvider).summarizeSaleRows(rows);
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.s16),
@@ -190,14 +189,7 @@ class _SalesDetailList extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.s16),
-        ...rows.map(
-          (r) => ReportSaleCard(
-            sale: r.sale,
-            clientName: r.clientName,
-            locationName: r.locationName,
-            eventName: r.eventName,
-          ),
-        ),
+        ...rows.map((r) => ReportSaleCard(row: r)),
       ],
     );
   }

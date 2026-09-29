@@ -63,9 +63,9 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
         _nameController.text.trim() != (widget.material?.name ?? '') ||
         _descController.text.trim() != (widget.material?.description ?? '') ||
         _stockController.text.trim() !=
-            (widget.material?.stock.toString() ?? '0') ||
+            (widget.material != null ? formatNumber(widget.material!.stock) : '0') ||
         _priceController.text.trim() !=
-            (widget.material?.pricePerUnit.toString() ?? '') ||
+            (widget.material != null ? formatNumber(widget.material!.pricePerUnit) : '') ||
         _selectedUnitId != widget.material?.unitId ||
         _isActive != (widget.material?.isActive ?? true);
     if (changed != _hasChanges) setState(() => _hasChanges = changed);

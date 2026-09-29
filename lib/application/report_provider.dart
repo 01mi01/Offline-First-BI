@@ -4,7 +4,7 @@ import '../models/purchase_model.dart';
 import '../models/report_filters.dart';
 import '../models/report_models.dart';
 import '../models/sale_item_model.dart';
-import '../models/sale_model.dart';
+import 'category_provider.dart';
 import 'client_provider.dart';
 import 'event_provider.dart';
 import 'location_provider.dart';
@@ -32,20 +32,6 @@ final saleItemsMapProvider =
   return map;
 });
 
-final filteredSalesProvider = Provider.autoDispose
-    .family<List<SaleModel>, ReportFilters>((ref, filters) {
-  final sales = ref.watch(saleProvider).sales;
-  final products = ref.watch(productProvider).products;
-  final saleItemsMap = ref.watch(saleItemsMapProvider).valueOrNull ?? {};
-  final service = ref.watch(reportServiceProvider);
-  return service.filterSales(
-    sales: sales,
-    products: products,
-    saleItemsMap: saleItemsMap,
-    filters: filters,
-  );
-});
-
 final filteredPurchasesProvider = Provider.autoDispose
     .family<List<PurchaseModel>, ReportFilters>((ref, filters) {
   final purchases = ref.watch(purchaseProvider).purchases;
@@ -53,27 +39,51 @@ final filteredPurchasesProvider = Provider.autoDispose
   return service.filterPurchases(purchases: purchases, filters: filters);
 });
 
-final salesSummaryProvider = Provider.autoDispose
-    .family<SalesSummary, List<SaleModel>>((ref, sales) {
-  return ref.watch(reportServiceProvider).summarizeSales(sales);
-});
-
 final purchasesSummaryProvider = Provider.autoDispose
     .family<PurchasesSummary, List<PurchaseModel>>((ref, purchases) {
   return ref.watch(reportServiceProvider).summarizePurchases(purchases);
 });
 
+// Filas del reporte de ventas: ventas que cumplen los filtros, cada una
+// limitada a las líneas (ítems) que cumplen los filtros de producto,
+// categoría y tipo de precio.
 final saleReportRowsProvider = Provider.autoDispose
-    .family<List<SaleReportRow>, List<SaleModel>>((ref, sales) {
+    .family<List<SaleReportRow>, ReportFilters>((ref, filters) {
+  final sales = ref.watch(saleProvider).sales;
+  final products = ref.watch(productProvider).products;
+  final categories = ref.watch(categoryProvider).categories;
+  final saleItemsMap = ref.watch(saleItemsMapProvider).valueOrNull ?? {};
   final clients = ref.watch(clientProvider).clients;
   final locations = ref.watch(locationProvider).locations;
   final events = ref.watch(eventProvider).events;
-  return ref.watch(reportServiceProvider).buildSaleRows(
+  final service = ref.watch(reportServiceProvider);
+
+  final filtered = service.filterSales(
     sales: sales,
+    products: products,
+    saleItemsMap: saleItemsMap,
+    filters: filters,
+  );
+  return service.buildSaleRows(
+    sales: filtered,
     clients: clients,
     locations: locations,
     events: events,
+    linesBySale: service.buildSaleLines(
+      sales: filtered,
+      products: products,
+      categories: categories,
+      saleItemsMap: saleItemsMap,
+      filters: filters,
+    ),
   );
+});
+
+final salesSummaryProvider = Provider.autoDispose
+    .family<SalesSummary, ReportFilters>((ref, filters) {
+  return ref
+      .watch(reportServiceProvider)
+      .summarizeSaleRows(ref.watch(saleReportRowsProvider(filters)));
 });
 
 final purchaseReportRowsProvider = Provider.autoDispose

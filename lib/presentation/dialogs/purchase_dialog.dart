@@ -50,17 +50,6 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
           : '';
       _notesController.text = widget.purchase!.notes ?? '';
       _loadExistingItems();
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final sinProveedor = ref
-            .read(supplierProvider)
-            .suppliers
-            .where((s) => s.name == 'Sin proveedor')
-            .firstOrNull;
-        if (sinProveedor != null && mounted) {
-          setState(() => _selectedSupplierId = sinProveedor.id);
-        }
-      });
     }
   }
 
@@ -105,13 +94,17 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => SupplierDialog(
         onSaved: (supplierId) {
-          setState(() => _selectedSupplierId = supplierId);
+          setState(() {
+            _selectedSupplierId = supplierId;
+            _error = null;
+          });
         },
       ),
     );
@@ -121,6 +114,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -145,10 +139,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedSupplierId == null) {
-      setState(() => _error = 'Selecciona un proveedor');
-      return;
-    }
+    // Sin proveedor elegido no se bloquea el formulario: el repositorio
+    // asigna el proveedor por defecto "Sin proveedor".
     if (_isMaterial && _materialItems.isEmpty) {
       setState(() => _error = 'Agrega al menos un material');
       return;
@@ -321,10 +313,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                             ),
                           )
                           .toList(),
-                      onChanged: (val) =>
-                          setState(() => _selectedSupplierId = val),
-                      validator: (v) =>
-                          v == null ? 'Selecciona un proveedor' : null,
+                      onChanged: (val) => setState(() {
+                        _selectedSupplierId = val;
+                        _error = null;
+                      }),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.s8),
@@ -765,6 +757,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -874,33 +867,37 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                 final discrete =
                     selectedUnit != null &&
                     isDiscreteUnit(selectedUnit.type, selectedUnit.name);
+                final label = selectedUnit != null
+                    ? 'Cantidad (${selectedUnit.name})'
+                    : 'Cantidad';
+                if (discrete) {
+                  return WholeNumberQuantityField(
+                    controller: _quantityController,
+                    labelText: label,
+                  );
+                }
                 return TextFormField(
                   controller: _quantityController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: discrete
-                      ? [FilteringTextInputFormatter.digitsOnly]
-                      : [
-                          TextInputFormatter.withFunction((
-                            oldValue,
-                            newValue,
-                          ) {
-                            if (newValue.text.isEmpty) return newValue;
-                            if (newValue.text == '0') return newValue;
-                            if (newValue.text.startsWith('0') &&
-                                !newValue.text.startsWith('0.')) {
-                              return oldValue;
-                            }
-                            if (double.tryParse(newValue.text) == null &&
-                                newValue.text != '.') {
-                              return oldValue;
-                            }
-                            return newValue;
-                          }),
-                        ],
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+                      if (newValue.text == '0') return newValue;
+                      if (newValue.text.startsWith('0') &&
+                          !newValue.text.startsWith('0.')) {
+                        return oldValue;
+                      }
+                      if (double.tryParse(newValue.text) == null &&
+                          newValue.text != '.') {
+                        return oldValue;
+                      }
+                      return newValue;
+                    }),
+                  ],
                   decoration: InputDecoration(
-                    labelText: selectedUnit != null
-                        ? 'Cantidad (${selectedUnit.name})'
-                        : 'Cantidad',
+                    labelText: label,
                     hintText: '0',
                   ),
                   validator: (v) {

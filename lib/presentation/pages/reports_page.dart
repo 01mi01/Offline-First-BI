@@ -4,7 +4,7 @@ import '../../application/sale_provider.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
 import '../../models/report_filters.dart';
-import '../../models/sale_model.dart';
+import '../../models/report_models.dart';
 import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_bar_widget.dart';
@@ -69,7 +69,7 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
       return const Center(child: CircularProgressIndicator());
     }
 
-    final filteredSales = ref.watch(filteredSalesProvider(_filters));
+    final saleRows = ref.watch(saleReportRowsProvider(_filters));
     final filteredPurchases = ref.watch(filteredPurchasesProvider(_filters));
 
     return Column(
@@ -108,7 +108,7 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
               Container(
                 key: ValueKey(_filters.hashCode),
                 color: AppColors.background,
-                child: _SalesTab(sales: filteredSales),
+                child: _SalesTab(rows: saleRows),
               ),
               Container(
                 key: ValueKey(_filters.hashCode + 1),
@@ -125,14 +125,13 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
 
 // Tab de ventas
 class _SalesTab extends ConsumerWidget {
-  final List<SaleModel> sales;
+  final List<SaleReportRow> rows;
 
-  const _SalesTab({required this.sales});
+  const _SalesTab({required this.rows});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(salesSummaryProvider(sales));
-    final rows = ref.watch(saleReportRowsProvider(sales));
+    final summary = ref.watch(reportServiceProvider).summarizeSaleRows(rows);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -160,21 +159,21 @@ class _SalesTab extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.s12),
         _ViewFullReportButton(
-          enabled: sales.isNotEmpty,
+          enabled: rows.isNotEmpty,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => ReportDetailPage(
                 title: 'Reporte de Ventas',
                 type: ReportType.sales,
-                sales: sales,
+                saleRows: rows,
                 purchases: const [],
               ),
             ),
           ),
         ),
         const SizedBox(height: 12),
-        if (sales.isEmpty)
+        if (rows.isEmpty)
           const Padding(
             padding: EdgeInsets.only(top: AppSpacing.s32),
             child: Center(
@@ -185,14 +184,7 @@ class _SalesTab extends ConsumerWidget {
             ),
           )
         else
-          ...rows.map(
-            (r) => ReportSaleCard(
-              sale: r.sale,
-              clientName: r.clientName,
-              locationName: r.locationName,
-              eventName: r.eventName,
-            ),
-          ),
+          ...rows.map((r) => ReportSaleCard(row: r)),
       ],
     );
   }
@@ -242,7 +234,7 @@ class _PurchasesTab extends ConsumerWidget {
               builder: (_) => ReportDetailPage(
                 title: 'Reporte de Compras',
                 type: ReportType.purchases,
-                sales: const [],
+                saleRows: const [],
                 purchases: purchases,
               ),
             ),

@@ -29,7 +29,7 @@ import 'package:offline_first_bi/models/sale_model.dart';
 // _expectedPurchaseIds, una implementación paralela e independiente que NO
 // reutiliza el cuerpo de ReportService.filterSales/filterPurchases (usa
 // límites de fecha con un día-siguiente exclusivo en vez de
-// isAfter(endDate+1), y sets en vez de .any()), para no limitarse a verificar
+// isAfter(endDate+1), y comparación por línea en vez de sets), para no limitarse a verificar
 // que el servicio esté de acuerdo consigo mismo.
 bool _inDateRange(DateTime date, DateTime? start, DateTime? end) {
   if (start != null) {
@@ -58,17 +58,19 @@ Set<int> _expectedSaleIds({
 
     final items = itemsMap[s.id] ?? const <SaleItemModel>[];
 
-    if (f.productId != null) {
-      final productIds = items.map((i) => i.productId).toSet();
-      if (!productIds.contains(f.productId)) continue;
-    }
-    if (f.categoryId != null) {
-      final categoryIds = items.map((i) => productCategory[i.productId]).toSet();
-      if (!categoryIds.contains(f.categoryId)) continue;
-    }
-    if (f.priceType != null) {
-      final priceTypes = items.map((i) => i.priceType).toSet();
-      if (!priceTypes.contains(f.priceType)) continue;
+    // Producto, categoría y tipo de precio se evalúan por línea: la venta
+    // entra solo si UNA MISMA línea cumple todos los filtros de línea activos.
+    final hasLineFilters =
+        f.productId != null || f.categoryId != null || f.priceType != null;
+    if (hasLineFilters) {
+      final someLineMatches = items.any(
+        (i) =>
+            (f.productId == null || i.productId == f.productId) &&
+            (f.categoryId == null ||
+                productCategory[i.productId] == f.categoryId) &&
+            (f.priceType == null || i.priceType == f.priceType),
+      );
+      if (!someLineMatches) continue;
     }
 
     result.add(s.id);
@@ -603,7 +605,14 @@ void main() {
           filters: ReportFilters(locationId: l3Id),
         );
         expect(filtered, isEmpty);
-        final summary = service.summarizeSales(filtered);
+        final summary = service.summarizeSaleRows(
+          service.buildSaleRows(
+            sales: filtered,
+            clients: const [],
+            locations: const [],
+            events: const [],
+          ),
+        );
         expect(summary.count, 0);
         expect(summary.totalAmount, 0);
         expect(summary.totalDiscount, 0);
@@ -739,13 +748,13 @@ void main() {
     });
   });
 
-  group('summarizeSales / summarizePurchases / test-side balance over a filtered window', () {
+  group('summarizeSaleRows / summarizePurchases / test-side balance over a filtered window', () {
     // "Balance", "ventas por producto", "compras por material" y "top de
     // productos más vendidos" NO existen hoy en la app (no hay ningún método
     // ni en ReportService ni en ningún otro archivo bajo lib/ que los calcule
     // -- se verificó con una búsqueda exhaustiva por esos términos). Lo único
     // que se puede probar de forma honesta es lo que el servicio realmente
-    // expone: summarizeSales y summarizePurchases. El "balance" de abajo es
+    // expone: summarizeSaleRows y summarizePurchases. El "balance" de abajo es
     // aritmética hecha aquí mismo, en el test, sobre esos dos resultados ya
     // verificados -- no es una función de la app.
     test('totals for the [rangeStart, rangeEnd] window match hand computation', () {
@@ -758,7 +767,14 @@ void main() {
       );
       final purchases = service.filterPurchases(purchases: allPurchases, filters: filters);
 
-      final salesSummary = service.summarizeSales(sales);
+      final salesSummary = service.summarizeSaleRows(
+        service.buildSaleRows(
+          sales: sales,
+          clients: const [],
+          locations: const [],
+          events: const [],
+        ),
+      );
       final purchasesSummary = service.summarizePurchases(purchases);
 
       // S1 (200) + S2 (40) + S3 (100) = 340

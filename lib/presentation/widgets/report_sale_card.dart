@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
-import '../../models/sale_model.dart';
+import '../../models/report_models.dart';
 import '../../theme/app_theme.dart';
 
 class ReportSaleCard extends ConsumerStatefulWidget {
-  final SaleModel sale;
-  final String clientName;
-  final String? locationName;
-  final String? eventName;
+  // Venta del reporte. Sus montos y su detalle se limitan a las líneas que
+  // cumplen los filtros activos (ver SaleReportRow.lines).
+  final SaleReportRow row;
 
-  const ReportSaleCard({
-    super.key,
-    required this.sale,
-    required this.clientName,
-    this.locationName,
-    this.eventName,
-  });
+  const ReportSaleCard({super.key, required this.row});
 
   @override
   ConsumerState<ReportSaleCard> createState() => _ReportSaleCardState();
@@ -43,6 +36,68 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
     return '${date.day} ${months[date.month - 1]} ${date.year}  ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
+  // Detalle de la venta: solo las líneas incluidas en el reporte (todas las
+  // líneas de la venta cuando no hay filtros por línea).
+  Widget _buildItems(BuildContext context) {
+    final lines = widget.row.lines;
+    if (lines != null) return _itemsList(context, lines);
+    return FutureBuilder(
+      future: ref
+          .read(saleProvider.notifier)
+          .getItemsForSale(widget.row.sale.id),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(12),
+            child: CircularProgressIndicator(),
+          );
+        }
+        return _itemsList(context, [
+          for (final item in snapshot.data!)
+            SaleLineReport(item: item, categoryId: null, categoryName: ''),
+        ]);
+      },
+    );
+  }
+
+  Widget _itemsList(BuildContext context, List<SaleLineReport> lines) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Column(
+        children: lines
+            .map(
+              (line) => Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s14,
+                  vertical: AppSpacing.s6,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${line.item.productName} × ${line.item.quantity}',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ),
+                    Text(
+                      'Bs. ${line.subtotal.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -65,7 +120,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.clientName,
+                          widget.row.clientName,
                           style: Theme.of(context).textTheme.labelLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -74,7 +129,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                         ),
                         const SizedBox(height: AppSpacing.s4),
                         Text(
-                          _formatDate(widget.sale.date),
+                          _formatDate(widget.row.sale.date),
                           style: Theme.of(
                             context,
                           ).textTheme.labelSmall?.copyWith(
@@ -82,19 +137,19 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                           ),
                         ),
                         const SizedBox(height: AppSpacing.s4),
-                        if (widget.locationName != null ||
-                            widget.eventName != null)
+                        if (widget.row.locationName != null ||
+                            widget.row.eventName != null)
                           Wrap(
                             spacing: 4,
                             children: [
-                              if (widget.locationName != null)
+                              if (widget.row.locationName != null)
                                 _MiniPill(
-                                  label: widget.locationName!,
+                                  label: widget.row.locationName!,
                                   color: AppColors.primary,
                                 ),
-                              if (widget.eventName != null)
+                              if (widget.row.eventName != null)
                                 _MiniPill(
-                                  label: widget.eventName!,
+                                  label: widget.row.eventName!,
                                   color: AppColors.success,
                                 ),
                             ],
@@ -106,16 +161,16 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Bs. ${widget.sale.finalAmount.toStringAsFixed(2)}',
+                        'Bs. ${widget.row.netAmount.toStringAsFixed(2)}',
                         style: Theme.of(context).textTheme.labelLarge
                             ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
                             ),
                       ),
-                      if (widget.sale.discount > 0)
+                      if (widget.row.discountAmount > 0)
                         Text(
-                          '-Bs. ${widget.sale.discount.toStringAsFixed(2)}',
+                          '-Bs. ${widget.row.discountAmount.toStringAsFixed(2)}',
                           style: Theme.of(
                             context,
                           ).textTheme.labelSmall?.copyWith(
@@ -132,58 +187,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                 ],
               ),
             ),
-            if (_expanded)
-              FutureBuilder(
-                future: ref
-                    .read(saleProvider.notifier)
-                    .getItemsForSale(widget.sale.id),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                  return Container(
-                    decoration: const BoxDecoration(
-                      border: Border(top: BorderSide(color: AppColors.border)),
-                    ),
-                    child: Column(
-                      children: snapshot.data!
-                          .map(
-                            (item) => Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.s14,
-                                vertical: AppSpacing.s6,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      '${item.productName} × ${item.quantity}',
-                                      style: Theme.of(context).textTheme
-                                          .labelMedium?.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                    ),
-                                  ),
-                                  Text(
-                                    'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                    style: Theme.of(context).textTheme
-                                        .labelMedium?.copyWith(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  );
-                },
-              ),
+            if (_expanded) _buildItems(context),
           ],
         ),
       ),

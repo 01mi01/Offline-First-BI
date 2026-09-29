@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:excel/excel.dart' as xl;
@@ -6,7 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/data/repositories/report_export_repository.dart';
 import 'package:offline_first_bi/models/purchase_model.dart';
 import 'package:offline_first_bi/models/report_models.dart';
+import 'package:offline_first_bi/models/sale_item_model.dart';
 import 'package:offline_first_bi/models/sale_model.dart';
+import '../support/pdf_text.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
 
@@ -52,6 +55,9 @@ num _cellNum(xl.CellValue? value) => switch (value) {
     };
 
 void main() {
+  // rootBundle (fuente de los PDF) necesita el binding de pruebas.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late Directory tempDir;
   late _FakeSharePlatform fakeShare;
   late ReportExportRepository repository;
@@ -184,6 +190,189 @@ void main() {
       final excel = xl.Excel.decodeBytes(bytes);
       final rows = excel.tables['Reporte']!.rows;
       expect(rows, hasLength(1)); // solo el encabezado
+    });
+  });
+
+  group('exportSalesExcel with per-line filtering', () {
+    // Venta mixta de 120 (descuento 12) filtrada a "Sin categoría": solo la
+    // línea Marcador (20, con 2 de descuento) debe salir en el reporte.
+    SaleReportRow mixedSaleFilteredToMarcador() => SaleReportRow(
+      sale: buildSale(1, DateTime(2024, 1, 10), 108, 12),
+      clientName: 'Ana',
+      lines: [
+        SaleLineReport(
+          item: SaleItemModel(
+            id: 2,
+            saleId: 1,
+            productId: 2,
+            productName: 'Marcador',
+            quantity: 2,
+            unitPrice: 10,
+            priceType: 'B',
+            subtotal: 20,
+          ),
+          categoryId: 1,
+          categoryName: 'Sin categoría',
+          discountShare: 2,
+        ),
+      ],
+    );
+
+    test('the sale row carries the filtered line amounts, not the whole sale', () async {
+      await repository.exportSalesExcel(
+        title: 'Reporte mixto',
+        rows: [mixedSaleFilteredToMarcador()],
+      );
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      final sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
+
+      final data = sheet.rows[1];
+      expect(_cellNum(data[4]!.value), 20); // subtotal de la línea
+      expect(_cellNum(data[5]!.value), 2); // descuento prorrateado
+      expect(_cellNum(data[6]!.value), 18); // neto (no 108)
+    });
+
+    test('a "Detalle" sheet lists one row per included line with its category', () async {
+      await repository.exportSalesExcel(
+        title: 'Reporte mixto',
+        rows: [mixedSaleFilteredToMarcador()],
+      );
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      final detail = xl.Excel.decodeBytes(bytes).tables['Detalle']!;
+
+      expect(detail.rows, hasLength(2)); // encabezado + 1 línea
+      final row = detail.rows[1];
+      expect(row[2]!.value, xl.TextCellValue('Marcador'));
+      expect(row[3]!.value, xl.TextCellValue('Sin categoría'));
+      expect(row[4]!.value, xl.TextCellValue('B'));
+      expect(_cellNum(row[9]!.value), 18);
+      // Acuarela (la otra línea de la venta) no debe aparecer.
+      final text = detail.rows.expand((r) => r).whereType<xl.Data>().join(' ');
+      expect(text, isNot(contains('Acuarela')));
+    });
+
+    test('rows without lines (whole sales) produce no "Detalle" sheet', () async {
+      await repository.exportSalesExcel(title: 'Reporte ventas', rows: filteredSaleRows);
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      expect(xl.Excel.decodeBytes(bytes).tables.containsKey('Detalle'), isFalse);
+    });
+
+    test('the PDF export of filtered rows is written and non-empty', () async {
+      final row = mixedSaleFilteredToMarcador();
+      await repository.exportSalesPdf(
+        title: 'Reporte mixto',
+        rows: [row],
+        summary: const SalesSummary(count: 1, totalAmount: 18, totalDiscount: 2),
+      );
+      final file = File(fakeShare.shareCalls.single.single.path);
+      expect(file.existsSync(), isTrue);
+      expect(file.lengthSync(), greaterThan(0));
+    });
+  });
+
+  group('PDF text keeps Spanish accents (extracted from the generated file)', () {
+    Future<PdfText> lastPdfText() async {
+      final bytes = await File(fakeShare.shareCalls.last.single.path).readAsBytes();
+      return PdfText.extract(bytes);
+    }
+
+    SaleReportRow accentedSaleRow() => SaleReportRow(
+      sale: buildSale(1, DateTime(2024, 1, 10), 108, 12),
+      clientName: 'Peña Núñez',
+      locationName: 'Potosí, Bolivia',
+      eventName: 'Exposición Ñandú',
+      lines: [
+        SaleLineReport(
+          item: SaleItemModel(
+            id: 1,
+            saleId: 1,
+            productId: 1,
+            productName: 'Acuarela',
+            quantity: 2,
+            unitPrice: 50,
+            priceType: 'A',
+            subtotal: 100,
+          ),
+          categoryId: 1,
+          categoryName: 'Sin categoría',
+          discountShare: 10,
+        ),
+      ],
+    );
+
+    test('sales PDF: headers, names and category with accents/ñ come out intact', () async {
+      await repository.exportSalesPdf(
+        title: 'Reporte de Ventas',
+        rows: [accentedSaleRow()],
+        summary: const SalesSummary(count: 1, totalAmount: 90, totalDiscount: 10),
+      );
+      final pdf = await lastPdfText();
+      final text = pdf.text;
+
+      // Encabezados de columna
+      expect(text, contains('Ubicación'));
+      expect(text, contains('Categoría'));
+      // Datos con tilde y ñ
+      expect(text, contains('Peña'));
+      expect(text, contains('Núñez'));
+      expect(text, contains('Potosí'));
+      expect(text, contains('Exposición'));
+      expect(text, contains('Ñandú'));
+      expect(text, contains('categoría'));
+      // Nada roto: ni caracteres de reemplazo ni la forma sin tilde.
+      expect(text, isNot(contains('\uFFFD')));
+      expect(text, isNot(contains('Ubicacion')));
+      expect(text, isNot(contains('Pena ')));
+    });
+
+    test('the PDF embeds Roboto and no longer relies on Helvetica', () async {
+      await repository.exportSalesPdf(
+        title: 'Reporte de Ventas',
+        rows: [accentedSaleRow()],
+        summary: const SalesSummary(count: 1, totalAmount: 90, totalDiscount: 10),
+      );
+      final pdf = await lastPdfText();
+
+      expect(pdf.fontNames.any((n) => n.contains('Roboto')), isTrue);
+      expect(pdf.fontNames.any((n) => n.contains('Helvetica')), isFalse);
+    });
+
+    test('purchases PDF: supplier, description and column names with accents', () async {
+      await repository.exportPurchasesPdf(
+        title: 'Reporte de Compras',
+        rows: [
+          PurchaseReportRow(
+            purchase: PurchaseModel(
+              id: 1,
+              isMaterial: false,
+              description: 'Papelería y envío',
+              totalAmount: 30,
+              date: DateTime(2024, 1, 5),
+              createdAt: DateTime(2024, 1, 5),
+            ),
+            supplierName: 'Compañía Andina',
+          ),
+        ],
+        summary: const PurchasesSummary(count: 1, totalAmount: 30, materialCount: 0),
+      );
+      final text = (await lastPdfText()).text;
+
+      expect(text, contains('Descripción'));
+      expect(text, contains('Compañía'));
+      expect(text, contains('Papelería'));
+      expect(text, contains('envío'));
+      expect(text, isNot(contains('\uFFFD')));
+    });
+
+    test('the extractor really detects garbling (control: an unsupported char is not returned as typed)', () {
+      // Sin ToUnicode para la fuente, cualquier glifo cae en U+FFFD.
+      final pdf = PdfText.extract(
+        Uint8List.fromList(
+          '%PDF-1.5\n1 0 obj\n<<>>\nstream\nBT /F1 10 Tf [<0001>]TJ ET\nendstream\nendobj\n'
+              .codeUnits,
+        ),
+      );
+      expect(pdf.text, '\uFFFD');
     });
   });
 

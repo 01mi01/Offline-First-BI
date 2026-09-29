@@ -2,7 +2,6 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
@@ -49,10 +48,6 @@ void main() {
   late AppDatabase db;
   late int categoryId;
   late int clientId;
-
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -128,6 +123,54 @@ void main() {
       expect(find.text('Categoría'), findsNothing);
       expect(find.text('Producto'), findsNothing);
       expect(find.text('Tipo de precio'), findsNothing);
+    });
+  });
+
+  group('chip layout', () {
+    testWidgets(
+      'every chip (including "Tipo de precio") fits inside the screen width at '
+      'phone size instead of being cut off at the right edge',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await pumpHarness(tester, activeTab: 0);
+
+        for (final label in [
+          'Cliente',
+          'Categoría',
+          'Producto',
+          'Tipo de precio',
+          'Evento',
+          'Ubicación',
+        ]) {
+          final rect = tester.getRect(find.text(label));
+          expect(rect.left, greaterThanOrEqualTo(0), reason: '$label left');
+          expect(
+            rect.right,
+            lessThanOrEqualTo(360 - 16),
+            reason: '"$label" no debe quedar cortado en el borde derecho',
+          );
+        }
+      },
+    );
+
+    testWidgets('chips wrap onto more rows instead of scrolling horizontally', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await pumpHarness(tester, activeTab: 0);
+
+      expect(find.byType(Wrap), findsOneWidget);
+      final firstTop = tester.getTopLeft(find.text('Cliente')).dy;
+      final lastTop = tester.getTopLeft(find.text('Ubicación')).dy;
+      expect(lastTop, greaterThan(firstTop), reason: 'debe haber más de una fila');
     });
   });
 

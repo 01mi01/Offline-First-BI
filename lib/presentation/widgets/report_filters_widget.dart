@@ -191,17 +191,28 @@ class ReportFiltersWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
 
-          // Filtros dropdown en scroll horizontal
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // Solo en ventas
-                if (activeTab == 0) ...[
-                  _DropChip(
-                    label: 'Cliente',
-                    value: filters.clientId,
-                    items: clients
+          // Chips de filtro: se acomodan en varias líneas (Wrap) en vez de un
+          // scroll horizontal, para que ninguno quede cortado en el borde.
+          Wrap(
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
+            children: [
+              // Solo en ventas
+              if (activeTab == 0) ...[
+                _DropChip(
+                  label: 'Cliente',
+                  value: filters.clientId,
+                  items: clients
+                      .map(
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      )
+                      .toList(),
+                  onTap: () => _showDropdownSheet(
+                    context,
+                    'Cliente',
+                    filters.clientId,
+                    clients
                         .map(
                           (c) => DropdownMenuItem(
                             value: c.id,
@@ -209,32 +220,28 @@ class ReportFiltersWidget extends ConsumerWidget {
                           ),
                         )
                         .toList(),
-                    onTap: () => _showDropdownSheet(
-                      context,
-                      'Cliente',
-                      filters.clientId,
-                      clients
-                          .map(
-                            (c) => DropdownMenuItem(
-                              value: c.id,
-                              child: Text(c.name),
-                            ),
-                          )
-                          .toList(),
-                      (val) => onChanged(filters.copyWith(clientId: val)),
-                      () => onChanged(filters.copyWith(clearClient: true)),
-                    ),
-                    onClear: () =>
-                        onChanged(filters.copyWith(clearClient: true)),
+                    (val) => onChanged(filters.copyWith(clientId: val)),
+                    () => onChanged(filters.copyWith(clearClient: true)),
                   ),
-                  const SizedBox(width: AppSpacing.s8),
-                ],
-                // Categoría y producto - solo en ventas
-                if (activeTab == 0) ...[
-                  _DropChip(
-                    label: 'Categoría',
-                    value: filters.categoryId,
-                    items: categories
+                  onClear: () => onChanged(filters.copyWith(clearClient: true)),
+                ),
+              ],
+              // Categoría y producto - solo en ventas
+              if (activeTab == 0) ...[
+                _DropChip(
+                  label: 'Categoría',
+                  value: filters.categoryId,
+                  items: categories
+                      .map(
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      )
+                      .toList(),
+                  onTap: () => _showDropdownSheet(
+                    context,
+                    'Categoría',
+                    filters.categoryId,
+                    categories
                         .map(
                           (c) => DropdownMenuItem(
                             value: c.id,
@@ -242,29 +249,31 @@ class ReportFiltersWidget extends ConsumerWidget {
                           ),
                         )
                         .toList(),
-                    onTap: () => _showDropdownSheet(
-                      context,
-                      'Categoría',
-                      filters.categoryId,
-                      categories
-                          .map(
-                            (c) => DropdownMenuItem(
-                              value: c.id,
-                              child: Text(c.name),
-                            ),
-                          )
-                          .toList(),
-                      (val) => onChanged(filters.copyWith(categoryId: val)),
-                      () => onChanged(filters.copyWith(clearCategory: true)),
-                    ),
-                    onClear: () =>
-                        onChanged(filters.copyWith(clearCategory: true)),
+                    (val) => onChanged(filters.copyWith(categoryId: val)),
+                    () => onChanged(filters.copyWith(clearCategory: true)),
                   ),
-                  const SizedBox(width: AppSpacing.s8),
-                  _DropChip(
-                    label: 'Producto',
-                    value: filters.productId,
-                    items: products
+                  onClear: () =>
+                      onChanged(filters.copyWith(clearCategory: true)),
+                ),
+                _DropChip(
+                  label: 'Producto',
+                  value: filters.productId,
+                  items: products
+                      .where(
+                        (p) =>
+                            filters.categoryId == null ||
+                            p.categoryId == filters.categoryId,
+                      )
+                      .map(
+                        (p) =>
+                            DropdownMenuItem(value: p.id, child: Text(p.name)),
+                      )
+                      .toList(),
+                  onTap: () => _showDropdownSheet(
+                    context,
+                    'Producto',
+                    filters.productId,
+                    products
                         .where(
                           (p) =>
                               filters.categoryId == null ||
@@ -277,60 +286,51 @@ class ReportFiltersWidget extends ConsumerWidget {
                           ),
                         )
                         .toList(),
-                    onTap: () => _showDropdownSheet(
-                      context,
-                      'Producto',
-                      filters.productId,
-                      products
-                          .where(
-                            (p) =>
-                                filters.categoryId == null ||
-                                p.categoryId == filters.categoryId,
-                          )
-                          .map(
-                            (p) => DropdownMenuItem(
-                              value: p.id,
-                              child: Text(p.name),
-                            ),
-                          )
-                          .toList(),
-                      (val) => onChanged(filters.copyWith(productId: val)),
-                      () => onChanged(filters.copyWith(clearProduct: true)),
-                    ),
-                    onClear: () =>
-                        onChanged(filters.copyWith(clearProduct: true)),
+                    (val) => onChanged(filters.copyWith(productId: val)),
+                    () => onChanged(filters.copyWith(clearProduct: true)),
                   ),
-                  const SizedBox(width: AppSpacing.s8),
-                  _DropChip<String>(
-                    label: 'Tipo de precio',
-                    value: filters.priceType,
-                    items: const [
+                  onClear: () =>
+                      onChanged(filters.copyWith(clearProduct: true)),
+                ),
+                _DropChip<String>(
+                  label: 'Tipo de precio',
+                  value: filters.priceType,
+                  items: const [
+                    DropdownMenuItem(value: 'A', child: Text('Precio A')),
+                    DropdownMenuItem(value: 'B', child: Text('Precio B')),
+                  ],
+                  onTap: () => _showDropdownSheet<String>(
+                    context,
+                    'Tipo de precio',
+                    filters.priceType,
+                    const [
                       DropdownMenuItem(value: 'A', child: Text('Precio A')),
                       DropdownMenuItem(value: 'B', child: Text('Precio B')),
                     ],
-                    onTap: () => _showDropdownSheet<String>(
-                      context,
-                      'Tipo de precio',
-                      filters.priceType,
-                      const [
-                        DropdownMenuItem(value: 'A', child: Text('Precio A')),
-                        DropdownMenuItem(value: 'B', child: Text('Precio B')),
-                      ],
-                      (val) => onChanged(filters.copyWith(priceType: val)),
-                      () => onChanged(filters.copyWith(clearPriceType: true)),
-                    ),
-                    onClear: () =>
-                        onChanged(filters.copyWith(clearPriceType: true)),
+                    (val) => onChanged(filters.copyWith(priceType: val)),
+                    () => onChanged(filters.copyWith(clearPriceType: true)),
                   ),
-                  const SizedBox(width: AppSpacing.s8),
-                ],
+                  onClear: () =>
+                      onChanged(filters.copyWith(clearPriceType: true)),
+                ),
+              ],
 
-                // Solo en compras
-                if (activeTab == 1) ...[
-                  _DropChip(
-                    label: 'Proveedor',
-                    value: filters.supplierId,
-                    items: suppliers
+              // Solo en compras
+              if (activeTab == 1) ...[
+                _DropChip(
+                  label: 'Proveedor',
+                  value: filters.supplierId,
+                  items: suppliers
+                      .map(
+                        (s) =>
+                            DropdownMenuItem(value: s.id, child: Text(s.name)),
+                      )
+                      .toList(),
+                  onTap: () => _showDropdownSheet(
+                    context,
+                    'Proveedor',
+                    filters.supplierId,
+                    suppliers
                         .map(
                           (s) => DropdownMenuItem(
                             value: s.id,
@@ -338,61 +338,57 @@ class ReportFiltersWidget extends ConsumerWidget {
                           ),
                         )
                         .toList(),
-                    onTap: () => _showDropdownSheet(
-                      context,
-                      'Proveedor',
-                      filters.supplierId,
-                      suppliers
-                          .map(
-                            (s) => DropdownMenuItem(
-                              value: s.id,
-                              child: Text(s.name),
-                            ),
-                          )
-                          .toList(),
-                      (val) => onChanged(filters.copyWith(supplierId: val)),
-                      () => onChanged(filters.copyWith(clearSupplier: true)),
-                    ),
-                    onClear: () =>
-                        onChanged(filters.copyWith(clearSupplier: true)),
+                    (val) => onChanged(filters.copyWith(supplierId: val)),
+                    () => onChanged(filters.copyWith(clearSupplier: true)),
                   ),
-                  const SizedBox(width: AppSpacing.s8),
-                ],
+                  onClear: () =>
+                      onChanged(filters.copyWith(clearSupplier: true)),
+                ),
+              ],
 
-                // Evento - ambos tabs
-                _DropChip(
-                  label: 'Evento',
-                  value: filters.eventId,
-                  items: events
+              // Evento - ambos tabs
+              _DropChip(
+                label: 'Evento',
+                value: filters.eventId,
+                items: events
+                    .map(
+                      (e) => DropdownMenuItem(value: e.id, child: Text(e.name)),
+                    )
+                    .toList(),
+                onTap: () => _showDropdownSheet(
+                  context,
+                  'Evento',
+                  filters.eventId,
+                  events
                       .map(
                         (e) =>
                             DropdownMenuItem(value: e.id, child: Text(e.name)),
                       )
                       .toList(),
-                  onTap: () => _showDropdownSheet(
-                    context,
-                    'Evento',
-                    filters.eventId,
-                    events
-                        .map(
-                          (e) => DropdownMenuItem(
-                            value: e.id,
-                            child: Text(e.name),
-                          ),
-                        )
-                        .toList(),
-                    (val) => onChanged(filters.copyWith(eventId: val)),
-                    () => onChanged(filters.copyWith(clearEvent: true)),
-                  ),
-                  onClear: () => onChanged(filters.copyWith(clearEvent: true)),
+                  (val) => onChanged(filters.copyWith(eventId: val)),
+                  () => onChanged(filters.copyWith(clearEvent: true)),
                 ),
-                const SizedBox(width: AppSpacing.s8),
+                onClear: () => onChanged(filters.copyWith(clearEvent: true)),
+              ),
 
-                // Ubicación - ambos tabs
-                _DropChip(
-                  label: 'Ubicación',
-                  value: filters.locationId,
-                  items: locations
+              // Ubicación - ambos tabs
+              _DropChip(
+                label: 'Ubicación',
+                value: filters.locationId,
+                items: locations
+                    .where((l) => l.isActive)
+                    .map(
+                      (l) => DropdownMenuItem(
+                        value: l.id,
+                        child: Text('${l.city}, ${l.country}'),
+                      ),
+                    )
+                    .toList(),
+                onTap: () => _showDropdownSheet(
+                  context,
+                  'Ubicación',
+                  filters.locationId,
+                  locations
                       .where((l) => l.isActive)
                       .map(
                         (l) => DropdownMenuItem(
@@ -401,27 +397,12 @@ class ReportFiltersWidget extends ConsumerWidget {
                         ),
                       )
                       .toList(),
-                  onTap: () => _showDropdownSheet(
-                    context,
-                    'Ubicación',
-                    filters.locationId,
-                    locations
-                        .where((l) => l.isActive)
-                        .map(
-                          (l) => DropdownMenuItem(
-                            value: l.id,
-                            child: Text('${l.city}, ${l.country}'),
-                          ),
-                        )
-                        .toList(),
-                    (val) => onChanged(filters.copyWith(locationId: val)),
-                    () => onChanged(filters.copyWith(clearLocation: true)),
-                  ),
-                  onClear: () =>
-                      onChanged(filters.copyWith(clearLocation: true)),
+                  (val) => onChanged(filters.copyWith(locationId: val)),
+                  () => onChanged(filters.copyWith(clearLocation: true)),
                 ),
-              ],
-            ),
+                onClear: () => onChanged(filters.copyWith(clearLocation: true)),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'config/app_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'application/auth_provider.dart';
 import 'theme/app_theme.dart';
@@ -23,6 +24,11 @@ class MyApp extends ConsumerWidget {
       title: 'Sistema de gestión para emprendimientos artísticos',
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
+      // Textos propios de Material (selectores de fecha, botones, etc.) en
+      // español, sin importar el idioma del dispositivo.
+      locale: appLocale,
+      supportedLocales: appSupportedLocales,
+      localizationsDelegates: appLocalizationsDelegates,
       home: authState.isLoading
           // Pantalla de carga mientras se verifica la sesión
           ? const Scaffold(

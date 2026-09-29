@@ -5,7 +5,6 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/presentation/navigation/main_navigation_page.dart';
@@ -36,10 +35,6 @@ Future<AppDatabase> _openDbWithUser({
 }
 
 void main() {
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
-
   testWidgets(
     'regression: logging in through the login form lands on '
     'MainNavigationPage (with its bottom bar), not a bare HomePage '

@@ -53,6 +53,7 @@ class MaterialsListTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(materialProvider);
+    final units = ref.watch(unitProvider).units;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -81,6 +82,10 @@ class MaterialsListTab extends ConsumerWidget {
                 final m = state.materials[index];
                 return _MaterialCard(
                   material: m,
+                  unitName: units
+                      .where((u) => u.id == m.unitId)
+                      .firstOrNull
+                      ?.name,
                   onEdit: () => _showDialog(context, m),
                 );
               },
@@ -92,6 +97,7 @@ class MaterialsListTab extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -133,6 +139,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -148,6 +155,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -274,7 +282,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                                     ),
                               ),
                               Text(
-                                'Cantidad: ${formatNumber(entry.quantityUsed)}  •  Bs. ${entry.pricePerUnit.toStringAsFixed(2)}/u',
+                                'Cantidad: ${formatNumber(entry.quantityUsed)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}  •  Bs. ${entry.pricePerUnit.toStringAsFixed(2)} / ${entry.materialUnitName}',
                                 style: Theme.of(context).textTheme
                                     .labelMedium?.copyWith(
                                       color: AppColors.textSecondary,
@@ -438,12 +446,12 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
               validator: (v) => v == null ? 'Selecciona un material' : null,
             ),
             // Muestra el stock disponible del material seleccionado
-            if (_selectedMaterialId != null) ...[
+            if (selectedMaterial != null) ...[
               const SizedBox(height: AppSpacing.s6),
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.s4),
                 child: Text(
-                  'Stock disponible: ${formatNumber(materials.where((m) => m.id == _selectedMaterialId).first.stock)}',
+                  'Stock disponible: ${formatNumber(selectedMaterial.stock)}${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
                   style: Theme.of(
                     context,
                   ).textTheme.labelMedium?.copyWith(
@@ -465,15 +473,18 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                 onChanged: (v) => setState(() => _fractionQuantity = v),
                 label: 'Cantidad utilizada',
               )
+            else if (selectedUnit != null &&
+                isDiscreteUnit(selectedUnit.type, selectedUnit.name))
+              WholeNumberQuantityField(
+                controller: _quantityController,
+                labelText: 'Cantidad utilizada (${selectedUnit.name})',
+              )
             else
               TextFormField(
                 controller: _quantityController,
-                keyboardType: TextInputType.number,
-                inputFormatters:
-                    selectedUnit != null &&
-                        isDiscreteUnit(selectedUnit.type, selectedUnit.name)
-                    ? [FilteringTextInputFormatter.digitsOnly]
-                    : null,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: selectedUnit != null
                       ? 'Cantidad utilizada (${selectedUnit.name})'
@@ -484,11 +495,6 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                   if (v == null || v.isEmpty) return 'Campo requerido';
                   final qty = double.tryParse(v);
                   if (qty == null || qty <= 0) return 'Cantidad inválida';
-                  if (selectedUnit != null &&
-                      isDiscreteUnit(selectedUnit.type, selectedUnit.name) &&
-                      qty != qty.roundToDouble()) {
-                    return 'Debe ser un número entero';
-                  }
                   return null;
                 },
               ),
@@ -704,23 +710,32 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
               ),
               const SizedBox(height: AppSpacing.s6),
               Text(
-                'Máximo disponible: ${formatNumber(availableStock)}',
+                'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
                 style: Theme.of(
                   context,
                 ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
               ),
-            ] else
+            ] else if (_isDiscrete)
+              WholeNumberQuantityField(
+                controller: _quantityController,
+                labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
+                helperText:
+                    'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                extraValidator: (qty) => qty > availableStock
+                    ? 'Máximo: ${formatNumber(availableStock)}'
+                    : null,
+              )
+            else
               TextFormField(
                 controller: _quantityController,
-                keyboardType: TextInputType.number,
-                inputFormatters: _isDiscrete
-                    ? [FilteringTextInputFormatter.digitsOnly]
-                    : null,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
                   hintText: '0',
                   helperText:
-                      'Máximo disponible: ${formatNumber(availableStock)}',
+                      'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
                 ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Campo requerido';
@@ -728,9 +743,6 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                   if (qty == null || qty <= 0) return 'Cantidad inválida';
                   if (qty > availableStock) {
                     return 'Máximo: ${formatNumber(availableStock)}';
-                  }
-                  if (_isDiscrete && qty != qty.roundToDouble()) {
-                    return 'Debe ser un número entero';
                   }
                   return null;
                 },
@@ -814,9 +826,14 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
 // Tarjeta de material en la lista
 class _MaterialCard extends StatelessWidget {
   final MaterialModel material;
+  final String? unitName;
   final VoidCallback onEdit;
 
-  const _MaterialCard({required this.material, required this.onEdit});
+  const _MaterialCard({
+    required this.material,
+    required this.unitName,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -852,19 +869,21 @@ class _MaterialCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: AppSpacing.s4),
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.s8,
+                  runSpacing: AppSpacing.s2,
                   children: [
                     Text(
-                      'Stock: ${formatNumber(material.stock)}',
+                      'Stock: ${formatNumber(material.stock)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}',
                       style: Theme.of(context).textTheme.displaySmall
                           ?.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
                     ),
-                    const SizedBox(width: AppSpacing.s8),
                     Text(
-                      'Bs. ${material.pricePerUnit.toStringAsFixed(2)}/u',
+                      'Bs. ${material.pricePerUnit.toStringAsFixed(2)}${unitName != null ? ' / $unitName' : ''}',
                       style: Theme.of(
                         context,
                       ).textTheme.labelMedium?.copyWith(

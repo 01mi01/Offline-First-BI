@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/purchase_repository.dart';
+import 'package:offline_first_bi/data/repositories/supplier_repository.dart';
 
 void main() {
   group('PurchaseRepository pure calculations (no database needed)', () {
@@ -167,6 +168,127 @@ void main() {
       final items = await repository.getItemsForPurchase(purchase.id);
       expect(items, hasLength(1));
       expect(items.first.quantity, 2);
+    });
+  });
+
+  group('PurchaseRepository default supplier "Sin proveedor" (in-memory database)', () {
+    late AppDatabase db;
+    late PurchaseRepository repository;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      repository = PurchaseRepository(db);
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    Future<int> defaultSupplierId() async => (await (db.select(
+      db.suppliers,
+    )..where((s) => s.name.equals('Sin proveedor'))).getSingle()).id;
+
+    test('a fresh database seeds "Sin proveedor" (and no "Sin nombre" supplier)', () async {
+      final names = (await db.select(db.suppliers).get()).map((s) => s.name);
+      expect(names, ['Sin proveedor']);
+    });
+
+    test('createPurchase with no supplier is assigned to "Sin proveedor"', () async {
+      await repository.createPurchase(
+        supplierId: null,
+        isMaterial: false,
+        description: 'Transporte',
+        totalAmount: 25,
+        date: DateTime(2024, 1, 1),
+        locationId: null,
+        eventId: null,
+        items: const [],
+      );
+
+      final purchases = await repository.getAll();
+      expect(purchases, hasLength(1));
+      expect(purchases.single.supplierId, await defaultSupplierId());
+    });
+
+    test('createPurchase with a real supplier keeps that supplier', () async {
+      final chosen = await db
+          .into(db.suppliers)
+          .insert(SuppliersCompanion.insert(name: 'Proveedor Andino'));
+
+      await repository.createPurchase(
+        supplierId: chosen,
+        isMaterial: false,
+        description: 'Transporte',
+        totalAmount: 25,
+        date: DateTime(2024, 1, 1),
+        locationId: null,
+        eventId: null,
+        items: const [],
+      );
+
+      expect((await repository.getAll()).single.supplierId, chosen);
+    });
+
+    test('editPurchase with no supplier falls back to "Sin proveedor" too', () async {
+      final chosen = await db
+          .into(db.suppliers)
+          .insert(SuppliersCompanion.insert(name: 'Proveedor Andino'));
+      await repository.createPurchase(
+        supplierId: chosen,
+        isMaterial: false,
+        description: 'Transporte',
+        totalAmount: 25,
+        date: DateTime(2024, 1, 1),
+        locationId: null,
+        eventId: null,
+        items: const [],
+      );
+      final purchaseId = (await repository.getAll()).single.id;
+
+      await repository.editPurchase(
+        purchaseId: purchaseId,
+        supplierId: null,
+        isMaterial: false,
+        description: 'Transporte',
+        totalAmount: 25,
+        date: DateTime(2024, 1, 1),
+        locationId: null,
+        eventId: null,
+        newItems: const [],
+      );
+
+      expect((await repository.getAll()).single.supplierId, await defaultSupplierId());
+    });
+
+    test('if the default supplier row is missing it is recreated on demand, once', () async {
+      await (db.delete(db.suppliers)
+            ..where((s) => s.name.equals('Sin proveedor')))
+          .go();
+
+      for (var i = 0; i < 2; i++) {
+        await repository.createPurchase(
+          supplierId: null,
+          isMaterial: false,
+          description: 'Gasto $i',
+          totalAmount: 10,
+          date: DateTime(2024, 1, 1),
+          locationId: null,
+          eventId: null,
+          items: const [],
+        );
+      }
+
+      final defaults = await (db.select(
+        db.suppliers,
+      )..where((s) => s.name.equals('Sin proveedor'))).get();
+      expect(defaults, hasLength(1));
+      final purchases = await repository.getAll();
+      expect(purchases.map((p) => p.supplierId), everyElement(defaults.single.id));
+    });
+
+    test('"Sin proveedor" behaves as a normal supplier in the active-suppliers list', () async {
+      final active = await SupplierRepository(db).getActive();
+      expect(active.map((s) => s.name), contains('Sin proveedor'));
     });
   });
 }

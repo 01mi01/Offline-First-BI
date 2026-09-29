@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 
 // Clasificación del comportamiento de entrada de cantidad según el tipo de
@@ -27,6 +28,17 @@ const Set<String> _wholeNumberMedidaUnitNames = {'unidad'};
 bool isDiscreteUnit(String type, String name) =>
     type == unitTypeContenedor ||
     _wholeNumberMedidaUnitNames.contains(name.trim().toLowerCase());
+
+// Nombre de la unidad concordado con la cantidad para mostrarlo junto a un
+// stock o una cantidad ("1 botella", "5 botellas", "2 unidades"). El símbolo
+// "kg" es invariable.
+String unitLabel(String name, double quantity) {
+  final unit = name.trim();
+  if (quantity == 1 || unit.isEmpty) return unit;
+  final lower = unit.toLowerCase();
+  if (lower == 'kg') return unit;
+  return 'aeiou'.contains(lower[lower.length - 1]) ? '${unit}s' : '${unit}es';
+}
 
 // Selector de fracciones de un envase (un cuarto / la mitad / tres cuartos /
 // entera), para unidades como "botella" donde pensar en decimales no es
@@ -102,4 +114,115 @@ class FractionQuantityPicker extends StatelessWidget {
       ],
     );
   }
+}
+
+// Mensaje que se muestra cuando se intenta escribir un decimal en un campo
+// que solo admite cantidades enteras.
+const String wholeNumberOnlyMessage = 'Solo se admiten números enteros';
+
+final RegExp _digitsOnlyPattern = RegExp(r'^\d*$');
+
+// Formatter para campos de cantidad "por pieza" (unidad, botella...): en vez
+// de descartar en silencio los caracteres no numéricos (lo que convertía
+// "2.5" en "25" sin avisar), rechaza por completo la edición que los
+// introduce —el campo conserva su valor anterior— y avisa mediante
+// [onRejected] para que la UI muestre por qué no se registró la tecla.
+class WholeNumberInputFormatter extends TextInputFormatter {
+  final VoidCallback? onRejected;
+
+  const WholeNumberInputFormatter({this.onRejected});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (_digitsOnlyPattern.hasMatch(newValue.text)) return newValue;
+    onRejected?.call();
+    return oldValue;
+  }
+}
+
+// Campo de cantidad para unidades "por pieza". Rechaza el "." (o ",") con
+// feedback visible —mensaje de error bajo el campo y vibración corta— que
+// desaparece en cuanto se acepta la siguiente edición. También valida al
+// enviar el formulario, por si un valor decimal llegara por otra vía.
+class WholeNumberQuantityField extends StatefulWidget {
+  final TextEditingController controller;
+  final String labelText;
+  final String hintText;
+  final String? helperText;
+
+  // Si es true el 0 es un valor válido (p. ej. stock inicial); por defecto una
+  // cantidad debe ser mayor a 0.
+  final bool allowZero;
+
+  // Validación adicional (p. ej. tope de stock) que corre solo cuando el
+  // valor ya es un entero positivo válido.
+  final String? Function(int quantity)? extraValidator;
+
+  const WholeNumberQuantityField({
+    super.key,
+    required this.controller,
+    required this.labelText,
+    this.hintText = '0',
+    this.helperText,
+    this.allowZero = false,
+    this.extraValidator,
+  });
+
+  @override
+  State<WholeNumberQuantityField> createState() =>
+      _WholeNumberQuantityFieldState();
+}
+
+class _WholeNumberQuantityFieldState extends State<WholeNumberQuantityField> {
+  bool _rejectedDecimal = false;
+
+  void _onRejected() {
+    HapticFeedback.lightImpact();
+    if (!_rejectedDecimal) setState(() => _rejectedDecimal = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: widget.controller,
+      // Sin la opción decimal el teclado numérico estándar no ofrece el
+      // punto; algunos teclados (p. ej. Samsung) lo muestran igual, por eso
+      // el formatter es quien realmente lo impide.
+      keyboardType: const TextInputType.numberWithOptions(
+        decimal: false,
+        signed: false,
+      ),
+      inputFormatters: [WholeNumberInputFormatter(onRejected: _onRejected)],
+      onChanged: (_) {
+        if (_rejectedDecimal) setState(() => _rejectedDecimal = false);
+      },
+      decoration: InputDecoration(
+        labelText: widget.labelText,
+        hintText: widget.hintText,
+        helperText: widget.helperText,
+        errorText: _rejectedDecimal ? wholeNumberOnlyMessage : null,
+      ),
+      validator: (v) {
+        final error = validateWholeNumberQuantity(
+          v,
+          allowZero: widget.allowZero,
+        );
+        if (error != null) return error;
+        return widget.extraValidator?.call(int.parse(v!));
+      },
+    );
+  }
+}
+
+// Validación de una cantidad entera (usada al enviar el formulario): positiva,
+// o con 0 permitido si [allowZero].
+String? validateWholeNumberQuantity(String? value, {bool allowZero = false}) {
+  if (value == null || value.isEmpty) return 'Campo requerido';
+  if (!_digitsOnlyPattern.hasMatch(value)) return wholeNumberOnlyMessage;
+  final qty = int.tryParse(value);
+  if (qty == null || qty < (allowZero ? 0 : 1)) return 'Cantidad inválida';
+  return null;
 }

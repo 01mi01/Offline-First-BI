@@ -17,6 +17,28 @@ class PurchaseRepository {
     return total;
   }
 
+  // Obtiene el id del proveedor "Sin proveedor", creándolo si hace falta
+  // (mismo patrón que la categoría por defecto de ProductRepository): las
+  // compras sin proveedor elegido nunca deben quedar bloqueadas ni sin
+  // proveedor.
+  Future<int> _defaultSupplierId() async {
+    final existing =
+        await (database.select(database.suppliers)
+              ..where((s) => s.name.equals(AppDatabase.defaultSupplierName)))
+            .getSingleOrNull();
+    if (existing != null) return existing.id;
+    final now = DateTime.now();
+    return database
+        .into(database.suppliers)
+        .insert(
+          SuppliersCompanion.insert(
+            name: AppDatabase.defaultSupplierName,
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
   // Convierte fila a modelo
   PurchaseModel _toModel(Purchase row) {
     return PurchaseModel(
@@ -80,11 +102,12 @@ class PurchaseRepository {
     required List<Map<String, dynamic>> items,
   }) async {
     await database.transaction(() async {
+      final resolvedSupplierId = supplierId ?? await _defaultSupplierId();
       final purchaseId = await database
           .into(database.purchases)
           .insert(
             PurchasesCompanion.insert(
-              supplierId: Value(supplierId),
+              supplierId: Value(resolvedSupplierId),
               isMaterial: Value(isMaterial),
               description: Value(description),
               totalAmount: totalAmount,
@@ -148,6 +171,8 @@ class PurchaseRepository {
     required List<Map<String, dynamic>> newItems,
   }) async {
     await database.transaction(() async {
+      final resolvedSupplierId = supplierId ?? await _defaultSupplierId();
+
       // Devuelve el stock de los ítems anteriores
       final oldItems = await (database.select(
         database.purchaseItems,
@@ -179,7 +204,7 @@ class PurchaseRepository {
         database.purchases,
       )..where((p) => p.id.equals(purchaseId))).write(
         PurchasesCompanion(
-          supplierId: Value(supplierId),
+          supplierId: Value(resolvedSupplierId),
           isMaterial: Value(isMaterial),
           description: Value(description),
           totalAmount: Value(totalAmount),

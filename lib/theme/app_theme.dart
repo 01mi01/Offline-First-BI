@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 // Colores principales de la aplicación
 class AppColors {
@@ -40,9 +39,14 @@ String formatNumber(double value) {
   return value.toString();
 }
 
+// Familia tipográfica de la app, empaquetada como asset (ver pubspec.yaml).
+// Es la única fuente: no se descarga nada por red en tiempo de ejecución.
+const String appFontFamily = 'Roboto';
+
 // Tema claro de la aplicación
 final lightTheme = ThemeData(
   useMaterial3: true,
+  fontFamily: appFontFamily,
   colorScheme: ColorScheme.fromSeed(
     seedColor: AppColors.primary,
     brightness: Brightness.light,
@@ -61,11 +65,11 @@ final lightTheme = ThemeData(
   // alterarlas. displayLarge/Medium/Small y headlineLarge no se usaban antes
   // y se reutilizan para los tamaños adicionales que necesita el resto de la
   // app; labelLarge/Medium/Small ya cubren 14/12/11 con su valor por defecto.
-  textTheme: GoogleFonts.interTextTheme().copyWith(
-    displayLarge: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.normal),
-    displayMedium: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.normal),
-    displaySmall: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.normal),
-    headlineLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.normal),
+  textTheme: const TextTheme(
+    displayLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
+    displayMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.normal),
+    displaySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
+    headlineLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
   ),
 
   appBarTheme: const AppBarTheme(

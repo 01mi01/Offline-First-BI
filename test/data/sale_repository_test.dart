@@ -8,6 +8,7 @@ import 'package:offline_first_bi/models/product_model.dart';
 ProductModel _product({
   required int id,
   double price = 10,
+  double? priceB,
   int stock = 100,
 }) {
   return ProductModel(
@@ -15,7 +16,7 @@ ProductModel _product({
     categoryId: 1,
     name: 'Producto $id',
     priceA: price,
-    priceB: price,
+    priceB: priceB ?? price,
     stock: stock,
     isActive: true,
     createdAt: DateTime(2024, 1, 1),
@@ -247,5 +248,102 @@ void main() {
         expect(p2.stock, 0);
       },
     );
+  });
+
+  group('SaleRepository price bands A vs B with DISTINCT prices', () {
+    late AppDatabase db;
+    late SaleRepository repository;
+
+    setUp(() async {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      repository = SaleRepository(db);
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    final acuarela = _product(id: 1, price: 55, priceB: 40);
+    final marcador = _product(id: 2, price: 8, priceB: 6.5);
+
+    test('calculateSubtotal charges Precio A when the band is A (or unspecified)', () {
+      expect(repository.calculateSubtotal([acuarela], {1: 2}), 110);
+      expect(
+        repository.calculateSubtotal([acuarela], {1: 2}, priceTypes: {1: 'A'}),
+        110,
+      );
+    });
+
+    test('calculateSubtotal charges Precio B when the band is B', () {
+      expect(
+        repository.calculateSubtotal([acuarela], {1: 2}, priceTypes: {1: 'B'}),
+        80,
+      );
+    });
+
+    test('calculateSubtotal mixes bands per item: one at A and another at B', () {
+      final subtotal = repository.calculateSubtotal(
+        [acuarela, marcador],
+        {1: 2, 2: 3},
+        priceTypes: {1: 'A', 2: 'B'},
+      );
+      expect(subtotal, 2 * 55 + 3 * 6.5); // 129.5
+    });
+
+    test('calculateSubtotal: bands are independent per product', () {
+      final subtotal = repository.calculateSubtotal(
+        [acuarela, marcador],
+        {1: 1, 2: 1},
+        priceTypes: {1: 'B'}, // marcador sin banda -> A
+      );
+      expect(subtotal, 40 + 8);
+    });
+
+    test('createSale persists the distinct unit price and band of each line', () async {
+      await db.into(db.products).insert(
+        ProductsCompanion.insert(
+          categoryId: 1,
+          name: 'Acuarela',
+          priceA: 55,
+          priceB: 40,
+          stock: const Value(10),
+        ),
+      );
+      await db.into(db.products).insert(
+        ProductsCompanion.insert(
+          categoryId: 1,
+          name: 'Marcador',
+          priceA: 8,
+          priceB: 6.5,
+          stock: const Value(20),
+        ),
+      );
+
+      await repository.createSale(
+        clientId: null,
+        locationId: null,
+        eventId: null,
+        totalAmount: 2 * 55 + 3 * 6.5,
+        discount: 0,
+        finalAmount: 2 * 55 + 3 * 6.5,
+        date: DateTime(2024, 1, 1),
+        items: [
+          {'productId': 1, 'quantity': 2, 'unitPrice': 55.0, 'priceType': 'A'},
+          {'productId': 2, 'quantity': 3, 'unitPrice': 6.5, 'priceType': 'B'},
+        ],
+      );
+
+      final sale = (await repository.getAll()).single;
+      expect(sale.finalAmount, 129.5);
+
+      final items = await repository.getItemsForSale(sale.id);
+      final byName = {for (final i in items) i.productName: i};
+      expect(byName['Acuarela']!.priceType, 'A');
+      expect(byName['Acuarela']!.unitPrice, 55);
+      expect(byName['Acuarela']!.subtotal, 110);
+      expect(byName['Marcador']!.priceType, 'B');
+      expect(byName['Marcador']!.unitPrice, 6.5);
+      expect(byName['Marcador']!.subtotal, 19.5);
+    });
   });
 }

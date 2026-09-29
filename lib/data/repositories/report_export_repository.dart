@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
@@ -17,12 +18,26 @@ class ReportExportRepository {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
+  // Fuente empaquetada para todo el texto de los PDF. La fuente por defecto
+  // del paquete pdf (Helvetica) no soporta Unicode, así que las tildes y la ñ
+  // salían rotas; Roboto (los mismos assets de la UI) sí las soporta.
+  Future<pw.ThemeData> _pdfTheme() async {
+    final regular = await rootBundle.load(
+      'assets/fonts/roboto/roboto-regular.ttf',
+    );
+    final bold = await rootBundle.load('assets/fonts/roboto/roboto-bold.ttf');
+    return pw.ThemeData.withFont(
+      base: pw.Font.ttf(regular),
+      bold: pw.Font.ttf(bold),
+    );
+  }
+
   Future<void> exportSalesPdf({
     required String title,
     required List<SaleReportRow> rows,
     required SalesSummary summary,
   }) async {
-    final pdf = pw.Document();
+    final pdf = pw.Document(theme: await _pdfTheme());
 
     pdf.addPage(
       pw.MultiPage(
@@ -61,11 +76,50 @@ class ReportExportRepository {
                   r.clientName,
                   r.locationName ?? '-',
                   r.eventName ?? '-',
-                  'Bs. ${r.sale.finalAmount.toStringAsFixed(2)}',
+                  'Bs. ${r.netAmount.toStringAsFixed(2)}',
                 ]),
               ),
             ],
           ),
+          if (rows.any((r) => r.lines != null)) ...[
+            pw.SizedBox(height: 16),
+            pw.Text(
+              'Detalle por producto',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1.5),
+                1: const pw.FlexColumnWidth(2),
+                2: const pw.FlexColumnWidth(1.5),
+                3: const pw.FlexColumnWidth(0.8),
+                4: const pw.FlexColumnWidth(0.8),
+                5: const pw.FlexColumnWidth(1.2),
+              },
+              children: [
+                _pdfHeaderRow([
+                  'Fecha',
+                  'Producto',
+                  'Categoría',
+                  'Precio',
+                  'Cant.',
+                  'Total',
+                ]),
+                for (final r in rows)
+                  for (final line in r.lines ?? const <SaleLineReport>[])
+                    _pdfRow([
+                      _fmtShort(r.sale.date),
+                      line.item.productName,
+                      line.categoryName,
+                      line.item.priceType,
+                      '${line.item.quantity}',
+                      'Bs. ${line.netAmount.toStringAsFixed(2)}',
+                    ]),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -79,7 +133,7 @@ class ReportExportRepository {
     required List<PurchaseReportRow> rows,
     required PurchasesSummary summary,
   }) async {
-    final pdf = pw.Document();
+    final pdf = pw.Document(theme: await _pdfTheme());
 
     pdf.addPage(
       pw.MultiPage(
@@ -162,11 +216,45 @@ class ReportExportRepository {
         xl.TextCellValue(r.clientName),
         xl.TextCellValue(r.locationName ?? '-'),
         xl.TextCellValue(r.eventName ?? '-'),
-        xl.DoubleCellValue(r.sale.totalAmount),
-        xl.DoubleCellValue(r.sale.discount),
-        xl.DoubleCellValue(r.sale.finalAmount),
+        xl.DoubleCellValue(r.subtotalAmount),
+        xl.DoubleCellValue(r.discountAmount),
+        xl.DoubleCellValue(r.netAmount),
         xl.TextCellValue(r.sale.notes ?? ''),
       ]);
+    }
+
+    // Hoja de detalle: una fila por línea de venta incluida en el reporte,
+    // para analizar la demanda por producto y categoría.
+    if (rows.any((r) => r.lines != null)) {
+      final detail = excel['Detalle'];
+      detail.appendRow([
+        xl.TextCellValue('Fecha'),
+        xl.TextCellValue('Cliente'),
+        xl.TextCellValue('Producto'),
+        xl.TextCellValue('Categoría'),
+        xl.TextCellValue('Tipo de precio'),
+        xl.TextCellValue('Cantidad'),
+        xl.TextCellValue('Precio unitario'),
+        xl.TextCellValue('Subtotal'),
+        xl.TextCellValue('Descuento'),
+        xl.TextCellValue('Total'),
+      ]);
+      for (final r in rows) {
+        for (final line in r.lines ?? const <SaleLineReport>[]) {
+          detail.appendRow([
+            xl.TextCellValue(_fmtShort(r.sale.date)),
+            xl.TextCellValue(r.clientName),
+            xl.TextCellValue(line.item.productName),
+            xl.TextCellValue(line.categoryName),
+            xl.TextCellValue(line.item.priceType),
+            xl.IntCellValue(line.item.quantity),
+            xl.DoubleCellValue(line.item.unitPrice),
+            xl.DoubleCellValue(line.subtotal),
+            xl.DoubleCellValue(line.discountShare),
+            xl.DoubleCellValue(line.netAmount),
+          ]);
+        }
+      }
     }
 
     final bytes = excel.save();

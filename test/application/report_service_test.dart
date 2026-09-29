@@ -435,7 +435,7 @@ void main() {
     });
   });
 
-  group('summarizeSales', () {
+  group('summarizeSaleRows (whole sales, no line filtering)', () {
     test('aggregates count, total amount and discount', () {
       final sales = [
         _sale(
@@ -454,7 +454,14 @@ void main() {
         ),
       ];
 
-      final summary = service.summarizeSales(sales);
+      final summary = service.summarizeSaleRows(
+        service.buildSaleRows(
+          sales: sales,
+          clients: const [],
+          locations: const [],
+          events: const [],
+        ),
+      );
 
       expect(summary.count, 2);
       expect(summary.totalAmount, 140); // 90 + 50
@@ -462,7 +469,7 @@ void main() {
     });
 
     test('empty list summarizes to zero', () {
-      final summary = service.summarizeSales(const []);
+      final summary = service.summarizeSaleRows(const []);
       expect(summary.count, 0);
       expect(summary.totalAmount, 0);
       expect(summary.totalDiscount, 0);

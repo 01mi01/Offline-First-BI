@@ -79,6 +79,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -347,7 +348,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                     ],
                     const SizedBox(height: AppSpacing.s6),
                     Text(
-                      'Precio de venta: Bs. ${widget.product.priceA.toStringAsFixed(2)}',
+                      'Precio A: Bs. ${widget.product.priceA.toStringAsFixed(2)}  •  Precio B: Bs. ${widget.product.priceB.toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.displaySmall
                           ?.copyWith(
                             color: AppColors.primary,
@@ -547,7 +548,15 @@ class _GridCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.s2),
                   Text(
-                    'Bs. ${product.priceA.toStringAsFixed(2)}',
+                    'A: Bs. ${product.priceA.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.displaySmall
+                        ?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  Text(
+                    'B: Bs. ${product.priceB.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.displaySmall
                         ?.copyWith(
                           color: AppColors.primary,
@@ -655,7 +664,15 @@ class _ProductGridDetail extends StatelessWidget {
                     ],
                     const SizedBox(height: AppSpacing.s4),
                     Text(
-                      'Bs. ${product.priceA.toStringAsFixed(2)}',
+                      'Precio A: Bs. ${product.priceA.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      'Precio B: Bs. ${product.priceB.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,

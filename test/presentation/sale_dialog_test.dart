@@ -143,4 +143,140 @@ void main() {
       expect(await repository.getAll(), isEmpty);
     },
   );
+
+  // Productos con precios A y B distintos, para comprobar que cada banda cobra
+  // su propio monto (los productos de las demás pruebas tienen A == B).
+  Future<void> seedDistinctPriceProducts() async {
+    await db.into(db.products).insert(
+      ProductsCompanion.insert(
+        categoryId: 1,
+        name: 'Acuarela',
+        priceA: 55.0,
+        priceB: 40.0,
+        stock: const Value(10),
+      ),
+    );
+    await db.into(db.products).insert(
+      ProductsCompanion.insert(
+        categoryId: 1,
+        name: 'Marcador',
+        priceA: 8.0,
+        priceB: 6.5,
+        stock: const Value(20),
+      ),
+    );
+  }
+
+  Future<void> addToCart(WidgetTester tester, String productName) async {
+    // Cada fila del catálogo (ListTile) tiene su propio ícono "+": se toca el
+    // de la fila del producto pedido.
+    final tile = find.ancestor(
+      of: find.text(productName).first,
+      matching: find.byType(ListTile),
+    );
+    final add = find.descendant(of: tile.first, matching: find.byIcon(Icons.add));
+    await tester.ensureVisible(add);
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets(
+    'a product with distinct A/B prices is charged Precio A by default and '
+    'Precio B after switching the band, and the sale persists the B price',
+    (tester) async {
+      await seedDistinctPriceProducts();
+      await _openSaleDialog(tester, db);
+
+      // El catálogo muestra ambos precios del producto.
+      expect(find.textContaining('A: Bs. 55.00  •  B: Bs. 40.00'), findsOneWidget);
+
+      await addToCart(tester, 'Acuarela');
+      // Por defecto se cobra Precio A: el ítem del carrito y el total.
+      expect(find.text('Bs. 55.00'), findsWidgets);
+      expect(find.text('Bs. 40.00'), findsNothing);
+
+      // Cambia a Precio B: el monto pasa a 40.
+      await tester.tap(find.text('Precio B'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bs. 40.00'), findsWidgets);
+      expect(find.text('Bs. 55.00'), findsNothing);
+
+      // Y de vuelta a Precio A: vuelve a 55.
+      await tester.tap(find.text('Precio A'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bs. 55.00'), findsWidgets);
+
+      await tester.tap(find.text('Precio B'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sin nombre').last);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Registrar venta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Registrar venta'));
+      await tester.pumpAndSettle();
+
+      final repository = SaleRepository(db);
+      final sale = (await repository.getAll()).single;
+      expect(sale.finalAmount, 40.0);
+      final items = await repository.getItemsForSale(sale.id);
+      expect(items.single.unitPrice, 40.0);
+      expect(items.single.priceType, 'B');
+      expect(items.single.subtotal, 40.0);
+
+      final product = await (db.select(
+        db.products,
+      )..where((p) => p.name.equals('Acuarela'))).getSingle();
+      expect(product.stock, 9);
+    },
+  );
+
+  testWidgets(
+    'one sale can mix bands: a product at Precio A and another at Precio B '
+    'are each charged their own price and the total adds them up',
+    (tester) async {
+      await seedDistinctPriceProducts();
+      await _openSaleDialog(tester, db);
+
+      await addToCart(tester, 'Acuarela');
+      await addToCart(tester, 'Marcador');
+
+      // Los dos ítems arrancan en Precio A: 55 + 8 = 63.
+      expect(find.text('Bs. 63.00'), findsWidgets);
+
+      // Solo el ítem del carrito de Marcador (el segundo) pasa a Precio B.
+      await tester.tap(find.text('Precio B').last);
+      await tester.pumpAndSettle();
+
+      // 55 (A) + 6.5 (B) = 61.5
+      expect(find.text('Bs. 61.50'), findsWidgets);
+
+      await tester.ensureVisible(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sin nombre').last);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Registrar venta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Registrar venta'));
+      await tester.pumpAndSettle();
+
+      final repository = SaleRepository(db);
+      final sale = (await repository.getAll()).single;
+      expect(sale.totalAmount, 61.5);
+      expect(sale.finalAmount, 61.5);
+
+      final items = await repository.getItemsForSale(sale.id);
+      final byName = {for (final i in items) i.productName: i};
+      expect(byName['Acuarela']!.priceType, 'A');
+      expect(byName['Acuarela']!.unitPrice, 55.0);
+      expect(byName['Marcador']!.priceType, 'B');
+      expect(byName['Marcador']!.unitPrice, 6.5);
+    },
+  );
 }
