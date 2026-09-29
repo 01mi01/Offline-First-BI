@@ -325,7 +325,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
@@ -644,6 +644,23 @@ class AppDatabase extends _$AppDatabase {
           }
         }
       }
+      if (from < 12) {
+        // El rol sembrado "usuario" pasa a llamarse "empleado". Se renombra
+        // en el mismo registro (mismo id) para que user_roles siga apuntando
+        // a él. Roles.name es único: si ya existe un "empleado" no se toca
+        // nada, para no violar la restricción.
+        final alreadyRenamed = await (select(
+          roles,
+        )..where((r) => r.name.equals('empleado'))).getSingleOrNull();
+        if (alreadyRenamed == null) {
+          await (update(roles)..where((r) => r.name.equals('usuario'))).write(
+            RolesCompanion(
+              name: const Value('empleado'),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+      }
     },
   );
 
@@ -653,7 +670,7 @@ class AppDatabase extends _$AppDatabase {
       b.insertAll(roles, [
         RolesCompanion.insert(name: 'admin'),
         RolesCompanion.insert(name: 'propietario'),
-        RolesCompanion.insert(name: 'usuario'),
+        RolesCompanion.insert(name: 'empleado'),
       ]);
     });
 
@@ -689,13 +706,13 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
 
-      // Rol usuario para el usuario de prueba
-      final rolUsuario = await (select(
+      // Rol empleado para el usuario de prueba
+      final rolEmpleado = await (select(
         roles,
-      )..where((r) => r.name.equals('usuario'))).getSingle();
+      )..where((r) => r.name.equals('empleado'))).getSingle();
 
       await into(userRoles).insert(
-        UserRolesCompanion.insert(userId: testUserId, roleId: rolUsuario.id),
+        UserRolesCompanion.insert(userId: testUserId, roleId: rolEmpleado.id),
       );
 
       // Permisos CRUD completos para el usuario de prueba en todos los módulos

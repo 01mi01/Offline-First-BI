@@ -21,12 +21,12 @@ class AuthRepository {
       database.userRoles,
     )..where((ur) => ur.userId.equals(user.id))).getSingleOrNull();
 
-    String role = 'usuario';
+    String role = 'empleado';
     if (userRole != null) {
       final roleData = await (database.select(
         database.roles,
       )..where((r) => r.id.equals(userRole.roleId))).getSingleOrNull();
-      role = roleData?.name ?? 'usuario';
+      role = roleData?.name ?? 'empleado';
     }
 
     return UserModel(
