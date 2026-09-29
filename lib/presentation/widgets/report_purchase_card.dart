@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
 import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
+import '../../config/date_formatters.dart';
 
 class ReportPurchaseCard extends ConsumerStatefulWidget {
   final PurchaseModel purchase;
@@ -25,23 +26,7 @@ class ReportPurchaseCard extends ConsumerStatefulWidget {
 class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
   bool _expanded = false;
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}  ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatDate(DateTime date) => formatDateTime(date);
 
   @override
   Widget build(BuildContext context) {

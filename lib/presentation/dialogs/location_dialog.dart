@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/location_provider.dart';
 import '../../models/location_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 
 class LocationDialog extends ConsumerStatefulWidget {
   final LocationModel? location;
@@ -20,7 +21,6 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
   late final TextEditingController _countryController;
   late final TextEditingController _descController;
   late bool _isActive;
-  bool _hasChanges = false;
   String? _saveError;
 
   @override
@@ -33,21 +33,14 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
     _descController =
         TextEditingController(text: widget.location?.description ?? '');
     _isActive = widget.location?.isActive ?? true;
-
-    _cityController.addListener(_checkChanges);
-    _countryController.addListener(_checkChanges);
-    _descController.addListener(_checkChanges);
+    _cityController.addListener(_clearSaveError);
+    _countryController.addListener(_clearSaveError);
   }
 
-  void _checkChanges() {
-    final changed =
-        _cityController.text.trim() != (widget.location?.city ?? '') ||
-        _countryController.text.trim() !=
-            (widget.location?.country ?? '') ||
-        _descController.text.trim() !=
-            (widget.location?.description ?? '') ||
-        _isActive != (widget.location?.isActive ?? true);
-    if (changed != _hasChanges) setState(() => _hasChanges = changed);
+  // Un error de guardado (p. ej. nombre repetido) deja de mostrarse en
+  // cuanto se corrige el nombre.
+  void _clearSaveError() {
+    if (_saveError != null) setState(() => _saveError = null);
   }
 
   @override
@@ -86,78 +79,16 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
-          title: const Text(
-            '¿Desactivar ubicación?',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary),
-          ),
-          content: Text(
-            'La ubicación "${_cityController.text.trim()}" no estará disponible para nuevos registros.',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  0,
-                  AppSpacing.s16,
-                  AppSpacing.s8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50)),
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancelar',
-                            style: TextStyle(
-                                color: AppColors.textSecondary)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50)),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Desactivar',
-                            style: TextStyle(color: AppColors.surface)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+      final confirm = await confirmCancellation(
+        context,
+        title: '¿Desactivar ubicación?',
+        message: 'La ubicación "${_cityController.text.trim()}" no estará disponible para nuevos registros.',
+        confirmLabel: 'Desactivar',
+        dismissLabel: 'Cancelar',
       );
       if (confirm != true) return;
     }
     setState(() => _isActive = value);
-    _checkChanges();
   }
 
   @override
@@ -189,6 +120,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
               // Ciudad
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _cityController,
                 decoration: const InputDecoration(
                   labelText: 'Ciudad',
@@ -201,6 +133,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
               // País
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _countryController,
                 decoration: const InputDecoration(
                   labelText: 'País',
@@ -213,6 +146,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
               // Descripción
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _descController,
                 decoration: const InputDecoration(
                   labelText: 'Descripción',
@@ -320,7 +254,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
                   const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _hasChanges ? _save : null,
+                      onPressed: _save,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
                         style: Theme.of(context).textTheme.headlineLarge

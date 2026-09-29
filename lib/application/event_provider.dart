@@ -59,6 +59,7 @@ class EventNotifier extends StateNotifier<EventState> {
     required DateTime startDate,
     DateTime? endDate,
     String? notes,
+    bool isActive = true,
   }) async {
     await repository.save(
       id: id,
@@ -67,6 +68,7 @@ class EventNotifier extends StateNotifier<EventState> {
       startDate: startDate,
       endDate: endDate,
       notes: notes,
+      isActive: isActive,
     );
     await load();
   }

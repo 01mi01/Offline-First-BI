@@ -7,6 +7,7 @@ import '../../application/category_provider.dart';
 import '../../application/material_provider.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/product_dialog.dart';
+import '../widgets/status_badge.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
@@ -376,28 +377,11 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s8,
-                        vertical: AppSpacing.s2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: widget.product.isActive
-                            ? AppColors.success.withOpacity(0.1)
-                            : AppColors.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        widget.product.isActive ? 'Activo' : 'Inactivo',
-                        style: Theme.of(context).textTheme.labelSmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: widget.product.isActive
-                                  ? AppColors.success
-                                  : AppColors.error,
-                            ),
-                      ),
-                    ),
+                    StatusBadge.forState(
+isActive: widget.product.isActive,
+activeLabel: 'Activo',
+inactiveLabel: 'Inactivo',
+),
                   ],
                 ),
               ),

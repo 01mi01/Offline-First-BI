@@ -1,3 +1,5 @@
+import 'default_records.dart';
+
 // Modelo de categoría de productos
 class CategoryModel {
   final int id;
@@ -15,4 +17,7 @@ class CategoryModel {
     required this.isActive,
     required this.createdAt,
   });
+
+  // "Sin categoría": registro predeterminado, protegido (ver DefaultRecords)
+  bool get isDefault => DefaultRecords.isCategory(name);
 }

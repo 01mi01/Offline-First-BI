@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../application/category_provider.dart';
 import '../../application/product_provider.dart';
 import '../../application/event_provider.dart';
@@ -9,6 +8,8 @@ import '../../application/client_provider.dart';
 import '../../application/supplier_provider.dart';
 import '../../models/report_filters.dart';
 import '../../theme/app_theme.dart';
+import '../../config/date_formatters.dart';
+import 'focus_utils.dart';
 
 class ReportFiltersWidget extends ConsumerWidget {
   final ReportFilters filters;
@@ -22,9 +23,10 @@ class ReportFiltersWidget extends ConsumerWidget {
     required this.activeTab,
   });
 
-  String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
+  String _formatDate(DateTime date) => formatDate(date);
 
   Future<void> _pickDate(BuildContext context, bool isStart) async {
+    dismissKeyboard();
     final picked = await showDatePicker(
       context: context,
       initialDate:
@@ -55,6 +57,7 @@ class ReportFiltersWidget extends ConsumerWidget {
     ValueChanged<T?> onSelect,
     VoidCallback onClear,
   ) {
+    dismissKeyboard();
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,

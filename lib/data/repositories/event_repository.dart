@@ -17,10 +17,13 @@ class EventRepository {
       endDate: row.endDate,
       notes: row.notes,
       createdAt: row.createdAt,
+      isActive: row.isActive,
     );
   }
 
-  // Obtiene todos los eventos ordenados por fecha descendente
+  // Obtiene todos los eventos (incluyendo inactivos) ordenados por fecha
+  // descendente: la lista y los reportes los necesitan todos; los selectores
+  // de ventas y compras filtran por isActive.
   Future<List<EventModel>> getAll() async {
     final rows = await (database.select(database.events)
           ..orderBy([(e) => OrderingTerm.desc(e.startDate)]))
@@ -36,6 +39,7 @@ class EventRepository {
     required DateTime startDate,
     DateTime? endDate,
     String? notes,
+    bool isActive = true,
   }) async {
     final now = DateTime.now();
     await database.into(database.events).insertOnConflictUpdate(
@@ -46,6 +50,7 @@ class EventRepository {
             startDate: Value(startDate),
             endDate: Value(endDate),
             notes: Value(notes),
+            isActive: Value(isActive),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),

@@ -12,6 +12,12 @@ class AppColors {
   static const border = Color(0xFFE5E7EB);
   static const error = Color(0xFFFF3B30);
   static const success = Color(0xFF34C759);
+  // Variantes más oscuras de error y éxito para TEXTO pequeño (etiquetas
+  // "Activo"/"Inactivo", "Cancelada"): el rojo y el verde base no llegan al
+  // contraste mínimo de 4.5:1 sobre fondo claro. Mismo tono, más oscuro (igual
+  // que primaryDark respecto de primary).
+  static const errorDark = Color(0xFFB71C1C);
+  static const successDark = Color(0xFF176B31);
 }
 
 // Escala de espaciado de la aplicación (padding, gaps entre elementos)

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../../models/default_records.dart';
 import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../models/sale_item_model.dart';
@@ -63,6 +64,25 @@ class SaleRepository {
       reserved[row.productId] = (reserved[row.productId] ?? 0) + row.quantity;
     }
     return reserved;
+  }
+
+  // Obtiene el id del cliente predeterminado, creándolo si hace falta (mismo
+  // patrón que la categoría y el proveedor por defecto): una venta sin cliente
+  // elegido se guarda a su nombre, nunca sin cliente ni bloqueada.
+  Future<int> _defaultClientId() async {
+    final existing = await (database.select(
+      database.clients,
+    )..where((c) => c.name.equals(DefaultRecords.client))).getSingleOrNull();
+    if (existing != null) return existing.id;
+    final now = DateTime.now();
+    return database.into(database.clients).insert(
+      ClientsCompanion.insert(
+        name: DefaultRecords.client,
+        isActive: const Value(true),
+        createdAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   // Convierte fila a modelo
@@ -131,12 +151,13 @@ class SaleRepository {
     required List<Map<String, dynamic>> items,
   }) async {
     await database.transaction(() async {
+      final resolvedClientId = clientId ?? await _defaultClientId();
       // Inserta la venta
       final saleId = await database
           .into(database.sales)
           .insert(
             SalesCompanion.insert(
-              clientId: Value(clientId),
+              clientId: Value(resolvedClientId),
               locationId: Value(locationId),
               eventId: Value(eventId),
               totalAmount: totalAmount,
@@ -282,11 +303,12 @@ class SaleRepository {
       )..where((si) => si.saleId.equals(saleId))).go();
 
       // Actualiza la venta
+      final resolvedClientId = clientId ?? await _defaultClientId();
       await (database.update(
         database.sales,
       )..where((s) => s.id.equals(saleId))).write(
         SalesCompanion(
-          clientId: Value(clientId),
+          clientId: Value(resolvedClientId),
           locationId: Value(locationId),
           eventId: Value(eventId),
           totalAmount: Value(totalAmount),

@@ -5,6 +5,9 @@ import '../../application/location_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/app_theme.dart';
 import 'location_dialog.dart';
+import '../../config/date_formatters.dart';
+import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/focus_utils.dart';
 
 class EventDialog extends ConsumerStatefulWidget {
   final EventModel? event;
@@ -22,7 +25,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
   int? _selectedLocationId;
   DateTime? _startDate;
   DateTime? _endDate;
-  bool _hasChanges = false;
+  late bool _isActive;
   String? _saveError;
 
   @override
@@ -33,19 +36,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     _selectedLocationId = widget.event?.locationId;
     _startDate = widget.event?.startDate;
     _endDate = widget.event?.endDate;
-
-    _nameController.addListener(_checkChanges);
-    _notesController.addListener(_checkChanges);
-  }
-
-  void _checkChanges() {
-    final changed =
-        _nameController.text.trim() != (widget.event?.name ?? '') ||
-        _notesController.text.trim() != (widget.event?.notes ?? '') ||
-        _selectedLocationId != widget.event?.locationId ||
-        _startDate != widget.event?.startDate ||
-        _endDate != widget.event?.endDate;
-    if (changed != _hasChanges) setState(() => _hasChanges = changed);
+    _isActive = widget.event?.isActive ?? true;
   }
 
   @override
@@ -56,6 +47,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
   }
 
   Future<void> _pickStartDate() async {
+    dismissKeyboard();
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate ?? DateTime.now(),
@@ -69,12 +61,16 @@ class _EventDialogState extends ConsumerState<EventDialog> {
       ),
     );
     if (picked != null) {
-      setState(() => _startDate = picked);
-      _checkChanges();
+      // Elegir la fecha resuelve el aviso "Selecciona la fecha de inicio"
+      setState(() {
+        _startDate = picked;
+        _saveError = null;
+      });
     }
   }
 
   Future<void> _pickEndDate() async {
+    dismissKeyboard();
     final picked = await showDatePicker(
       context: context,
       initialDate: _endDate ?? _startDate ?? DateTime.now(),
@@ -89,29 +85,30 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     );
     if (picked != null) {
       setState(() => _endDate = picked);
-      _checkChanges();
     }
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  String _formatDate(DateTime date) => formatDate(date);
+
+  // Desactivar un evento (no se borra): deja de ofrecerse al registrar
+  // ventas y compras, pero sigue en el historial y en los reportes.
+  Future<void> _onToggleActive(bool value) async {
+    if (!value) {
+      final confirm = await confirmCancellation(
+        context,
+        title: '¿Desactivar evento?',
+        message:
+            'El evento "${_nameController.text.trim()}" no estará disponible para nuevos registros.',
+        confirmLabel: 'Desactivar',
+        dismissLabel: 'Cancelar',
+      );
+      if (!confirm) return;
+    }
+    setState(() => _isActive = value);
   }
 
   void _showAddLocationSheet() {
+    dismissKeyboard();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -123,7 +120,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
       builder: (_) => LocationDialog(
         onSaved: (locationId) {
           setState(() => _selectedLocationId = locationId);
-          _checkChanges();
         },
       ),
     );
@@ -148,6 +144,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
+          isActive: _isActive,
         );
 
     if (mounted) Navigator.pop(context);
@@ -187,6 +184,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
               // Nombre del evento
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre del evento',
@@ -202,6 +200,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<int>(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
                       value: _selectedLocationId,
                       decoration: const InputDecoration(labelText: 'Ubicación'),
                       items: [
@@ -218,7 +217,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       ],
                       onChanged: (val) {
                         setState(() => _selectedLocationId = val);
-                        _checkChanges();
                       },
                     ),
                   ),
@@ -319,7 +317,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                         GestureDetector(
                           onTap: () {
                             setState(() => _endDate = null);
-                            _checkChanges();
                           },
                           child: const Icon(
                             Icons.close,
@@ -335,6 +332,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
               // Notas
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _notesController,
                 decoration: const InputDecoration(
                   labelText: 'Notas',
@@ -342,6 +340,58 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                 ),
                 maxLines: 3,
               ),
+
+              // Toggle activo/inactivo solo en edición
+              if (isEditing) ...[
+                const SizedBox(height: AppSpacing.s16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s16,
+                    vertical: AppSpacing.s12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Evento activo',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            _isActive
+                                ? 'Visible en el sistema'
+                                : 'Oculto en el sistema',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: _isActive,
+                        onChanged: _onToggleActive,
+                        activeColor: AppColors.primary,
+                        inactiveTrackColor: AppColors.border,
+                        inactiveThumbColor: AppColors.surface,
+                        trackOutlineColor: MaterialStateProperty.all(
+                          Colors.transparent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               if (_saveError != null) ...[
                 const SizedBox(height: AppSpacing.s12),
@@ -400,7 +450,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _hasChanges ? _save : null,
+                      onPressed: _save,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
                         style: Theme.of(context).textTheme.headlineLarge

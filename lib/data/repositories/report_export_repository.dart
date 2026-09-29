@@ -6,17 +6,13 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:excel/excel.dart' as xl;
 import '../../models/report_models.dart';
+import '../../config/date_formatters.dart';
 
 // Genera y comparte reportes de ventas y compras en PDF y Excel
 class ReportExportRepository {
-  String _fmt(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _fmt(DateTime date) => formatDateTime(date);
 
-  String _fmtShort(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
+  String _fmtShort(DateTime date) => formatDate(date);
 
   String _bs(double amount) => 'Bs. ${amount.toStringAsFixed(2)}';
 
@@ -396,7 +392,7 @@ class ReportExportRepository {
   ) async {
     final dir = await getTemporaryDirectory();
     final file = File(
-      '${dir.path}/${title.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      '${dir.path}/${title.replaceAll(' ', '_')}_${formatDateForFileName(DateTime.now())}.$extension',
     );
     await file.writeAsBytes(bytes);
     return file;

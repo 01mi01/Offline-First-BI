@@ -10,6 +10,8 @@ import '../../theme/app_theme.dart';
 import '../dialogs/sale_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/status_badge.dart';
+import '../../config/date_formatters.dart';
 
 class SalesPage extends ConsumerWidget {
   const SalesPage({super.key});
@@ -173,7 +175,7 @@ class _SaleCard extends StatelessWidget {
                       ),
                       if (sale.isCanceled) ...[
                         const SizedBox(width: AppSpacing.s8),
-                        const CanceledBadge(),
+                        const StatusBadge.canceled(),
                       ],
                     ],
                   ),
@@ -250,13 +252,7 @@ class _SaleCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}  ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatDate(DateTime date) => formatDateTime(date);
 }
 
 // Diálogo de recibo completo
@@ -295,13 +291,7 @@ class _SaleReceiptDialogState
     }
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    return '${date.day} de ${months[date.month - 1]} de ${date.year}, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatDate(DateTime date) => formatDateTime(date);
 
   @override
   Widget build(BuildContext context) {

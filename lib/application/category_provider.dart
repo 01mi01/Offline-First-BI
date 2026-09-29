@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/category_repository.dart';
 import '../models/category_model.dart';
+import '../models/default_records.dart';
 import 'database_provider.dart';
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
@@ -70,19 +71,30 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
       }
     }
     state = state.copyWith(error: null);
-    await repository.save(
-      id: id,
-      name: name,
-      description: description,
-      image: image,
-      isActive: isActive,
-    );
+    try {
+      await repository.save(
+        id: id,
+        name: name,
+        description: description,
+        image: image,
+        isActive: isActive,
+      );
+    } on ProtectedRecordException catch (e) {
+      // Registro predeterminado: el formulario muestra este mensaje
+      state = state.copyWith(error: e.message);
+      return;
+    }
     await load();
   }
 
   // Desactiva una categoría y recarga
   Future<void> deactivate(int id) async {
-    await repository.deactivate(id);
+    try {
+      await repository.deactivate(id);
+    } on ProtectedRecordException catch (e) {
+      state = state.copyWith(error: e.message);
+      return;
+    }
     await load();
   }
 }

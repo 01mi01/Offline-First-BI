@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../../models/default_records.dart';
 import '../../models/supplier_model.dart';
 
 class SupplierRepository {
@@ -43,6 +44,19 @@ class SupplierRepository {
     String? contactInfo,
     bool isActive = true,
   }) async {
+    // El proveedor predeterminado no se puede editar ni desactivar, y ningún
+    // otro proveedor puede usar su nombre.
+    if (id != null) {
+      final current = await (database.select(
+        database.suppliers,
+      )..where((s) => s.id.equals(id))).getSingleOrNull();
+      if (current != null && DefaultRecords.isSupplier(current.name)) {
+        throw const ProtectedRecordException();
+      }
+    }
+    if (DefaultRecords.isSupplier(name)) {
+      throw const ProtectedRecordException(DefaultRecords.reservedNameMessage);
+    }
     // Verifica nombre único excluyendo el registro actual
     final existing = await (database.select(
       database.suppliers,

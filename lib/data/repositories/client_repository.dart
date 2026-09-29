@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/client_model.dart';
+import '../../models/default_records.dart';
 
 class ClientRepository {
   final AppDatabase database;
@@ -43,6 +44,19 @@ class ClientRepository {
     String? contactInfo,
     bool isActive = true,
   }) async {
+    // El cliente predeterminado no se puede editar ni desactivar, y ningún
+    // otro cliente puede usar su nombre.
+    if (id != null) {
+      final current = await (database.select(
+        database.clients,
+      )..where((c) => c.id.equals(id))).getSingleOrNull();
+      if (current != null && DefaultRecords.isClient(current.name)) {
+        throw const ProtectedRecordException();
+      }
+    }
+    if (DefaultRecords.isClient(name)) {
+      throw const ProtectedRecordException(DefaultRecords.reservedNameMessage);
+    }
     // Verifica nombre único excluyendo el registro actual
     final existing = await (database.select(
       database.clients,

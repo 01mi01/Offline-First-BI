@@ -10,6 +10,8 @@ import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../theme/app_theme.dart';
 import 'client_dialog.dart';
+import '../widgets/focus_utils.dart';
+import '../../models/default_records.dart';
 
 class SaleDialog extends ConsumerStatefulWidget {
   final SaleModel? sale;
@@ -51,18 +53,6 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       _loadExistingItems();
       _selectedLocationId = widget.sale?.locationId;
       _selectedEventId = widget.sale?.eventId;
-    }
-    if (widget.sale == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final sinNombre = ref
-            .read(clientProvider)
-            .clients
-            .where((c) => c.name == 'Sin nombre')
-            .firstOrNull;
-        if (sinNombre != null && mounted) {
-          setState(() => _selectedClientId = sinNombre.id);
-        }
-      });
     }
   }
 
@@ -118,6 +108,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       ref.read(saleRepositoryProvider).calculateTotal(_subtotal, _discount);
 
   void _showAddClientSheet() {
+    dismissKeyboard();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -136,10 +127,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedClientId == null) {
-      setState(() => _error = 'Selecciona un cliente');
-      return;
-    }
+    // Sin cliente elegido no se bloquea la venta: el repositorio la guarda a
+    // nombre del cliente predeterminado ("Sin nombre").
     if (_cartItems.isEmpty) {
       setState(() => _error = 'Agrega al menos un producto');
       return;
@@ -237,11 +226,21 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.sale != null;
-    final clients = ref
-        .watch(clientProvider)
-        .clients
-        .where((c) => c.isActive)
+    final allClients = ref.watch(clientProvider).clients;
+    // El cliente predeterminado se ofrece como la opción "Sin nombre" (valor
+    // nulo), no como un cliente más; un cliente inactivo solo aparece si es el
+    // que ya tenía la venta que se edita.
+    final clients = allClients
+        .where(
+          (c) => !c.isDefault && (c.isActive || c.id == _selectedClientId),
+        )
         .toList();
+    // El valor del selector solo puede ser una opción que exista en la lista:
+    // el cliente predeterminado es la opción nula, y mientras los clientes
+    // cargan tampoco hay nada que mostrar todavía.
+    final clientValue = clients.any((c) => c.id == _selectedClientId)
+        ? _selectedClientId
+        : null;
     final products = ref
         .watch(productProvider)
         .products
@@ -277,20 +276,25 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      value: _selectedClientId,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      value: clientValue,
                       decoration: const InputDecoration(labelText: 'Cliente'),
-                      items: clients
-                          .map(
-                            (c) => DropdownMenuItem(
-                              value: c.id,
-                              child: Text(c.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (val) =>
-                          setState(() => _selectedClientId = val),
-                      validator: (v) =>
-                          v == null ? 'Selecciona un cliente' : null,
+                      items: [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          child: Text(DefaultRecords.client),
+                        ),
+                        ...clients.map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) => setState(() {
+                        _selectedClientId = val;
+                        _error = null;
+                      }),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.s8),
@@ -316,6 +320,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
               // Selector de ubicación
               DropdownButtonFormField<int>(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 value: _selectedLocationId,
                 decoration: const InputDecoration(labelText: 'Ubicación'),
                 items: [
@@ -341,7 +346,21 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
               // Selector de evento
               DropdownButtonFormField<int>(
-                value: _selectedEventId,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                // Solo una opción existente puede ser el valor: mientras los eventos
+                // cargan (o si el evento ya no está disponible) el campo queda
+                // en "Sin evento" sin romper el selector.
+                value:
+                    ref
+                        .watch(eventProvider)
+                        .events
+                        .any(
+                          (e) =>
+                              e.id == _selectedEventId &&
+                              (e.isActive || e.id == _selectedEventId),
+                        )
+                    ? _selectedEventId
+                    : null,
                 decoration: const InputDecoration(labelText: 'Evento'),
                 items: [
                   const DropdownMenuItem(
@@ -351,6 +370,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   ...ref
                       .watch(eventProvider)
                       .events
+                      .where((e) => e.isActive || e.id == _selectedEventId)
                       .map(
                         (e) =>
                             DropdownMenuItem(value: e.id, child: Text(e.name)),
@@ -405,6 +425,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       trailing: GestureDetector(
                         onTap: () {
                           setState(() {
+                            _error = null;
                             if (inCart) {
                               _cartItems.remove(p.id);
                               _cartPriceTypes.remove(p.id);
@@ -506,6 +527,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
+                                      _error = null;
                                       if (entry.value <= 1) {
                                         _cartItems.remove(entry.key);
                                       } else {
@@ -553,6 +575,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                     if (product == null) return;
                                     if (entry.value >= _availableStock(product)) return;
                                     setState(() {
+                                      _error = null;
                                       _cartItems[entry.key] = entry.value + 1;
                                     });
                                   },
@@ -582,8 +605,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         const SizedBox(height: AppSpacing.s8),
                         _PriceTypeToggle(
                           selected: _cartPriceTypes[entry.key] ?? 'A',
-                          onChanged: (type) =>
-                              setState(() => _cartPriceTypes[entry.key] = type),
+                          onChanged: (type) => setState(() {
+                            _error = null;
+                            _cartPriceTypes[entry.key] = type;
+                          }),
                         ),
                       ],
                     ),
@@ -594,6 +619,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
               // Descuento
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _discountController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [
@@ -613,12 +639,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   labelText: 'Descuento (Bs.)',
                   hintText: '0',
                 ),
-                onChanged: (_) => setState(() {}),
+                onChanged: (_) => setState(() => _error = null),
               ),
               const SizedBox(height: AppSpacing.s16),
 
               // Notas
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _notesController,
                 decoration: const InputDecoration(
                   labelText: 'Notas',

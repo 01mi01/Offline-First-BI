@@ -11,15 +11,16 @@ import '../generated_migrations/schema_v10.dart' as v10;
 import '../generated_migrations/schema_v11.dart' as v11;
 import '../generated_migrations/schema_v12.dart' as v12;
 import '../generated_migrations/schema_v13.dart' as v13;
+import '../generated_migrations/schema_v14.dart' as v14;
 
 // Verifica la migración real (onUpgrade) contra snapshots de esquema
-// generados por Drift (drift_schemas/drift_schema_v{8,9,10,11,12,13}.json vía
+// generados por Drift (drift_schemas/drift_schema_v{8,9,10,11,12,13,14}.json vía
 // `dart run drift_dev schema generate`). A diferencia del resto de la suite
 // (que solo abre bases de datos en blanco vía onCreate), esto ejecuta el SQL
 // de migración de verdad sobre datos con la forma exacta de cada versión.
 //
 // migrateAndValidate siempre migra hasta el schemaVersion actual de
-// AppDatabase (ahora 13), sin importar en qué versión "lógica" se centre
+// AppDatabase (ahora 14), sin importar en qué versión "lógica" se centre
 // cada test — por eso los tests con datos de v8 también apuntan a 10.
 void main() {
   late SchemaVerifier verifier;
@@ -29,14 +30,14 @@ void main() {
   });
 
   test(
-    'migrating a v8 database all the way to the live schema (v13) produces '
+    'migrating a v8 database all the way to the live schema (v14) produces '
     'exactly the expected schema',
     () async {
       final connection = await verifier.startAt(8);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 13);
+      await verifier.migrateAndValidate(db, 14);
     },
   );
 
@@ -67,10 +68,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final productWithCategory = await (checkDb.select(
@@ -131,10 +132,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final allRows = await checkDb.select(checkDb.productMaterials).get();
@@ -156,7 +157,7 @@ void main() {
       // debe ser rechazada por la base de datos.
       await expectLater(
         checkDb.into(checkDb.productMaterials).insert(
-          v13.ProductMaterialsCompanion.insert(
+          v14.ProductMaterialsCompanion.insert(
             productId: 1,
             materialId: 1,
             quantityUsed: 1,
@@ -184,10 +185,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final session = await (checkDb.select(
@@ -206,7 +207,7 @@ void main() {
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 13);
+      await verifier.migrateAndValidate(db, 14);
     },
   );
 
@@ -216,7 +217,7 @@ void main() {
       final connection = await verifier.startAt(9);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
-      await verifier.migrateAndValidate(db, 13);
+      await verifier.migrateAndValidate(db, 14);
 
       final rows = await db.select(db.units).get();
       final byName = {for (final u in rows) u.name: u.type};
@@ -265,10 +266,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final botellaUnit = await (checkDb.select(
@@ -316,10 +317,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final suppliers = await checkDb.select(checkDb.suppliers).get();
@@ -343,10 +344,10 @@ void main() {
       addTearDown(schema.close);
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -373,10 +374,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -414,10 +415,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final roles = await checkDb.select(checkDb.roles).get();
@@ -448,10 +449,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.roles).get())
@@ -489,10 +490,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final sale = await (checkDb.select(
@@ -513,7 +514,7 @@ void main() {
 
   test(
     'Cancelation columns: a v8 database (product_materials recreated on the '
-    'way) reaches v13 with the usage record intact and not canceled',
+    'way) reaches v14 with the usage record intact and not canceled',
     () async {
       final schema = await verifier.schemaAt(8);
       addTearDown(schema.close);
@@ -529,15 +530,102 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 13);
+      await verifier.migrateAndValidate(dbForMigration, 14);
       await dbForMigration.close();
 
-      final checkDb = v13.DatabaseAtV13(schema.newConnection());
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
       addTearDown(checkDb.close);
 
       final usage = await checkDb.select(checkDb.productMaterials).getSingle();
       expect(usage.quantityUsed, 3);
       expect(usage.isCanceled, 0); // booleano: 0 = false
+    },
+  );
+
+  // --- v13 -> v14: eventos con estado (events.is_active) y registros
+  // predeterminados que no pueden quedar desactivados ---
+  test(
+    'Events: existing events come through the migration active (they had no '
+    'status before)',
+    () async {
+      final schema = await verifier.schemaAt(13);
+      addTearDown(schema.close);
+
+      final oldDb = v13.DatabaseAtV13(schema.newConnection());
+      final eventId = await oldDb.into(oldDb.events).insert(
+        v13.EventsCompanion.insert(name: 'Feria', startDate: 1704067200),
+      );
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 14);
+      await dbForMigration.close();
+
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final event = await (checkDb.select(
+        checkDb.events,
+      )..where((e) => e.id.equals(eventId))).getSingle();
+      expect(event.isActive, 1); // booleano: 1 = true
+      expect(event.name, 'Feria');
+    },
+  );
+
+  test(
+    'Default records: a "Sin categoría" / "Sin nombre" / "Sin proveedor" that '
+    'was deactivated in an older version is re-activated, and other inactive '
+    'records are left alone',
+    () async {
+      final schema = await verifier.schemaAt(13);
+      addTearDown(schema.close);
+
+      final oldDb = v13.DatabaseAtV13(schema.newConnection());
+      await oldDb.into(oldDb.categories).insert(
+        v13.CategoriesCompanion.insert(
+          name: 'Sin categoría',
+          isActive: const Value(0),
+        ),
+      );
+      final otherCategoryId = await oldDb.into(oldDb.categories).insert(
+        v13.CategoriesCompanion.insert(
+          name: 'Bisutería',
+          isActive: const Value(0),
+        ),
+      );
+      await oldDb.into(oldDb.clients).insert(
+        v13.ClientsCompanion.insert(
+          name: 'Sin nombre',
+          isActive: const Value(0),
+        ),
+      );
+      await oldDb.into(oldDb.suppliers).insert(
+        v13.SuppliersCompanion.insert(
+          name: 'Sin proveedor',
+          isActive: const Value(0),
+        ),
+      );
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 14);
+      await dbForMigration.close();
+
+      final checkDb = v14.DatabaseAtV14(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final categories = {
+        for (final c in await checkDb.select(checkDb.categories).get())
+          c.name: c.isActive,
+      };
+      expect(categories['Sin categoría'], 1);
+      expect(categories['Bisutería'], 0); // una inactiva cualquiera no se toca
+      expect(otherCategoryId, isNonZero);
+
+      final client = await checkDb.select(checkDb.clients).getSingle();
+      expect(client.isActive, 1);
+      final supplier = await checkDb.select(checkDb.suppliers).getSingle();
+      expect(supplier.isActive, 1);
     },
   );
 

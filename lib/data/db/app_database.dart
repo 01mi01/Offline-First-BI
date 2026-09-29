@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import '../../config/app_config.dart';
+import '../../models/default_records.dart';
 
 part 'app_database.g.dart';
 
@@ -196,6 +197,7 @@ class Events extends Table {
   DateTimeColumn get startDate => dateTime()();
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
   TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -334,11 +336,11 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
-  static const String defaultSupplierName = 'Sin proveedor';
+  static const String defaultSupplierName = DefaultRecords.supplier;
 
   // Semilla de unidades: nombre + tipo ("contenedor" admite fracciones
   // simples en la UI, "medida"/"otros" usan un número plano). Se usa tanto
@@ -691,6 +693,23 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(productMaterials, productMaterials.canceledAt);
         }
       }
+      if (from < 14) {
+        // Los eventos ahora se pueden desactivar (antes no tenían estado).
+        await m.addColumn(events, events.isActive);
+
+        // Los registros predeterminados ya no se pueden desactivar. Si en una
+        // versión anterior alguien desactivó alguno, se reactiva para que la
+        // protección valga también para instalaciones existentes.
+        await (update(categories)
+              ..where((c) => c.name.equals(DefaultRecords.category)))
+            .write(const CategoriesCompanion(isActive: Value(true)));
+        await (update(clients)
+              ..where((c) => c.name.equals(DefaultRecords.client)))
+            .write(const ClientsCompanion(isActive: Value(true)));
+        await (update(suppliers)
+              ..where((s) => s.name.equals(DefaultRecords.supplier)))
+            .write(const SuppliersCompanion(isActive: Value(true)));
+      }
     },
   );
 
@@ -764,7 +783,7 @@ class AppDatabase extends _$AppDatabase {
 
     // Categoría por defecto para productos sin categoría asignada
     await into(categories).insert(
-      CategoriesCompanion.insert(name: 'Sin categoría'),
+      CategoriesCompanion.insert(name: DefaultRecords.category),
     );
 
     // Unidades de medida para materiales
@@ -778,7 +797,7 @@ class AppDatabase extends _$AppDatabase {
     // Cliente por defecto para ventas sin identificar
     await into(clients).insert(
       ClientsCompanion.insert(
-        name: 'Sin nombre',
+        name: DefaultRecords.client,
         createdAt: Value(DateTime.now()),
         updatedAt: Value(DateTime.now()),
       ),

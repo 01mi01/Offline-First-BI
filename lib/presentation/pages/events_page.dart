@@ -8,6 +8,8 @@ import '../../theme/app_theme.dart';
 import '../dialogs/event_dialog.dart';
 import '../dialogs/location_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/status_badge.dart';
+import '../../config/date_formatters.dart';
 
 class EventsPage extends ConsumerWidget {
   const EventsPage({super.key});
@@ -170,23 +172,7 @@ class _EventCard extends StatelessWidget {
     required this.onEdit,
   });
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
+  String _formatDate(DateTime date) => formatDate(date);
 
   void _showDetail(BuildContext context) {
     showDialog(
@@ -380,6 +366,12 @@ class _EventCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  const SizedBox(height: AppSpacing.s4),
+                  StatusBadge.forState(
+                    isActive: event.isActive,
+                    activeLabel: 'Activo',
+                    inactiveLabel: 'Inactivo',
+                  ),
                 ],
               ),
             ),
@@ -472,28 +464,11 @@ class _LocationCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.s8,
-                            vertical: AppSpacing.s2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: location.isActive
-                                ? AppColors.success.withOpacity(0.1)
-                                : AppColors.error.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            location.isActive ? 'Activa' : 'Inactiva',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: location.isActive
-                                      ? AppColors.success
-                                      : AppColors.error,
-                                ),
-                          ),
-                        ),
+                        StatusBadge.forState(
+isActive: location.isActive,
+activeLabel: 'Activa',
+inactiveLabel: 'Inactiva',
+),
                         if (location.description != null &&
                             location.description!.isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.s12),
@@ -559,27 +534,11 @@ class _LocationCard extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.s4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s8,
-                      vertical: AppSpacing.s2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: location.isActive
-                          ? AppColors.success.withOpacity(0.1)
-                          : AppColors.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      location.isActive ? 'Activa' : 'Inactiva',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: location.isActive
-                            ? AppColors.success
-                            : AppColors.error,
-                      ),
-                    ),
-                  ),
+                  StatusBadge.forState(
+isActive: location.isActive,
+activeLabel: 'Activa',
+inactiveLabel: 'Inactiva',
+),
                 ],
               ),
             ),

@@ -7394,6 +7394,21 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
     'sincronizado',
   );
@@ -7451,6 +7466,7 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     startDate,
     endDate,
     notes,
+    isActive,
     sincronizado,
     supabaseId,
     createdAt,
@@ -7503,6 +7519,12 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
       context.handle(
         _notesMeta,
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
     if (data.containsKey('sincronizado')) {
@@ -7565,6 +7587,10 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
       sincronizado: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}sincronizado'],
@@ -7597,6 +7623,7 @@ class Event extends DataClass implements Insertable<Event> {
   final DateTime startDate;
   final DateTime? endDate;
   final String? notes;
+  final bool isActive;
   final bool sincronizado;
   final String? supabaseId;
   final DateTime createdAt;
@@ -7608,6 +7635,7 @@ class Event extends DataClass implements Insertable<Event> {
     required this.startDate,
     this.endDate,
     this.notes,
+    required this.isActive,
     required this.sincronizado,
     this.supabaseId,
     required this.createdAt,
@@ -7628,6 +7656,7 @@ class Event extends DataClass implements Insertable<Event> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['is_active'] = Variable<bool>(isActive);
     map['sincronizado'] = Variable<bool>(sincronizado);
     if (!nullToAbsent || supabaseId != null) {
       map['supabase_id'] = Variable<String>(supabaseId);
@@ -7653,6 +7682,7 @@ class Event extends DataClass implements Insertable<Event> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      isActive: Value(isActive),
       sincronizado: Value(sincronizado),
       supabaseId: supabaseId == null && nullToAbsent
           ? const Value.absent()
@@ -7676,6 +7706,7 @@ class Event extends DataClass implements Insertable<Event> {
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       endDate: serializer.fromJson<DateTime?>(json['endDate']),
       notes: serializer.fromJson<String?>(json['notes']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
       sincronizado: serializer.fromJson<bool>(json['sincronizado']),
       supabaseId: serializer.fromJson<String?>(json['supabaseId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -7692,6 +7723,7 @@ class Event extends DataClass implements Insertable<Event> {
       'startDate': serializer.toJson<DateTime>(startDate),
       'endDate': serializer.toJson<DateTime?>(endDate),
       'notes': serializer.toJson<String?>(notes),
+      'isActive': serializer.toJson<bool>(isActive),
       'sincronizado': serializer.toJson<bool>(sincronizado),
       'supabaseId': serializer.toJson<String?>(supabaseId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -7706,6 +7738,7 @@ class Event extends DataClass implements Insertable<Event> {
     DateTime? startDate,
     Value<DateTime?> endDate = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    bool? isActive,
     bool? sincronizado,
     Value<String?> supabaseId = const Value.absent(),
     DateTime? createdAt,
@@ -7717,6 +7750,7 @@ class Event extends DataClass implements Insertable<Event> {
     startDate: startDate ?? this.startDate,
     endDate: endDate.present ? endDate.value : this.endDate,
     notes: notes.present ? notes.value : this.notes,
+    isActive: isActive ?? this.isActive,
     sincronizado: sincronizado ?? this.sincronizado,
     supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
     createdAt: createdAt ?? this.createdAt,
@@ -7732,6 +7766,7 @@ class Event extends DataClass implements Insertable<Event> {
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       notes: data.notes.present ? data.notes.value : this.notes,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
       sincronizado: data.sincronizado.present
           ? data.sincronizado.value
           : this.sincronizado,
@@ -7752,6 +7787,7 @@ class Event extends DataClass implements Insertable<Event> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
+          ..write('isActive: $isActive, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
@@ -7768,6 +7804,7 @@ class Event extends DataClass implements Insertable<Event> {
     startDate,
     endDate,
     notes,
+    isActive,
     sincronizado,
     supabaseId,
     createdAt,
@@ -7783,6 +7820,7 @@ class Event extends DataClass implements Insertable<Event> {
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
           other.notes == this.notes &&
+          other.isActive == this.isActive &&
           other.sincronizado == this.sincronizado &&
           other.supabaseId == this.supabaseId &&
           other.createdAt == this.createdAt &&
@@ -7796,6 +7834,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
   final Value<DateTime> startDate;
   final Value<DateTime?> endDate;
   final Value<String?> notes;
+  final Value<bool> isActive;
   final Value<bool> sincronizado;
   final Value<String?> supabaseId;
   final Value<DateTime> createdAt;
@@ -7807,6 +7846,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -7819,6 +7859,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     required DateTime startDate,
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -7832,6 +7873,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
     Expression<String>? notes,
+    Expression<bool>? isActive,
     Expression<bool>? sincronizado,
     Expression<String>? supabaseId,
     Expression<DateTime>? createdAt,
@@ -7844,6 +7886,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       if (notes != null) 'notes': notes,
+      if (isActive != null) 'is_active': isActive,
       if (sincronizado != null) 'sincronizado': sincronizado,
       if (supabaseId != null) 'supabase_id': supabaseId,
       if (createdAt != null) 'created_at': createdAt,
@@ -7858,6 +7901,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Value<DateTime>? startDate,
     Value<DateTime?>? endDate,
     Value<String?>? notes,
+    Value<bool>? isActive,
     Value<bool>? sincronizado,
     Value<String?>? supabaseId,
     Value<DateTime>? createdAt,
@@ -7870,6 +7914,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       notes: notes ?? this.notes,
+      isActive: isActive ?? this.isActive,
       sincronizado: sincronizado ?? this.sincronizado,
       supabaseId: supabaseId ?? this.supabaseId,
       createdAt: createdAt ?? this.createdAt,
@@ -7898,6 +7943,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
     if (sincronizado.present) {
       map['sincronizado'] = Variable<bool>(sincronizado.value);
     }
@@ -7922,6 +7970,7 @@ class EventsCompanion extends UpdateCompanion<Event> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
+          ..write('isActive: $isActive, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
           ..write('createdAt: $createdAt, ')
@@ -18722,6 +18771,7 @@ typedef $$EventsTableCreateCompanionBuilder =
       required DateTime startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
+      Value<bool> isActive,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
       Value<DateTime> createdAt,
@@ -18735,6 +18785,7 @@ typedef $$EventsTableUpdateCompanionBuilder =
       Value<DateTime> startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
+      Value<bool> isActive,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
       Value<DateTime> createdAt,
@@ -18831,6 +18882,11 @@ class $$EventsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18962,6 +19018,11 @@ class $$EventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get sincronizado => $composableBuilder(
     column: $table.sincronizado,
     builder: (column) => ColumnOrderings(column),
@@ -19029,6 +19090,9 @@ class $$EventsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
 
   GeneratedColumn<bool> get sincronizado => $composableBuilder(
     column: $table.sincronizado,
@@ -19158,6 +19222,7 @@ class $$EventsTableTableManager
                 Value<DateTime> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -19169,6 +19234,7 @@ class $$EventsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
+                isActive: isActive,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,
                 createdAt: createdAt,
@@ -19182,6 +19248,7 @@ class $$EventsTableTableManager
                 required DateTime startDate,
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -19193,6 +19260,7 @@ class $$EventsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
+                isActive: isActive,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,
                 createdAt: createdAt,

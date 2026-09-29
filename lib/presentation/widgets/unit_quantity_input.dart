@@ -187,6 +187,7 @@ class _WholeNumberQuantityFieldState extends State<WholeNumberQuantityField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       controller: widget.controller,
       // Sin la opción decimal el teclado numérico estándar no ofrece el
       // punto; algunos teclados (p. ej. Samsung) lo muestran igual, por eso

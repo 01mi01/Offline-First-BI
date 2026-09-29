@@ -121,6 +121,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: AppSpacing.s8),
                         TextFormField(
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           controller: _usernameController,
                           style: const TextStyle(fontSize: 16),
                           decoration: const InputDecoration(
@@ -145,6 +146,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: AppSpacing.s8),
                         TextFormField(
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           style: const TextStyle(fontSize: 16),

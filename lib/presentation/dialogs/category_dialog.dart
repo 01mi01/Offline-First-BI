@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../application/category_provider.dart';
 import '../../models/category_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 
 class CategoryDialog extends ConsumerStatefulWidget {
   final CategoryModel? category;
@@ -21,7 +22,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   late final TextEditingController _descController;
   String? _imagePath;
   late bool _isActive;
-  bool _hasChanges = false;
   String? _saveError;
 
   @override
@@ -33,18 +33,13 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
     );
     _imagePath = widget.category?.image;
     _isActive = widget.category?.isActive ?? true;
-
-    _nameController.addListener(_checkChanges);
-    _descController.addListener(_checkChanges);
+    _nameController.addListener(_clearSaveError);
   }
 
-  void _checkChanges() {
-    final changed =
-        _nameController.text.trim() != (widget.category?.name ?? '') ||
-        _descController.text.trim() != (widget.category?.description ?? '') ||
-        _imagePath != widget.category?.image ||
-        _isActive != (widget.category?.isActive ?? true);
-    if (changed != _hasChanges) setState(() => _hasChanges = changed);
+  // Un error de guardado (p. ej. nombre repetido) deja de mostrarse en
+  // cuanto se corrige el nombre.
+  void _clearSaveError() {
+    if (_saveError != null) setState(() => _saveError = null);
   }
 
   @override
@@ -59,7 +54,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() => _imagePath = picked.path);
-      _checkChanges();
     }
   }
 
@@ -87,7 +81,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
       setState(() {
         _saveError = error;
         _isActive = true;
-        _hasChanges = false;
       });
       return;
     }
@@ -98,89 +91,16 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
       // Confirmar antes de desactivar
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            '¿Desactivar categoría?',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'La categoría "${_nameController.text.trim()}" no estará disponible para nuevos productos.',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                0,
-                AppSpacing.s16,
-                AppSpacing.s8,
-              ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text(
-                          'Cancelar',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text(
-                          'Desactivar',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: AppColors.surface),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+      final confirm = await confirmCancellation(
+        context,
+        title: '¿Desactivar categoría?',
+        message: 'La categoría "${_nameController.text.trim()}" no estará disponible para nuevos productos.',
+        confirmLabel: 'Desactivar',
+        dismissLabel: 'Cancelar',
       );
       if (confirm != true) return;
     }
     setState(() => _isActive = value);
-    _checkChanges();
   }
 
   @override
@@ -244,6 +164,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
               // Nombre
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
@@ -256,6 +177,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
               // Descripción
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _descController,
                 decoration: const InputDecoration(
                   labelText: 'Descripción',
@@ -372,7 +294,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                   const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _hasChanges ? _save : null,
+                      onPressed: _save,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
                         style: Theme.of(context).textTheme.headlineLarge

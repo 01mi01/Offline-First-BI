@@ -7,6 +7,8 @@ import '../../application/category_provider.dart';
 import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/unit_quantity_input.dart';
+import '../widgets/confirm_cancel_dialog.dart';
+import '../../models/default_records.dart';
 
 class ProductDialog extends ConsumerStatefulWidget {
   final ProductModel? product;
@@ -28,7 +30,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   String? _imagePath;
   int? _selectedCategoryId;
   late bool _isActive;
-  bool _hasChanges = false;
 
   @override
   void initState() {
@@ -56,35 +57,11 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     _selectedCategoryId = widget.product?.categoryId;
     _isActive = widget.product?.isActive ?? true;
 
-    _nameController.addListener(_checkChanges);
-    _descController.addListener(_checkChanges);
-    _priceAController.addListener(_checkChanges);
-    _priceBController.addListener(_checkChanges);
-    _costController.addListener(_checkChanges);
-    _stockController.addListener(_checkChanges);
   }
 
   // Muestra los precios sin ".0" sobrante ("50" en vez de "50.0").
   static String _formatPrice(double? value) =>
       value == null ? '' : formatNumber(value);
-
-  void _checkChanges() {
-    final changed =
-        _nameController.text.trim() != (widget.product?.name ?? '') ||
-        _descController.text.trim() != (widget.product?.description ?? '') ||
-        _priceAController.text.trim() !=
-            _formatPrice(widget.product?.priceA) ||
-        _priceBController.text.trim() !=
-            _formatPrice(widget.product?.priceB) ||
-        _costController.text.trim() !=
-            _formatPrice(widget.product?.productionCost) ||
-        _stockController.text.trim() !=
-            (widget.product?.stock.toString() ?? '0') ||
-        _imagePath != widget.product?.image ||
-        _selectedCategoryId != widget.product?.categoryId ||
-        _isActive != (widget.product?.isActive ?? true);
-    if (changed != _hasChanges) setState(() => _hasChanges = changed);
-  }
 
   @override
   void dispose() {
@@ -102,7 +79,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() => _imagePath = picked.path);
-      _checkChanges();
     }
   }
 
@@ -138,96 +114,35 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            '¿Desactivar producto?',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'El producto "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  0,
-                  AppSpacing.s16,
-                  AppSpacing.s8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text(
-                          'Desactivar',
-                          style: TextStyle(color: AppColors.surface),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+      final confirm = await confirmCancellation(
+        context,
+        title: '¿Desactivar producto?',
+        message: 'El producto "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
+        confirmLabel: 'Desactivar',
+        dismissLabel: 'Cancelar',
       );
       if (confirm != true) return;
     }
     setState(() => _isActive = value);
-    _checkChanges();
   }
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.product != null;
-    // Solo categorías activas en el dropdown
-    final categories = ref
-        .watch(categoryProvider)
-        .categories
-        .where((c) => c.isActive)
+    // Solo categorías activas en el dropdown (más la que ya tenía el producto
+    // que se edita). La categoría predeterminada se ofrece como la opción
+    // "Sin categoría" (valor nulo), no como una categoría más.
+    final allCategories = ref.watch(categoryProvider).categories;
+    final categories = allCategories
+        .where(
+          (c) => !c.isDefault && (c.isActive || c.id == _selectedCategoryId),
+        )
         .toList();
+    // El valor del selector solo puede ser una opción que exista en la lista:
+    // la categoría predeterminada es la opción nula.
+    final categoryValue = categories.any((c) => c.id == _selectedCategoryId)
+        ? _selectedCategoryId
+        : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -286,6 +201,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
               // Nombre
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
@@ -298,22 +214,27 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
               // Categoría
               DropdownButtonFormField<int>(
-                value: _selectedCategoryId,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                value: categoryValue,
                 decoration: const InputDecoration(labelText: 'Categoría'),
-                items: categories
-                    .map(
-                      (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
-                    )
-                    .toList(),
+                items: [
+                  const DropdownMenuItem<int>(
+                    value: null,
+                    child: Text(DefaultRecords.category),
+                  ),
+                  ...categories.map(
+                    (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
+                  ),
+                ],
                 onChanged: (val) {
                   setState(() => _selectedCategoryId = val);
-                  _checkChanges();
                 },
               ),
               const SizedBox(height: AppSpacing.s16),
 
               // Descripción
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _descController,
                 decoration: const InputDecoration(
                   labelText: 'Descripción',
@@ -325,6 +246,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
               // Precios de venta (A y B, independientes) y costo de producción
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _priceAController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -337,6 +259,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
               ),
               const SizedBox(height: AppSpacing.s16),
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _priceBController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -349,6 +272,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
               ),
               const SizedBox(height: AppSpacing.s16),
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _costController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -460,7 +384,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _hasChanges ? _save : null,
+                      onPressed: _save,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
                         style: Theme.of(context).textTheme.headlineLarge

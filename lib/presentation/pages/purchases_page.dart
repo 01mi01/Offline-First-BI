@@ -9,6 +9,7 @@ import '../../models/purchase_item_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/purchase_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../../config/date_formatters.dart';
 
 class PurchasesPage extends ConsumerWidget {
   const PurchasesPage({super.key});
@@ -224,23 +225,7 @@ class _PurchaseCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}  ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatDate(DateTime date) => formatDateTime(date);
 }
 
 // Diálogo de detalle de compra
@@ -282,23 +267,7 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
       });
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
-    ];
-    return '${date.day} de ${months[date.month - 1]} de ${date.year}, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatDate(DateTime date) => formatDateTime(date);
 
   @override
   Widget build(BuildContext context) {

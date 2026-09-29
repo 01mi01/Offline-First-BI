@@ -59,6 +59,7 @@ class SuppliersListBody extends ConsumerWidget {
                   name: s.name,
                   contactInfo: s.contactInfo,
                   isActive: s.isActive,
+                  isProtected: s.isDefault,
                   onEdit: () => _showDialog(context, s),
                 );
               },

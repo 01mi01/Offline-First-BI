@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
 import '../../models/report_models.dart';
 import '../../theme/app_theme.dart';
+import '../../config/date_formatters.dart';
 
 class ReportSaleCard extends ConsumerStatefulWidget {
   // Venta del reporte. Sus montos y su detalle se limitan a las líneas que
@@ -18,23 +19,7 @@ class ReportSaleCard extends ConsumerStatefulWidget {
 class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
   bool _expanded = false;
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}  ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatDate(DateTime date) => formatDateTime(date);
 
   // Detalle de la venta: solo las líneas incluidas en el reporte (todas las
   // líneas de la venta cuando no hay filtros por línea).

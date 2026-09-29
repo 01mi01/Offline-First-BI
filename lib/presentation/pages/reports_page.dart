@@ -39,8 +39,14 @@ class ReportsBody extends ConsumerStatefulWidget {
 class _ReportsBodyState extends ConsumerState<ReportsBody>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  ReportFilters _filters = const ReportFilters();
+  // Cada pestaña (Ventas / Compras) conserva sus propios filtros: cambiar de
+  // pestaña no arrastra las fechas ni el resto de filtros de la otra.
+  ReportFilters _salesFilters = const ReportFilters();
+  ReportFilters _purchaseFilters = const ReportFilters();
   int _currentTab = 0;
+
+  ReportFilters get _activeFilters =>
+      _currentTab == 0 ? _salesFilters : _purchaseFilters;
 
   @override
   void initState() {
@@ -69,8 +75,10 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
       return const Center(child: CircularProgressIndicator());
     }
 
-    final saleRows = ref.watch(saleReportRowsProvider(_filters));
-    final filteredPurchases = ref.watch(filteredPurchasesProvider(_filters));
+    final saleRows = ref.watch(saleReportRowsProvider(_salesFilters));
+    final filteredPurchases = ref.watch(
+      filteredPurchasesProvider(_purchaseFilters),
+    );
 
     return Column(
       children: [
@@ -95,8 +103,14 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
 
         // Panel de filtros
         ReportFiltersWidget(
-          filters: _filters,
-          onChanged: (f) => setState(() => _filters = f),
+          filters: _activeFilters,
+          onChanged: (f) => setState(() {
+            if (_currentTab == 0) {
+              _salesFilters = f;
+            } else {
+              _purchaseFilters = f;
+            }
+          }),
           activeTab: _currentTab,
         ),
 
@@ -106,12 +120,12 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
             controller: _tabController,
             children: [
               Container(
-                key: ValueKey(_filters.hashCode),
+                key: ValueKey(_salesFilters.hashCode),
                 color: AppColors.background,
                 child: _SalesTab(rows: saleRows),
               ),
               Container(
-                key: ValueKey(_filters.hashCode + 1),
+                key: ValueKey(_purchaseFilters.hashCode + 1),
                 color: AppColors.background,
                 child: _PurchasesTab(purchases: filteredPurchases),
               ),

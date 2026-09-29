@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/supplier_provider.dart';
 import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 
 class SupplierDialog extends ConsumerStatefulWidget {
   final SupplierModel? supplier;
@@ -19,7 +20,6 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _contactController;
   late bool _isActive;
-  bool _hasChanges = false;
   String? _saveError;
 
   @override
@@ -30,18 +30,13 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
       text: widget.supplier?.contactInfo ?? '',
     );
     _isActive = widget.supplier?.isActive ?? true;
-
-    _nameController.addListener(_checkChanges);
-    _contactController.addListener(_checkChanges);
+    _nameController.addListener(_clearSaveError);
   }
 
-  void _checkChanges() {
-    final changed =
-        _nameController.text.trim() != (widget.supplier?.name ?? '') ||
-        _contactController.text.trim() !=
-            (widget.supplier?.contactInfo ?? '') ||
-        _isActive != (widget.supplier?.isActive ?? true);
-    if (changed != _hasChanges) setState(() => _hasChanges = changed);
+  // Un error de guardado (p. ej. nombre repetido) deja de mostrarse en
+  // cuanto se corrige el nombre.
+  void _clearSaveError() {
+    if (_saveError != null) setState(() => _saveError = null);
   }
 
   @override
@@ -81,85 +76,16 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
 
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            '¿Desactivar proveedor?',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'El proveedor "${_nameController.text.trim()}" no estará disponible para nuevas compras.',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                0,
-                AppSpacing.s16,
-                AppSpacing.s8,
-              ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text(
-                          'Desactivar',
-                          style: TextStyle(color: AppColors.surface),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+      final confirm = await confirmCancellation(
+        context,
+        title: '¿Desactivar proveedor?',
+        message: 'El proveedor "${_nameController.text.trim()}" no estará disponible para nuevas compras.',
+        confirmLabel: 'Desactivar',
+        dismissLabel: 'Cancelar',
       );
       if (confirm != true) return;
     }
     setState(() => _isActive = value);
-    _checkChanges();
   }
 
   @override
@@ -192,6 +118,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
 
               // Nombre
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
@@ -204,6 +131,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
 
               // Información de contacto
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _contactController,
                 decoration: const InputDecoration(
                   labelText: 'Información de contacto',
@@ -315,7 +243,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
                   const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _hasChanges ? _save : null,
+                      onPressed: _save,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
                         style: Theme.of(context).textTheme.headlineLarge

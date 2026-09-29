@@ -12,6 +12,8 @@ import '../dialogs/material_dialog.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
+import '../widgets/focus_utils.dart';
+import '../../models/default_records.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
   final PurchaseModel? purchase;
@@ -39,6 +41,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   @override
   void initState() {
     super.initState();
+    // Un aviso de "El total debe ser mayor a 0" desaparece al corregir el total.
+    _totalController.addListener(_clearError);
     if (widget.purchase != null) {
       _selectedSupplierId = widget.purchase!.supplierId;
       _isMaterial = widget.purchase!.isMaterial;
@@ -73,6 +77,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     }
   }
 
+  void _clearError() {
+    if (_error != null && mounted) setState(() => _error = null);
+  }
+
   @override
   void dispose() {
     _descriptionController.dispose();
@@ -91,6 +99,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   }
 
   void _showAddSupplierSheet() {
+    dismissKeyboard();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -111,6 +120,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   }
 
   void _showAddMaterialItem() {
+    dismissKeyboard();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -122,6 +132,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       builder: (_) => _AddMaterialItemSheet(
         onAdded: (item) {
           setState(() {
+            _error = null;
             final index = _materialItems.indexWhere(
               (i) => i['materialId'] == item['materialId'],
             );
@@ -210,11 +221,20 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.purchase != null;
-    final suppliers = ref
-        .watch(supplierProvider)
-        .suppliers
-        .where((s) => s.isActive)
+    final allSuppliers = ref.watch(supplierProvider).suppliers;
+    // El proveedor predeterminado se ofrece como la opción "Sin proveedor"
+    // (valor nulo), no como un proveedor más; un proveedor inactivo solo
+    // aparece si es el que ya tenía la compra que se edita.
+    final suppliers = allSuppliers
+        .where(
+          (s) => !s.isDefault && (s.isActive || s.id == _selectedSupplierId),
+        )
         .toList();
+    // El valor del selector solo puede ser una opción que exista en la lista:
+    // el proveedor predeterminado es la opción nula.
+    final supplierValue = suppliers.any((s) => s.id == _selectedSupplierId)
+        ? _selectedSupplierId
+        : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -281,6 +301,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       value: _isMaterial,
                       onChanged: (val) {
                         setState(() {
+                          _error = null;
                           _isMaterial = val;
                           _materialItems.clear();
                           _totalController.clear();
@@ -303,16 +324,21 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      value: _selectedSupplierId,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      value: supplierValue,
                       decoration: const InputDecoration(labelText: 'Proveedor'),
-                      items: suppliers
-                          .map(
-                            (s) => DropdownMenuItem(
-                              value: s.id,
-                              child: Text(s.name),
-                            ),
-                          )
-                          .toList(),
+                      items: [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          child: Text(DefaultRecords.supplier),
+                        ),
+                        ...suppliers.map(
+                          (s) => DropdownMenuItem(
+                            value: s.id,
+                            child: Text(s.name),
+                          ),
+                        ),
+                      ],
                       onChanged: (val) => setState(() {
                         _selectedSupplierId = val;
                         _error = null;
@@ -341,6 +367,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
               // Selector de ubicación
               DropdownButtonFormField<int>(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 value: _selectedLocationId,
                 decoration: const InputDecoration(labelText: 'Ubicación'),
                 items: [
@@ -366,7 +393,21 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
               // Selector de evento
               DropdownButtonFormField<int>(
-                value: _selectedEventId,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                // Solo una opción existente puede ser el valor: mientras los eventos
+                // cargan (o si el evento ya no está disponible) el campo queda
+                // en "Sin evento" sin romper el selector.
+                value:
+                    ref
+                        .watch(eventProvider)
+                        .events
+                        .any(
+                          (e) =>
+                              e.id == _selectedEventId &&
+                              (e.isActive || e.id == _selectedEventId),
+                        )
+                    ? _selectedEventId
+                    : null,
                 decoration: const InputDecoration(labelText: 'Evento'),
                 items: [
                   const DropdownMenuItem(
@@ -376,6 +417,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   ...ref
                       .watch(eventProvider)
                       .events
+                      .where((e) => e.isActive || e.id == _selectedEventId)
                       .map(
                         (e) =>
                             DropdownMenuItem(value: e.id, child: Text(e.name)),
@@ -477,6 +519,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                             item['quantity'] as double;
                                         if (current <= 1) return;
                                         setState(() {
+                                          _error = null;
                                           _materialItems[index]['quantity'] =
                                               current - 1;
                                           _recalcTotal();
@@ -523,6 +566,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                         final current =
                                             item['quantity'] as double;
                                         setState(() {
+                                          _error = null;
                                           _materialItems[index]['quantity'] =
                                               current + 1;
                                           _recalcTotal();
@@ -567,6 +611,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           GestureDetector(
                             onTap: () {
                               setState(() {
+                                _error = null;
                                 _materialItems.removeAt(index);
                                 _recalcTotal();
                               });
@@ -585,6 +630,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
                 // Total calculado automáticamente
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _totalController,
                   readOnly: true,
                   decoration: const InputDecoration(labelText: 'Total (Bs.)'),
@@ -592,6 +638,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
               ] else ...[
                 // Gasto general
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _descriptionController,
                   decoration: const InputDecoration(
                     labelText: 'Descripción del gasto',
@@ -603,6 +650,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ),
                 const SizedBox(height: AppSpacing.s16),
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _totalController,
                   keyboardType: TextInputType.number,
                   inputFormatters: [
@@ -630,6 +678,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
               // Notas
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _notesController,
                 decoration: const InputDecoration(
                   labelText: 'Notas',
@@ -754,6 +803,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
   }
 
   void _showCreateMaterialSheet() {
+    dismissKeyboard();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -811,6 +861,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
             // Selector de material existente
             DropdownButtonFormField<int>(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               value: _selectedMaterialId,
               decoration: const InputDecoration(labelText: 'Material'),
               items: materials
@@ -877,6 +928,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                   );
                 }
                 return TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _quantityController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -913,6 +965,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
             // Precio por unidad
             TextFormField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               controller: _priceController,
               keyboardType: TextInputType.number,
               inputFormatters: [

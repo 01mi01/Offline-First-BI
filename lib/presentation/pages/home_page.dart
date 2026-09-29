@@ -11,6 +11,7 @@ import '../pages/sales_page.dart';
 import '../pages/purchases_page.dart';
 import '../pages/inventario_page.dart';
 import '../pages/reports_page.dart';
+import '../../config/date_formatters.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -220,23 +221,7 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
+  String _formatDate(DateTime date) => formatDateTime(date);
 }
 
 // Tarjeta de métricaS

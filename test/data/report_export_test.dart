@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:excel/excel.dart' as xl;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offline_first_bi/config/date_formatters.dart';
 import 'package:offline_first_bi/data/repositories/report_export_repository.dart';
 import 'package:offline_first_bi/models/purchase_item_model.dart';
 import 'package:offline_first_bi/models/purchase_model.dart';
@@ -643,6 +644,78 @@ void main() {
       await repository.exportPurchasesExcel(title: 'Solo gastos', rows: [generalExpense()]);
       final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
       expect(xl.Excel.decodeBytes(bytes).tables.containsKey('Detalle'), isFalse);
+    });
+  });
+
+  group('export file names are readable and date-based', () {
+    String lastSharedName() => File(fakeShare.shareCalls.last.single.path).uri.pathSegments.last;
+    final today = formatDateForFileName(DateTime.now());
+
+    test('sales PDF: Reporte_de_Ventas_<yyyy-MM-dd>.pdf (no epoch timestamp)', () async {
+      await repository.exportSalesPdf(
+        title: 'Reporte de Ventas',
+        rows: filteredSaleRows,
+        summary: const SalesSummary(count: 1, totalAmount: 200, totalDiscount: 0),
+      );
+      expect(lastSharedName(), 'Reporte_de_Ventas_$today.pdf');
+    });
+
+    test('sales Excel: Reporte_de_Ventas_<yyyy-MM-dd>.xlsx', () async {
+      await repository.exportSalesExcel(title: 'Reporte de Ventas', rows: filteredSaleRows);
+      expect(lastSharedName(), 'Reporte_de_Ventas_$today.xlsx');
+    });
+
+    test('purchases PDF and Excel follow the same pattern', () async {
+      await repository.exportPurchasesPdf(
+        title: 'Reporte de Compras',
+        rows: filteredPurchaseRows,
+        summary: const PurchasesSummary(count: 1, totalAmount: 100, materialCount: 1),
+      );
+      expect(lastSharedName(), 'Reporte_de_Compras_$today.pdf');
+
+      await repository.exportPurchasesExcel(title: 'Reporte de Compras', rows: filteredPurchaseRows);
+      expect(lastSharedName(), 'Reporte_de_Compras_$today.xlsx');
+    });
+
+    test('the name has no long run of digits (a millisecond timestamp)', () async {
+      await repository.exportSalesPdf(
+        title: 'Reporte de Ventas',
+        rows: filteredSaleRows,
+        summary: const SalesSummary(count: 1, totalAmount: 200, totalDiscount: 0),
+      );
+      expect(RegExp(r'\d{10,}').hasMatch(lastSharedName()), isFalse);
+    });
+  });
+
+  group('dates inside the exports use the app-wide dd/MM/yyyy format', () {
+    test('PDF: sale dates, purchase dates and the generation stamp', () async {
+      await repository.exportSalesPdf(
+        title: 'Reporte de Ventas',
+        rows: filteredSaleRows, // venta del 01/01/2024
+        summary: const SalesSummary(count: 1, totalAmount: 200, totalDiscount: 0),
+      );
+      var text = PdfText.extract(
+        await File(fakeShare.shareCalls.last.single.path).readAsBytes(),
+      ).text;
+      expect(text, contains('01/01/2024'));
+      expect(text, contains('Generado el ${formatDate(DateTime.now())}'));
+
+      await repository.exportPurchasesPdf(
+        title: 'Reporte de Compras',
+        rows: filteredPurchaseRows,
+        summary: const PurchasesSummary(count: 1, totalAmount: 100, materialCount: 1),
+      );
+      text = PdfText.extract(
+        await File(fakeShare.shareCalls.last.single.path).readAsBytes(),
+      ).text;
+      expect(text, contains('01/01/2024'));
+    });
+
+    test('Excel: the date column is dd/MM/yyyy', () async {
+      await repository.exportSalesExcel(title: 'Reporte de Ventas', rows: filteredSaleRows);
+      final bytes = await File(fakeShare.shareCalls.last.single.path).readAsBytes();
+      final sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
+      expect(sheet.rows[1][0]!.value, xl.TextCellValue('01/01/2024'));
     });
   });
 

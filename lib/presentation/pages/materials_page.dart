@@ -11,6 +11,7 @@ import '../dialogs/material_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/unit_quantity_input.dart';
+import '../widgets/status_badge.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -312,7 +313,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                                   ),
                                   if (entry.isCanceled) ...[
                                     const SizedBox(width: AppSpacing.s8),
-                                    const CanceledBadge(label: 'Cancelado'),
+                                    const StatusBadge.canceled(label: 'Cancelado'),
                                   ],
                                 ],
                               ),
@@ -380,6 +381,18 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
   int? _selectedMaterialId;
   double _fractionQuantity = 0;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _quantityController.addListener(_clearError);
+  }
+
+  // Un aviso de error (p. ej. "Selecciona una cantidad") desaparece en cuanto
+  // la persona cambia la cantidad o el material.
+  void _clearError() {
+    if (_error != null) setState(() => _error = null);
+  }
 
   @override
   void dispose() {
@@ -482,6 +495,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
 
             // Selector de material con stock visible
             DropdownButtonFormField<int>(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               value: _selectedMaterialId,
               decoration: const InputDecoration(labelText: 'Material'),
               items: materials
@@ -489,7 +503,10 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                     (m) => DropdownMenuItem(value: m.id, child: Text(m.name)),
                   )
                   .toList(),
-              onChanged: (val) => setState(() => _selectedMaterialId = val),
+              onChanged: (val) => setState(() {
+                _selectedMaterialId = val;
+                _error = null;
+              }),
               validator: (v) => v == null ? 'Selecciona un material' : null,
             ),
             // Muestra el stock disponible del material seleccionado
@@ -517,7 +534,10 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
               FractionQuantityPicker(
                 unit: selectedUnit.name,
                 value: _fractionQuantity,
-                onChanged: (v) => setState(() => _fractionQuantity = v),
+                onChanged: (v) => setState(() {
+                  _fractionQuantity = v;
+                  _error = null;
+                }),
                 label: 'Cantidad utilizada',
               )
             else if (selectedUnit != null &&
@@ -528,6 +548,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
               )
             else
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _quantityController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -637,7 +658,6 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   late final TextEditingController _quantityController;
   late double _fractionQuantity;
   String? _error;
-  bool _hasChanges = false;
 
   bool get _usesFractions =>
       isFractionFriendlyUnitType(widget.entry.materialUnitType);
@@ -655,15 +675,13 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
       text: formatNumber(widget.entry.quantityUsed),
     );
     _fractionQuantity = widget.entry.quantityUsed;
-    _quantityController.addListener(_checkChanges);
+    _quantityController.addListener(_clearError);
   }
 
-  void _checkChanges() {
-    final changed = _usesFractions
-        ? _fractionQuantity != widget.entry.quantityUsed
-        : _quantityController.text.trim() !=
-              formatNumber(widget.entry.quantityUsed);
-    if (changed != _hasChanges) setState(() => _hasChanges = changed);
+  // Un aviso de error (p. ej. "Selecciona una cantidad") desaparece en cuanto
+  // la persona cambia la cantidad o el material.
+  void _clearError() {
+    if (_error != null) setState(() => _error = null);
   }
 
   @override
@@ -750,8 +768,10 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                 unit: widget.entry.materialUnitName,
                 value: _fractionQuantity,
                 onChanged: (v) {
-                  setState(() => _fractionQuantity = v);
-                  _checkChanges();
+                  setState(() {
+                    _fractionQuantity = v;
+                    _error = null;
+                  });
                 },
                 label: 'Nueva cantidad',
               ),
@@ -774,6 +794,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
               )
             else
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _quantityController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -853,7 +874,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                 const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _hasChanges ? _save : null,
+                    onPressed: _save,
                     child: Text(
                       'Guardar',
                       style: Theme.of(context).textTheme.headlineLarge
@@ -940,27 +961,11 @@ class _MaterialCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.s4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s8,
-                    vertical: AppSpacing.s2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: material.isActive
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    material.isActive ? 'Activo' : 'Inactivo',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: material.isActive
-                          ? AppColors.success
-                          : AppColors.error,
-                    ),
-                  ),
-                ),
+                StatusBadge.forState(
+isActive: material.isActive,
+activeLabel: 'Activo',
+inactiveLabel: 'Inactivo',
+),
               ],
             ),
           ),

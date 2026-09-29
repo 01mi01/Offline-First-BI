@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import '../../application/category_provider.dart';
 import '../../models/category_model.dart';
+import '../widgets/protected_record_icon.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/category_dialog.dart';
+import '../widgets/status_badge.dart';
 
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
@@ -263,38 +265,25 @@ class _CategoryCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: AppSpacing.s4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s8,
-                    vertical: AppSpacing.s2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: category.isActive
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    category.isActive ? 'Activa' : 'Inactiva',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: category.isActive
-                          ? AppColors.success
-                          : AppColors.error,
-                    ),
-                  ),
-                ),
+                StatusBadge.forState(
+isActive: category.isActive,
+activeLabel: 'Activa',
+inactiveLabel: 'Inactiva',
+),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.edit_outlined,
-              color: AppColors.primary,
-              size: 20,
+          if (category.isDefault)
+            const ProtectedRecordIcon()
+          else
+            IconButton(
+              icon: const Icon(
+                Icons.edit_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              onPressed: onEdit,
             ),
-            onPressed: onEdit,
-          ),
         ],
       ),
     );

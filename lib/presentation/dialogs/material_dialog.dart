@@ -5,6 +5,7 @@ import '../../application/material_provider.dart';
 import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 
 class MaterialDialog extends ConsumerStatefulWidget {
   final MaterialModel? material;
@@ -30,7 +31,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   late final TextEditingController _priceController;
   int? _selectedUnitId;
   late bool _isActive;
-  bool _hasChanges = false;
 
   @override
   void initState() {
@@ -52,23 +52,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     _selectedUnitId = widget.material?.unitId;
     _isActive = widget.material?.isActive ?? true;
 
-    _nameController.addListener(_checkChanges);
-    _descController.addListener(_checkChanges);
-    _stockController.addListener(_checkChanges);
-    _priceController.addListener(_checkChanges);
-  }
-
-  void _checkChanges() {
-    final changed =
-        _nameController.text.trim() != (widget.material?.name ?? '') ||
-        _descController.text.trim() != (widget.material?.description ?? '') ||
-        _stockController.text.trim() !=
-            (widget.material != null ? formatNumber(widget.material!.stock) : '0') ||
-        _priceController.text.trim() !=
-            (widget.material != null ? formatNumber(widget.material!.pricePerUnit) : '') ||
-        _selectedUnitId != widget.material?.unitId ||
-        _isActive != (widget.material?.isActive ?? true);
-    if (changed != _hasChanges) setState(() => _hasChanges = changed);
   }
 
   @override
@@ -107,85 +90,16 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
 
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            '¿Desactivar material?',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'El material "${_nameController.text.trim()}" no estará disponible para nuevas compras y productos.',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  0,
-                  AppSpacing.s16,
-                  AppSpacing.s8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.s14,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text(
-                          'Desactivar',
-                          style: TextStyle(color: AppColors.surface),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+      final confirm = await confirmCancellation(
+        context,
+        title: '¿Desactivar material?',
+        message: 'El material "${_nameController.text.trim()}" no estará disponible para nuevas compras y productos.',
+        confirmLabel: 'Desactivar',
+        dismissLabel: 'Cancelar',
       );
       if (confirm != true) return;
     }
     setState(() => _isActive = value);
-    _checkChanges();
   }
 
   @override
@@ -219,6 +133,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
 
               // Nombre
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
@@ -231,6 +146,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
 
               // Descripción
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _descController,
                 decoration: const InputDecoration(
                   labelText: 'Descripción',
@@ -242,6 +158,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
 
               // Unidad de medida
               DropdownButtonFormField<int>(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 value: _selectedUnitId,
                 decoration: const InputDecoration(labelText: 'Unidad'),
                 items: units
@@ -251,7 +168,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                     .toList(),
                 onChanged: (val) {
                   setState(() => _selectedUnitId = val);
-                  _checkChanges();
                 },
                 validator: (v) => v == null ? 'Selecciona una unidad' : null,
               ),
@@ -259,6 +175,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
 
               // Stock y precio por unidad
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _stockController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [
@@ -268,10 +185,11 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                   labelText: 'Stock',
                   hintText: '0',
                 ),
-                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: AppSpacing.s16),
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _priceController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [
@@ -281,7 +199,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                   labelText: 'Precio por unidad',
                   hintText: '0',
                 ),
-                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: AppSpacing.s20),
 
@@ -362,7 +280,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                   const SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _hasChanges ? _save : null,
+                      onPressed: _save,
                       child: Text(
                         isEditing ? 'Guardar' : 'Crear',
                         style: Theme.of(context).textTheme.headlineLarge

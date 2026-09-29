@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../../models/default_records.dart';
 import '../../models/product_model.dart';
 
 class ProductRepository {
@@ -80,11 +81,11 @@ class ProductRepository {
   Future<int> _defaultCategoryId() async {
     final existing = await (database.select(
       database.categories,
-    )..where((c) => c.name.equals('Sin categoría'))).getSingleOrNull();
+    )..where((c) => c.name.equals(DefaultRecords.category))).getSingleOrNull();
     if (existing != null) return existing.id;
     return await database
         .into(database.categories)
-        .insert(CategoriesCompanion.insert(name: 'Sin categoría'));
+        .insert(CategoriesCompanion.insert(name: DefaultRecords.category));
   }
 
   // Actualiza el stock de un producto

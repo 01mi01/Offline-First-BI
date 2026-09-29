@@ -1,5 +1,6 @@
 import '../../data/db/app_database.dart';
 import '../../models/category_model.dart';
+import '../../models/default_records.dart';
 import 'package:drift/drift.dart';
 
 class CategoryRepository {
@@ -37,6 +38,22 @@ class CategoryRepository {
     return rows.map(_toModel).toList();
   }
 
+  // "Sin categoría" es un registro predeterminado: no se puede editar ni
+  // desactivar, y ninguna otra categoría puede usar su nombre.
+  Future<void> _ensureNotProtected({int? id, String? newName}) async {
+    if (id != null) {
+      final current = await (database.select(
+        database.categories,
+      )..where((c) => c.id.equals(id))).getSingleOrNull();
+      if (current != null && DefaultRecords.isCategory(current.name)) {
+        throw const ProtectedRecordException();
+      }
+    }
+    if (newName != null && DefaultRecords.isCategory(newName)) {
+      throw const ProtectedRecordException(DefaultRecords.reservedNameMessage);
+    }
+  }
+
   // Guarda o actualiza una categoría
   Future<void> save({
     int? id,
@@ -45,6 +62,7 @@ class CategoryRepository {
     String? image,
     bool isActive = true,
   }) async {
+    await _ensureNotProtected(id: id, newName: name);
     final now = DateTime.now();
     await database
         .into(database.categories)
@@ -73,6 +91,7 @@ class CategoryRepository {
 
   // Desactiva una categoría
   Future<void> deactivate(int id) async {
+    await _ensureNotProtected(id: id);
     await (database.update(
       database.categories,
     )..where((c) => c.id.equals(id))).write(

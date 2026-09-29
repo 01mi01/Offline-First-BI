@@ -7,6 +7,7 @@ class EventModel {
   final DateTime? endDate;
   final String? notes;
   final DateTime createdAt;
+  final bool isActive;
 
   EventModel({
     required this.id,
@@ -16,5 +17,6 @@ class EventModel {
     this.endDate,
     this.notes,
     required this.createdAt,
+    this.isActive = true,
   });
 }

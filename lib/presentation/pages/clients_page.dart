@@ -6,6 +6,8 @@ import '../../models/client_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/client_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/protected_record_icon.dart';
+import '../widgets/status_badge.dart';
 
 // Página de Clientes, con su propio módulo de permisos ("clientes"),
 // independiente de Proveedores.
@@ -59,6 +61,7 @@ class ClientsListBody extends ConsumerWidget {
                   name: c.name,
                   contactInfo: c.contactInfo,
                   isActive: c.isActive,
+                  isProtected: c.isDefault,
                   onEdit: () => _showDialog(context, c),
                 );
               },
@@ -86,6 +89,9 @@ class ContactCard extends StatefulWidget {
   final String name;
   final String? contactInfo;
   final bool isActive;
+  // Registro predeterminado del sistema: se muestra con candado en lugar del
+  // botón de editar.
+  final bool isProtected;
   final VoidCallback onEdit;
 
   const ContactCard({
@@ -93,6 +99,7 @@ class ContactCard extends StatefulWidget {
     required this.name,
     required this.contactInfo,
     required this.isActive,
+    this.isProtected = false,
     required this.onEdit,
   });
 
@@ -284,38 +291,25 @@ class _ContactCardState extends State<ContactCard> {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.s4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s8,
-                      vertical: AppSpacing.s2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: widget.isActive
-                          ? AppColors.success.withOpacity(0.1)
-                          : AppColors.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      widget.isActive ? 'Activo' : 'Inactivo',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: widget.isActive
-                            ? AppColors.success
-                            : AppColors.error,
-                      ),
-                    ),
-                  ),
+                  StatusBadge.forState(
+isActive: widget.isActive,
+activeLabel: 'Activo',
+inactiveLabel: 'Inactivo',
+),
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.edit_outlined,
-                color: AppColors.primary,
-                size: 20,
+            if (widget.isProtected)
+              const ProtectedRecordIcon()
+            else
+              IconButton(
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                onPressed: widget.onEdit,
               ),
-              onPressed: widget.onEdit,
-            ),
           ],
         ),
       ),
