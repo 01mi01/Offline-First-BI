@@ -233,7 +233,7 @@ class _PurchasesTab extends ConsumerWidget {
               valueColor: AppColors.error,
             ),
             _SummaryTile(
-              label: 'Materiales',
+              label: materialsSummaryLabel(summary.materialCount),
               value: '${summary.materialCount}',
               valueColor: AppColors.primary,
             ),
@@ -334,6 +334,10 @@ class _SummaryTile extends StatelessWidget {
     );
   }
 }
+
+// Etiqueta del conteo de compras de materiales en el resumen: "1 Material" en
+// singular, "N Materiales" en cualquier otro caso (incluido 0).
+String materialsSummaryLabel(int count) => count == 1 ? 'Material' : 'Materiales';
 
 // Botón ver reporte completo
 class _ViewFullReportButton extends StatelessWidget {

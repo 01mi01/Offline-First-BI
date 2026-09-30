@@ -341,7 +341,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                           IconButton(
                             icon: const Icon(
                               Icons.cancel_outlined,
-                              color: AppColors.error,
+                              color: AppColors.errorDark,
                               size: 20,
                             ),
                             tooltip: 'Cancelar registro',

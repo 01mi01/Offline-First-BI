@@ -231,9 +231,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     // nulo), no como un cliente más; un cliente inactivo solo aparece si es el
     // que ya tenía la venta que se edita.
     final clients = allClients
-        .where(
-          (c) => !c.isDefault && (c.isActive || c.id == _selectedClientId),
-        )
+        .where((c) => !c.isDefault && (c.isActive || c.id == _selectedClientId))
         .toList();
     // El valor del selector solo puede ser una opción que exista en la lista:
     // el cliente predeterminado es la opción nula, y mientras los clientes
@@ -256,518 +254,549 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       ),
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Título
-              Text(
-                isEditing ? 'Editar venta' : 'Nueva venta',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Título (fijo)
+            Text(
+              isEditing ? 'Editar venta' : 'Nueva venta',
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: AppSpacing.s24),
+            ),
+            const SizedBox(height: AppSpacing.s24),
 
-              // Selector de cliente con opción de crear nuevo
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      value: clientValue,
-                      decoration: const InputDecoration(labelText: 'Cliente'),
-                      items: [
-                        const DropdownMenuItem<int>(
-                          value: null,
-                          child: Text(DefaultRecords.client),
+            // El formulario se desplaza; los botones quedan siempre a la vista.
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: AppSpacing.s4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Selector de cliente con opción de crear nuevo
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            autovalidateMode:
+                                AutovalidateMode.onUserInteraction,
+                            value: clientValue,
+                            decoration: const InputDecoration(
+                              labelText: 'Cliente',
+                            ),
+                            items: [
+                              const DropdownMenuItem<int>(
+                                value: null,
+                                child: Text(DefaultRecords.client),
+                              ),
+                              ...clients.map(
+                                (c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: Text(c.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (val) => setState(() {
+                              _selectedClientId = val;
+                              _error = null;
+                            }),
+                          ),
                         ),
-                        ...clients.map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
+                        const SizedBox(width: AppSpacing.s8),
+                        // Botón para agregar nuevo cliente
+                        GestureDetector(
+                          onTap: _showAddClientSheet,
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSpacing.s12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.person_add_outlined,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
                           ),
                         ),
                       ],
-                      onChanged: (val) => setState(() {
-                        _selectedClientId = val;
-                        _error = null;
-                      }),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.s8),
-                  // Botón para agregar nuevo cliente
-                  GestureDetector(
-                    onTap: _showAddClientSheet,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.s12),
+                    const SizedBox(height: AppSpacing.s20),
+
+                    // Selector de ubicación
+                    DropdownButtonFormField<int>(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      value: _selectedLocationId,
+                      decoration: const InputDecoration(labelText: 'Ubicación'),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Sin ubicación'),
+                        ),
+                        ...ref
+                            .watch(locationProvider)
+                            .locations
+                            .where((l) => l.isActive)
+                            .map(
+                              (l) => DropdownMenuItem(
+                                value: l.id,
+                                child: Text('${l.city}, ${l.country}'),
+                              ),
+                            )
+                            .toList(),
+                      ],
+                      onChanged: (val) =>
+                          setState(() => _selectedLocationId = val),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Selector de evento
+                    DropdownButtonFormField<int>(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      // Solo una opción existente puede ser el valor: mientras los eventos
+                      // cargan (o si el evento ya no está disponible) el campo queda
+                      // en "Sin evento" sin romper el selector.
+                      value:
+                          ref
+                              .watch(eventProvider)
+                              .events
+                              .any(
+                                (e) =>
+                                    e.id == _selectedEventId &&
+                                    (e.isActive || e.id == _selectedEventId),
+                              )
+                          ? _selectedEventId
+                          : null,
+                      decoration: const InputDecoration(labelText: 'Evento'),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Sin evento'),
+                        ),
+                        ...ref
+                            .watch(eventProvider)
+                            .events
+                            .where(
+                              (e) => e.isActive || e.id == _selectedEventId,
+                            )
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.id,
+                                child: Text(e.name),
+                              ),
+                            )
+                            .toList(),
+                      ],
+                      onChanged: (val) =>
+                          setState(() => _selectedEventId = val),
+                    ),
+                    const SizedBox(height: AppSpacing.s20),
+
+                    // Lista de productos activos para agregar
+                    Text(
+                      'Productos',
+                      style: Theme.of(context).textTheme.displayMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.s8),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 200),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
                       ),
-                      child: const Icon(
-                        Icons.person_add_outlined,
-                        color: AppColors.primary,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Selector de ubicación
-              DropdownButtonFormField<int>(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                value: _selectedLocationId,
-                decoration: const InputDecoration(labelText: 'Ubicación'),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Sin ubicación'),
-                  ),
-                  ...ref
-                      .watch(locationProvider)
-                      .locations
-                      .where((l) => l.isActive)
-                      .map(
-                        (l) => DropdownMenuItem(
-                          value: l.id,
-                          child: Text('${l.city}, ${l.country}'),
-                        ),
-                      )
-                      .toList(),
-                ],
-                onChanged: (val) => setState(() => _selectedLocationId = val),
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Selector de evento
-              DropdownButtonFormField<int>(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                // Solo una opción existente puede ser el valor: mientras los eventos
-                // cargan (o si el evento ya no está disponible) el campo queda
-                // en "Sin evento" sin romper el selector.
-                value:
-                    ref
-                        .watch(eventProvider)
-                        .events
-                        .any(
-                          (e) =>
-                              e.id == _selectedEventId &&
-                              (e.isActive || e.id == _selectedEventId),
-                        )
-                    ? _selectedEventId
-                    : null,
-                decoration: const InputDecoration(labelText: 'Evento'),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Sin evento'),
-                  ),
-                  ...ref
-                      .watch(eventProvider)
-                      .events
-                      .where((e) => e.isActive || e.id == _selectedEventId)
-                      .map(
-                        (e) =>
-                            DropdownMenuItem(value: e.id, child: Text(e.name)),
-                      )
-                      .toList(),
-                ],
-                onChanged: (val) => setState(() => _selectedEventId = val),
-              ),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Lista de productos activos para agregar
-              Text(
-                'Productos',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s8),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 200),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.s8),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    final p = products[index];
-                    final inCart = _cartItems.containsKey(p.id);
-                    return ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s12,
-                      ),
-                      title: Text(
-                        p.name,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'A: Bs. ${p.priceA.toStringAsFixed(2)}  •  B: Bs. ${p.priceB.toStringAsFixed(2)}  •  Stock: ${_availableStock(p)}',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(color: AppColors.textSecondary),
-                      ),
-                      trailing: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _error = null;
-                            if (inCart) {
-                              _cartItems.remove(p.id);
-                              _cartPriceTypes.remove(p.id);
-                            } else {
-                              _cartItems[p.id] = 1;
-                              _cartPriceTypes[p.id] = 'A';
-                            }
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.s4),
-                          decoration: BoxDecoration(
-                            color: inCart
-                                ? AppColors.primary.withOpacity(0.1)
-                                : AppColors.background,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: inCart
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(AppSpacing.s8),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final p = products[index];
+                          final inCart = _cartItems.containsKey(p.id);
+                          return ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s12,
                             ),
-                          ),
-                          child: Icon(
-                            inCart ? Icons.check : Icons.add,
-                            size: 18,
-                            color: inCart
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Carrito con cantidades
-              if (_cartItems.isNotEmpty) ...[
-                Text(
-                  'Carrito',
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s8),
-                ..._cartItems.entries.map((entry) {
-                  final product = products
-                      .where((p) => p.id == entry.key)
-                      .firstOrNull;
-                  if (product == null) return const SizedBox();
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.s8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s16,
-                      vertical: AppSpacing.s10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.name,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
-                                        ),
+                            title: Text(
+                              p.name,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textPrimary,
                                   ),
-                                  Text(
-                                    'Bs. ${((_cartPriceTypes[entry.key] == 'B' ? product.priceB : product.priceA) * entry.value).toStringAsFixed(2)}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.w600,
+                            ),
+                            subtitle: Text(
+                              'A: Bs. ${p.priceA.toStringAsFixed(2)}  •  B: Bs. ${p.priceB.toStringAsFixed(2)}  •  Stock: ${_availableStock(p)}',
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(color: AppColors.textSecondary),
+                            ),
+                            trailing: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _error = null;
+                                  if (inCart) {
+                                    _cartItems.remove(p.id);
+                                    _cartPriceTypes.remove(p.id);
+                                  } else {
+                                    _cartItems[p.id] = 1;
+                                    _cartPriceTypes[p.id] = 'A';
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(AppSpacing.s4),
+                                decoration: BoxDecoration(
+                                  color: inCart
+                                      ? AppColors.primary.withOpacity(0.1)
+                                      : AppColors.background,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: inCart
+                                        ? AppColors.primary
+                                        : AppColors.border,
+                                  ),
+                                ),
+                                child: Icon(
+                                  inCart ? Icons.check : Icons.add,
+                                  size: 18,
+                                  color: inCart
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Carrito con cantidades
+                    if (_cartItems.isNotEmpty) ...[
+                      Text(
+                        'Carrito',
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.s8),
+                      ..._cartItems.entries.map((entry) {
+                        final product = products
+                            .where((p) => p.id == entry.key)
+                            .firstOrNull;
+                        if (product == null) return const SizedBox();
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: AppSpacing.s8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s16,
+                            vertical: AppSpacing.s10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textPrimary,
+                                              ),
                                         ),
+                                        Text(
+                                          'Bs. ${((_cartPriceTypes[entry.key] == 'B' ? product.priceB : product.priceA) * entry.value).toStringAsFixed(2)}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium
+                                              ?.copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Control de cantidad
+                                  Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _error = null;
+                                            if (entry.value <= 1) {
+                                              _cartItems.remove(entry.key);
+                                            } else {
+                                              _cartItems[entry.key] =
+                                                  entry.value - 1;
+                                            }
+                                          });
+                                        },
+                                        child: Container(
+                                          width: AppSpacing.s28,
+                                          height: AppSpacing.s28,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.background,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.border,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.remove,
+                                            size: 14,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.s10,
+                                        ),
+                                        child: Text(
+                                          '${entry.value}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          final product = products
+                                              .where((p) => p.id == entry.key)
+                                              .firstOrNull;
+                                          if (product == null) return;
+                                          if (entry.value >=
+                                              _availableStock(product))
+                                            return;
+                                          setState(() {
+                                            _error = null;
+                                            _cartItems[entry.key] =
+                                                entry.value + 1;
+                                          });
+                                        },
+                                        child: Container(
+                                          width: AppSpacing.s28,
+                                          height: AppSpacing.s28,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.3),
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.add,
+                                            size: 14,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ),
-                            // Control de cantidad
-                            Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _error = null;
-                                      if (entry.value <= 1) {
-                                        _cartItems.remove(entry.key);
-                                      } else {
-                                        _cartItems[entry.key] = entry.value - 1;
-                                      }
-                                    });
-                                  },
-                                  child: Container(
-                                    width: AppSpacing.s28,
-                                    height: AppSpacing.s28,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.background,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.border,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.remove,
-                                      size: 14,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.s10,
-                                  ),
-                                  child: Text(
-                                    '${entry.value}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    final product = products
-                                        .where((p) => p.id == entry.key)
-                                        .firstOrNull;
-                                    if (product == null) return;
-                                    if (entry.value >= _availableStock(product)) return;
-                                    setState(() {
-                                      _error = null;
-                                      _cartItems[entry.key] = entry.value + 1;
-                                    });
-                                  },
-                                  child: Container(
-                                    width: AppSpacing.s28,
-                                    height: AppSpacing.s28,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.primary.withOpacity(
-                                          0.3,
-                                        ),
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.add,
-                                      size: 14,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              const SizedBox(height: AppSpacing.s8),
+                              _PriceTypeToggle(
+                                selected: _cartPriceTypes[entry.key] ?? 'A',
+                                onChanged: (type) => setState(() {
+                                  _error = null;
+                                  _cartPriceTypes[entry.key] = type;
+                                }),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: AppSpacing.s16),
+                    ],
+
+                    // Descuento
+                    TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: _discountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          if (newValue.text.isEmpty) return newValue;
+                          if (newValue.text == '0') return newValue;
+                          if (newValue.text.startsWith('0') &&
+                              !newValue.text.startsWith('0.'))
+                            return oldValue;
+                          if (double.tryParse(newValue.text) == null &&
+                              newValue.text != '.')
+                            return oldValue;
+                          return newValue;
+                        }),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Descuento (Bs.)',
+                        hintText: '0',
+                      ),
+                      onChanged: (_) => setState(() => _error = null),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Notas
+                    TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: _notesController,
+                      decoration: const InputDecoration(
+                        labelText: 'Notas',
+                        hintText: 'Observaciones opcionales',
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Resumen de totales
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.s16),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          _TotalRow(
+                            label: 'Subtotal',
+                            value: 'Bs. ${_subtotal.toStringAsFixed(2)}',
+                          ),
+                          if (_discount > 0) ...[
+                            const SizedBox(height: AppSpacing.s6),
+                            _TotalRow(
+                              label: 'Descuento',
+                              value: '- Bs. ${_discount.toStringAsFixed(2)}',
+                              valueColor: AppColors.error,
                             ),
                           ],
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-                        _PriceTypeToggle(
-                          selected: _cartPriceTypes[entry.key] ?? 'A',
-                          onChanged: (type) => setState(() {
-                            _error = null;
-                            _cartPriceTypes[entry.key] = type;
-                          }),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                const SizedBox(height: AppSpacing.s16),
-              ],
-
-              // Descuento
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _discountController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  TextInputFormatter.withFunction((oldValue, newValue) {
-                    if (newValue.text.isEmpty) return newValue;
-                    if (newValue.text == '0') return newValue;
-                    if (newValue.text.startsWith('0') &&
-                        !newValue.text.startsWith('0.'))
-                      return oldValue;
-                    if (double.tryParse(newValue.text) == null &&
-                        newValue.text != '.')
-                      return oldValue;
-                    return newValue;
-                  }),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Descuento (Bs.)',
-                  hintText: '0',
-                ),
-                onChanged: (_) => setState(() => _error = null),
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Notas
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notas',
-                  hintText: 'Observaciones opcionales',
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Resumen de totales
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.s16),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    _TotalRow(
-                      label: 'Subtotal',
-                      value: 'Bs. ${_subtotal.toStringAsFixed(2)}',
-                    ),
-                    if (_discount > 0) ...[
-                      const SizedBox(height: AppSpacing.s6),
-                      _TotalRow(
-                        label: 'Descuento',
-                        value: '- Bs. ${_discount.toStringAsFixed(2)}',
-                        valueColor: AppColors.error,
+                          const Divider(
+                            color: AppColors.border,
+                            height: AppSpacing.s20,
+                          ),
+                          _TotalRow(
+                            label: 'Total',
+                            value: 'Bs. ${_total.toStringAsFixed(2)}',
+                            bold: true,
+                            valueColor: AppColors.primary,
+                          ),
+                        ],
                       ),
-                    ],
-                    const Divider(
-                      color: AppColors.border,
-                      height: AppSpacing.s20,
-                    ),
-                    _TotalRow(
-                      label: 'Total',
-                      value: 'Bs. ${_total.toStringAsFixed(2)}',
-                      bold: true,
-                      valueColor: AppColors.primary,
                     ),
                   ],
                 ),
               ),
+            ),
 
-              // Error
-              if (_error != null) ...[
-                const SizedBox(height: AppSpacing.s12),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.s12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
+            // Error (fijo, junto a los botones: siempre visible)
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.s12),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.s12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 16,
+                    ),
+                    const SizedBox(width: AppSpacing.s8),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(color: AppColors.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: AppSpacing.s16),
+
+            // Botones (fijos)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 16,
-                      ),
-                      const SizedBox(width: AppSpacing.s8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: Theme.of(context).textTheme.displaySmall
-                              ?.copyWith(color: AppColors.error),
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: AppSpacing.s12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: AppSpacing.s20,
+                            width: AppSpacing.s20,
+                            child: CircularProgressIndicator(
+                              color: AppColors.surface,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            isEditing ? 'Guardar' : 'Registrar venta',
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                            textAlign: TextAlign.center,
+                          ),
                   ),
                 ),
               ],
-
-              const SizedBox(height: AppSpacing.s24),
-
-              // Botones
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _save,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: AppSpacing.s20,
-                              width: AppSpacing.s20,
-                              child: CircularProgressIndicator(
-                                color: AppColors.surface,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              isEditing ? 'Guardar' : 'Registrar venta',
-                              style: Theme.of(context).textTheme.headlineLarge
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.center,
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

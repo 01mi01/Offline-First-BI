@@ -236,18 +236,22 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
         ? _selectedSupplierId
         : null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.s24,
-        right: AppSpacing.s24,
-        top: AppSpacing.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+    // Altura fija (90 % de la pantalla): al cambiar entre "Materiales" y "Gasto
+    // general" el contenido cambia de alto, pero la hoja no, así que el título y
+    // el selector no se mueven. El formulario se desplaza dentro; los botones
+    // quedan siempre a la vista.
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.9,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.s24,
+          right: AppSpacing.s24,
+          top: AppSpacing.s24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
+        ),
+        child: Form(
+          key: _formKey,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Título
@@ -275,11 +279,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   ],
                   selected: {_isMaterial},
                   onSelectionChanged: (selection) {
+                    if (selection.first == _isMaterial) return;
                     setState(() {
                       _error = null;
                       _isMaterial = selection.first;
+                      // Cada modo empieza limpio: nada del otro modo queda
+                      // oculto. Los campos de cada modo tienen su propia llave,
+                      // así que nacen sin haber sido tocados (sin errores).
                       _materialItems.clear();
                       _totalController.clear();
+                      _descriptionController.clear();
                     });
                   },
                   style: ButtonStyle(
@@ -303,377 +312,415 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.s20),
+              const SizedBox(height: AppSpacing.s16),
 
-              // Selector de proveedor
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      value: supplierValue,
-                      decoration: const InputDecoration(labelText: 'Proveedor'),
-                      items: [
-                        const DropdownMenuItem<int>(
-                          value: null,
-                          child: Text(DefaultRecords.supplier),
-                        ),
-                        ...suppliers.map(
-                          (s) => DropdownMenuItem(
-                            value: s.id,
-                            child: Text(s.name),
-                          ),
-                        ),
-                      ],
-                      onChanged: (val) => setState(() {
-                        _selectedSupplierId = val;
-                        _error = null;
-                      }),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s8),
-                  GestureDetector(
-                    onTap: _showAddSupplierSheet,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.s12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.add_business_outlined,
-                        color: AppColors.primary,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Selector de ubicación
-              DropdownButtonFormField<int>(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                value: _selectedLocationId,
-                decoration: const InputDecoration(labelText: 'Ubicación'),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Sin ubicación'),
-                  ),
-                  ...ref
-                      .watch(locationProvider)
-                      .locations
-                      .where((l) => l.isActive)
-                      .map(
-                        (l) => DropdownMenuItem(
-                          value: l.id,
-                          child: Text('${l.city}, ${l.country}'),
-                        ),
-                      )
-                      .toList(),
-                ],
-                onChanged: (val) => setState(() => _selectedLocationId = val),
-              ),
-              const SizedBox(height: 20),
-
-              // Selector de evento
-              DropdownButtonFormField<int>(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                // Solo una opción existente puede ser el valor: mientras los eventos
-                // cargan (o si el evento ya no está disponible) el campo queda
-                // en "Sin evento" sin romper el selector.
-                value:
-                    ref
-                        .watch(eventProvider)
-                        .events
-                        .any(
-                          (e) =>
-                              e.id == _selectedEventId &&
-                              (e.isActive || e.id == _selectedEventId),
-                        )
-                    ? _selectedEventId
-                    : null,
-                decoration: const InputDecoration(labelText: 'Evento'),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Sin evento'),
-                  ),
-                  ...ref
-                      .watch(eventProvider)
-                      .events
-                      .where((e) => e.isActive || e.id == _selectedEventId)
-                      .map(
-                        (e) =>
-                            DropdownMenuItem(value: e.id, child: Text(e.name)),
-                      )
-                      .toList(),
-                ],
-                onChanged: (val) => setState(() => _selectedEventId = val),
-              ),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Sección de materiales
-              if (_isMaterial) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Materiales',
-                      style: Theme.of(context).textTheme.displayMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                    ),
-                    GestureDetector(
-                      onTap: _showAddMaterialItem,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s12,
-                          vertical: AppSpacing.s6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.add,
-                              color: AppColors.primary,
-                              size: 16,
-                            ),
-                            const SizedBox(width: AppSpacing.s4),
-                            Text(
-                              'Agregar',
-                              style: Theme.of(context).textTheme.displaySmall
-                                  ?.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.s8),
-                if (_materialItems.isEmpty)
-                  Text(
-                    'Sin materiales agregados',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.displaySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  )
-                else
-                  ..._materialItems.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final item = entry.value;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.s8),
-                      padding: const EdgeInsets.all(AppSpacing.s12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: AppSpacing.s4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Selector de proveedor
+                      Row(
                         children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['materialName'] as String,
-                                  style: const TextStyle(
+                            child: DropdownButtonFormField<int>(
+                              autovalidateMode:
+                                  AutovalidateMode.onUserInteraction,
+                              value: supplierValue,
+                              decoration: const InputDecoration(
+                                labelText: 'Proveedor',
+                              ),
+                              items: [
+                                const DropdownMenuItem<int>(
+                                  value: null,
+                                  child: Text(DefaultRecords.supplier),
+                                ),
+                                ...suppliers.map(
+                                  (s) => DropdownMenuItem(
+                                    value: s.id,
+                                    child: Text(s.name),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (val) => setState(() {
+                                _selectedSupplierId = val;
+                                _error = null;
+                              }),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.s8),
+                          GestureDetector(
+                            onTap: _showAddSupplierSheet,
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.s12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.add_business_outlined,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.s20),
+
+                      // Selector de ubicación
+                      DropdownButtonFormField<int>(
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        value: _selectedLocationId,
+                        decoration: const InputDecoration(
+                          labelText: 'Ubicación',
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Sin ubicación'),
+                          ),
+                          ...ref
+                              .watch(locationProvider)
+                              .locations
+                              .where((l) => l.isActive)
+                              .map(
+                                (l) => DropdownMenuItem(
+                                  value: l.id,
+                                  child: Text('${l.city}, ${l.country}'),
+                                ),
+                              )
+                              .toList(),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => _selectedLocationId = val),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Selector de evento
+                      DropdownButtonFormField<int>(
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        // Solo una opción existente puede ser el valor: mientras los eventos
+                        // cargan (o si el evento ya no está disponible) el campo queda
+                        // en "Sin evento" sin romper el selector.
+                        value:
+                            ref
+                                .watch(eventProvider)
+                                .events
+                                .any(
+                                  (e) =>
+                                      e.id == _selectedEventId &&
+                                      (e.isActive || e.id == _selectedEventId),
+                                )
+                            ? _selectedEventId
+                            : null,
+                        decoration: const InputDecoration(labelText: 'Evento'),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Sin evento'),
+                          ),
+                          ...ref
+                              .watch(eventProvider)
+                              .events
+                              .where(
+                                (e) => e.isActive || e.id == _selectedEventId,
+                              )
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e.id,
+                                  child: Text(e.name),
+                                ),
+                              )
+                              .toList(),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => _selectedEventId = val),
+                      ),
+                      const SizedBox(height: AppSpacing.s20),
+
+                      // Sección de materiales
+                      if (_isMaterial) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Materiales',
+                              style: Theme.of(context).textTheme.displayMedium
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
                                   ),
+                            ),
+                            GestureDetector(
+                              onTap: _showAddMaterialItem,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.s12,
+                                  vertical: AppSpacing.s6,
                                 ),
-                                const SizedBox(height: AppSpacing.s4),
-                                // Edición inline de cantidad
-                                Row(
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
                                   children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        final current =
-                                            item['quantity'] as double;
-                                        if (current <= 1) return;
-                                        setState(() {
-                                          _error = null;
-                                          _materialItems[index]['quantity'] =
-                                              current - 1;
-                                          _recalcTotal();
-                                        });
-                                      },
-                                      child: Container(
-                                        width: 26,
-                                        height: 26,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.background,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                          border: Border.all(
-                                            color: AppColors.border,
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.remove,
-                                          size: 14,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
+                                    const Icon(
+                                      Icons.add,
+                                      color: AppColors.primary,
+                                      size: 16,
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.s10,
-                                      ),
-                                      child: Text(
-                                        formatNumber(
-                                          item['quantity'] as double,
-                                        ),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        final current =
-                                            item['quantity'] as double;
-                                        setState(() {
-                                          _error = null;
-                                          _materialItems[index]['quantity'] =
-                                              current + 1;
-                                          _recalcTotal();
-                                        });
-                                      },
-                                      child: Container(
-                                        width: 26,
-                                        height: 26,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(
-                                            0.1,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                          border: Border.all(
-                                            color: AppColors.primary
-                                                .withOpacity(0.3),
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.add,
-                                          size: 14,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppSpacing.s8),
+                                    const SizedBox(width: AppSpacing.s4),
                                     Text(
-                                      'Bs. ${((item['quantity'] as double) * (item['unitPrice'] as double)).toStringAsFixed(2)}',
-                                      style: Theme.of(context).textTheme
-                                          .labelMedium?.copyWith(
+                                      'Agregar',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .displaySmall
+                                          ?.copyWith(
                                             color: AppColors.primary,
                                             fontWeight: FontWeight.w600,
                                           ),
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.s8),
+                        if (_materialItems.isEmpty)
+                          Text(
+                            'Sin materiales agregados',
+                            style: Theme.of(context).textTheme.displaySmall
+                                ?.copyWith(color: AppColors.textSecondary),
+                          )
+                        else
+                          ..._materialItems.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+                            return Container(
+                              margin: const EdgeInsets.only(
+                                bottom: AppSpacing.s8,
+                              ),
+                              padding: const EdgeInsets.all(AppSpacing.s12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['materialName'] as String,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.s4),
+                                        // Edición inline de cantidad
+                                        Row(
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                final current =
+                                                    item['quantity'] as double;
+                                                if (current <= 1) return;
+                                                setState(() {
+                                                  _error = null;
+                                                  _materialItems[index]['quantity'] =
+                                                      current - 1;
+                                                  _recalcTotal();
+                                                });
+                                              },
+                                              child: Container(
+                                                width: 26,
+                                                height: 26,
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.background,
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color: AppColors.border,
+                                                  ),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.remove,
+                                                  size: 14,
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: AppSpacing.s10,
+                                                  ),
+                                              child: Text(
+                                                formatNumber(
+                                                  item['quantity'] as double,
+                                                ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelLarge
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                    ),
+                                              ),
+                                            ),
+                                            GestureDetector(
+                                              onTap: () {
+                                                final current =
+                                                    item['quantity'] as double;
+                                                setState(() {
+                                                  _error = null;
+                                                  _materialItems[index]['quantity'] =
+                                                      current + 1;
+                                                  _recalcTotal();
+                                                });
+                                              },
+                                              child: Container(
+                                                width: 26,
+                                                height: 26,
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color: AppColors.primary
+                                                        .withOpacity(0.3),
+                                                  ),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.add,
+                                                  size: 14,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                              width: AppSpacing.s8,
+                                            ),
+                                            Text(
+                                              'Bs. ${((item['quantity'] as double) * (item['unitPrice'] as double)).toStringAsFixed(2)}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.copyWith(
+                                                    color: AppColors.primary,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _error = null;
+                                        _materialItems.removeAt(index);
+                                        _recalcTotal();
+                                      });
+                                    },
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: AppColors.error,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        const SizedBox(height: AppSpacing.s16),
+
+                        // Total calculado automáticamente
+                        TextFormField(
+                          key: const ValueKey('purchase-total-materials'),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          controller: _totalController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Total (Bs.)',
                           ),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _error = null;
-                                _materialItems.removeAt(index);
-                                _recalcTotal();
-                              });
-                            },
-                            child: const Icon(
-                              Icons.close,
-                              color: AppColors.error,
-                              size: 18,
-                            ),
+                        ),
+                      ] else ...[
+                        // Gasto general
+                        TextFormField(
+                          key: const ValueKey('purchase-description'),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          controller: _descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Descripción del gasto',
+                            hintText:
+                                'Ej: transporte, entradas a eventos, etc.',
                           ),
-                        ],
+                          maxLines: 2,
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Campo requerido' : null,
+                        ),
+                        const SizedBox(height: AppSpacing.s16),
+                        TextFormField(
+                          key: const ValueKey('purchase-total-expense'),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          controller: _totalController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            TextInputFormatter.withFunction((
+                              oldValue,
+                              newValue,
+                            ) {
+                              if (newValue.text.isEmpty) return newValue;
+                              if (newValue.text == '0') return newValue;
+                              if (newValue.text.startsWith('0') &&
+                                  !newValue.text.startsWith('0.'))
+                                return oldValue;
+                              if (double.tryParse(newValue.text) == null &&
+                                  newValue.text != '.')
+                                return oldValue;
+                              return newValue;
+                            }),
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Total (Bs.)',
+                            hintText: '0',
+                          ),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Campo requerido' : null,
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.s16),
+
+                      // Notas
+                      TextFormField(
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        controller: _notesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Notas',
+                          hintText: 'Observaciones opcionales',
+                        ),
+                        maxLines: 2,
                       ),
-                    );
-                  }),
-                const SizedBox(height: AppSpacing.s16),
-
-                // Total calculado automáticamente
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  controller: _totalController,
-                  readOnly: true,
-                  decoration: const InputDecoration(labelText: 'Total (Bs.)'),
-                ),
-              ] else ...[
-                // Gasto general
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Descripción del gasto',
-                    hintText: 'Ej: transporte, entradas a eventos, etc.',
+                    ],
                   ),
-                  maxLines: 2,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Campo requerido' : null,
                 ),
-                const SizedBox(height: AppSpacing.s16),
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  controller: _totalController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text == '0') return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          !newValue.text.startsWith('0.'))
-                        return oldValue;
-                      if (double.tryParse(newValue.text) == null &&
-                          newValue.text != '.')
-                        return oldValue;
-                      return newValue;
-                    }),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: 'Total (Bs.)',
-                    hintText: '0',
-                  ),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Campo requerido' : null,
-                ),
-              ],
-              const SizedBox(height: AppSpacing.s16),
-
-              // Notas
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notas',
-                  hintText: 'Observaciones opcionales',
-                ),
-                maxLines: 2,
               ),
 
-              // Error
+              // Error (fijo, junto a los botones: siempre visible)
               if (_error != null) ...[
                 const SizedBox(height: AppSpacing.s12),
                 Container(
@@ -693,11 +740,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       Expanded(
                         child: Text(
                           _error!,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.displaySmall?.copyWith(
-                            color: AppColors.error,
-                          ),
+                          style: Theme.of(context).textTheme.displaySmall
+                              ?.copyWith(color: AppColors.error),
                         ),
                       ),
                     ],
@@ -705,9 +749,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ),
               ],
 
-              const SizedBox(height: AppSpacing.s24),
+              const SizedBox(height: AppSpacing.s16),
 
-              // Botones cancelar y registrar
+              // Botones cancelar y registrar (fijos)
               Row(
                 children: [
                   Expanded(
@@ -934,10 +978,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                       return newValue;
                     }),
                   ],
-                  decoration: InputDecoration(
-                    labelText: label,
-                    hintText: '0',
-                  ),
+                  decoration: InputDecoration(labelText: label, hintText: '0'),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Campo requerido';
                     final qty = double.tryParse(v);

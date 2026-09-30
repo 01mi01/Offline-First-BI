@@ -56,7 +56,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     _imagePath = widget.product?.image;
     _selectedCategoryId = widget.product?.categoryId;
     _isActive = widget.product?.isActive ?? true;
-
   }
 
   // Muestra los precios sin ".0" sobrante ("50" en vez de "50.0").
@@ -117,7 +116,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
       final confirm = await confirmCancellation(
         context,
         title: '¿Desactivar producto?',
-        message: 'El producto "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
+        message:
+            'El producto "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -151,251 +151,263 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         top: AppSpacing.s24,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Título
-              Text(
-                isEditing ? 'Editar producto' : 'Nuevo producto',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Título (fijo: no se desplaza con el formulario)
+            Text(
+              isEditing ? 'Editar producto' : 'Nuevo producto',
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: AppSpacing.s24),
+            ),
+            const SizedBox(height: AppSpacing.s24),
 
-              // Selector de imagen
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _imagePath != null
-                        ? Image.file(
-                            File(_imagePath!),
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.add_a_photo_outlined,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Nombre
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  hintText: 'Nombre del producto',
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Campo requerido' : null,
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Categoría
-              DropdownButtonFormField<int>(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                value: categoryValue,
-                decoration: const InputDecoration(labelText: 'Categoría'),
-                items: [
-                  const DropdownMenuItem<int>(
-                    value: null,
-                    child: Text(DefaultRecords.category),
-                  ),
-                  ...categories.map(
-                    (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
-                  ),
-                ],
-                onChanged: (val) {
-                  setState(() => _selectedCategoryId = val);
-                },
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Descripción
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
-                  hintText: 'Descripción opcional',
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Precios de venta (A y B, independientes) y costo de producción
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _priceAController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Precio A',
-                  hintText: '0.00',
-                ),
-                validator: _validatePrice,
-              ),
-              const SizedBox(height: AppSpacing.s16),
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _priceBController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Precio B',
-                  hintText: '0.00',
-                ),
-                validator: _validatePrice,
-              ),
-              const SizedBox(height: AppSpacing.s16),
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _costController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Costo de producción',
-                  hintText: '0.00',
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return null;
-                  final cost = double.tryParse(v);
-                  if (cost == null) return 'Valor inválido';
-                  // El costo debe ser menor que ambos precios de venta.
-                  final priceA =
-                      double.tryParse(_priceAController.text.trim()) ?? 0;
-                  final priceB =
-                      double.tryParse(_priceBController.text.trim()) ?? 0;
-                  if (cost >= priceA || cost >= priceB) {
-                    return 'Debe ser menor a los precios de venta';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Stock: siempre un número entero (un "." se rechaza con aviso en
-              // vez de descartarse o guardarse como 0).
-              WholeNumberQuantityField(
-                controller: _stockController,
-                labelText: 'Stock',
-                allowZero: true,
-              ),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Toggle activo/inactivo solo en edición
-              if (isEditing)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s16,
-                    vertical: AppSpacing.s12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Producto activo',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            _isActive
-                                ? 'Disponible para ventas'
-                                : 'No disponible para ventas',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Switch(
-                        value: _isActive,
-                        onChanged: _onToggleActive,
-                        activeColor: AppColors.primary,
-                        inactiveTrackColor: AppColors.border,
-                        inactiveThumbColor: AppColors.surface,
-                        trackOutlineColor: WidgetStateProperty.all(
-                          Colors.transparent,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              const SizedBox(height: AppSpacing.s24),
-
-              // Botones cancelar y guardar
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
+            // El formulario se desplaza bajo el título; los botones quedan
+            // siempre a la vista.
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: AppSpacing.s4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Selector de imagen
+                    Center(
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: _imagePath != null
+                              ? Image.file(
+                                  File(_imagePath!),
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add_a_photo_outlined,
+                                    color: AppColors.primary,
+                                    size: 32,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(
-                        isEditing ? 'Guardar' : 'Crear',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                    const SizedBox(height: AppSpacing.s20),
+
+                    // Nombre
+                    TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre',
+                        hintText: 'Nombre del producto',
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Campo requerido' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Categoría
+                    DropdownButtonFormField<int>(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      value: categoryValue,
+                      decoration: const InputDecoration(labelText: 'Categoría'),
+                      items: [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          child: Text(DefaultRecords.category),
+                        ),
+                        ...categories.map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        setState(() => _selectedCategoryId = val);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Descripción
+                    TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: _descController,
+                      decoration: const InputDecoration(
+                        labelText: 'Descripción',
+                        hintText: 'Descripción opcional',
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Precios de venta (A y B, independientes) y costo de producción
+                    TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: _priceAController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Precio A',
+                        hintText: '0.00',
+                      ),
+                      validator: _validatePrice,
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+                    TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: _priceBController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Precio B',
+                        hintText: '0.00',
+                      ),
+                      validator: _validatePrice,
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+                    TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: _costController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Costo de producción',
+                        hintText: '0.00',
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return null;
+                        final cost = double.tryParse(v);
+                        if (cost == null) return 'Valor inválido';
+                        // El costo debe ser menor que ambos precios de venta.
+                        final priceA =
+                            double.tryParse(_priceAController.text.trim()) ?? 0;
+                        final priceB =
+                            double.tryParse(_priceBController.text.trim()) ?? 0;
+                        if (cost >= priceA || cost >= priceB) {
+                          return 'Debe ser menor a los precios de venta';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Stock: siempre un número entero (un "." se rechaza con aviso en
+                    // vez de descartarse o guardarse como 0).
+                    WholeNumberQuantityField(
+                      controller: _stockController,
+                      labelText: 'Stock',
+                      allowZero: true,
+                    ),
+                    const SizedBox(height: AppSpacing.s20),
+
+                    // Toggle activo/inactivo solo en edición
+                    if (isEditing)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s16,
+                          vertical: AppSpacing.s12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Producto activo',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  _isActive
+                                      ? 'Disponible para ventas'
+                                      : 'No disponible para ventas',
+                                  style: Theme.of(context).textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            Switch(
+                              value: _isActive,
+                              onChanged: _onToggleActive,
+                              activeColor: AppColors.primary,
+                              inactiveTrackColor: AppColors.border,
+                              inactiveThumbColor: AppColors.surface,
+                              trackOutlineColor: WidgetStateProperty.all(
+                                Colors.transparent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s16),
+
+            // Botones cancelar y guardar (fijos)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+                const SizedBox(width: AppSpacing.s12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _save,
+                    child: Text(
+                      isEditing ? 'Guardar' : 'Crear',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

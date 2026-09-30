@@ -151,7 +151,14 @@ class MaterialRepository {
         database.materials,
       )..where((m) => m.id.equals(row.materialId))).getSingleOrNull();
       if (material != null) {
-        result.add({'name': material.name, 'price': material.pricePerUnit});
+        final unit = await (database.select(
+          database.units,
+        )..where((u) => u.id.equals(material.unitId))).getSingleOrNull();
+        result.add({
+          'name': material.name,
+          'price': material.pricePerUnit,
+          'unit': unit?.name ?? 'unidad',
+        });
       }
     }
     return result;

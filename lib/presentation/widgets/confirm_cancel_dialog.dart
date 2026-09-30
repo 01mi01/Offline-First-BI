@@ -45,47 +45,46 @@ Future<bool> confirmCancellation(
               AppSpacing.s16,
               AppSpacing.s8,
             ),
-            child: Row(
+            // Botones apilados a todo el ancho: así el texto completo de la
+            // acción ("Cancelar registro", "Cerrar sesión"...) siempre cabe,
+            // sin cortarse con puntos suspensivos.
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.s14,
-                      ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.errorDark,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
                     ),
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(
-                      dismissLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppColors.textSecondary),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.s14,
                     ),
                   ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(
+                    confirmLabel,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.surface),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.s14,
-                      ),
+                const SizedBox(height: AppSpacing.s12),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
                     ),
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text(
-                      confirmLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.surface),
+                    side: const BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.s14,
                     ),
+                  ),
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(
+                    dismissLabel,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
               ],

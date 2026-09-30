@@ -348,13 +348,27 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       ),
                     ],
                     const SizedBox(height: AppSpacing.s6),
-                    Text(
-                      'Precio A: Bs. ${widget.product.priceA.toStringAsFixed(2)}  •  Precio B: Bs. ${widget.product.priceB.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.displaySmall
-                          ?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                    // Cada precio es una unidad indivisible: si no caben en una
+                    // línea, el salto ocurre entre "Precio A" y "Precio B", nunca
+                    // dentro de la etiqueta.
+                    Wrap(
+                      spacing: AppSpacing.s16,
+                      runSpacing: AppSpacing.s2,
+                      children: [
+                        for (final price in [
+                          'Precio A: Bs. ${widget.product.priceA.toStringAsFixed(2)}',
+                          'Precio B: Bs. ${widget.product.priceB.toStringAsFixed(2)}',
+                        ])
+                          Text(
+                            price,
+                            softWrap: false,
+                            style: Theme.of(context).textTheme.displaySmall
+                                ?.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
+                      ],
                     ),
                     if (widget.product.productionCost != null) ...[
                       const SizedBox(height: AppSpacing.s2),
@@ -423,29 +437,37 @@ inactiveLabel: 'Inactivo',
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
+                    // El nombre cede espacio (y se recorta) antes de que el
+                    // precio con su unidad se desborde.
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.s8),
-                        Text(
-                          m['name'] as String,
-                          style: Theme.of(context).textTheme.displaySmall
-                              ?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                        ),
-                      ],
+                          const SizedBox(width: AppSpacing.s8),
+                          Flexible(
+                            child: Text(
+                              m['name'] as String,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: AppSpacing.s8),
                     Text(
-                      'Bs. ${(m['price'] as double).toStringAsFixed(2)}/u',
+                      'Bs. ${(m['price'] as double).toStringAsFixed(2)} / ${m['unit']}',
                       style: Theme.of(context).textTheme.labelMedium
                           ?.copyWith(
                             color: AppColors.primary,
