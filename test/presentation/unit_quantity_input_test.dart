@@ -6,7 +6,7 @@ import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 // para al menos una unidad representativa de cada tipo.
 void main() {
   group('isFractionFriendlyUnitType', () {
-    test('"contenedor" (e.g. botella) uses the fraction picker', () {
+    test('"contenedor" (e.g. paquete) uses the fraction picker', () {
       expect(isFractionFriendlyUnitType('contenedor'), isTrue);
     });
 
@@ -20,8 +20,8 @@ void main() {
   });
 
   group('isDiscreteUnit', () {
-    test('"contenedor" (e.g. botella) rejects decimal quantities', () {
-      expect(isDiscreteUnit('contenedor', 'botella'), isTrue);
+    test('"contenedor" (e.g. paquete) rejects decimal quantities', () {
+      expect(isDiscreteUnit('contenedor', 'paquete'), isTrue);
     });
 
     test('"otros" (comodín) allows decimal quantities', () {

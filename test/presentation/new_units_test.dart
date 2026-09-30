@@ -10,8 +10,8 @@ import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
-// Unidades nuevas: centímetro, milímetro, mililitro, metro cuadrado (medidas)
-// y tira (contenedor, con fracciones como botella o bolsa).
+// Lista simplificada de unidades (12): contenedor, paquete, rollo y tira son
+// contenedores (con fracciones); el resto son medidas, más el comodín "otro".
 void main() {
   late AppDatabase db;
 
@@ -33,54 +33,70 @@ void main() {
   });
 
   group('seeding', () {
-    test('a fresh database has the five new units with the right types', () async {
+    test('a fresh database has exactly the 12 units, with the right types', () async {
       final units = await UnitRepository(db).getAll();
       final byName = {for (final u in units) u.name: u.type};
 
-      expect(byName['centímetro'], 'medida');
-      expect(byName['milímetro'], 'medida');
-      expect(byName['mililitro'], 'medida');
-      expect(byName['metro cuadrado'], 'medida');
-      expect(byName['tira'], 'contenedor');
+      expect(units, hasLength(12));
+      expect(byName, {
+        'contenedor': 'contenedor',
+        'paquete': 'contenedor',
+        'rollo': 'contenedor',
+        'tira': 'contenedor',
+        'unidad': 'medida',
+        'metro': 'medida',
+        'centímetro': 'medida',
+        'kg': 'medida',
+        'gramo': 'medida',
+        'litro': 'medida',
+        'mililitro': 'medida',
+        'otro': 'otros',
+      });
     });
 
-    test('the previous units are still there: 18 in total, each name once', () async {
-      final units = await UnitRepository(db).getAll();
+    test('the retired units are no longer seeded', () async {
+      final names = (await UnitRepository(db).getAll()).map((u) => u.name).toSet();
 
-      expect(units, hasLength(18));
-      expect(units.map((u) => u.name).toSet(), hasLength(18));
-      for (final name in ['botella', 'bolsa', 'metro', 'litro', 'kg', 'gramo', 'otro']) {
-        expect(units.any((u) => u.name == name), isTrue, reason: name);
+      for (final retired in [
+        'botella',
+        'frasco',
+        'lata',
+        'bolsa',
+        'caja',
+        'milímetro',
+        'metro cuadrado',
+      ]) {
+        expect(names, isNot(contains(retired)), reason: retired);
       }
     });
   });
 
   group('behavior follows the unit type', () {
-    test('tira is fraction-friendly and discrete, like botella', () {
+    test('every container unit is fraction-friendly and discrete', () {
       expect(isFractionFriendlyUnitType(unitTypeContenedor), isTrue);
-      expect(isDiscreteUnit(unitTypeContenedor, 'tira'), isTrue);
+      for (final name in ['contenedor', 'paquete', 'rollo', 'tira']) {
+        expect(isDiscreteUnit(unitTypeContenedor, name), isTrue, reason: name);
+      }
     });
 
-    test('the new measures take a plain number and allow decimals', () {
-      for (final name in ['centímetro', 'milímetro', 'mililitro', 'metro cuadrado']) {
+    test('the measures take a plain number and allow decimals', () {
+      for (final name in ['metro', 'centímetro', 'kg', 'gramo', 'litro', 'mililitro']) {
         expect(isFractionFriendlyUnitType(unitTypeMedida), isFalse, reason: name);
         expect(isDiscreteUnit(unitTypeMedida, name), isFalse, reason: name);
       }
     });
 
-    test('unitLabel agrees the new names with the quantity', () {
+    test('unitLabel agrees the names with the quantity', () {
       expect(unitLabel('tira', 1), 'tira');
       expect(unitLabel('tira', 5), 'tiras');
       expect(unitLabel('tira', 0.5), 'tiras');
       expect(unitLabel('centímetro', 1), 'centímetro');
       expect(unitLabel('centímetro', 2), 'centímetros');
-      expect(unitLabel('milímetro', 3), 'milímetros');
       expect(unitLabel('mililitro', 3), 'mililitros');
-      // Nombre de dos palabras: concuerdan las dos.
-      expect(unitLabel('metro cuadrado', 1), 'metro cuadrado');
-      expect(unitLabel('metro cuadrado', 3), 'metros cuadrados');
-      // Sin cambios para las de siempre.
-      expect(unitLabel('botella', 5), 'botellas');
+      expect(unitLabel('contenedor', 1), 'contenedor');
+      expect(unitLabel('contenedor', 5), 'contenedores');
+      expect(unitLabel('paquete', 5), 'paquetes');
+      expect(unitLabel('rollo', 2), 'rollos');
       expect(unitLabel('kg', 5), 'kg');
     });
   });
@@ -160,15 +176,15 @@ void main() {
       expect(find.textContaining('0.5 tiras'), findsOneWidget);
     });
 
-    testWidgets('metro cuadrado is a plain decimal field, shown with its plural', (
+    testWidgets('metro is a plain decimal field, shown with its plural', (
       tester,
     ) async {
-      await material('Tela', 'metro cuadrado', 3);
+      await material('Tela', 'metro', 3);
       await openUsage(tester, 'Tela');
 
       expect(find.byType(FractionQuantityPicker), findsNothing);
       expect(find.byType(WholeNumberQuantityField), findsNothing);
-      expect(find.text('Stock disponible: 3 metros cuadrados'), findsOneWidget);
+      expect(find.text('Stock disponible: 3 metros'), findsOneWidget);
 
       final field = find.widgetWithText(TextFormField, '0');
       await tester.enterText(field, '1.5');

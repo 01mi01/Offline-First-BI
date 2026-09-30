@@ -381,7 +381,7 @@ void main() {
     Future<void> seedProduct({double priceA = 60, double priceB = 50}) async {
       final unit = await (db.select(
         db.units,
-      )..where((u) => u.name.equals('botella'))).getSingle();
+      )..where((u) => u.name.equals('contenedor'))).getSingle();
       final productId = await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
@@ -444,7 +444,7 @@ void main() {
       await seedProduct();
       await pumpProducts(tester, const Size(900, 1600));
 
-      expect(find.text('Bs. 50.00 / botella'), findsOneWidget);
+      expect(find.text('Bs. 50.00 / contenedor'), findsOneWidget);
       expect(find.textContaining('/u'), findsNothing);
     });
   });

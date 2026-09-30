@@ -109,8 +109,9 @@ class Products extends Table {
 }
 
 // Unidades de medida para materiales. "type" clasifica el comportamiento de
-// entrada de cantidad: "contenedor" (botella, bolsa...) admite fracciones
-// simples, "medida" (metro, kg...) y "otros" (comodín) usan un número plano.
+// entrada de cantidad: "contenedor" (contenedor, paquete, rollo, tira) admite
+// fracciones simples, "medida" (metro, kg...) y "otros" (comodín) usan un
+// número plano.
 class Units extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().unique()();
@@ -336,16 +337,34 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
   static const String defaultSupplierName = DefaultRecords.supplier;
 
-  // Semilla de unidades: nombre + tipo ("contenedor" admite fracciones
-  // simples en la UI, "medida"/"otros" usan un número plano). Se usa tanto
-  // al crear la base desde cero como al migrar instalaciones existentes.
+  // Semilla de unidades vigente: nombre + tipo ("contenedor" admite fracciones
+  // simples en la UI, "medida"/"otros" usan un número plano). Se usa al crear
+  // la base desde cero y al migrar a la versión 16.
   static const List<(String, String)> _unitSeeds = [
+    ('contenedor', 'contenedor'),
+    ('paquete', 'contenedor'),
+    ('rollo', 'contenedor'),
+    ('tira', 'contenedor'),
+    ('unidad', 'medida'),
+    ('metro', 'medida'),
+    ('centímetro', 'medida'),
+    ('kg', 'medida'),
+    ('gramo', 'medida'),
+    ('litro', 'medida'),
+    ('mililitro', 'medida'),
+    ('otro', 'otros'),
+  ];
+
+  // Lista que se sembraba hasta la versión 15. Los pasos de migración
+  // antiguos (versiones 10 y 15) siguen usándola para dejar la base como estaba
+  // en su momento; el paso a la versión 16 la reduce a [_unitSeeds].
+  static const List<(String, String)> _legacyUnitSeeds = [
     ('botella', 'contenedor'),
     ('bolsa', 'contenedor'),
     ('paquete', 'contenedor'),
@@ -365,6 +384,19 @@ class AppDatabase extends _$AppDatabase {
     ('tira', 'contenedor'),
     ('otro', 'otros'),
   ];
+
+  // Unidades retiradas en la versión 16 y la unidad que las reemplaza. Solo
+  // cambia el unitId de los materiales; las compras, ventas y usos que los
+  // referencian no se tocan.
+  static const Map<String, String> _retiredUnitReplacements = {
+    'botella': 'contenedor',
+    'frasco': 'contenedor',
+    'lata': 'contenedor',
+    'bolsa': 'contenedor',
+    'caja': 'contenedor',
+    'milímetro': 'centímetro',
+    'metro cuadrado': 'metro',
+  };
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -611,7 +643,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(units);
         await batch((b) {
           b.insertAll(units, [
-            for (final (name, type) in _unitSeeds)
+            for (final (name, type) in _legacyUnitSeeds)
               UnitsCompanion.insert(name: name, type: type),
           ]);
         });
@@ -724,11 +756,43 @@ class AppDatabase extends _$AppDatabase {
             .toSet();
         await batch((b) {
           b.insertAll(units, [
+            for (final (name, type) in _legacyUnitSeeds)
+              if (!existing.contains(name.toLowerCase()))
+                UnitsCompanion.insert(name: name, type: type),
+          ]);
+        });
+      }
+      if (from < 16) {
+        // Lista de unidades simplificada (12 en total). Primero se agregan las
+        // que faltan (p. ej. "contenedor"); luego cada unidad retirada se
+        // reemplaza en los materiales que la usan y se elimina.
+        final existing = (await select(units).get())
+            .map((u) => u.name.toLowerCase())
+            .toSet();
+        await batch((b) {
+          b.insertAll(units, [
             for (final (name, type) in _unitSeeds)
               if (!existing.contains(name.toLowerCase()))
                 UnitsCompanion.insert(name: name, type: type),
           ]);
         });
+
+        final all = await select(units).get();
+        int? idOf(String name) {
+          for (final u in all) {
+            if (u.name.toLowerCase() == name) return u.id;
+          }
+          return null;
+        }
+
+        for (final entry in _retiredUnitReplacements.entries) {
+          final retiredId = idOf(entry.key);
+          final replacementId = idOf(entry.value);
+          if (retiredId == null || replacementId == null) continue;
+          await (update(materials)..where((m) => m.unitId.equals(retiredId)))
+              .write(MaterialsCompanion(unitId: Value(replacementId)));
+          await (delete(units)..where((u) => u.id.equals(retiredId))).go();
+        }
       }
     },
   );

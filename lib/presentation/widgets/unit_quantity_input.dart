@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 
 // Clasificación del comportamiento de entrada de cantidad según el tipo de
-// unidad (Units.type, ver app_database.dart): "contenedor" (botella, bolsa...)
+// unidad (Units.type, ver app_database.dart): "contenedor" (contenedor, paquete, rollo, tira)
 // admite fracciones simples porque pensar en decimales no es natural para
 // alguien sin formación técnica; "medida" (metro, kg...) y "otros" (comodín)
 // usan un número plano.
@@ -22,7 +22,7 @@ const Set<String> _wholeNumberMedidaUnitNames = {'unidad'};
 
 // Al comprar o consumir materiales en unidades "por pieza" (contenedores, o
 // la unidad genérica "unidad") las cantidades son números enteros: no tiene
-// sentido comprar "media caja" a un proveedor ni usar "2.5 unidades" en una
+// sentido comprar "medio paquete" a un proveedor ni usar "2.5 unidades" en una
 // receta. Unidades "medida" continuas (metro, litro, kg, gramo) sí admiten
 // decimales.
 bool isDiscreteUnit(String type, String name) =>
@@ -30,7 +30,7 @@ bool isDiscreteUnit(String type, String name) =>
     _wholeNumberMedidaUnitNames.contains(name.trim().toLowerCase());
 
 // Nombre de la unidad concordado con la cantidad para mostrarlo junto a un
-// stock o una cantidad ("1 botella", "5 botellas", "2 unidades"). El símbolo
+// stock o una cantidad ("1 paquete", "5 paquetes", "2 unidades"). El símbolo
 // "kg" es invariable. Los nombres de varias palabras ("metro cuadrado")
 // concuerdan palabra por palabra: "3 metros cuadrados".
 String unitLabel(String name, double quantity) {
@@ -48,7 +48,7 @@ String _pluralizeWord(String word) {
 }
 
 // Selector de fracciones de un envase (un cuarto / la mitad / tres cuartos /
-// entera), para unidades como "botella" donde pensar en decimales no es
+// entera), para unidades como "contenedor" donde pensar en decimales no es
 // natural para alguien sin formación técnica.
 class FractionQuantityPicker extends StatelessWidget {
   final String unit;
@@ -129,7 +129,7 @@ const String wholeNumberOnlyMessage = 'Solo se admiten números enteros';
 
 final RegExp _digitsOnlyPattern = RegExp(r'^\d*$');
 
-// Formatter para campos de cantidad "por pieza" (unidad, botella...): en vez
+// Formatter para campos de cantidad "por pieza" (unidad, contenedor...): en vez
 // de descartar en silencio los caracteres no numéricos (lo que convertía
 // "2.5" en "25" sin avisar), rechaza por completo la edición que los
 // introduce —el campo conserva su valor anterior— y avisa mediante

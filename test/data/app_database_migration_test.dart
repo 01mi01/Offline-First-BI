@@ -13,15 +13,16 @@ import '../generated_migrations/schema_v12.dart' as v12;
 import '../generated_migrations/schema_v13.dart' as v13;
 import '../generated_migrations/schema_v14.dart' as v14;
 import '../generated_migrations/schema_v15.dart' as v15;
+import '../generated_migrations/schema_v16.dart' as v16;
 
 // Verifica la migración real (onUpgrade) contra snapshots de esquema
-// generados por Drift (drift_schemas/drift_schema_v{8,9,10,11,12,13,14,15}.json vía
+// generados por Drift (drift_schemas/drift_schema_v{8,9,10,11,12,13,14,15,16}.json vía
 // `dart run drift_dev schema generate`). A diferencia del resto de la suite
 // (que solo abre bases de datos en blanco vía onCreate), esto ejecuta el SQL
 // de migración de verdad sobre datos con la forma exacta de cada versión.
 //
 // migrateAndValidate siempre migra hasta el schemaVersion actual de
-// AppDatabase (ahora 15), sin importar en qué versión "lógica" se centre
+// AppDatabase (ahora 16), sin importar en qué versión "lógica" se centre
 // cada test — por eso los tests con datos de v8 también apuntan a 10.
 void main() {
   late SchemaVerifier verifier;
@@ -31,14 +32,14 @@ void main() {
   });
 
   test(
-    'migrating a v8 database all the way to the live schema (v15) produces '
+    'migrating a v8 database all the way to the live schema (v16) produces '
     'exactly the expected schema',
     () async {
       final connection = await verifier.startAt(8);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 15);
+      await verifier.migrateAndValidate(db, 16);
     },
   );
 
@@ -69,10 +70,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final productWithCategory = await (checkDb.select(
@@ -133,10 +134,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final allRows = await checkDb.select(checkDb.productMaterials).get();
@@ -158,7 +159,7 @@ void main() {
       // debe ser rechazada por la base de datos.
       await expectLater(
         checkDb.into(checkDb.productMaterials).insert(
-          v15.ProductMaterialsCompanion.insert(
+          v16.ProductMaterialsCompanion.insert(
             productId: 1,
             materialId: 1,
             quantityUsed: 1,
@@ -186,10 +187,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final session = await (checkDb.select(
@@ -208,7 +209,7 @@ void main() {
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 15);
+      await verifier.migrateAndValidate(db, 16);
     },
   );
 
@@ -218,37 +219,34 @@ void main() {
       final connection = await verifier.startAt(9);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
-      await verifier.migrateAndValidate(db, 15);
+      await verifier.migrateAndValidate(db, 16);
 
       final rows = await db.select(db.units).get();
       final byName = {for (final u in rows) u.name: u.type};
 
-      expect(rows, hasLength(18));
-      expect(byName['botella'], 'contenedor');
-      expect(byName['bolsa'], 'contenedor');
-      expect(byName['paquete'], 'contenedor');
-      expect(byName['caja'], 'contenedor');
-      expect(byName['frasco'], 'contenedor');
-      expect(byName['lata'], 'contenedor');
-      expect(byName['rollo'], 'contenedor');
-      expect(byName['unidad'], 'medida');
-      expect(byName['metro'], 'medida');
-      expect(byName['litro'], 'medida');
-      expect(byName['kg'], 'medida');
-      expect(byName['gramo'], 'medida');
-      expect(byName['otro'], 'otros');
-      // Unidades agregadas después
-      expect(byName['centímetro'], 'medida');
-      expect(byName['milímetro'], 'medida');
-      expect(byName['mililitro'], 'medida');
-      expect(byName['metro cuadrado'], 'medida');
-      expect(byName['tira'], 'contenedor');
+      // La lista simplificada: exactamente estas 12, sin las retiradas.
+      expect(rows, hasLength(12));
+      expect(byName, {
+        'contenedor': 'contenedor',
+        'paquete': 'contenedor',
+        'rollo': 'contenedor',
+        'tira': 'contenedor',
+        'unidad': 'medida',
+        'metro': 'medida',
+        'centímetro': 'medida',
+        'kg': 'medida',
+        'gramo': 'medida',
+        'litro': 'medida',
+        'mililitro': 'medida',
+        'otro': 'otros',
+      });
     },
   );
 
   test(
     'Materials: the old free-text unit is mapped case-insensitively to the '
-    'matching seeded Units row, falling back to "otro" when there is no '
+    'matching seeded Units row (a retired one such as "botella" ends up on '
+    'its replacement "contenedor"), falling back to "otro" when there is no '
     'match',
     () async {
       final schema = await verifier.schemaAt(9);
@@ -273,15 +271,15 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final botellaUnit = await (checkDb.select(
         checkDb.units,
-      )..where((u) => u.name.equals('botella'))).getSingle();
+      )..where((u) => u.name.equals('contenedor'))).getSingle();
       final otroUnit = await (checkDb.select(
         checkDb.units,
       )..where((u) => u.name.equals('otro'))).getSingle();
@@ -324,10 +322,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final suppliers = await checkDb.select(checkDb.suppliers).get();
@@ -351,10 +349,10 @@ void main() {
       addTearDown(schema.close);
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -381,10 +379,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -422,10 +420,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final roles = await checkDb.select(checkDb.roles).get();
@@ -456,10 +454,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.roles).get())
@@ -497,10 +495,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final sale = await (checkDb.select(
@@ -537,10 +535,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final usage = await checkDb.select(checkDb.productMaterials).getSingle();
@@ -565,10 +563,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final event = await (checkDb.select(
@@ -615,10 +613,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final categories = {
@@ -636,10 +634,10 @@ void main() {
     },
   );
 
-  // --- v14 -> v15: nuevas unidades sembradas ---
+  // --- v14 -> v16: la lista de unidades se simplifica ---
   test(
-    'Units: an existing install gets the five new units, keeps its existing '
-    'ones (same ids), and nothing is duplicated',
+    'Units: an existing v14 install ends with exactly the 12 current units, '
+    'keeps its existing ones (same ids), and nothing is duplicated',
     () async {
       final schema = await verifier.schemaAt(14);
       addTearDown(schema.close);
@@ -656,10 +654,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 15);
+      await verifier.migrateAndValidate(dbForMigration, 16);
       await dbForMigration.close();
 
-      final checkDb = v15.DatabaseAtV15(schema.newConnection());
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
       addTearDown(checkDb.close);
 
       final rows = await checkDb.select(checkDb.units).get();
@@ -670,14 +668,203 @@ void main() {
       expect(byName['Tira']!.id, tiraId);
       // "tira" no se duplicó con otra capitalización.
       expect(rows.where((u) => u.name.toLowerCase() == 'tira'), hasLength(1));
-      // Las cuatro medidas nuevas se agregaron.
-      for (final name in ['centímetro', 'milímetro', 'mililitro', 'metro cuadrado']) {
-        expect(byName[name]?.type, 'medida', reason: name);
-      }
-      // Cada nombre aparece una sola vez.
-      expect(rows.map((u) => u.name.toLowerCase()).toSet(), hasLength(rows.length));
+      // Quedan exactamente las 12 vigentes, cada nombre una sola vez.
+      expect(rows, hasLength(12));
+      expect(rows.map((u) => u.name.toLowerCase()).toSet(), {
+        'contenedor',
+        'paquete',
+        'rollo',
+        'tira',
+        'unidad',
+        'metro',
+        'centímetro',
+        'kg',
+        'gramo',
+        'litro',
+        'mililitro',
+        'otro',
+      });
     },
   );
+
+  // --- v15 -> v16: unidades retiradas ---
+  const retiredToReplacement = {
+    'botella': 'contenedor',
+    'frasco': 'contenedor',
+    'lata': 'contenedor',
+    'bolsa': 'contenedor',
+    'caja': 'contenedor',
+    'milímetro': 'centímetro',
+    'metro cuadrado': 'metro',
+  };
+
+  test(
+    'Units: a material on a retired unit is remapped (botella/frasco/lata/'
+    'bolsa/caja -> contenedor, milímetro -> centímetro, metro cuadrado -> '
+    'metro), keeping its id and every other field; retired units are removed',
+    () async {
+      final schema = await verifier.schemaAt(15);
+      addTearDown(schema.close);
+
+      // Una instalación v15 tal como estaba: las 18 unidades anteriores.
+      final oldDb = v15.DatabaseAtV15(schema.newConnection());
+      const legacy = [
+        ('botella', 'contenedor'),
+        ('bolsa', 'contenedor'),
+        ('paquete', 'contenedor'),
+        ('caja', 'contenedor'),
+        ('frasco', 'contenedor'),
+        ('lata', 'contenedor'),
+        ('rollo', 'contenedor'),
+        ('unidad', 'medida'),
+        ('metro', 'medida'),
+        ('litro', 'medida'),
+        ('kg', 'medida'),
+        ('gramo', 'medida'),
+        ('centímetro', 'medida'),
+        ('milímetro', 'medida'),
+        ('mililitro', 'medida'),
+        ('metro cuadrado', 'medida'),
+        ('tira', 'contenedor'),
+        ('otro', 'otros'),
+      ];
+      final legacyIds = <String, int>{};
+      for (final (name, type) in legacy) {
+        legacyIds[name] = await oldDb.into(oldDb.units).insert(
+          v15.UnitsCompanion.insert(name: name, type: type),
+        );
+      }
+      // Un material por cada unidad retirada, más uno en una unidad vigente.
+      final materialIds = <String, int>{};
+      for (final name in [...retiredToReplacement.keys, 'paquete']) {
+        materialIds[name] = await oldDb.into(oldDb.materials).insert(
+          v15.MaterialsCompanion.insert(
+            name: 'Material en $name',
+            unitId: legacyIds[name]!,
+            pricePerUnit: 7.5,
+            stock: const Value(3.0),
+          ),
+        );
+      }
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 16);
+      await dbForMigration.close();
+
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final units = await checkDb.select(checkDb.units).get();
+      final nameById = {for (final u in units) u.id: u.name};
+      expect(units, hasLength(12));
+      for (final retired in retiredToReplacement.keys) {
+        expect(nameById.values, isNot(contains(retired)), reason: retired);
+      }
+
+      for (final entry in retiredToReplacement.entries) {
+        final material = await (checkDb.select(
+          checkDb.materials,
+        )..where((m) => m.id.equals(materialIds[entry.key]!))).getSingle();
+        expect(
+          nameById[material.unitId],
+          entry.value,
+          reason: '${entry.key} -> ${entry.value}',
+        );
+        // Solo cambió la unidad.
+        expect(material.name, 'Material en ${entry.key}');
+        expect(material.pricePerUnit, 7.5);
+        expect(material.stock, 3.0);
+      }
+      // Un material en una unidad vigente no se toca (mismo id de unidad).
+      final kept = await (checkDb.select(
+        checkDb.materials,
+      )..where((m) => m.id.equals(materialIds['paquete']!))).getSingle();
+      expect(kept.unitId, legacyIds['paquete']);
+    },
+  );
+
+  test(
+    'Units: history is untouched — product usage keeps pointing at the same '
+    'material after its unit is remapped',
+    () async {
+      final schema = await verifier.schemaAt(15);
+      addTearDown(schema.close);
+
+      final oldDb = v15.DatabaseAtV15(schema.newConnection());
+      final botellaId = await oldDb.into(oldDb.units).insert(
+        v15.UnitsCompanion.insert(name: 'botella', type: 'contenedor'),
+      );
+      final materialId = await oldDb.into(oldDb.materials).insert(
+        v15.MaterialsCompanion.insert(
+          name: 'Pintura',
+          unitId: botellaId,
+          pricePerUnit: 12,
+        ),
+      );
+      final productId = await oldDb.into(oldDb.products).insert(
+        v15.ProductsCompanion.insert(
+          categoryId: 1,
+          name: 'Cuadro',
+          priceA: 50,
+          priceB: 45,
+        ),
+      );
+      final usageId = await oldDb.into(oldDb.productMaterials).insert(
+        v15.ProductMaterialsCompanion.insert(
+          productId: productId,
+          materialId: materialId,
+          quantityUsed: 0.5,
+        ),
+      );
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 16);
+      await dbForMigration.close();
+
+      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final usage = await (checkDb.select(
+        checkDb.productMaterials,
+      )..where((u) => u.id.equals(usageId))).getSingle();
+      expect(usage.materialId, materialId);
+      expect(usage.quantityUsed, 0.5);
+      final material = await (checkDb.select(
+        checkDb.materials,
+      )..where((m) => m.id.equals(materialId))).getSingle();
+      final unit = await (checkDb.select(
+        checkDb.units,
+      )..where((u) => u.id.equals(material.unitId))).getSingle();
+      expect(unit.name, 'contenedor');
+      expect(unit.type, 'contenedor');
+    },
+  );
+
+  test('Units: a fresh install seeds exactly the 12 current units', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+
+    final rows = await db.select(db.units).get();
+    expect(rows.map((u) => u.name).toList(), [
+      'contenedor',
+      'paquete',
+      'rollo',
+      'tira',
+      'unidad',
+      'metro',
+      'centímetro',
+      'kg',
+      'gramo',
+      'litro',
+      'mililitro',
+      'otro',
+    ]);
+    for (final retired in retiredToReplacement.keys) {
+      expect(rows.any((u) => u.name == retired), isFalse, reason: retired);
+    }
+  });
 
   test('Roles: a fresh install seeds "empleado" and no "usuario" role', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());

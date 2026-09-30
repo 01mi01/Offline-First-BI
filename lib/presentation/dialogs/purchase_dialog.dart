@@ -932,7 +932,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
             ),
             const SizedBox(height: AppSpacing.s16),
 
-            // Cantidad: unidades "por pieza" (botella, caja, unidad...) solo
+            // Cantidad: unidades "por pieza" (contenedor, paquete, unidad...) solo
             // aceptan enteros, porque a un proveedor se le compran piezas
             // completas, no fracciones.
             Builder(

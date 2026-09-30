@@ -10,7 +10,7 @@ import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 // "Registro de uso" de materiales por producto: el campo de cantidad depende
-// del tipo de unidad (botella -> fracciones; unidad -> solo enteros; metro ->
+// del tipo de unidad (contenedor -> fracciones; unidad -> solo enteros; metro ->
 // decimales), y los textos de stock/precio muestran el nombre de la unidad.
 Future<void> _openUsageTab(WidgetTester tester, AppDatabase db) async {
   tester.view.physicalSize = const Size(412, 915);
@@ -75,7 +75,7 @@ void main() {
 
     await material('Botones', 'unidad', 30);
     await material('Cinta', 'metro', 10);
-    await material('Pintura', 'botella', 5);
+    await material('Pintura', 'contenedor', 5);
   });
 
   tearDown(() async {
@@ -121,7 +121,7 @@ void main() {
     expect(find.text('Stock disponible: 10 metros'), findsOneWidget);
   });
 
-  testWidgets('botella: fraction picker, no free-text decimal field', (
+  testWidgets('contenedor: fraction picker, no free-text decimal field', (
     tester,
   ) async {
     await _openUsageTab(tester, db);
@@ -129,7 +129,7 @@ void main() {
 
     expect(find.byType(FractionQuantityPicker), findsOneWidget);
     expect(find.byType(WholeNumberQuantityField), findsNothing);
-    expect(find.text('Stock disponible: 5 botellas'), findsOneWidget);
+    expect(find.text('Stock disponible: 5 contenedores'), findsOneWidget);
   });
 
   testWidgets(
@@ -195,10 +195,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Stock: 5 botellas'), findsOneWidget);
+    expect(find.text('Stock: 5 contenedores'), findsOneWidget);
     expect(find.text('Stock: 30 unidades'), findsOneWidget);
     expect(find.text('Stock: 10 metros'), findsOneWidget);
-    expect(find.text('Bs. 2.00 / botella'), findsOneWidget);
+    expect(find.text('Bs. 2.00 / contenedor'), findsOneWidget);
     expect(find.text('Bs. 2.00 / metro'), findsOneWidget);
     // Ya no se muestra el genérico "/u".
     expect(find.textContaining('/u'), findsNothing);

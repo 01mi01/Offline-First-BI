@@ -285,12 +285,12 @@ void main() {
       await expectDecimalRejected(tester, quantity);
     });
 
-    testWidgets('botella (contenedor) rejects a decimal with visible feedback', (
+    testWidgets('contenedor rejects a decimal with visible feedback', (
       tester,
     ) async {
-      await addMaterial('Pintura', 'botella');
+      await addMaterial('Pintura', 'contenedor');
       final quantity = await openAddSheetWith(tester, 'Pintura');
-      expect(find.text('Cantidad (botella)'), findsOneWidget);
+      expect(find.text('Cantidad (contenedor)'), findsOneWidget);
       await expectDecimalRejected(tester, quantity);
     });
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 
-// Campos de cantidad de unidades "por pieza" (unidad, botella...): un "." no
+// Campos de cantidad de unidades "por pieza" (unidad, contenedor...): un "." no
 // debe descartarse en silencio (antes "2.5" se convertía en "25"), sino
 // rechazarse con feedback visible.
 void main() {
@@ -200,11 +200,11 @@ void main() {
 
   group('unitLabel (unit name next to a quantity)', () {
     test('singular for exactly 1', () {
-      expect(unitLabel('botella', 1), 'botella');
+      expect(unitLabel('contenedor', 1), 'contenedor');
     });
 
     test('plural with -s after a vowel', () {
-      expect(unitLabel('botella', 5), 'botellas');
+      expect(unitLabel('contenedor', 5), 'contenedores');
       expect(unitLabel('metro', 0.5), 'metros');
     });
 

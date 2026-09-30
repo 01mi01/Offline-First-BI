@@ -37,7 +37,7 @@ void main() {
     );
     final unit = await (db.select(
       db.units,
-    )..where((u) => u.name.equals('botella'))).getSingle();
+    )..where((u) => u.name.equals('contenedor'))).getSingle();
     for (final name in ['Vidrio fino', 'Hilo']) {
       await db.into(db.materials).insert(
         MaterialsCompanion.insert(

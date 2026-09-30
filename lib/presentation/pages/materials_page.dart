@@ -526,7 +526,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
             ],
             const SizedBox(height: AppSpacing.s16),
 
-            // Cantidad: para unidades tipo envase (botella, bolsa...) se
+            // Cantidad: para unidades tipo envase (contenedor, paquete, rollo, tira) se
             // ofrecen fracciones simples en vez de pedir un decimal exacto;
             // para unidades "por pieza" (unidad genérica) se exige un entero.
             if (selectedUnit != null &&
