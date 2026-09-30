@@ -58,7 +58,7 @@ class SalesListBody extends ConsumerWidget {
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.s16),
+                  padding: AppSpacing.listWithFab,
                   itemCount: state.sales.length,
                   itemBuilder: (context, index) {
                     final sale = state.sales[index];
@@ -241,7 +241,7 @@ class _SaleCard extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.cancel_outlined,
-                    color: AppColors.errorDark, size: 20),
+                    color: AppColors.error, size: 20),
                 tooltip: 'Cancelar venta',
                 onPressed: onCancel,
               ),
@@ -361,13 +361,13 @@ class _SaleReceiptDialogState
                           width: double.infinity,
                           padding: const EdgeInsets.all(AppSpacing.s12),
                           decoration: BoxDecoration(
-                            color: AppColors.errorDark.withOpacity(0.08),
+                            color: AppColors.error.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             'Venta cancelada: su stock fue devuelto al inventario.',
                             style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(color: AppColors.errorDark),
+                                ?.copyWith(color: AppColors.error),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.s12),

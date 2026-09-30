@@ -73,7 +73,7 @@ class _EventsTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.s16),
+              padding: AppSpacing.listWithFab,
               itemCount: state.events.length,
               itemBuilder: (context, index) {
                 final event = state.events[index];
@@ -133,7 +133,7 @@ class _LocationsTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.s16),
+              padding: AppSpacing.listWithFab,
               itemCount: state.locations.length,
               itemBuilder: (context, index) {
                 final loc = state.locations[index];

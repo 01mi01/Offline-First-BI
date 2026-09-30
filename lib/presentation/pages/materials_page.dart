@@ -78,7 +78,7 @@ class MaterialsListTab extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.s16),
+              padding: AppSpacing.listWithFab,
               itemCount: state.materials.length,
               itemBuilder: (context, index) {
                 final m = state.materials[index];
@@ -278,7 +278,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                   AppSpacing.s16,
                   0,
                   AppSpacing.s16,
-                  AppSpacing.s16,
+                  AppSpacing.s16 + 56 + AppSpacing.s16,
                 ),
                 itemCount: _usageLog.length,
                 itemBuilder: (context, index) {
@@ -317,12 +317,27 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                                   ],
                                 ],
                               ),
-                              Text(
-                                'Cantidad: ${formatNumber(entry.quantityUsed)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}  •  Bs. ${entry.pricePerUnit.toStringAsFixed(2)} / ${entry.materialUnitName}',
-                                style: Theme.of(context).textTheme
-                                    .labelMedium?.copyWith(
-                                      color: AppColors.textSecondary,
+                              // Cantidad y precio son dos piezas que no se
+                              // parten por dentro: si no caben juntas, el
+                              // precio completo pasa a la línea de abajo.
+                              Wrap(
+                                spacing: AppSpacing.s16,
+                                children: [
+                                  for (final piece in [
+                                    'Cantidad: ${formatNumber(entry.quantityUsed)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
+                                    'Bs. ${entry.pricePerUnit.toStringAsFixed(2)} / ${entry.materialUnitName}',
+                                  ])
+                                    Text(
+                                      piece,
+                                      softWrap: false,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
                                     ),
+                                ],
                               ),
                             ],
                           ),
@@ -341,7 +356,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                           IconButton(
                             icon: const Icon(
                               Icons.cancel_outlined,
-                              color: AppColors.errorDark,
+                              color: AppColors.error,
                               size: 20,
                             ),
                             tooltip: 'Cancelar registro',

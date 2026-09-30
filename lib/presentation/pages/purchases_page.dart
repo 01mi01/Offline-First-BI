@@ -56,7 +56,7 @@ class PurchasesListBody extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.s16),
+              padding: AppSpacing.listWithFab,
               itemCount: state.purchases.length,
               itemBuilder: (context, index) {
                 final purchase = state.purchases[index];

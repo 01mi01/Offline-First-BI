@@ -169,7 +169,7 @@ class _ListViewWidget extends ConsumerWidget {
     final categories = ref.watch(categoryProvider).categories;
 
     return ListView.builder(
-      padding: const EdgeInsets.all(AppSpacing.s16),
+      padding: AppSpacing.listWithFab,
       itemCount: products.length,
       itemBuilder: (context, index) {
         final p = products[index];
@@ -200,7 +200,7 @@ class _GridView extends StatelessWidget {
     final active = products.where((p) => p.isActive).toList();
 
     return GridView.builder(
-      padding: const EdgeInsets.all(AppSpacing.s16),
+      padding: AppSpacing.listWithFab,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,

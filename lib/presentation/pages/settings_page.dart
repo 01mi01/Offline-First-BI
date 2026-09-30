@@ -124,11 +124,11 @@ class SettingsPage extends ConsumerWidget {
           // Cerrar sesión
           OutlinedButton.icon(
             onPressed: () => _logout(context, ref),
-            icon: const Icon(Icons.logout, color: AppColors.errorDark),
+            icon: const Icon(Icons.logout, color: AppColors.error),
             label: const Text(
               'Cerrar sesión',
               style: TextStyle(
-                color: AppColors.errorDark,
+                color: AppColors.error,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -137,7 +137,7 @@ class SettingsPage extends ConsumerWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(50),
               ),
-              side: const BorderSide(color: AppColors.errorDark),
+              side: const BorderSide(color: AppColors.error),
             ),
           ),
         ],

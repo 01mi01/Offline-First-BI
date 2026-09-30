@@ -53,7 +53,7 @@ class ClientsListBody extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.s16),
+              padding: AppSpacing.listWithFab,
               itemCount: state.clients.length,
               itemBuilder: (context, index) {
                 final c = state.clients[index];

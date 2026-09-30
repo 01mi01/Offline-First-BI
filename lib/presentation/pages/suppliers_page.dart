@@ -51,7 +51,7 @@ class SuppliersListBody extends ConsumerWidget {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.s16),
+              padding: AppSpacing.listWithFab,
               itemCount: state.suppliers.length,
               itemBuilder: (context, index) {
                 final s = state.suppliers[index];

@@ -3,7 +3,7 @@ import '../../theme/app_theme.dart';
 
 // Etiqueta de estado de un registro: "Activo"/"Inactivo" (o su forma
 // femenina) y "Cancelada"/"Cancelado". Un solo widget para toda la app, con
-// colores de texto oscuros (errorDark/successDark) que cumplen el contraste
+// colores de texto oscuros (error/successDark) que cumplen el contraste
 // mínimo sobre su fondo tenue.
 class StatusBadge extends StatelessWidget {
   final String label;
@@ -34,7 +34,7 @@ class StatusBadge extends StatelessWidget {
 
   // Color del texto y del fondo (público para poder comprobar el contraste).
   static Color textColor(bool positive) =>
-      positive ? AppColors.successDark : AppColors.errorDark;
+      positive ? AppColors.successDark : AppColors.error;
 
   static Color backgroundColor(bool positive) =>
       (positive ? AppColors.success : AppColors.error).withOpacity(0.1);

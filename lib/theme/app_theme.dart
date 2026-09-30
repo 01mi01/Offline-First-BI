@@ -10,13 +10,14 @@ class AppColors {
   static const textPrimary = Color(0xFF000000);
   static const textSecondary = Color(0xFF6B7280);
   static const border = Color(0xFFE5E7EB);
-  static const error = Color(0xFFFF3B30);
+  // El único rojo de la aplicación: errores de validación, cancelaciones,
+  // acciones destructivas, gastos... Oscuro a propósito: cumple el contraste
+  // mínimo de 4.5:1 sobre fondo claro, también como texto pequeño.
+  static const error = Color(0xFFB71C1C);
   static const success = Color(0xFF34C759);
-  // Variantes más oscuras de error y éxito para TEXTO pequeño (etiquetas
-  // "Activo"/"Inactivo", "Cancelada"): el rojo y el verde base no llegan al
-  // contraste mínimo de 4.5:1 sobre fondo claro. Mismo tono, más oscuro (igual
-  // que primaryDark respecto de primary).
-  static const errorDark = Color(0xFFB71C1C);
+  // Variante más oscura del verde para TEXTO pequeño (etiquetas "Activo"): el
+  // verde base no llega al contraste mínimo de 4.5:1 sobre fondo claro. Mismo
+  // tono, más oscuro (igual que primaryDark respecto de primary).
   static const successDark = Color(0xFF176B31);
 }
 
@@ -35,6 +36,16 @@ class AppSpacing {
   static const double s28 = 28;
   static const double s32 = 32;
   static const double s40 = 40;
+
+  // Relleno para listas con botón flotante (+): el botón mide 56 y flota a 16
+  // del borde, así que la última fila necesita ese espacio más el margen para
+  // no quedar tapada al llegar al final del desplazamiento.
+  static const EdgeInsets listWithFab = EdgeInsets.fromLTRB(
+    s16,
+    s16,
+    s16,
+    s16 + 56 + s16,
+  );
 }
 
 // Formatea un número eliminando decimales innecesarios

@@ -167,7 +167,7 @@ class _ListViewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.all(AppSpacing.s16),
+      padding: AppSpacing.listWithFab,
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final cat = categories[index];
@@ -188,7 +188,7 @@ class _GridView extends StatelessWidget {
     final active = categories.where((c) => c.isActive).toList();
 
     return GridView.builder(
-      padding: const EdgeInsets.all(AppSpacing.s16),
+      padding: AppSpacing.listWithFab,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,

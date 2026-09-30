@@ -361,6 +361,13 @@ class AppDatabase extends _$AppDatabase {
     ('otro', 'otros'),
   ];
 
+  // Nombres de las unidades vigentes en el orden pensado para mostrarlas
+  // (el de la semilla). Las instalaciones migradas conservan los ids de antes,
+  // así que el orden de presentación no puede depender del id.
+  static List<String> get unitDisplayOrder => [
+    for (final (name, _) in _unitSeeds) name,
+  ];
+
   // Lista que se sembraba hasta la versión 15. Los pasos de migración
   // antiguos (versiones 10 y 15) siguen usándola para dejar la base como estaba
   // en su momento; el paso a la versión 16 la reduce a [_unitSeeds].

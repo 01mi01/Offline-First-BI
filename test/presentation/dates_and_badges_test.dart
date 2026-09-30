@@ -145,13 +145,11 @@ void main() {
       });
     }
 
-    test('the badge colors are darker shades of the palette green / red', () {
-      // Mismo tono que success/error, solo más oscuro (como primaryDark).
+    test('the badge green is a darker shade of the palette green; the red is the single app red', () {
+      // Mismo tono que success, solo más oscuro (como primaryDark).
       final hsl = HSLColor.fromColor;
       expect((hsl(AppColors.successDark).hue - hsl(AppColors.success).hue).abs(), lessThan(20));
-      expect((hsl(AppColors.errorDark).hue - hsl(AppColors.error).hue).abs(), lessThan(20));
       expect(hsl(AppColors.successDark).lightness, lessThan(hsl(AppColors.success).lightness));
-      expect(hsl(AppColors.errorDark).lightness, lessThan(hsl(AppColors.error).lightness));
     });
 
     test('control: the previous colors did NOT reach 4.5:1 (this is what was fixed)', () {
@@ -159,9 +157,11 @@ void main() {
         AppColors.success,
         _over(AppColors.success.withOpacity(0.1), surface),
       );
+      // El rojo brillante anterior de la aplicación (ya no se usa en ninguna parte).
+      const brightRed = Color(0xFFFF3B30);
       final oldRed = contrast(
-        AppColors.error,
-        _over(AppColors.error.withOpacity(0.1), surface),
+        brightRed,
+        _over(brightRed.withOpacity(0.1), surface),
       );
       expect(oldGreen, lessThan(4.5));
       expect(oldRed, lessThan(4.5));
@@ -203,7 +203,7 @@ void main() {
             ?.color;
 
         expect(colorOf('Activa'), AppColors.successDark);
-        expect(colorOf('Inactiva'), AppColors.errorDark);
+        expect(colorOf('Inactiva'), AppColors.error);
       });
     });
   });

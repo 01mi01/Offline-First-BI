@@ -98,6 +98,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     _totalController.text = formatNumber(total);
   }
 
+  // "2 metros", "1 paquete": cantidad con el nombre de su unidad concordado
+  // (igual que en las tarjetas de producto y el registro de uso).
+  String _quantityWithUnit(double quantity, String? unitName) {
+    final number = formatNumber(quantity);
+    if (unitName == null || unitName.isEmpty) return number;
+    return '$number ${unitLabel(unitName, quantity)}';
+  }
+
   void _showAddSupplierSheet() {
     dismissKeyboard();
     showModalBottomSheet(
@@ -236,18 +244,38 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
         ? _selectedSupplierId
         : null;
 
-    // Altura fija (90 % de la pantalla): al cambiar entre "Materiales" y "Gasto
+    // Material por unidad: nombre de la unidad de cada material de la lista.
+    final allMaterials = ref.watch(materialProvider).materials;
+    final allUnits = ref.watch(unitProvider).units;
+    String? unitNameOf(Object? materialId) {
+      final material = allMaterials
+          .where((m) => m.id == materialId)
+          .firstOrNull;
+      if (material == null) return null;
+      return allUnits.where((u) => u.id == material.unitId).firstOrNull?.name;
+    }
+
+    // Con el teclado abierto cada píxel cuenta: los márgenes se reducen para
+    // que el formulario que se desplaza tenga más alto. El título, el selector
+    // y los botones siguen fijos.
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final gapAfterTitle = keyboardOpen ? AppSpacing.s12 : AppSpacing.s24;
+    final gapAfterSelector = keyboardOpen ? AppSpacing.s8 : AppSpacing.s16;
+
+    // Altura fija (94 % de la pantalla): al cambiar entre "Materiales" y "Gasto
     // general" el contenido cambia de alto, pero la hoja no, así que el título y
     // el selector no se mueven. El formulario se desplaza dentro; los botones
     // quedan siempre a la vista.
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.9,
+      height: MediaQuery.of(context).size.height * 0.94,
       child: Padding(
         padding: EdgeInsets.only(
           left: AppSpacing.s24,
           right: AppSpacing.s24,
-          top: AppSpacing.s24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
+          top: keyboardOpen ? AppSpacing.s16 : AppSpacing.s24,
+          bottom:
+              MediaQuery.of(context).viewInsets.bottom +
+              (keyboardOpen ? AppSpacing.s12 : AppSpacing.s32),
         ),
         child: Form(
           key: _formKey,
@@ -262,7 +290,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: AppSpacing.s24),
+              SizedBox(height: gapAfterTitle),
 
               // Tipo de compra: dos opciones, cada una con su propio nombre
               // (no una etiqueta fija con un subtítulo que cambia).
@@ -312,7 +340,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.s16),
+              SizedBox(height: gapAfterSelector),
 
               Expanded(
                 child: SingleChildScrollView(
@@ -525,8 +553,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                           ),
                                         ),
                                         const SizedBox(height: AppSpacing.s4),
-                                        // Edición inline de cantidad
-                                        Row(
+                                        // Edición inline de cantidad. Wrap: con nombres de
+                                        // unidad largos la línea baja en vez de desbordar.
+                                        Wrap(
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
                                           children: [
                                             GestureDetector(
                                               onTap: () {
@@ -565,8 +596,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                                     horizontal: AppSpacing.s10,
                                                   ),
                                               child: Text(
-                                                formatNumber(
+                                                _quantityWithUnit(
                                                   item['quantity'] as double,
+                                                  unitNameOf(
+                                                    item['materialId'],
+                                                  ),
                                                 ),
                                                 style: Theme.of(context)
                                                     .textTheme
@@ -778,6 +812,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         alignment: Alignment.center,
+                        // Menos relleno lateral: "Registrar compra" cabe en una
+                        // sola línea dentro de medio ancho.
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s8,
+                        ),
                       ),
                       onPressed: _isLoading ? null : _save,
                       child: _isLoading
@@ -789,11 +828,17 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : Text(
-                              isEditing ? 'Guardar' : 'Registrar compra',
-                              style: Theme.of(context).textTheme.headlineLarge
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.center,
+                          : FittedBox(
+                              // Si aun así no cupiera (fuente grande), se
+                              // reduce en vez de partirse en dos líneas.
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                isEditing ? 'Guardar' : 'Registrar compra',
+                                maxLines: 1,
+                                style: Theme.of(context).textTheme.headlineLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                     ),
                   ),

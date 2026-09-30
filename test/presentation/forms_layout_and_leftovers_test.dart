@@ -372,7 +372,7 @@ void main() {
       );
       expect(
         button.style!.backgroundColor!.resolve(<WidgetState>{}),
-        AppColors.errorDark,
+        AppColors.error,
       );
     });
   });
