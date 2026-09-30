@@ -51,7 +51,7 @@ class SupplierRepository {
         database.suppliers,
       )..where((s) => s.id.equals(id))).getSingleOrNull();
       if (current != null && DefaultRecords.isSupplier(current.name)) {
-        throw const ProtectedRecordException();
+        throw const ProtectedRecordException(DefaultRecords.protectedSupplierMessage);
       }
     }
     if (DefaultRecords.isSupplier(name)) {

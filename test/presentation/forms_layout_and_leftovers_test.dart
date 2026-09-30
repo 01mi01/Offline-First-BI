@@ -420,19 +420,19 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('"Precio A" y "Precio B" nunca se parten por la mitad', (
+    testWidgets('las píldoras de precio A y B no se parten por la mitad', (
       tester,
     ) async {
       await seedProduct();
       // Ancho muy justo: fuerza el salto de línea.
       await pumpProducts(tester, const Size(420, 640));
 
-      final a = find.text('Precio A: Bs. 60.00');
-      final b = find.text('Precio B: Bs. 50.00');
+      final a = find.text('A: Bs. 60.00');
+      final b = find.text('B: Bs. 50.00');
       expect(a, findsOneWidget);
       expect(b, findsOneWidget);
       // Cada etiqueta ocupa una sola línea (no se parte) y mide lo mismo que
-      // su vecina, aunque el ancho obligue a pasar "Precio B" a la fila de abajo.
+      // su vecina, aunque el ancho obligue a pasar la píldora B a la fila de abajo.
       expect(tester.getSize(b).height, tester.getSize(a).height);
       final fontSize = tester.widget<Text>(a).style!.fontSize!;
       expect(tester.getSize(a).height, lessThan(fontSize * 2));

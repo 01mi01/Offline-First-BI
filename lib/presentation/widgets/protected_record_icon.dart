@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
 // Indicador de un registro predeterminado del sistema: reemplaza al botón de
-// editar, porque no se puede renombrar, editar ni desactivar.
+// editar, porque no se puede editar ni desactivar. [message] es el texto de
+// [DefaultRecords] que corresponde a cada entidad (categoría, cliente...).
 class ProtectedRecordIcon extends StatelessWidget {
-  const ProtectedRecordIcon({super.key});
+  final String message;
+
+  const ProtectedRecordIcon({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(AppSpacing.s12),
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.s12),
       child: Tooltip(
-        message: 'Registro predeterminado: no se puede editar ni desactivar',
+        message: message,
         triggerMode: TooltipTriggerMode.tap,
-        child: Icon(
+        child: const Icon(
           Icons.lock_outline,
           color: AppColors.textSecondary,
           size: 20,

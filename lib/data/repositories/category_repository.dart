@@ -46,7 +46,7 @@ class CategoryRepository {
         database.categories,
       )..where((c) => c.id.equals(id))).getSingleOrNull();
       if (current != null && DefaultRecords.isCategory(current.name)) {
-        throw const ProtectedRecordException();
+        throw const ProtectedRecordException(DefaultRecords.protectedCategoryMessage);
       }
     }
     if (newName != null && DefaultRecords.isCategory(newName)) {

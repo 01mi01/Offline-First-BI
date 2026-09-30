@@ -51,7 +51,7 @@ class ClientRepository {
         database.clients,
       )..where((c) => c.id.equals(id))).getSingleOrNull();
       if (current != null && DefaultRecords.isClient(current.name)) {
-        throw const ProtectedRecordException();
+        throw const ProtectedRecordException(DefaultRecords.protectedClientMessage);
       }
     }
     if (DefaultRecords.isClient(name)) {

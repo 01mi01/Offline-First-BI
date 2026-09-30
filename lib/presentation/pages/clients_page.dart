@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
 import '../../models/client_model.dart';
+import '../../models/default_records.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/client_dialog.dart';
 import '../widgets/app_bar_widget.dart';
@@ -48,7 +49,7 @@ class ClientsListBody extends ConsumerWidget {
           : state.clients.isEmpty
           ? Center(
               child: Text(
-                'No hay clientes registrados',
+                'No se registraron clientes',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             )
@@ -61,7 +62,9 @@ class ClientsListBody extends ConsumerWidget {
                   name: c.name,
                   contactInfo: c.contactInfo,
                   isActive: c.isActive,
-                  isProtected: c.isDefault,
+                  protectedMessage: c.isDefault
+                      ? DefaultRecords.protectedClientMessage
+                      : null,
                   onEdit: () => _showDialog(context, c),
                 );
               },
@@ -89,9 +92,9 @@ class ContactCard extends StatefulWidget {
   final String name;
   final String? contactInfo;
   final bool isActive;
-  // Registro predeterminado del sistema: se muestra con candado en lugar del
-  // botón de editar.
-  final bool isProtected;
+  // Registro predeterminado del sistema: si [protectedMessage] no es nulo, se
+  // muestra con candado (y ese texto como ayuda) en lugar del botón de editar.
+  final String? protectedMessage;
   final VoidCallback onEdit;
 
   const ContactCard({
@@ -99,7 +102,7 @@ class ContactCard extends StatefulWidget {
     required this.name,
     required this.contactInfo,
     required this.isActive,
-    this.isProtected = false,
+    this.protectedMessage,
     required this.onEdit,
   });
 
@@ -299,8 +302,8 @@ inactiveLabel: 'Inactivo',
                 ],
               ),
             ),
-            if (widget.isProtected)
-              const ProtectedRecordIcon()
+            if (widget.protectedMessage != null)
+              ProtectedRecordIcon(message: widget.protectedMessage!)
             else
               IconButton(
                 icon: const Icon(

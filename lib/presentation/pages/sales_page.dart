@@ -53,7 +53,7 @@ class SalesListBody extends ConsumerWidget {
           : state.sales.isEmpty
               ? Center(
                   child: Text(
-                    'No hay ventas registradas',
+                    'No se registraron ventas',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 )

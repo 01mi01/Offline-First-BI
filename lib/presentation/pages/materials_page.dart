@@ -73,7 +73,7 @@ class MaterialsListTab extends ConsumerWidget {
           : state.materials.isEmpty
           ? Center(
               child: Text(
-                'No hay materiales registrados',
+                'No se registraron materiales',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             )
@@ -162,8 +162,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
       message:
           'Se devolverá ${formatNumber(entry.quantityUsed)} '
           '${unitLabel(entry.materialUnitName, entry.quantityUsed)} de '
-          '"${entry.materialName}" al stock. El registro seguirá en la lista, '
-          'marcado como cancelado, y ya no se podrá editar.',
+          '"${entry.materialName}" al stock.',
       confirmLabel: 'Cancelar registro',
     );
     if (!confirmed) return;

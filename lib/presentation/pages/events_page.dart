@@ -68,7 +68,7 @@ class _EventsTab extends ConsumerWidget {
           : state.events.isEmpty
           ? Center(
               child: Text(
-                'No hay eventos registrados',
+                'No se registraron eventos',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             )
@@ -128,7 +128,7 @@ class _LocationsTab extends ConsumerWidget {
           : state.locations.isEmpty
           ? Center(
               child: Text(
-                'No hay ubicaciones registradas',
+                'No se registraron ubicaciones',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             )

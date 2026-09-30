@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import '../../application/category_provider.dart';
 import '../../models/category_model.dart';
+import '../../models/default_records.dart';
 import '../widgets/protected_record_icon.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/category_dialog.dart';
@@ -58,7 +59,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                 : state.categories.isEmpty
                 ? Center(
                     child: Text(
-                      'No hay categorías registradas',
+                      'No se registraron categorías',
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   )
@@ -274,7 +275,9 @@ inactiveLabel: 'Inactiva',
             ),
           ),
           if (category.isDefault)
-            const ProtectedRecordIcon()
+            const ProtectedRecordIcon(
+              message: DefaultRecords.protectedCategoryMessage,
+            )
           else
             IconButton(
               icon: const Icon(

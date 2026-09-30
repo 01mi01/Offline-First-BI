@@ -9,10 +9,13 @@ import 'focus_utils.dart';
 // Devuelve true solo si la persona confirma. Por defecto el botón de salida se
 // llama "Volver", para no confundirlo con la acción "Cancelar" que se confirma;
 // las confirmaciones de "Desactivar" pasan [dismissLabel] = 'Cancelar'.
+//
+// El [message] va centrado; si es nulo el diálogo solo muestra el título y las
+// acciones (p. ej. "¿Cerrar sesión?").
 Future<bool> confirmCancellation(
   BuildContext context, {
   required String title,
-  required String message,
+  String? message,
   required String confirmLabel,
   String dismissLabel = 'Volver',
 }) async {
@@ -30,10 +33,13 @@ Future<bool> confirmCancellation(
           color: AppColors.textPrimary,
         ),
       ),
-      content: Text(
-        message,
-        style: const TextStyle(color: AppColors.textSecondary),
-      ),
+      content: message == null
+          ? null
+          : Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
       actionsAlignment: MainAxisAlignment.center,
       actions: [
         SizedBox(

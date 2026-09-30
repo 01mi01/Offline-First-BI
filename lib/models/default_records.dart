@@ -7,9 +7,13 @@ class DefaultRecords {
   static const String client = 'Sin nombre';
   static const String supplier = 'Sin proveedor';
 
-  static const String protectedMessage =
-      'Es un registro predeterminado del sistema: no se puede renombrar, '
-      'editar ni desactivar.';
+  // Mismo patrón para los tres, con el artículo y el género de cada uno.
+  static const String protectedCategoryMessage =
+      'No se puede editar o desactivar esta categoría';
+  static const String protectedClientMessage =
+      'No se puede editar o desactivar este cliente';
+  static const String protectedSupplierMessage =
+      'No se puede editar o desactivar este proveedor';
   static const String reservedNameMessage =
       'Ese nombre está reservado para el registro predeterminado del sistema.';
 
@@ -28,7 +32,7 @@ class DefaultRecords {
 class ProtectedRecordException implements Exception {
   final String message;
 
-  const ProtectedRecordException([this.message = DefaultRecords.protectedMessage]);
+  const ProtectedRecordException(this.message);
 
   @override
   String toString() => message;

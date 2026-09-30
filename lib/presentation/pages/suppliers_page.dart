@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/supplier_provider.dart';
+import '../../models/default_records.dart';
 import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
@@ -46,7 +47,7 @@ class SuppliersListBody extends ConsumerWidget {
           : state.suppliers.isEmpty
           ? Center(
               child: Text(
-                'No hay proveedores registrados',
+                'No se registraron proveedores',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             )
@@ -59,7 +60,9 @@ class SuppliersListBody extends ConsumerWidget {
                   name: s.name,
                   contactInfo: s.contactInfo,
                   isActive: s.isActive,
-                  isProtected: s.isDefault,
+                  protectedMessage: s.isDefault
+                      ? DefaultRecords.protectedSupplierMessage
+                      : null,
                   onEdit: () => _showDialog(context, s),
                 );
               },

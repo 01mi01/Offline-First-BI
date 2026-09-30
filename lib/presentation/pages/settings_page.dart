@@ -15,8 +15,6 @@ class SettingsPage extends ConsumerWidget {
     final confirmed = await confirmCancellation(
       context,
       title: '¿Cerrar sesión?',
-      message:
-          'Tendrás que iniciar sesión de nuevo para volver a usar la aplicación.',
       confirmLabel: 'Cerrar sesión',
       dismissLabel: 'Cancelar',
     );
@@ -50,10 +48,19 @@ class SettingsPage extends ConsumerWidget {
           _Card(
             child: Row(
               children: [
-                const Icon(
-                  Icons.account_circle_outlined,
-                  color: AppColors.primary,
-                  size: 40,
+                // Mismo estilo que los iconos de las tarjetas de la app:
+                // icono de contorno sobre un recuadro redondeado del acento.
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.s12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.person_outline_rounded,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.s16),
                 Expanded(
@@ -88,6 +95,8 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.s24),
+          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          const SizedBox(height: AppSpacing.s24),
 
           // Preferencias (espacio reservado; todavía no hacen nada)
           _SectionTitle('Preferencias'),
@@ -99,7 +108,7 @@ class SettingsPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Modo oscuro',
+                        'Tema oscuro',
                         style: textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
@@ -122,22 +131,22 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: AppSpacing.s32),
 
           // Cerrar sesión
-          OutlinedButton.icon(
+          ElevatedButton.icon(
             onPressed: () => _logout(context, ref),
-            icon: const Icon(Icons.logout, color: AppColors.error),
+            icon: const Icon(Icons.logout, color: AppColors.surface),
             label: const Text(
               'Cerrar sesión',
               style: TextStyle(
-                color: AppColors.error,
+                color: AppColors.surface,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            style: OutlinedButton.styleFrom(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(50),
               ),
-              side: const BorderSide(color: AppColors.error),
             ),
           ),
         ],

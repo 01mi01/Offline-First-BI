@@ -60,7 +60,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 : state.products.isEmpty
                 ? Center(
                     child: Text(
-                      'No hay productos registrados',
+                      'No se registraron productos',
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   )
@@ -348,25 +348,36 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       ),
                     ],
                     const SizedBox(height: AppSpacing.s6),
-                    // Cada precio es una unidad indivisible: si no caben en una
-                    // línea, el salto ocurre entre "Precio A" y "Precio B", nunca
-                    // dentro de la etiqueta.
+                    // Precio A y Precio B, lado a lado como dos píldoras (mismas
+                    // etiquetas cortas "A:" / "B:" que la vista de catálogo). Cada
+                    // una es indivisible: si no caben juntas, la segunda pasa a
+                    // la fila de abajo, nunca se parte por dentro.
                     Wrap(
-                      spacing: AppSpacing.s16,
-                      runSpacing: AppSpacing.s2,
+                      spacing: AppSpacing.s8,
+                      runSpacing: AppSpacing.s4,
                       children: [
                         for (final price in [
-                          'Precio A: Bs. ${widget.product.priceA.toStringAsFixed(2)}',
-                          'Precio B: Bs. ${widget.product.priceB.toStringAsFixed(2)}',
+                          'A: Bs. ${widget.product.priceA.toStringAsFixed(2)}',
+                          'B: Bs. ${widget.product.priceB.toStringAsFixed(2)}',
                         ])
-                          Text(
-                            price,
-                            softWrap: false,
-                            style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              price,
+                              softWrap: false,
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
                           ),
                       ],
                     ),

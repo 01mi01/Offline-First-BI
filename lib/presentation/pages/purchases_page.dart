@@ -51,7 +51,7 @@ class PurchasesListBody extends ConsumerWidget {
           : state.purchases.isEmpty
           ? Center(
               child: Text(
-                'No hay compras registradas',
+                'No se registraron compras',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             )

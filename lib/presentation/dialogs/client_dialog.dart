@@ -135,7 +135,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                 controller: _contactController,
                 decoration: const InputDecoration(
                   labelText: 'Información de contacto',
-                  hintText: 'Teléfono, email, etc.',
+                  hintText: 'Dirección, redes sociales, teléfono, etc.',
                 ),
                 maxLines: 3,
               ),

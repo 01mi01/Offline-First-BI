@@ -119,7 +119,7 @@ void main() {
 
       await notifier.save(id: defaultId, name: 'Renombrada');
 
-      expect(container.read(categoryProvider).error, DefaultRecords.protectedMessage);
+      expect(container.read(categoryProvider).error, DefaultRecords.protectedCategoryMessage);
       expect((await categoryNamed(DefaultRecords.category)).id, defaultId);
     });
   });
@@ -176,7 +176,7 @@ void main() {
           .read(clientProvider.notifier)
           .save(id: defaultId, name: 'Renombrado');
 
-      expect(error, DefaultRecords.protectedMessage);
+      expect(error, DefaultRecords.protectedClientMessage);
     });
   });
 
@@ -232,7 +232,7 @@ void main() {
           .read(supplierProvider.notifier)
           .save(id: defaultId, name: 'Renombrado');
 
-      expect(error, DefaultRecords.protectedMessage);
+      expect(error, DefaultRecords.protectedSupplierMessage);
     });
   });
 

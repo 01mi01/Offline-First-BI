@@ -135,7 +135,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
                 controller: _contactController,
                 decoration: const InputDecoration(
                   labelText: 'Información de contacto',
-                  hintText: 'Teléfono, email, dirección, etc.',
+                  hintText: 'Dirección, redes sociales, teléfono, etc.',
                 ),
                 maxLines: 3,
               ),

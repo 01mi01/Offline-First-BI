@@ -129,10 +129,10 @@ void main() {
       expect(find.text('usuario_prueba'), findsOneWidget);
       expect(find.text('prueba@test.com'), findsOneWidget);
 
-      // Preferencias: "Modo oscuro" reservado, marcado "Próximamente" y sin
+      // Preferencias: "Tema oscuro" reservado, marcado "Próximamente" y sin
       // efecto (el interruptor está desactivado).
       expect(find.text('Preferencias'), findsOneWidget);
-      expect(find.text('Modo oscuro'), findsOneWidget);
+      expect(find.text('Tema oscuro'), findsOneWidget);
       expect(find.text('Próximamente'), findsOneWidget);
       final toggle = tester.widget<Switch>(find.byType(Switch));
       expect(toggle.onChanged, isNull);

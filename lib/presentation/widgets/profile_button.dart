@@ -11,7 +11,7 @@ class ProfileButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       icon: const Icon(
-        Icons.account_circle_outlined,
+        Icons.settings_outlined,
         color: AppColors.textPrimary,
         size: 26,
       ),
