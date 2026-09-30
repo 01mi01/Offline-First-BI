@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../../application/image_storage_provider.dart';
+import '../../data/services/image_storage.dart';
 import '../../application/category_provider.dart';
 import '../../models/category_model.dart';
 import '../../theme/app_theme.dart';
@@ -21,12 +23,17 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
   String? _imagePath;
+  // Copia permanente de la imagen elegida en esta sesión (aún sin guardar).
+  String? _pickedImagePath;
+  // Se guarda al iniciar: `ref` ya no se puede usar dentro de dispose().
+  late final ImageStorage _imageStorage;
   late bool _isActive;
   String? _saveError;
 
   @override
   void initState() {
     super.initState();
+    _imageStorage = ref.read(imageStorageProvider);
     _nameController = TextEditingController(text: widget.category?.name ?? '');
     _descController = TextEditingController(
       text: widget.category?.description ?? '',
@@ -46,15 +53,34 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    // Si se cierra sin guardar, la copia elegida no se usa.
+    _discardPickedImage();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _imagePath = picked.path);
+    if (picked == null) return;
+    // La foto elegida vive en la caché, que Android puede vaciar: se copia a
+    // la carpeta permanente y se guarda esa ruta.
+    final permanentPath = await _imageStorage.save(picked.path);
+    if (!mounted) {
+      await _imageStorage.deleteIfManaged(permanentPath);
+      return;
     }
+    // Una imagen elegida antes en esta misma sesión y reemplazada ya no se usa.
+    _discardPickedImage();
+    _pickedImagePath = permanentPath;
+    setState(() => _imagePath = permanentPath);
+  }
+
+  // Borra la imagen elegida en esta sesión (si la hay) para no dejar copias
+  // huérfanas. La imagen que ya tenía el registro nunca se borra aquí.
+  void _discardPickedImage() {
+    final path = _pickedImagePath;
+    _pickedImagePath = null;
+    if (path != null) _imageStorage.deleteIfManaged(path);
   }
 
   Future<void> _save() async {
@@ -85,8 +111,32 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
       return;
     }
 
+    // La imagen elegida quedó guardada: ya no se descarta al cerrar. Si
+    // reemplazó a otra que tenía la categoría, la anterior se borra.
+    _pickedImagePath = null;
+    final previous = widget.category?.image;
+    if (previous != null && previous != _imagePath) {
+      await _imageStorage.deleteIfManaged(previous);
+    }
+    if (!mounted) return;
     Navigator.pop(context);
   }
+
+  // Marcador para elegir una foto (también se muestra si el archivo de la
+  // imagen ya no existe).
+  Widget _imagePlaceholder() => Container(
+    width: 100,
+    height: 100,
+    decoration: BoxDecoration(
+      color: AppColors.primary.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: const Icon(
+      Icons.add_a_photo_outlined,
+      color: AppColors.primary,
+      size: 32,
+    ),
+  );
 
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
@@ -143,20 +193,11 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
+                            // Si el archivo ya no existe, se muestra el
+                            // marcador para elegir otra foto.
+                            errorBuilder: (_, __, ___) => _imagePlaceholder(),
                           )
-                        : Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.add_a_photo_outlined,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                          ),
+                        : _imagePlaceholder(),
                   ),
                 ),
               ),

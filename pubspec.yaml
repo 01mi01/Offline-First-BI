@@ -39,6 +39,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Para simular path_provider e image_picker en las pruebas
+  path_provider_platform_interface: ^2.1.2
+  image_picker_platform_interface: ^2.10.0
+  plugin_platform_interface: ^2.1.8
   flutter_lints: ^5.0.0
   drift_dev: ^2.14.0
   build_runner: ^2.4.7
