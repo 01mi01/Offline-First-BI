@@ -196,9 +196,9 @@ class MaterialRepository {
 
   // Vincula un material a un producto y descuenta del stock. product_materials
   // es la receta del producto (una fila por par producto+material, con
-  // índice único), no un historial: si el par ya existe, esto actualiza esa
-  // fila en vez de crear un duplicado, delegando en editMaterialUsage para
-  // reutilizar su ajuste de stock por diferencia.
+  // índice único), no un historial: si el par ya existe, esto suma la nueva
+  // cantidad a esa fila en vez de crear un duplicado, delegando en
+  // editMaterialUsage para reutilizar su ajuste de stock por diferencia.
   Future<String?> registerMaterialUsage({
     required int productId,
     required int materialId,
@@ -248,7 +248,16 @@ class MaterialRepository {
     }
 
     if (existing != null) {
-      return editMaterialUsage(recordId: existing.id, newQuantity: quantityUsed);
+      // Registrar de nuevo un par ya vinculado SUMA a lo ya registrado (0.25 +
+      // 0.75 = 1.0). El stock baja solo por lo nuevo: editMaterialUsage
+      // descuenta la diferencia entre la cantidad nueva y la anterior, que
+      // aquí es justamente [quantityUsed]. Para corregir una cantidad (reemplazo
+      // directo) está el flujo de edición, que llama a editMaterialUsage con la
+      // cantidad final.
+      return editMaterialUsage(
+        recordId: existing.id,
+        newQuantity: existing.quantityUsed + quantityUsed,
+      );
     }
 
     if (quantityUsed > material.stock) {

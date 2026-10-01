@@ -184,6 +184,150 @@ void main() {
     });
   });
 
+  group('registering usage again for an already-linked product+material', () {
+    Future<int> rowCount() async =>
+        (await db.select(db.productMaterials).get()).length;
+
+    test('adds to quantity_used instead of replacing it (0.25 + 0.75 = 1.0)', () async {
+      expect(
+        await repository.registerMaterialUsage(
+          productId: 1,
+          materialId: 1,
+          quantityUsed: 0.25,
+        ),
+        isNull,
+      );
+      expect((await recordFor(1, 1)).quantityUsed, 0.25);
+
+      expect(
+        await repository.registerMaterialUsage(
+          productId: 1,
+          materialId: 1,
+          quantityUsed: 0.75,
+        ),
+        isNull,
+      );
+
+      expect((await recordFor(1, 1)).quantityUsed, 1.0);
+      expect(await rowCount(), 1, reason: 'sigue siendo una sola fila por par');
+    });
+
+    test('stock goes down only by each newly registered amount', () async {
+      await repository.registerMaterialUsage(
+        productId: 1,
+        materialId: 1,
+        quantityUsed: 0.25,
+      );
+      expect(await stockOf(1), 9.75); // 10 - 0.25
+
+      await repository.registerMaterialUsage(
+        productId: 1,
+        materialId: 1,
+        quantityUsed: 0.75,
+      );
+      // Baja 0.75 (lo nuevo), no 1.0 (el acumulado): 9.75 - 0.75.
+      expect(await stockOf(1), 9.0);
+    });
+
+    test('three registrations keep accumulating', () async {
+      for (final q in [1.0, 2.0, 0.5]) {
+        await repository.registerMaterialUsage(
+          productId: 1,
+          materialId: 1,
+          quantityUsed: q,
+        );
+      }
+      expect((await recordFor(1, 1)).quantityUsed, 3.5);
+      expect(await stockOf(1), 6.5);
+    });
+
+    test('other products and other materials are not affected', () async {
+      await db.into(db.products).insert(
+        ProductsCompanion.insert(
+          categoryId: 1,
+          name: 'Pulsera',
+          priceA: 5,
+          priceB: 5,
+          stock: const Value(1),
+        ),
+      );
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 1);
+      await repository.registerMaterialUsage(productId: 2, materialId: 1, quantityUsed: 2);
+      await repository.registerMaterialUsage(productId: 1, materialId: 2, quantityUsed: 3);
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 1);
+
+      expect((await recordFor(1, 1)).quantityUsed, 2); // 1 + 1
+      expect((await recordFor(2, 1)).quantityUsed, 2);
+      expect((await recordFor(1, 2)).quantityUsed, 3);
+      expect(await stockOf(1), 6); // 10 - (1 + 2 + 1)
+      expect(await stockOf(2), 7); // 10 - 3
+    });
+
+    test('still checks the stock for the newly added amount', () async {
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 6);
+
+      final error = await repository.registerMaterialUsage(
+        productId: 1,
+        materialId: 1,
+        quantityUsed: 5, // solo quedan 4
+      );
+
+      expect(error, 'Stock insuficiente. Disponible: 4');
+      expect((await recordFor(1, 1)).quantityUsed, 6); // sin cambios
+      expect(await stockOf(1), 4);
+    });
+  });
+
+  group('editing a usage registration is a replacement, not an addition', () {
+    test('editMaterialUsage sets the quantity to the new value', () async {
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 2);
+      final record = await recordFor(1, 1);
+
+      expect(
+        await repository.editMaterialUsage(recordId: record.id, newQuantity: 5),
+        isNull,
+      );
+
+      expect((await recordFor(1, 1)).quantityUsed, 5); // no 7
+      expect(await stockOf(1), 5); // 10 - 5
+    });
+
+    test('editing down also replaces, and gives the difference back', () async {
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 4);
+      final record = await recordFor(1, 1);
+
+      await repository.editMaterialUsage(recordId: record.id, newQuantity: 1);
+
+      expect((await recordFor(1, 1)).quantityUsed, 1);
+      expect(await stockOf(1), 9);
+    });
+
+    test('after accumulating, an edit corrects the accumulated total', () async {
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 0.25);
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 0.75);
+      final record = await recordFor(1, 1);
+      expect(record.quantityUsed, 1.0);
+
+      await repository.editMaterialUsage(recordId: record.id, newQuantity: 0.5);
+
+      expect((await recordFor(1, 1)).quantityUsed, 0.5);
+      expect(await stockOf(1), 9.5);
+    });
+
+    test('registering after an edit adds on top of the edited value', () async {
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 2);
+      await repository.editMaterialUsage(
+        recordId: (await recordFor(1, 1)).id,
+        newQuantity: 3,
+      );
+
+      await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 1);
+
+      expect((await recordFor(1, 1)).quantityUsed, 4);
+      expect(await stockOf(1), 6);
+    });
+  });
+
   group('listing usage records', () {
     test('getMaterialsForProduct still lists canceled records, flagged as such', () async {
       await repository.registerMaterialUsage(
