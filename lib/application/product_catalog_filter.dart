@@ -1,9 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product_model.dart';
 
-// Qué precio muestra la vista de catálogo en cada tarjeta. No hay opción
-// "ambos": sin las etiquetas A/B, dos cifras sueltas no se distinguirían.
-enum PriceDisplay { a, b, none }
+// Qué precio(s) muestran las tarjetas de Productos (lista y catálogo).
+enum PriceDisplay { a, b, both, none }
 
 enum ProductSort { name, priceAsc, priceDesc }
 
@@ -12,15 +11,22 @@ class ProductCatalogFilter {
   final String query;
   // null = todas las categorías
   final int? categoryId;
-  final PriceDisplay priceDisplay;
+  // null = sin elegir: cada vista usa su valor por defecto (ver [displayFor]).
+  final PriceDisplay? priceDisplay;
   final ProductSort sort;
 
   const ProductCatalogFilter({
     this.query = '',
     this.categoryId,
-    this.priceDisplay = PriceDisplay.a,
+    this.priceDisplay,
     this.sort = ProductSort.name,
   });
+
+  // Mientras no se elija nada, la lista muestra ambos precios (como siempre) y
+  // el catálogo uno solo (Precio A). Al elegir, la opción vale para las dos
+  // vistas.
+  PriceDisplay displayFor({required bool grid}) =>
+      priceDisplay ?? (grid ? PriceDisplay.a : PriceDisplay.both);
 
   ProductCatalogFilter copyWith({
     String? query,
@@ -44,7 +50,8 @@ class ProductCatalogFilter {
   ProductSort get effectiveSort =>
       canSortByPrice ? sort : ProductSort.name;
 
-  // Precio del producto según el filtro de precio (A por defecto).
+  // Precio del producto con el que se ordena: el elegido en el filtro de
+  // precio; con "Ambos" (o sin elegir) se usa el Precio A.
   double priceOf(ProductModel p) =>
       priceDisplay == PriceDisplay.b ? p.priceB : p.priceA;
 

@@ -28,6 +28,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final filter = ref.watch(productCatalogFilterProvider);
     final setFilter = ref.read(productCatalogFilterProvider.notifier);
     final visible = filter.apply(state.products);
+    final priceDisplay = filter.displayFor(grid: _isGrid);
     final selectedCategory = categories
         .where((c) => c.id == filter.categoryId)
         .firstOrNull;
@@ -93,16 +94,20 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               ),
               FilterMenuChip<PriceDisplay>(
                 icon: Icons.sell_outlined,
-                label: switch (filter.priceDisplay) {
+                label: switch (priceDisplay) {
                   PriceDisplay.a => 'Precio A',
                   PriceDisplay.b => 'Precio B',
+                  PriceDisplay.both => 'Ambos',
                   PriceDisplay.none => 'Sin precio',
                 },
-                active: filter.priceDisplay != PriceDisplay.a,
-                selected: filter.priceDisplay,
+                // Resaltado cuando se eligió una opción (si no, cada vista usa
+                // su valor por defecto).
+                active: filter.priceDisplay != null,
+                selected: priceDisplay,
                 options: const [
                   FilterOption(PriceDisplay.a, 'Precio A'),
                   FilterOption(PriceDisplay.b, 'Precio B'),
+                  FilterOption(PriceDisplay.both, 'Ambos'),
                   FilterOption(PriceDisplay.none, 'Sin precio'),
                 ],
                 onSelected: (value) =>
@@ -149,9 +154,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     ),
                   )
                 : _isGrid
-                ? _GridView(products: visible, priceDisplay: filter.priceDisplay)
+                ? _GridView(products: visible, priceDisplay: priceDisplay)
                 : _ListViewWidget(
                     products: visible,
+                    priceDisplay: priceDisplay,
                     onEdit: (p) => _showDialog(context, p),
                   ),
           ),
@@ -245,8 +251,14 @@ class _ToggleBtn extends StatelessWidget {
 class _ListViewWidget extends ConsumerWidget {
   final List<ProductModel> products;
   final ValueChanged<ProductModel> onEdit;
+  // Qué precios muestra cada tarjeta (mismo filtro que el catálogo).
+  final PriceDisplay priceDisplay;
 
-  const _ListViewWidget({required this.products, required this.onEdit});
+  const _ListViewWidget({
+    required this.products,
+    required this.onEdit,
+    required this.priceDisplay,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -266,6 +278,7 @@ class _ListViewWidget extends ConsumerWidget {
         return _ProductCard(
           product: p,
           categoryName: categoryName,
+          priceDisplay: priceDisplay,
           onEdit: () => onEdit(p),
         );
       },
@@ -298,7 +311,7 @@ class _GridView extends StatelessWidget {
         final p = active[index];
         return _GridCard(
           product: p,
-          price: _catalogPrice(p, priceDisplay),
+          priceLines: _catalogPriceLines(p, priceDisplay),
           onTap: () => _showDetail(context, p),
         );
       },
@@ -309,29 +322,49 @@ class _GridView extends StatelessWidget {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),
-      builder: (_) =>
-          _ProductGridDetail(product: p, price: _catalogPrice(p, priceDisplay)),
+      builder: (_) => _ProductGridDetail(
+        product: p,
+        priceLines: _catalogPriceLines(p, priceDisplay, detailed: true),
+      ),
     );
   }
 }
 
-// Precio que muestra el catálogo según el filtro de precio; null = no se
-// muestra ninguno. Nunca lleva etiqueta A/B.
-double? _catalogPrice(ProductModel p, PriceDisplay display) => switch (display) {
-  PriceDisplay.a => p.priceA,
-  PriceDisplay.b => p.priceB,
-  PriceDisplay.none => null,
-};
+// Líneas de precio del catálogo según el filtro de precio. Con un solo precio
+// elegido la línea es solo "Precio: Bs. X", sin A/B; con "Ambos" hace falta
+// distinguirlos, así que llevan etiqueta ("A:"/"B:" en la tarjeta, "Precio
+// A:"/"Precio B:" en el detalle). Con "Sin precio" no hay líneas.
+List<String> _catalogPriceLines(
+  ProductModel p,
+  PriceDisplay display, {
+  bool detailed = false,
+}) {
+  String bs(double v) => 'Bs. ${v.toStringAsFixed(2)}';
+  switch (display) {
+    case PriceDisplay.a:
+      return ['Precio: ${bs(p.priceA)}'];
+    case PriceDisplay.b:
+      return ['Precio: ${bs(p.priceB)}'];
+    case PriceDisplay.both:
+      final a = detailed ? 'Precio A' : 'A';
+      final b = detailed ? 'Precio B' : 'B';
+      return ['$a: ${bs(p.priceA)}', '$b: ${bs(p.priceB)}'];
+    case PriceDisplay.none:
+      return const [];
+  }
+}
 
 // Tarjeta para la vista de lista con materiales vinculados
 class _ProductCard extends ConsumerStatefulWidget {
   final ProductModel product;
   final String categoryName;
+  final PriceDisplay priceDisplay;
   final VoidCallback onEdit;
 
   const _ProductCard({
     required this.product,
     required this.categoryName,
+    required this.priceDisplay,
     required this.onEdit,
   });
 
@@ -455,9 +488,15 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       spacing: AppSpacing.s8,
                       runSpacing: AppSpacing.s4,
                       children: [
+                        // Solo los precios que pide el filtro de precio (con
+                        // "Sin precio" no hay ninguna píldora).
                         for (final price in [
-                          'A: Bs. ${widget.product.priceA.toStringAsFixed(2)}',
-                          'B: Bs. ${widget.product.priceB.toStringAsFixed(2)}',
+                          if (widget.priceDisplay == PriceDisplay.a ||
+                              widget.priceDisplay == PriceDisplay.both)
+                            'A: Bs. ${widget.product.priceA.toStringAsFixed(2)}',
+                          if (widget.priceDisplay == PriceDisplay.b ||
+                              widget.priceDisplay == PriceDisplay.both)
+                            'B: Bs. ${widget.product.priceB.toStringAsFixed(2)}',
                         ])
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -614,12 +653,12 @@ inactiveLabel: 'Inactivo',
 // Tarjeta para la vista de catálogo
 class _GridCard extends StatelessWidget {
   final ProductModel product;
-  final double? price;
+  final List<String> priceLines;
   final VoidCallback onTap;
 
   const _GridCard({
     required this.product,
-    required this.price,
+    required this.priceLines,
     required this.onTap,
   });
 
@@ -667,16 +706,17 @@ class _GridCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (price != null) ...[
+                  if (priceLines.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      'Precio: Bs. ${price!.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.displaySmall
-                          ?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
+                    for (final line in priceLines)
+                      Text(
+                        line,
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
                   ],
                 ],
               ),
@@ -704,9 +744,9 @@ class _GridCard extends StatelessWidget {
 // Detalle simple para la vista de catálogo, sin materiales
 class _ProductGridDetail extends StatelessWidget {
   final ProductModel product;
-  final double? price;
+  final List<String> priceLines;
 
-  const _ProductGridDetail({required this.product, required this.price});
+  const _ProductGridDetail({required this.product, required this.priceLines});
 
   @override
   Widget build(BuildContext context) {
@@ -778,16 +818,17 @@ class _ProductGridDetail extends StatelessWidget {
                             ),
                       ),
                     ],
-                    if (price != null) ...[
+                    if (priceLines.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.s4),
-                      Text(
-                        'Precio: Bs. ${price!.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                      for (final line in priceLines)
+                        Text(
+                          line,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
                         ),
-                      ),
                     ],
                   ],
                 ),

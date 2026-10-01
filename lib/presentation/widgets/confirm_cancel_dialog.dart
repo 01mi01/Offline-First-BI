@@ -26,8 +26,10 @@ Future<bool> confirmCancellation(
     builder: (ctx) => AlertDialog(
       backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      // Todo el diálogo va centrado: título, mensaje y botones.
       title: Text(
         title,
+        textAlign: TextAlign.center,
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,

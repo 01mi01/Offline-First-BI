@@ -411,6 +411,86 @@ void main() {
       expect(find.text('Acuarela'), findsOneWidget);
     });
 
+    Future<void> pickPrice(WidgetTester tester, String option) async {
+      await tester.tap(find.byIcon(Icons.sell_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(option).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the price filter has four options, including "Ambos"', (
+      tester,
+    ) async {
+      await openGrid(tester);
+
+      await tester.tap(find.byIcon(Icons.sell_outlined));
+      await tester.pumpAndSettle();
+      for (final option in ['Precio A', 'Precio B', 'Ambos', 'Sin precio']) {
+        expect(find.text(option), findsWidgets, reason: option);
+      }
+      expect(find.text('Ambos'), findsOneWidget);
+    });
+
+    testWidgets('catalogue with "Ambos" shows both prices on each card and in the detail', (
+      tester,
+    ) async {
+      await openGrid(tester);
+      await pickPrice(tester, 'Ambos');
+
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('A: Bs. 12.00'), findsOneWidget);
+      expect(find.text('B: Bs. 25.00'), findsOneWidget);
+      expect(find.textContaining('Precio: Bs.'), findsNothing);
+
+      await tester.tap(find.text('Acuarela'));
+      await tester.pumpAndSettle();
+      expect(find.text('Precio A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('Precio B: Bs. 11.00'), findsOneWidget);
+    });
+
+    testWidgets('list view follows the same filter: A only, B only, none, both', (
+      tester,
+    ) async {
+      await _pumpPage(tester, db, const ProductsPage());
+
+      // Sin elegir nada, la lista sigue mostrando ambos precios.
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+
+      await pickPrice(tester, 'Precio B');
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('B: Bs. 25.00'), findsOneWidget);
+      expect(find.text('A: Bs. 30.00'), findsNothing);
+      expect(find.text('A: Bs. 12.00'), findsNothing);
+
+      await pickPrice(tester, 'Precio A');
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsNothing);
+
+      await pickPrice(tester, 'Sin precio');
+      expect(find.textContaining('Bs. 30.00'), findsNothing);
+      expect(find.textContaining('Bs. 11.00'), findsNothing);
+      expect(find.text('Acuarela'), findsOneWidget);
+
+      await pickPrice(tester, 'Ambos');
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+    });
+
+    testWidgets('"Ambos" chosen in the catalogue also applies when going back to the list', (
+      tester,
+    ) async {
+      await openGrid(tester);
+      await pickPrice(tester, 'Precio B'); // cambia el valor por defecto
+      await pickPrice(tester, 'Ambos');
+
+      await tester.tap(find.byIcon(Icons.list));
+      await tester.pumpAndSettle();
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+    });
+
     testWidgets('the chosen price filter is kept while switching list and catalogue', (
       tester,
     ) async {

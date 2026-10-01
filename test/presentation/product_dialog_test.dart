@@ -82,6 +82,21 @@ void main() {
     },
   );
 
+  testWidgets('the price fields carry no "same value if left empty" hint', (
+    tester,
+  ) async {
+    await _openProductDialog(tester, db);
+
+    expect(find.textContaining('Igual al'), findsNothing);
+    expect(find.textContaining('si se deja vacío'), findsNothing);
+
+    // Al enfocar un precio vacío, el hint es el "0.00" de siempre.
+    await tester.tap(find.widgetWithText(TextFormField, 'Precio A'));
+    await tester.pumpAndSettle();
+    expect(find.text('0.00'), findsWidgets);
+    expect(find.textContaining('Igual al'), findsNothing);
+  });
+
   Future<void> create(WidgetTester tester) async {
     await tester.ensureVisible(find.text('Crear'));
     await tester.tap(find.text('Crear'));

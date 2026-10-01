@@ -340,7 +340,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                       ),
                       decoration: const InputDecoration(
                         labelText: 'Precio A',
-                        hintText: 'Igual al Precio B si se deja vacío',
+                        hintText: '0.00',
                       ),
                       validator: (v) => _validatePrice(v, _priceBController),
                       onChanged: (_) => _onPriceChanged(_priceBKey),
@@ -355,7 +355,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                       ),
                       decoration: const InputDecoration(
                         labelText: 'Precio B',
-                        hintText: 'Igual al Precio A si se deja vacío',
+                        hintText: '0.00',
                       ),
                       validator: (v) => _validatePrice(v, _priceAController),
                       onChanged: (_) => _onPriceChanged(_priceAKey),

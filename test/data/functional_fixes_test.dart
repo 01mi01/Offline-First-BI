@@ -492,6 +492,19 @@ void main() {
       );
     });
 
+    test('price display defaults per view until a choice is made, then applies to both', () {
+      const untouched = ProductCatalogFilter();
+      expect(untouched.displayFor(grid: false), PriceDisplay.both);
+      expect(untouched.displayFor(grid: true), PriceDisplay.a);
+
+      const chosen = ProductCatalogFilter(priceDisplay: PriceDisplay.both);
+      expect(chosen.displayFor(grid: false), PriceDisplay.both);
+      expect(chosen.displayFor(grid: true), PriceDisplay.both);
+      // Con "Ambos" el orden por precio usa el Precio A.
+      expect(chosen.canSortByPrice, isTrue);
+      expect(chosen.priceOf(_product(1, 'X', a: 7, b: 9)), 7);
+    });
+
     test('with "no price" selected the price sorts fall back to name order', () {
       const f = ProductCatalogFilter(
         priceDisplay: PriceDisplay.none,
