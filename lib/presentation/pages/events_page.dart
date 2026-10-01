@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/date_range_filter.dart';
 import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/status_filter.dart';
@@ -10,6 +11,7 @@ import '../dialogs/event_dialog.dart';
 import '../dialogs/location_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/catalog_filter_bar.dart';
+import '../widgets/date_range_filter_bar.dart';
 import '../widgets/status_badge.dart';
 import '../../config/date_formatters.dart';
 
@@ -74,7 +76,14 @@ class _EventsTab extends ConsumerWidget {
     final state = ref.watch(eventProvider);
     final locations = ref.watch(locationProvider).locations;
     final status = ref.watch(eventStatusFilterProvider);
-    final visible = state.events.where((e) => status.matches(e.isActive)).toList();
+    final dates = ref.watch(eventDateFilterProvider);
+    // Un evento de varios días entra si alguno de sus días cae en el rango.
+    final visible = state.events
+        .where(
+          (e) =>
+              status.matches(e.isActive) && dates.overlaps(e.startDate, e.endDate),
+        )
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -89,6 +98,12 @@ class _EventsTab extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          // Filtro por fechas: atajos y rango Desde/Hasta.
+          DateRangeFilterBar(
+            value: dates,
+            onChanged: (value) =>
+                ref.read(eventDateFilterProvider.notifier).state = value,
+          ),
           _StatusFilterRow(
             child: StatusFilterChip(
               value: status,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/date_range_filter.dart';
 import '../../application/sale_provider.dart';
 import '../../application/client_provider.dart';
 import '../../application/location_provider.dart';
@@ -10,6 +11,7 @@ import '../../theme/app_theme.dart';
 import '../dialogs/sale_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/date_range_filter_bar.dart';
 import '../widgets/status_badge.dart';
 import '../../config/date_formatters.dart';
 
@@ -36,6 +38,8 @@ class SalesListBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(saleProvider);
     final clients = ref.watch(clientProvider).clients;
+    final dates = ref.watch(saleDateFilterProvider);
+    final visible = state.sales.where((s) => dates.matches(s.date)).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -51,30 +55,50 @@ class SalesListBody extends ConsumerWidget {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.sales.isEmpty
-              ? Center(
-                  child: Text(
-                    'No se registraron ventas',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                )
-              : ListView.builder(
-                  padding: AppSpacing.listWithFab,
-                  itemCount: state.sales.length,
-                  itemBuilder: (context, index) {
-                    final sale = state.sales[index];
-                    final client = clients
-                        .where((c) => c.id == sale.clientId)
-                        .firstOrNull;
-                    return _SaleCard(
-                      sale: sale,
-                      clientName: client?.name ?? 'Sin nombre',
-                      onEdit: () => _showDialog(context, sale),
-                      onCancel: () => _confirmCancel(context, ref, sale),
-                      onTap: () => _showReceipt(context, ref, sale,
-                          client?.name ?? 'Sin nombre'),
-                    );
-                  },
+          ? Center(
+              child: Text(
+                'No se registraron ventas',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            )
+          : Column(
+              children: [
+                // Filtro por fechas: atajos y rango Desde/Hasta.
+                DateRangeFilterBar(
+                  value: dates,
+                  onChanged: (value) =>
+                      ref.read(saleDateFilterProvider.notifier).state = value,
                 ),
+                const SizedBox(height: AppSpacing.s8),
+                Expanded(
+                  child: visible.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Sin resultados',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: AppSpacing.listWithFab,
+                          itemCount: visible.length,
+                          itemBuilder: (context, index) {
+                            final sale = visible[index];
+                            final client = clients
+                                .where((c) => c.id == sale.clientId)
+                                .firstOrNull;
+                            return _SaleCard(
+                              sale: sale,
+                              clientName: client?.name ?? 'Sin nombre',
+                              onEdit: () => _showDialog(context, sale),
+                              onCancel: () => _confirmCancel(context, ref, sale),
+                              onTap: () => _showReceipt(context, ref, sale,
+                                  client?.name ?? 'Sin nombre'),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
     );
   }
 

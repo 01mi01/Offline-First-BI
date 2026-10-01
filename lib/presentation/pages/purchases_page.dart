@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/date_range_filter.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/location_provider.dart';
@@ -11,6 +12,7 @@ import '../../theme/app_theme.dart';
 import '../dialogs/purchase_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/catalog_filter_bar.dart';
+import '../widgets/date_range_filter_bar.dart';
 import '../../config/date_formatters.dart';
 
 class PurchasesPage extends ConsumerWidget {
@@ -37,7 +39,10 @@ class PurchasesListBody extends ConsumerWidget {
     final state = ref.watch(purchaseProvider);
     final suppliers = ref.watch(supplierProvider).suppliers;
     final kind = ref.watch(purchaseKindFilterProvider);
-    final visible = state.purchases.where(kind.includes).toList();
+    final dates = ref.watch(purchaseDateFilterProvider);
+    final visible = state.purchases
+        .where((p) => kind.includes(p) && dates.matches(p.date))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -61,9 +66,16 @@ class PurchasesListBody extends ConsumerWidget {
             )
           : Column(
               children: [
+                // Filtro por fechas: atajos y rango Desde/Hasta.
+                DateRangeFilterBar(
+                  value: dates,
+                  onChanged: (value) => ref
+                      .read(purchaseDateFilterProvider.notifier)
+                      .state = value,
+                ),
                 // Filtro por tipo: solo materiales, solo gastos o ambos.
                 Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.s12),
+                  padding: const EdgeInsets.only(top: AppSpacing.s8),
                   child: FilterChipRow(
                     chips: [
                       FilterMenuChip<PurchaseKind>(

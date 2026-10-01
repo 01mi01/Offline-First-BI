@@ -9,7 +9,9 @@ import '../../application/supplier_provider.dart';
 import '../../models/purchase_kind.dart';
 import '../../models/report_filters.dart';
 import '../../theme/app_theme.dart';
+import '../../application/date_range_filter.dart';
 import '../../config/date_formatters.dart';
+import 'date_range_filter_bar.dart';
 import 'focus_utils.dart';
 
 class ReportFiltersWidget extends ConsumerWidget {
@@ -26,28 +28,23 @@ class ReportFiltersWidget extends ConsumerWidget {
 
   String _formatDate(DateTime date) => formatDate(date);
 
+  // Hoy es la última fecha elegible, y Hasta no puede ser anterior a Desde
+  // (el mismo día en ambas es válido): si no, se rechaza con un aviso.
   Future<void> _pickDate(BuildContext context, bool isStart) async {
-    dismissKeyboard();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate:
-          (isStart ? filters.startDate : filters.endDate) ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primary)),
-        child: child!,
-      ),
+    final picked = await pickFilterDate(
+      context,
+      initial: isStart ? filters.startDate : filters.endDate,
     );
-    if (picked != null) {
-      onChanged(
-        isStart
-            ? filters.copyWith(startDate: picked)
-            : filters.copyWith(endDate: picked),
-      );
+    if (picked == null || !context.mounted) return;
+    final next = isStart
+        ? filters.copyWith(startDate: picked)
+        : filters.copyWith(endDate: picked);
+    final error = validateDateRange(from: next.startDate, to: next.endDate);
+    if (error != null) {
+      showDateRangeError(context, error);
+      return;
     }
+    onChanged(next);
   }
 
   void _showDropdownSheet<T>(
@@ -167,7 +164,7 @@ class ReportFiltersWidget extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: _DateChip(
+                child: DateFilterChip(
                   label: filters.startDate != null
                       ? 'Desde: ${_formatDate(filters.startDate!)}'
                       : 'Fecha de inicio',
@@ -180,7 +177,7 @@ class ReportFiltersWidget extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _DateChip(
+                child: DateFilterChip(
                   label: filters.endDate != null
                       ? 'Hasta: ${_formatDate(filters.endDate!)}'
                       : 'Fecha de fin',
@@ -456,66 +453,6 @@ class ReportFiltersWidget extends ConsumerWidget {
 }
 
 // Chip de fecha
-class _DateChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  final VoidCallback? onClear;
-
-  const _DateChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-    this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s12,
-          vertical: AppSpacing.s8,
-        ),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.primary.withOpacity(0.1)
-              : AppColors.background,
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(
-            color: active ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: active ? AppColors.primary : AppColors.textSecondary,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (onClear != null) ...[
-              const SizedBox(width: AppSpacing.s4),
-              GestureDetector(
-                onTap: onClear,
-                child: Icon(
-                  Icons.close,
-                  size: 14,
-                  color: active ? AppColors.primary : AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // Chip de dropdown
 class _DropChip<T> extends StatelessWidget {
