@@ -100,6 +100,10 @@ class PurchaseRepository {
     required int? eventId,
     String? notes,
     required List<Map<String, dynamic>> items,
+    // false cuando el stock de los materiales ya se registró por otro camino
+    // (p. ej. la compra automática del stock inicial de un material nuevo): la
+    // compra y sus ítems se guardan, pero no se vuelve a sumar el stock.
+    bool adjustStock = true,
   }) async {
     await database.transaction(() async {
       final resolvedSupplierId = supplierId ?? await _defaultSupplierId();
@@ -135,6 +139,8 @@ class PurchaseRepository {
                   subtotal: quantity * unitPrice,
                 ),
               );
+
+          if (!adjustStock) continue;
 
           // Suma stock y actualiza precio del material
           final material = await (database.select(

@@ -82,23 +82,96 @@ void main() {
     },
   );
 
-  testWidgets('Precio B is required: the form does not save without it', (
+  Future<void> create(WidgetTester tester) async {
+    await tester.ensureVisible(find.text('Crear'));
+    await tester.tap(find.text('Crear'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets(
+    'only Precio A is enough: Precio B is saved with the same value',
+    (tester) async {
+      await _openProductDialog(tester, db);
+
+      await _type(tester, 'Nombre', 'Acuarela');
+      await _type(tester, 'Precio A', '55');
+      await _type(tester, 'Stock', '10');
+      await create(tester);
+
+      expect(find.byType(ProductDialog), findsNothing);
+      final product = (await ProductRepository(db).getAllIncludingInactive())
+          .single;
+      expect(product.priceA, 55.0);
+      expect(product.priceB, 55.0);
+    },
+  );
+
+  testWidgets(
+    'only Precio B is enough: Precio A is saved with the same value',
+    (tester) async {
+      await _openProductDialog(tester, db);
+
+      await _type(tester, 'Nombre', 'Acuarela');
+      await _type(tester, 'Precio B', '40');
+      await _type(tester, 'Stock', '10');
+      await create(tester);
+
+      final product = (await ProductRepository(db).getAllIncludingInactive())
+          .single;
+      expect(product.priceA, 40.0);
+      expect(product.priceB, 40.0);
+    },
+  );
+
+  testWidgets('at least one price is required: with none the form does not save', (
     tester,
   ) async {
     await _openProductDialog(tester, db);
 
     await _type(tester, 'Nombre', 'Acuarela');
-    await _type(tester, 'Precio A', '55');
     await _type(tester, 'Stock', '10');
+    await create(tester);
 
-    await tester.ensureVisible(find.text('Crear'));
-    await tester.tap(find.text('Crear'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Campo requerido'), findsOneWidget);
+    expect(find.text('Indica al menos un precio'), findsNWidgets(2));
     expect(find.byType(ProductDialog), findsOneWidget);
     expect(await ProductRepository(db).getAllIncludingInactive(), isEmpty);
   });
+
+  testWidgets(
+    'the cost check updates live while typing the prices, before saving',
+    (tester) async {
+      await _openProductDialog(tester, db);
+
+      const error = 'Debe ser menor a los precios de venta';
+      await _type(tester, 'Precio A', '55');
+      await _type(tester, 'Precio B', '40');
+      await _type(tester, 'Costo de producción', '30');
+      expect(find.text(error), findsNothing);
+
+      // Bajar el Precio B por debajo del costo marca el error al instante...
+      await _type(tester, 'Precio B', '20');
+      expect(find.text(error), findsOneWidget);
+
+      // ...y subirlo de nuevo lo quita, sin pulsar "Crear" en ningún momento.
+      await _type(tester, 'Precio B', '35');
+      expect(find.text(error), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'with a single price typed, the cost is checked against that price',
+    (tester) async {
+      await _openProductDialog(tester, db);
+
+      await _type(tester, 'Precio A', '55');
+      await _type(tester, 'Costo de producción', '60');
+
+      expect(
+        find.text('Debe ser menor a los precios de venta'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets(
     'the production cost must be lower than BOTH sale prices',

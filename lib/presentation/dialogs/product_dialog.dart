@@ -29,6 +29,11 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   late final TextEditingController _priceBController;
   late final TextEditingController _costController;
   late final TextEditingController _stockController;
+  // Llaves de los campos de precio y costo: al escribir en un precio se vuelve a
+  // validar lo que depende de él, sin esperar a "Guardar".
+  final _priceAKey = GlobalKey<FormFieldState<String>>();
+  final _priceBKey = GlobalKey<FormFieldState<String>>();
+  final _costKey = GlobalKey<FormFieldState<String>>();
   String? _imagePath;
   // Copia permanente de la imagen elegida en esta sesión (aún sin guardar).
   String? _pickedImagePath;
@@ -109,8 +114,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final priceA = double.tryParse(_priceAController.text.trim()) ?? 0;
-    final priceB = double.tryParse(_priceBController.text.trim()) ?? 0;
+    // Si solo se llenó uno de los dos precios, el repositorio iguala el otro.
+    final priceA = double.tryParse(_priceAController.text.trim());
+    final priceB = double.tryParse(_priceBController.text.trim());
     await ref
         .read(productProvider.notifier)
         .save(
@@ -153,10 +159,38 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     ),
   );
 
-  String? _validatePrice(String? v) {
-    if (v == null || v.isEmpty) return 'Campo requerido';
-    final price = double.tryParse(v);
-    if (price == null) return 'Valor inválido';
+  // Solo uno de los dos precios es obligatorio: si este está vacío, basta con
+  // que el otro (de [other]) tenga valor.
+  String? _validatePrice(String? v, TextEditingController other) {
+    final text = (v ?? '').trim();
+    if (text.isEmpty) {
+      return other.text.trim().isEmpty ? 'Indica al menos un precio' : null;
+    }
+    if (double.tryParse(text) == null) return 'Valor inválido';
+    return null;
+  }
+
+  // Al escribir en un precio se revalida el otro (ya no hace falta si este se
+  // llenó) y el costo, que depende de ambos.
+  void _onPriceChanged(GlobalKey<FormFieldState<String>> otherPriceKey) {
+    otherPriceKey.currentState?.validate();
+    _costKey.currentState?.validate();
+  }
+
+  String? _validateCost(String? v) {
+    if (v == null || v.isEmpty) return null;
+    final cost = double.tryParse(v);
+    if (cost == null) return 'Valor inválido';
+    // El costo debe ser menor que ambos precios de venta. Si solo hay uno
+    // escrito, ese es también el valor del otro.
+    final typedA = double.tryParse(_priceAController.text.trim());
+    final typedB = double.tryParse(_priceBController.text.trim());
+    final priceA = typedA ?? typedB;
+    final priceB = typedB ?? typedA;
+    if (priceA == null || priceB == null) return null;
+    if (cost >= priceA || cost >= priceB) {
+      return 'Debe ser menor a los precios de venta';
+    }
     return null;
   }
 
@@ -298,6 +332,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
                     // Precios de venta (A y B, independientes) y costo de producción
                     TextFormField(
+                      key: _priceAKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _priceAController,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -305,12 +340,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                       ),
                       decoration: const InputDecoration(
                         labelText: 'Precio A',
-                        hintText: '0.00',
+                        hintText: 'Igual al Precio B si se deja vacío',
                       ),
-                      validator: _validatePrice,
+                      validator: (v) => _validatePrice(v, _priceBController),
+                      onChanged: (_) => _onPriceChanged(_priceBKey),
                     ),
                     const SizedBox(height: AppSpacing.s16),
                     TextFormField(
+                      key: _priceBKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _priceBController,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -318,12 +355,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                       ),
                       decoration: const InputDecoration(
                         labelText: 'Precio B',
-                        hintText: '0.00',
+                        hintText: 'Igual al Precio A si se deja vacío',
                       ),
-                      validator: _validatePrice,
+                      validator: (v) => _validatePrice(v, _priceAController),
+                      onChanged: (_) => _onPriceChanged(_priceAKey),
                     ),
                     const SizedBox(height: AppSpacing.s16),
                     TextFormField(
+                      key: _costKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _costController,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -333,20 +372,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                         labelText: 'Costo de producción',
                         hintText: '0.00',
                       ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return null;
-                        final cost = double.tryParse(v);
-                        if (cost == null) return 'Valor inválido';
-                        // El costo debe ser menor que ambos precios de venta.
-                        final priceA =
-                            double.tryParse(_priceAController.text.trim()) ?? 0;
-                        final priceB =
-                            double.tryParse(_priceBController.text.trim()) ?? 0;
-                        if (cost >= priceA || cost >= priceB) {
-                          return 'Debe ser menor a los precios de venta';
-                        }
-                        return null;
-                      },
+                      validator: _validateCost,
                     ),
                     const SizedBox(height: AppSpacing.s16),
 

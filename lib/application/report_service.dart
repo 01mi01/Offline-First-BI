@@ -132,6 +132,7 @@ class ReportService {
     required ReportFilters filters,
   }) {
     return purchases.where((p) {
+      if (!filters.purchaseKind.includes(p)) return false;
       if (filters.startDate != null && p.date.isBefore(filters.startDate!)) {
         return false;
       }

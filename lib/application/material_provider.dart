@@ -3,6 +3,7 @@ import '../data/repositories/material_repository.dart';
 import '../models/material_model.dart';
 import '../models/product_material_model.dart';
 import 'database_provider.dart';
+import 'purchase_provider.dart';
 
 final materialRepositoryProvider = Provider<MaterialRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -36,8 +37,9 @@ class MaterialState {
 
 class MaterialNotifier extends StateNotifier<MaterialState> {
   final MaterialRepository repository;
+  final Ref ref;
 
-  MaterialNotifier(this.repository) : super(MaterialState()) {
+  MaterialNotifier(this.repository, this.ref) : super(MaterialState()) {
     load();
   }
 
@@ -72,6 +74,11 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
       isActive: isActive,
     );
     await load();
+    // Un material nuevo con stock inicial crea su compra: se refresca la lista
+    // de Compras para que aparezca sin tener que reabrir la pantalla.
+    if (id == null && stock > 0) {
+      await ref.read(purchaseProvider.notifier).load();
+    }
   }
 
   // Obtiene log de uso para un producto
@@ -132,6 +139,6 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
 final materialProvider = StateNotifierProvider<MaterialNotifier, MaterialState>(
   (ref) {
     final repository = ref.watch(materialRepositoryProvider);
-    return MaterialNotifier(repository);
+    return MaterialNotifier(repository, ref);
   },
 );

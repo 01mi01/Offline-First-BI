@@ -1,3 +1,5 @@
+import 'purchase_kind.dart';
+
 // Modelo de estado de filtros para el módulo de reportes
 class ReportFilters {
   final DateTime? startDate;
@@ -9,6 +11,8 @@ class ReportFilters {
   final int? clientId;
   final int? supplierId;
   final String? priceType;
+  // Solo compras: materiales, gastos o ambos.
+  final PurchaseKind purchaseKind;
 
   const ReportFilters({
     this.startDate,
@@ -20,9 +24,11 @@ class ReportFilters {
     this.clientId,
     this.supplierId,
     this.priceType,
+    this.purchaseKind = PurchaseKind.all,
   });
 
   bool get hasActive =>
+      purchaseKind != PurchaseKind.all ||
       startDate != null ||
       endDate != null ||
       categoryId != null ||
@@ -43,6 +49,7 @@ class ReportFilters {
     int? clientId,
     int? supplierId,
     String? priceType,
+    PurchaseKind? purchaseKind,
     bool clearStartDate = false,
     bool clearEndDate = false,
     bool clearCategory = false,
@@ -63,6 +70,7 @@ class ReportFilters {
       clientId: clearClient ? null : clientId ?? this.clientId,
       supplierId: clearSupplier ? null : supplierId ?? this.supplierId,
       priceType: clearPriceType ? null : priceType ?? this.priceType,
+      purchaseKind: purchaseKind ?? this.purchaseKind,
     );
   }
 
@@ -79,7 +87,8 @@ class ReportFilters {
           locationId == other.locationId &&
           clientId == other.clientId &&
           supplierId == other.supplierId &&
-          priceType == other.priceType;
+          priceType == other.priceType &&
+          purchaseKind == other.purchaseKind;
 
   @override
   int get hashCode => Object.hash(
@@ -92,5 +101,6 @@ class ReportFilters {
     clientId,
     supplierId,
     priceType,
+    purchaseKind,
   );
 }

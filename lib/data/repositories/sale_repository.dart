@@ -35,8 +35,14 @@ class SaleRepository {
     return (subtotal - discount).clamp(0, double.infinity);
   }
 
-  // Valida que el descuento no exceda el subtotal
+  static const String negativeDiscountMessage =
+      'El descuento no puede ser negativo';
+
+  // Valida que el descuento sea cero o positivo y no exceda el subtotal
   String? validateDiscount(double discount, double subtotal) {
+    if (discount < 0 || discount.isNaN) {
+      return negativeDiscountMessage;
+    }
     if (discount > subtotal) {
       return 'El descuento no puede ser mayor al subtotal';
     }
@@ -150,6 +156,10 @@ class SaleRepository {
     String? notes,
     required List<Map<String, dynamic>> items,
   }) async {
+    // Un descuento negativo nunca llega a la base de datos (ni a los reportes).
+    if (discount < 0 || discount.isNaN) {
+      throw ArgumentError(negativeDiscountMessage);
+    }
     await database.transaction(() async {
       final resolvedClientId = clientId ?? await _defaultClientId();
       // Inserta la venta
@@ -266,6 +276,7 @@ class SaleRepository {
     String? notes,
     required List<Map<String, dynamic>> newItems,
   }) async {
+    if (discount < 0 || discount.isNaN) return negativeDiscountMessage;
     return database.transaction(() async {
       final current = await (database.select(
         database.sales,

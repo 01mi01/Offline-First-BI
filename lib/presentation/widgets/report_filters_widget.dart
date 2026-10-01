@@ -6,6 +6,7 @@ import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/client_provider.dart';
 import '../../application/supplier_provider.dart';
+import '../../models/purchase_kind.dart';
 import '../../models/report_filters.dart';
 import '../../theme/app_theme.dart';
 import '../../config/date_formatters.dart';
@@ -320,6 +321,47 @@ class ReportFiltersWidget extends ConsumerWidget {
 
               // Solo en compras
               if (activeTab == 1) ...[
+                // Tipo: solo materiales o solo gastos ("Limpiar" = ambos).
+                _DropChip<PurchaseKind>(
+                  label: 'Tipo',
+                  value: filters.purchaseKind == PurchaseKind.all
+                      ? null
+                      : filters.purchaseKind,
+                  items: [
+                    DropdownMenuItem(
+                      value: PurchaseKind.material,
+                      child: Text(PurchaseKind.material.label),
+                    ),
+                    DropdownMenuItem(
+                      value: PurchaseKind.expense,
+                      child: Text(PurchaseKind.expense.label),
+                    ),
+                  ],
+                  onTap: () => _showDropdownSheet<PurchaseKind>(
+                    context,
+                    'Tipo',
+                    filters.purchaseKind == PurchaseKind.all
+                        ? null
+                        : filters.purchaseKind,
+                    [
+                      DropdownMenuItem(
+                        value: PurchaseKind.material,
+                        child: Text(PurchaseKind.material.label),
+                      ),
+                      DropdownMenuItem(
+                        value: PurchaseKind.expense,
+                        child: Text(PurchaseKind.expense.label),
+                      ),
+                    ],
+                    (val) => onChanged(filters.copyWith(purchaseKind: val)),
+                    () => onChanged(
+                      filters.copyWith(purchaseKind: PurchaseKind.all),
+                    ),
+                  ),
+                  onClear: () => onChanged(
+                    filters.copyWith(purchaseKind: PurchaseKind.all),
+                  ),
+                ),
                 _DropChip(
                   label: 'Proveedor',
                   value: filters.supplierId,

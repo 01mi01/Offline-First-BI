@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import '../../application/category_provider.dart';
+import '../../application/category_catalog_filter.dart';
 import '../../models/category_model.dart';
+import '../widgets/catalog_filter_bar.dart';
 import '../../models/default_records.dart';
 import '../widgets/protected_record_icon.dart';
 import '../../theme/app_theme.dart';
@@ -22,6 +24,9 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(categoryProvider);
+    final filter = ref.watch(categoryCatalogFilterProvider);
+    final setFilter = ref.read(categoryCatalogFilterProvider.notifier);
+    final visible = filter.apply(state.categories);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -41,11 +46,20 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
               AppSpacing.s16,
               AppSpacing.s12,
               AppSpacing.s16,
-              AppSpacing.s4,
+              AppSpacing.s8,
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                Expanded(
+                  child: CatalogSearchField(
+                    initialText: filter.query,
+                    hintText: 'Buscar por nombre o descripción',
+                    onChanged: (value) => setFilter.update(
+                      (f) => f.copyWith(query: value),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s12),
                 _ViewToggle(
                   isGrid: _isGrid,
                   onToggle: (val) => setState(() => _isGrid = val),
@@ -53,6 +67,46 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
               ],
             ),
           ),
+          // Las categorías no tienen precio: se filtra por estado y se ordena
+          // por nombre. El catálogo solo muestra categorías activas, así que el
+          // filtro de estado solo tiene sentido en la lista.
+          FilterChipRow(
+            chips: [
+              if (!_isGrid)
+                FilterMenuChip<CategoryStatusFilter>(
+                  icon: Icons.toggle_on_outlined,
+                  label: switch (filter.status) {
+                    CategoryStatusFilter.all => 'Estado',
+                    CategoryStatusFilter.active => 'Activas',
+                    CategoryStatusFilter.inactive => 'Inactivas',
+                  },
+                  active: filter.status != CategoryStatusFilter.all,
+                  selected: filter.status,
+                  options: const [
+                    FilterOption(CategoryStatusFilter.all, 'Todas'),
+                    FilterOption(CategoryStatusFilter.active, 'Activas'),
+                    FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
+                  ],
+                  onSelected: (value) =>
+                      setFilter.update((f) => f.copyWith(status: value)),
+                ),
+              FilterMenuChip<CategorySort>(
+                icon: Icons.swap_vert,
+                label: filter.sort == CategorySort.nameAsc
+                    ? 'Nombre A-Z'
+                    : 'Nombre Z-A',
+                active: filter.sort != CategorySort.nameAsc,
+                selected: filter.sort,
+                options: const [
+                  FilterOption(CategorySort.nameAsc, 'Nombre (A-Z)'),
+                  FilterOption(CategorySort.nameDesc, 'Nombre (Z-A)'),
+                ],
+                onSelected: (value) =>
+                    setFilter.update((f) => f.copyWith(sort: value)),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s8),
           Expanded(
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -63,10 +117,17 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   )
+                : visible.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin resultados',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
                 : _isGrid
-                ? _GridView(categories: state.categories)
+                ? _GridView(categories: visible)
                 : _ListViewWidget(
-                    categories: state.categories,
+                    categories: visible,
                     onEdit: (cat) => _showDialog(context, ref, cat),
                   ),
           ),

@@ -69,7 +69,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                                   : 'Gasto',
                               color: widget.purchase.isMaterial
                                   ? AppColors.primary
-                                  : AppColors.success,
+                                  : AppColors.textPrimary,
                             ),
                           ],
                         ),

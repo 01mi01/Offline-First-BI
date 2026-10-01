@@ -489,15 +489,17 @@ class _SaleReceiptDialogState
                         value:
                             'Bs. ${widget.sale.totalAmount.toStringAsFixed(2)}',
                       ),
-                      if (widget.sale.discount > 0) ...[
-                        const SizedBox(height: AppSpacing.s6),
-                        _ReceiptRow(
-                          label: 'Descuento',
-                          value:
-                              '- Bs. ${widget.sale.discount.toStringAsFixed(2)}',
-                          valueColor: AppColors.error,
-                        ),
-                      ],
+                      // Siempre visible: Subtotal - Descuento = Total.
+                      const SizedBox(height: AppSpacing.s6),
+                      _ReceiptRow(
+                        label: 'Descuento',
+                        value: widget.sale.discount > 0
+                            ? '- Bs. ${widget.sale.discount.toStringAsFixed(2)}'
+                            : 'Bs. 0.00',
+                        valueColor: widget.sale.discount > 0
+                            ? AppColors.error
+                            : null,
+                      ),
                       const SizedBox(height: AppSpacing.s8),
                       _ReceiptRow(
                         label: 'Total',

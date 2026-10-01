@@ -63,6 +63,10 @@ class SaleNotifier extends StateNotifier<SaleState> {
     String? notes,
     required List<Map<String, dynamic>> items,
   }) async {
+    // Devuelve el mensaje tal cual (sin el prefijo de la excepción).
+    if (discount < 0 || discount.isNaN) {
+      return SaleRepository.negativeDiscountMessage;
+    }
     try {
       await repository.createSale(
         clientId: clientId,

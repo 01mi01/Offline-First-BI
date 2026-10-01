@@ -649,6 +649,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       controller: _discountController,
                       keyboardType: TextInputType.number,
                       inputFormatters: [
+                        // Un descuento es cero o positivo: no admite signo
+                        // negativo (ni al escribir ni al pegar) ni letras.
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                         TextInputFormatter.withFunction((oldValue, newValue) {
                           if (newValue.text.isEmpty) return newValue;
                           if (newValue.text == '0') return newValue;
@@ -665,6 +668,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         labelText: 'Descuento (Bs.)',
                         hintText: '0',
                       ),
+                      validator: (v) => ref
+                          .read(saleRepositoryProvider)
+                          .validateDiscount(
+                            double.tryParse((v ?? '').trim()) ?? 0,
+                            double.infinity,
+                          ),
                       onChanged: (_) => setState(() => _error = null),
                     ),
                     const SizedBox(height: AppSpacing.s16),
@@ -694,14 +703,18 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                             label: 'Subtotal',
                             value: 'Bs. ${_subtotal.toStringAsFixed(2)}',
                           ),
-                          if (_discount > 0) ...[
-                            const SizedBox(height: AppSpacing.s6),
-                            _TotalRow(
-                              label: 'Descuento',
-                              value: '- Bs. ${_discount.toStringAsFixed(2)}',
-                              valueColor: AppColors.error,
-                            ),
-                          ],
+                          // Siempre visible, para que el desglose sea claro:
+                          // Subtotal - Descuento = Total.
+                          const SizedBox(height: AppSpacing.s6),
+                          _TotalRow(
+                            label: 'Descuento',
+                            value: _discount > 0
+                                ? '- Bs. ${_discount.toStringAsFixed(2)}'
+                                : 'Bs. 0.00',
+                            valueColor: _discount > 0
+                                ? AppColors.error
+                                : null,
+                          ),
                           const Divider(
                             color: AppColors.border,
                             height: AppSpacing.s20,

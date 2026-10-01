@@ -4,11 +4,13 @@ import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
+import '../../models/purchase_kind.dart';
 import '../../models/purchase_model.dart';
 import '../../models/purchase_item_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/purchase_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/catalog_filter_bar.dart';
 import '../../config/date_formatters.dart';
 
 class PurchasesPage extends ConsumerWidget {
@@ -34,6 +36,8 @@ class PurchasesListBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(purchaseProvider);
     final suppliers = ref.watch(supplierProvider).suppliers;
+    final kind = ref.watch(purchaseKindFilterProvider);
+    final visible = state.purchases.where(kind.includes).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -55,26 +59,66 @@ class PurchasesListBody extends ConsumerWidget {
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             )
-          : ListView.builder(
-              padding: AppSpacing.listWithFab,
-              itemCount: state.purchases.length,
-              itemBuilder: (context, index) {
-                final purchase = state.purchases[index];
-                final supplier = suppliers
-                    .where((s) => s.id == purchase.supplierId)
-                    .firstOrNull;
-                return _PurchaseCard(
-                  purchase: purchase,
-                  supplierName: supplier?.name ?? 'Sin proveedor',
-                  onEdit: () => _showDialog(context, purchase),
-                  onTap: () => _showDetail(
-                    context,
-                    ref,
-                    purchase,
-                    supplier?.name ?? 'Sin proveedor',
+          : Column(
+              children: [
+                // Filtro por tipo: solo materiales, solo gastos o ambos.
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.s12),
+                  child: FilterChipRow(
+                    chips: [
+                      FilterMenuChip<PurchaseKind>(
+                        icon: Icons.filter_list,
+                        label: kind == PurchaseKind.all
+                            ? 'Tipo'
+                            : kind.label,
+                        active: kind != PurchaseKind.all,
+                        selected: kind,
+                        options: [
+                          for (final k in PurchaseKind.values)
+                            FilterOption(
+                              k,
+                              k == PurchaseKind.all ? 'Ambos tipos' : k.label,
+                            ),
+                        ],
+                        onSelected: (value) => ref
+                            .read(purchaseKindFilterProvider.notifier)
+                            .state = value,
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: AppSpacing.s8),
+                Expanded(
+                  child: visible.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Sin resultados',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: AppSpacing.listWithFab,
+                          itemCount: visible.length,
+                          itemBuilder: (context, index) {
+                            final purchase = visible[index];
+                            final supplier = suppliers
+                                .where((s) => s.id == purchase.supplierId)
+                                .firstOrNull;
+                            return _PurchaseCard(
+                              purchase: purchase,
+                              supplierName: supplier?.name ?? 'Sin proveedor',
+                              onEdit: () => _showDialog(context, purchase),
+                              onTap: () => _showDetail(
+                                context,
+                                ref,
+                                purchase,
+                                supplier?.name ?? 'Sin proveedor',
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
     );
   }
@@ -158,9 +202,11 @@ class _PurchaseCard extends StatelessWidget {
                           vertical: AppSpacing.s2,
                         ),
                         decoration: BoxDecoration(
+                          // "Gasto" va en el color neutro de texto (ni verde
+                          // ni el rojo de las acciones destructivas).
                           color: purchase.isMaterial
                               ? AppColors.primary.withOpacity(0.1)
-                              : AppColors.success.withOpacity(0.1),
+                              : AppColors.textSecondary.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -170,7 +216,7 @@ class _PurchaseCard extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                                 color: purchase.isMaterial
                                     ? AppColors.primary
-                                    : AppColors.success,
+                                    : AppColors.textPrimary,
                               ),
                         ),
                       ),

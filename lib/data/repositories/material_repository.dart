@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/material_model.dart';
 import '../../models/product_material_model.dart';
+import 'purchase_repository.dart';
 
 class MaterialRepository {
   final AppDatabase database;
@@ -40,7 +41,13 @@ class MaterialRepository {
     return rows.map(_toModel).toList();
   }
 
-  // Guarda o actualiza un material
+  // Nota de la compra que se crea sola con el stock inicial de un material.
+  static const String initialStockPurchaseNote = 'Stock inicial del material';
+
+  // Guarda o actualiza un material. Al CREAR uno con stock inicial mayor a
+  // cero se registra también la compra (tipo Material) que lo respalda, en la
+  // misma transacción: el material y su compra nunca quedan desfasados. El
+  // stock no se suma dos veces (el material ya nace con él).
   Future<void> save({
     int? id,
     required String name,
@@ -51,21 +58,44 @@ class MaterialRepository {
     bool isActive = true,
   }) async {
     final now = DateTime.now();
-    await database
-        .into(database.materials)
-        .insertOnConflictUpdate(
-          MaterialsCompanion(
-            id: id != null ? Value(id) : const Value.absent(),
-            name: Value(name),
-            description: Value(description),
-            unitId: Value(unitId),
-            stock: Value(stock),
-            pricePerUnit: Value(pricePerUnit),
-            isActive: Value(isActive),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
+    await database.transaction(() async {
+      final savedId = await database
+          .into(database.materials)
+          .insertOnConflictUpdate(
+            MaterialsCompanion(
+              id: id != null ? Value(id) : const Value.absent(),
+              name: Value(name),
+              description: Value(description),
+              unitId: Value(unitId),
+              stock: Value(stock),
+              pricePerUnit: Value(pricePerUnit),
+              isActive: Value(isActive),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+
+      if (id == null && stock > 0) {
+        await PurchaseRepository(database).createPurchase(
+          supplierId: null, // "Sin proveedor"
+          isMaterial: true,
+          description: null,
+          totalAmount: stock * pricePerUnit,
+          date: now,
+          locationId: null,
+          eventId: null,
+          notes: initialStockPurchaseNote,
+          items: [
+            {
+              'materialId': savedId,
+              'quantity': stock,
+              'unitPrice': pricePerUnit,
+            },
+          ],
+          adjustStock: false,
         );
+      }
+    });
   }
 
   // Obtiene el log de uso de materiales para un producto

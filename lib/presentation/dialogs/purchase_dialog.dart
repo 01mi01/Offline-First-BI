@@ -37,6 +37,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   final List<Map<String, dynamic>> _materialItems = [];
   bool _isLoading = false;
   String? _error;
+  // El total de una compra de materiales se calcula de sus ítems, pero se puede
+  // escribir a mano: desde entonces manda lo escrito y deja de recalcularse. Es
+  // solo el monto de la compra; el stock y el precio de cada material siguen
+  // saliendo de los ítems.
+  bool _totalOverridden = false;
 
   @override
   void initState() {
@@ -72,6 +77,13 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
             'unitPrice': item.unitPrice,
           });
         }
+        // Si el total guardado difiere de la suma de los ítems, fue editado a
+        // mano: se respeta en vez de recalcularlo al abrir.
+        final calculated = ref
+            .read(purchaseRepositoryProvider)
+            .calculateMaterialsTotal(_materialItems);
+        _totalOverridden =
+            (widget.purchase!.totalAmount - calculated).abs() > 0.005;
         _recalcTotal();
       });
     }
@@ -91,12 +103,24 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   // Recalcula el total a partir de los ítems de material
   void _recalcTotal() {
-    if (!_isMaterial) return;
+    if (!_isMaterial || _totalOverridden) return;
     final total = ref
         .read(purchaseRepositoryProvider)
         .calculateMaterialsTotal(_materialItems);
     _totalController.text = formatNumber(total);
   }
+
+  // Formato del campo de total: solo dígitos y un punto decimal, sin ceros a la
+  // izquierda ("05") ni signo negativo.
+  static TextInputFormatter _amountFormatter() =>
+      TextInputFormatter.withFunction((oldValue, newValue) {
+        final text = newValue.text;
+        if (text.isEmpty || text == '0') return newValue;
+        if (!RegExp(r'^[0-9.]*$').hasMatch(text)) return oldValue;
+        if (text.startsWith('0') && !text.startsWith('0.')) return oldValue;
+        if (double.tryParse(text) == null && text != '.') return oldValue;
+        return newValue;
+      });
 
   // "2 metros", "1 paquete": cantidad con el nombre de su unidad concordado
   // (igual que en las tarjetas de producto y el registro de uso).
@@ -165,7 +189,13 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       return;
     }
 
-    final total = double.tryParse(_totalController.text.trim()) ?? 0;
+    var total = double.tryParse(_totalController.text.trim()) ?? 0;
+    // Un total manual que se dejó vacío vuelve al calculado de los ítems.
+    if (_isMaterial && _totalController.text.trim().isEmpty) {
+      total = ref
+          .read(purchaseRepositoryProvider)
+          .calculateMaterialsTotal(_materialItems);
+    }
     if (total <= 0) {
       setState(() => _error = 'El total debe ser mayor a 0');
       return;
@@ -311,6 +341,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     setState(() {
                       _error = null;
                       _isMaterial = selection.first;
+                      _totalOverridden = false;
                       // Cada modo empieza limpio: nada del otro modo queda
                       // oculto. Los campos de cada modo tienen su propia llave,
                       // así que nacen sin haber sido tocados (sin errores).
@@ -682,15 +713,38 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           }),
                         const SizedBox(height: AppSpacing.s16),
 
-                        // Total calculado automáticamente
+                        // Total: se calcula de los materiales, pero se puede
+                        // escribir a mano; lo escrito reemplaza al calculado.
                         TextFormField(
                           key: const ValueKey('purchase-total-materials'),
                           autovalidateMode: AutovalidateMode.onUserInteraction,
                           controller: _totalController,
-                          readOnly: true,
-                          decoration: const InputDecoration(
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [_amountFormatter()],
+                          decoration: InputDecoration(
                             labelText: 'Total (Bs.)',
+                            helperText: _totalOverridden
+                                ? 'Total escrito a mano'
+                                : 'Calculado de los materiales; puedes editarlo',
+                            suffixIcon: _totalOverridden
+                                ? IconButton(
+                                    tooltip: 'Usar el total calculado',
+                                    icon: const Icon(
+                                      Icons.restart_alt,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    onPressed: () => setState(() {
+                                      _totalOverridden = false;
+                                      _recalcTotal();
+                                    }),
+                                  )
+                                : null,
                           ),
+                          onChanged: (_) {
+                            if (!_totalOverridden) {
+                              setState(() => _totalOverridden = true);
+                            }
+                          },
                         ),
                       ] else ...[
                         // Gasto general
@@ -713,22 +767,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           autovalidateMode: AutovalidateMode.onUserInteraction,
                           controller: _totalController,
                           keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            TextInputFormatter.withFunction((
-                              oldValue,
-                              newValue,
-                            ) {
-                              if (newValue.text.isEmpty) return newValue;
-                              if (newValue.text == '0') return newValue;
-                              if (newValue.text.startsWith('0') &&
-                                  !newValue.text.startsWith('0.'))
-                                return oldValue;
-                              if (double.tryParse(newValue.text) == null &&
-                                  newValue.text != '.')
-                                return oldValue;
-                              return newValue;
-                            }),
-                          ],
+                          inputFormatters: [_amountFormatter()],
                           decoration: const InputDecoration(
                             labelText: 'Total (Bs.)',
                             hintText: '0',
@@ -888,14 +927,17 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => MaterialDialog(
-        onSaved: (materialId, materialName, pricePerUnit, stock) {
+        onSaved: (materialId, materialName, pricePerUnit, _) {
           if (mounted) {
             setState(() {
               _selectedMaterialId = materialId;
               _selectedMaterialName = materialName;
               _priceController.text = formatNumber(pricePerUnit);
-              // Llena la cantidad con el stock inicial registrado
-              _quantityController.text = formatNumber(stock);
+              // La cantidad NO se rellena con el stock del material: ese stock
+              // inicial ya quedó registrado como su propia compra al crearlo.
+              // Aquí se escribe lo que se compra en esta ocasión, que se suma
+              // al stock existente.
+              _quantityController.clear();
             });
           }
         },

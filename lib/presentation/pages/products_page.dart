@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offline_first_bi/models/product_model.dart';
 import 'dart:io';
 import '../../application/product_provider.dart';
+import '../../application/product_catalog_filter.dart';
 import '../../application/category_provider.dart';
 import '../../application/material_provider.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/product_dialog.dart';
+import '../widgets/catalog_filter_bar.dart';
 import '../widgets/status_badge.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
@@ -22,6 +24,13 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productProvider);
+    final categories = ref.watch(categoryProvider).categories;
+    final filter = ref.watch(productCatalogFilterProvider);
+    final setFilter = ref.read(productCatalogFilterProvider.notifier);
+    final visible = filter.apply(state.products);
+    final selectedCategory = categories
+        .where((c) => c.id == filter.categoryId)
+        .firstOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -36,17 +45,26 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       ),
       body: Column(
         children: [
-          // Barra de toggle lista/catálogo
+          // Búsqueda y toggle lista/catálogo
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.s16,
               AppSpacing.s12,
               AppSpacing.s16,
-              AppSpacing.s4,
+              AppSpacing.s8,
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                Expanded(
+                  child: CatalogSearchField(
+                    initialText: filter.query,
+                    hintText: 'Buscar por nombre o descripción',
+                    onChanged: (value) => setFilter.update(
+                      (f) => f.copyWith(query: value),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s12),
                 _ViewToggle(
                   isGrid: _isGrid,
                   onToggle: (val) => setState(() => _isGrid = val),
@@ -54,6 +72,65 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               ],
             ),
           ),
+          // Filtros: categoría, precio (el que muestra el catálogo y con el que
+          // se ordena) y orden. Se conservan mientras la pantalla esté abierta.
+          FilterChipRow(
+            chips: [
+              FilterMenuChip<int?>(
+                icon: Icons.category_outlined,
+                label: selectedCategory?.name ?? 'Categoría',
+                active: filter.categoryId != null,
+                selected: filter.categoryId,
+                options: [
+                  const FilterOption<int?>(null, 'Todas las categorías'),
+                  for (final c in categories) FilterOption<int?>(c.id, c.name),
+                ],
+                onSelected: (id) => setFilter.update(
+                  (f) => id == null
+                      ? f.copyWith(clearCategory: true)
+                      : f.copyWith(categoryId: id),
+                ),
+              ),
+              FilterMenuChip<PriceDisplay>(
+                icon: Icons.sell_outlined,
+                label: switch (filter.priceDisplay) {
+                  PriceDisplay.a => 'Precio A',
+                  PriceDisplay.b => 'Precio B',
+                  PriceDisplay.none => 'Sin precio',
+                },
+                active: filter.priceDisplay != PriceDisplay.a,
+                selected: filter.priceDisplay,
+                options: const [
+                  FilterOption(PriceDisplay.a, 'Precio A'),
+                  FilterOption(PriceDisplay.b, 'Precio B'),
+                  FilterOption(PriceDisplay.none, 'Sin precio'),
+                ],
+                onSelected: (value) =>
+                    setFilter.update((f) => f.copyWith(priceDisplay: value)),
+              ),
+              FilterMenuChip<ProductSort>(
+                icon: Icons.swap_vert,
+                label: switch (filter.effectiveSort) {
+                  ProductSort.name => 'Nombre',
+                  ProductSort.priceAsc => 'Precio ↑',
+                  ProductSort.priceDesc => 'Precio ↓',
+                },
+                active: filter.effectiveSort != ProductSort.name,
+                selected: filter.effectiveSort,
+                options: [
+                  const FilterOption(ProductSort.name, 'Nombre (A-Z)'),
+                  // El orden por precio usa el precio elegido en el filtro.
+                  if (filter.canSortByPrice) ...const [
+                    FilterOption(ProductSort.priceAsc, 'Precio: menor a mayor'),
+                    FilterOption(ProductSort.priceDesc, 'Precio: mayor a menor'),
+                  ],
+                ],
+                onSelected: (value) =>
+                    setFilter.update((f) => f.copyWith(sort: value)),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s8),
           Expanded(
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -64,10 +141,17 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   )
+                : visible.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin resultados',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
                 : _isGrid
-                ? _GridView(products: state.products)
+                ? _GridView(products: visible, priceDisplay: filter.priceDisplay)
                 : _ListViewWidget(
-                    products: state.products,
+                    products: visible,
                     onEdit: (p) => _showDialog(context, p),
                   ),
           ),
@@ -192,8 +276,10 @@ class _ListViewWidget extends ConsumerWidget {
 // Vista de catálogo — solo activos, imagen, nombre, precio
 class _GridView extends StatelessWidget {
   final List<ProductModel> products;
+  // Qué precio muestran las tarjetas (y el detalle) de todo el catálogo.
+  final PriceDisplay priceDisplay;
 
-  const _GridView({required this.products});
+  const _GridView({required this.products, required this.priceDisplay});
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +296,11 @@ class _GridView extends StatelessWidget {
       itemCount: active.length,
       itemBuilder: (context, index) {
         final p = active[index];
-        return _GridCard(product: p, onTap: () => _showDetail(context, p));
+        return _GridCard(
+          product: p,
+          price: _catalogPrice(p, priceDisplay),
+          onTap: () => _showDetail(context, p),
+        );
       },
     );
   }
@@ -219,10 +309,19 @@ class _GridView extends StatelessWidget {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),
-      builder: (_) => _ProductGridDetail(product: p),
+      builder: (_) =>
+          _ProductGridDetail(product: p, price: _catalogPrice(p, priceDisplay)),
     );
   }
 }
+
+// Precio que muestra el catálogo según el filtro de precio; null = no se
+// muestra ninguno. Nunca lleva etiqueta A/B.
+double? _catalogPrice(ProductModel p, PriceDisplay display) => switch (display) {
+  PriceDisplay.a => p.priceA,
+  PriceDisplay.b => p.priceB,
+  PriceDisplay.none => null,
+};
 
 // Tarjeta para la vista de lista con materiales vinculados
 class _ProductCard extends ConsumerStatefulWidget {
@@ -515,9 +614,14 @@ inactiveLabel: 'Inactivo',
 // Tarjeta para la vista de catálogo
 class _GridCard extends StatelessWidget {
   final ProductModel product;
+  final double? price;
   final VoidCallback onTap;
 
-  const _GridCard({required this.product, required this.onTap});
+  const _GridCard({
+    required this.product,
+    required this.price,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -563,23 +667,17 @@ class _GridCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: AppSpacing.s2),
-                  Text(
-                    'A: Bs. ${product.priceA.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.displaySmall
-                        ?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  Text(
-                    'B: Bs. ${product.priceB.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.displaySmall
-                        ?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
+                  if (price != null) ...[
+                    const SizedBox(height: AppSpacing.s2),
+                    Text(
+                      'Precio: Bs. ${price!.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.displaySmall
+                          ?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -606,8 +704,9 @@ class _GridCard extends StatelessWidget {
 // Detalle simple para la vista de catálogo, sin materiales
 class _ProductGridDetail extends StatelessWidget {
   final ProductModel product;
+  final double? price;
 
-  const _ProductGridDetail({required this.product});
+  const _ProductGridDetail({required this.product, required this.price});
 
   @override
   Widget build(BuildContext context) {
@@ -679,23 +778,17 @@ class _ProductGridDetail extends StatelessWidget {
                             ),
                       ),
                     ],
-                    const SizedBox(height: AppSpacing.s4),
-                    Text(
-                      'Precio A: Bs. ${product.priceA.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                    if (price != null) ...[
+                      const SizedBox(height: AppSpacing.s4),
+                      Text(
+                        'Precio: Bs. ${price!.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Precio B: Bs. ${product.priceB.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),

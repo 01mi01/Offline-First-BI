@@ -52,12 +52,14 @@ class ProductRepository {
     required String name,
     String? description,
     String? image,
-    required double priceA,
-    required double priceB,
+    double? priceA,
+    double? priceB,
     double? productionCost,
     required int stock,
     bool isActive = true,
   }) async {
+    // Solo hace falta un precio: el otro se iguala (ver resolveProductPrices).
+    final prices = resolveProductPrices(priceA, priceB);
     final now = DateTime.now();
     await database.into(database.products).insertOnConflictUpdate(
           ProductsCompanion(
@@ -66,8 +68,8 @@ class ProductRepository {
             name: Value(name),
             description: Value(description),
             image: Value(image),
-            priceA: Value(priceA),
-            priceB: Value(priceB),
+            priceA: Value(prices.priceA),
+            priceB: Value(prices.priceB),
             productionCost: Value(productionCost),
             stock: Value(stock),
             isActive: Value(isActive),

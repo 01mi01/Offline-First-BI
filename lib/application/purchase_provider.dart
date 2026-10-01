@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/purchase_repository.dart';
+import '../models/purchase_kind.dart';
 import '../models/purchase_model.dart';
 import '../models/purchase_item_model.dart';
 import 'database_provider.dart';
@@ -125,6 +126,12 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     }
   }
 }
+
+// Filtro de tipo de la lista de Compras (materiales, gastos o ambos). Vive
+// mientras la pantalla esté abierta.
+final purchaseKindFilterProvider = StateProvider.autoDispose<PurchaseKind>(
+  (ref) => PurchaseKind.all,
+);
 
 final purchaseProvider =
     StateNotifierProvider<PurchaseNotifier, PurchaseState>((ref) {
