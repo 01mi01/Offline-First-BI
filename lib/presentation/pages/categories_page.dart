@@ -41,6 +41,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       ),
       body: Column(
         children: [
+          // Fila superior, alineada a la derecha: el toggle lista/catálogo.
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.s16,
@@ -49,17 +50,8 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
               AppSpacing.s8,
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: CatalogSearchField(
-                    initialText: filter.query,
-                    hintText: 'Buscar por nombre o descripción',
-                    onChanged: (value) => setFilter.update(
-                      (f) => f.copyWith(query: value),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
                 _ViewToggle(
                   isGrid: _isGrid,
                   onToggle: (val) => setState(() => _isGrid = val),
@@ -67,44 +59,43 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
               ],
             ),
           ),
-          // Las categorías no tienen precio: se filtra por estado y se ordena
-          // por nombre. El catálogo solo muestra categorías activas, así que el
-          // filtro de estado solo tiene sentido en la lista.
-          FilterChipRow(
-            chips: [
-              if (!_isGrid)
-                FilterMenuChip<CategoryStatusFilter>(
-                  icon: Icons.toggle_on_outlined,
-                  label: switch (filter.status) {
-                    CategoryStatusFilter.all => 'Estado',
-                    CategoryStatusFilter.active => 'Activas',
-                    CategoryStatusFilter.inactive => 'Inactivas',
-                  },
-                  active: filter.status != CategoryStatusFilter.all,
-                  selected: filter.status,
-                  options: const [
-                    FilterOption(CategoryStatusFilter.all, 'Todas'),
-                    FilterOption(CategoryStatusFilter.active, 'Activas'),
-                    FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
-                  ],
-                  onSelected: (value) =>
-                      setFilter.update((f) => f.copyWith(status: value)),
+          // Fila de abajo: el buscador (por nombre) comparte el ancho con el
+          // filtro de estado. El filtro de estado se controla solo desde la
+          // lista; el catálogo refleja lo elegido sin repetir el control.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CatalogSearchField(
+                    initialText: filter.query,
+                    hintText: 'Buscar categoría',
+                    onChanged: (value) => setFilter.update(
+                      (f) => f.copyWith(query: value),
+                    ),
+                  ),
                 ),
-              FilterMenuChip<CategorySort>(
-                icon: Icons.swap_vert,
-                label: filter.sort == CategorySort.nameAsc
-                    ? 'Nombre A-Z'
-                    : 'Nombre Z-A',
-                active: filter.sort != CategorySort.nameAsc,
-                selected: filter.sort,
-                options: const [
-                  FilterOption(CategorySort.nameAsc, 'Nombre (A-Z)'),
-                  FilterOption(CategorySort.nameDesc, 'Nombre (Z-A)'),
+                if (!_isGrid) ...[
+                  const SizedBox(width: AppSpacing.s8),
+                  FilterMenuChip<CategoryStatusFilter>(
+                    label: switch (filter.status) {
+                      CategoryStatusFilter.all => 'Todas',
+                      CategoryStatusFilter.active => 'Activas',
+                      CategoryStatusFilter.inactive => 'Inactivas',
+                    },
+                    active: filter.status != CategoryStatusFilter.all,
+                    selected: filter.status,
+                    options: const [
+                      FilterOption(CategoryStatusFilter.all, 'Todas'),
+                      FilterOption(CategoryStatusFilter.active, 'Activas'),
+                      FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
+                    ],
+                    onSelected: (value) =>
+                        setFilter.update((f) => f.copyWith(status: value)),
+                  ),
                 ],
-                onSelected: (value) =>
-                    setFilter.update((f) => f.copyWith(sort: value)),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.s8),
           Expanded(
@@ -125,7 +116,10 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                     ),
                   )
                 : _isGrid
-                ? _GridView(categories: visible)
+                ? _GridView(
+                    categories: visible,
+                    showInactive: filter.status == CategoryStatusFilter.inactive,
+                  )
                 : _ListViewWidget(
                     categories: visible,
                     onEdit: (cat) => _showDialog(context, ref, cat),
@@ -241,13 +235,17 @@ class _ListViewWidget extends StatelessWidget {
 
 class _GridView extends StatelessWidget {
   final List<CategoryModel> categories;
+  // El catálogo muestra solo categorías activas, salvo que el filtro de estado
+  // de la lista pida las inactivas: entonces las refleja.
+  final bool showInactive;
 
-  const _GridView({required this.categories});
+  const _GridView({required this.categories, this.showInactive = false});
 
   @override
   Widget build(BuildContext context) {
-    // Solo muestra categorías activas en la vista catálogo
-    final active = categories.where((c) => c.isActive).toList();
+    final active = showInactive
+        ? categories
+        : categories.where((c) => c.isActive).toList();
 
     return GridView.builder(
       padding: AppSpacing.listWithFab,

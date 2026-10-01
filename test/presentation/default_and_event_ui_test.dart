@@ -19,6 +19,7 @@ import 'package:offline_first_bi/presentation/pages/categories_page.dart';
 import 'package:offline_first_bi/presentation/pages/clients_page.dart';
 import 'package:offline_first_bi/presentation/pages/events_page.dart';
 import 'package:offline_first_bi/presentation/pages/suppliers_page.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 void main() {
@@ -123,7 +124,7 @@ void main() {
         await openSheet(tester, const SaleDialog());
 
         // El selector muestra la opción predeterminada, no queda en blanco.
-        final clientField = find.byType(DropdownButtonFormField<int>).first;
+        final clientField = find.byType(SearchablePickerField<int>).first;
         expect(
           find.descendant(of: clientField, matching: find.text('Sin nombre')),
           findsOneWidget,
@@ -152,7 +153,7 @@ void main() {
         await ClientRepository(db).save(name: 'Maria');
         await openSheet(tester, const SaleDialog());
 
-        await tester.tap(find.byType(DropdownButtonFormField<int>).first);
+        await tester.tap(find.byType(SearchablePickerField<int>).first);
         await tester.pumpAndSettle();
 
         // Una vez en el campo (valor elegido) y una vez en el menú abierto;
@@ -168,7 +169,7 @@ void main() {
       (tester) async {
         await openSheet(tester, const PurchaseDialog());
 
-        final supplierField = find.byType(DropdownButtonFormField<int>).first;
+        final supplierField = find.byType(SearchablePickerField<int>).first;
         expect(
           find.descendant(of: supplierField, matching: find.text('Sin proveedor')),
           findsOneWidget,
@@ -274,9 +275,9 @@ void main() {
         isActive: false,
       );
 
-      // Ventas: selector de evento (tercer selector del formulario).
+      // Ventas: selector de evento (segundo desplegable: tras la ubicación).
       await openSheet(tester, const SaleDialog());
-      final saleEventField = find.byType(DropdownButtonFormField<int>).at(2);
+      final saleEventField = find.byType(DropdownButtonFormField<int>).at(1);
       await tester.ensureVisible(saleEventField);
       await tester.tap(saleEventField);
       await tester.pumpAndSettle();
@@ -298,8 +299,8 @@ void main() {
       );
 
       await openSheet(tester, const PurchaseDialog());
-      // Proveedor, ubicación, evento
-      final purchaseEventField = find.byType(DropdownButtonFormField<int>).at(2);
+      // Ubicación, evento (el proveedor ahora es un selector con búsqueda)
+      final purchaseEventField = find.byType(DropdownButtonFormField<int>).at(1);
       await tester.ensureVisible(purchaseEventField);
       await tester.tap(purchaseEventField);
       await tester.pumpAndSettle();
@@ -337,7 +338,7 @@ void main() {
 
         await openSheet(tester, SaleDialog(sale: sale));
 
-        final eventField = find.byType(DropdownButtonFormField<int>).at(2);
+        final eventField = find.byType(DropdownButtonFormField<int>).at(1);
         expect(find.descendant(of: eventField, matching: find.text('Expo')), findsOneWidget);
       },
     );

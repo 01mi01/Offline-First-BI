@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/material_model.dart';
 import '../../models/product_material_model.dart';
+import '../../models/unit_model.dart';
 import 'purchase_repository.dart';
 
 class MaterialRepository {
@@ -58,6 +59,25 @@ class MaterialRepository {
     bool isActive = true,
   }) async {
     final now = DateTime.now();
+    // Al editar, la unidad solo puede cambiar a otra del mismo tipo (ver
+    // selectableUnitsFor): la interfaz ya solo ofrece esas, y esto lo garantiza
+    // también al guardar.
+    if (id != null) {
+      final current = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(id))).getSingleOrNull();
+      if (current != null && current.unitId != unitId) {
+        final from = await (database.select(
+          database.units,
+        )..where((u) => u.id.equals(current.unitId))).getSingleOrNull();
+        final to = await (database.select(
+          database.units,
+        )..where((u) => u.id.equals(unitId))).getSingleOrNull();
+        if (from == null || to == null || from.type != to.type) {
+          throw ArgumentError(unitTypeChangeMessage);
+        }
+      }
+    }
     await database.transaction(() async {
       final savedId = await database
           .into(database.materials)

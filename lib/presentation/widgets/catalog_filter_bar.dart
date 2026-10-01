@@ -83,8 +83,11 @@ class FilterOption<T> {
 // Chip que abre un menú con las opciones de un filtro. Se resalta cuando el
 // filtro no está en su valor por defecto ([active]).
 class FilterMenuChip<T> extends StatelessWidget {
-  final IconData icon;
+  // Sin icono si es null.
+  final IconData? icon;
   final String label;
+  // Ancho máximo del texto; si no cabe se recorta con puntos suspensivos.
+  final double maxLabelWidth;
   final bool active;
   final List<FilterOption<T>> options;
   final T selected;
@@ -92,7 +95,8 @@ class FilterMenuChip<T> extends StatelessWidget {
 
   const FilterMenuChip({
     super.key,
-    required this.icon,
+    this.icon,
+    this.maxLabelWidth = 160,
     required this.label,
     required this.options,
     required this.selected,
@@ -133,13 +137,20 @@ class FilterMenuChip<T> extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: AppSpacing.s6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: AppSpacing.s6),
+            ],
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxLabelWidth),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.s2),

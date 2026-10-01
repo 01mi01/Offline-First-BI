@@ -7,6 +7,7 @@ import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/sale_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 Future<void> _openSaleDialog(WidgetTester tester, AppDatabase db) async {
@@ -66,7 +67,7 @@ void main() {
       expect(find.text('Bs. 0.00'), findsWidgets);
 
       // Selecciona el cliente por defecto ("Sin nombre")
-      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.tap(find.byType(SearchablePickerField<int>).at(0));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sin nombre').last);
       await tester.pumpAndSettle();
@@ -115,7 +116,7 @@ void main() {
     (tester) async {
       await _openSaleDialog(tester, db);
 
-      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.tap(find.byType(SearchablePickerField<int>).at(0));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sin nombre').last);
       await tester.pumpAndSettle();
@@ -209,8 +210,8 @@ void main() {
       await tester.tap(find.text('Precio B'));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.byType(DropdownButtonFormField<int>).at(0));
-      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.ensureVisible(find.byType(SearchablePickerField<int>).at(0));
+      await tester.tap(find.byType(SearchablePickerField<int>).at(0));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sin nombre').last);
       await tester.pumpAndSettle();
@@ -255,8 +256,8 @@ void main() {
       // 55 (A) + 6.5 (B) = 61.5
       expect(find.text('Bs. 61.50'), findsWidgets);
 
-      await tester.ensureVisible(find.byType(DropdownButtonFormField<int>).at(0));
-      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.ensureVisible(find.byType(SearchablePickerField<int>).at(0));
+      await tester.tap(find.byType(SearchablePickerField<int>).at(0));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sin nombre').last);
       await tester.pumpAndSettle();

@@ -46,7 +46,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       ),
       body: Column(
         children: [
-          // Búsqueda y toggle lista/catálogo
+          // Fila superior, alineada a la derecha: el filtro de precio (solo en la
+          // vista de lista; el catálogo refleja lo elegido sin repetir el
+          // control) y, a su derecha, el toggle lista/catálogo.
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.s16,
@@ -55,17 +57,33 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               AppSpacing.s8,
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: CatalogSearchField(
-                    initialText: filter.query,
-                    hintText: 'Buscar por nombre o descripción',
-                    onChanged: (value) => setFilter.update(
-                      (f) => f.copyWith(query: value),
+                if (!_isGrid) ...[
+                  FilterMenuChip<PriceDisplay>(
+                    icon: Icons.sell_outlined,
+                    label: switch (priceDisplay) {
+                      PriceDisplay.a => 'Precio A',
+                      PriceDisplay.b => 'Precio B',
+                      PriceDisplay.both => 'Ambos',
+                      PriceDisplay.none => 'Sin precio',
+                    },
+                    // Resaltado cuando se eligió una opción (si no, cada vista
+                    // usa su valor por defecto).
+                    active: filter.priceDisplay != null,
+                    selected: priceDisplay,
+                    options: const [
+                      FilterOption(PriceDisplay.a, 'Precio A'),
+                      FilterOption(PriceDisplay.b, 'Precio B'),
+                      FilterOption(PriceDisplay.both, 'Ambos'),
+                      FilterOption(PriceDisplay.none, 'Sin precio'),
+                    ],
+                    onSelected: (value) => setFilter.update(
+                      (f) => f.copyWith(priceDisplay: value),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
+                  const SizedBox(width: AppSpacing.s12),
+                ],
                 _ViewToggle(
                   isGrid: _isGrid,
                   onToggle: (val) => setState(() => _isGrid = val),
@@ -73,67 +91,41 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               ],
             ),
           ),
-          // Filtros: categoría, precio (el que muestra el catálogo y con el que
-          // se ordena) y orden. Se conservan mientras la pantalla esté abierta.
-          FilterChipRow(
-            chips: [
-              FilterMenuChip<int?>(
-                icon: Icons.category_outlined,
-                label: selectedCategory?.name ?? 'Categoría',
-                active: filter.categoryId != null,
-                selected: filter.categoryId,
-                options: [
-                  const FilterOption<int?>(null, 'Todas las categorías'),
-                  for (final c in categories) FilterOption<int?>(c.id, c.name),
-                ],
-                onSelected: (id) => setFilter.update(
-                  (f) => id == null
-                      ? f.copyWith(clearCategory: true)
-                      : f.copyWith(categoryId: id),
+          // Fila de abajo: el buscador (nombre o descripción) comparte el ancho
+          // con el filtro de categoría.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CatalogSearchField(
+                    initialText: filter.query,
+                    hintText: 'Buscar producto',
+                    onChanged: (value) => setFilter.update(
+                      (f) => f.copyWith(query: value),
+                    ),
+                  ),
                 ),
-              ),
-              FilterMenuChip<PriceDisplay>(
-                icon: Icons.sell_outlined,
-                label: switch (priceDisplay) {
-                  PriceDisplay.a => 'Precio A',
-                  PriceDisplay.b => 'Precio B',
-                  PriceDisplay.both => 'Ambos',
-                  PriceDisplay.none => 'Sin precio',
-                },
-                // Resaltado cuando se eligió una opción (si no, cada vista usa
-                // su valor por defecto).
-                active: filter.priceDisplay != null,
-                selected: priceDisplay,
-                options: const [
-                  FilterOption(PriceDisplay.a, 'Precio A'),
-                  FilterOption(PriceDisplay.b, 'Precio B'),
-                  FilterOption(PriceDisplay.both, 'Ambos'),
-                  FilterOption(PriceDisplay.none, 'Sin precio'),
-                ],
-                onSelected: (value) =>
-                    setFilter.update((f) => f.copyWith(priceDisplay: value)),
-              ),
-              FilterMenuChip<ProductSort>(
-                icon: Icons.swap_vert,
-                label: switch (filter.effectiveSort) {
-                  ProductSort.name => 'Nombre',
-                  ProductSort.priceAsc => 'Precio ↑',
-                  ProductSort.priceDesc => 'Precio ↓',
-                },
-                active: filter.effectiveSort != ProductSort.name,
-                selected: filter.effectiveSort,
-                options: [
-                  const FilterOption(ProductSort.name, 'Nombre (A-Z)'),
-                  // El orden por precio usa el precio elegido en el filtro.
-                  if (filter.canSortByPrice) ...const [
-                    FilterOption(ProductSort.priceAsc, 'Precio: menor a mayor'),
-                    FilterOption(ProductSort.priceDesc, 'Precio: mayor a menor'),
+                const SizedBox(width: AppSpacing.s8),
+                FilterMenuChip<int?>(
+                  icon: Icons.category_outlined,
+                  maxLabelWidth: 110,
+                  label: selectedCategory?.name ?? 'Categoría',
+                  active: filter.categoryId != null,
+                  selected: filter.categoryId,
+                  options: [
+                    const FilterOption<int?>(null, 'Todas las categorías'),
+                    for (final c in categories)
+                      FilterOption<int?>(c.id, c.name),
                   ],
-                ],
-                onSelected: (value) =>
-                    setFilter.update((f) => f.copyWith(sort: value)),
-              ),
-            ],
+                  onSelected: (id) => setFilter.update(
+                    (f) => id == null
+                        ? f.copyWith(clearCategory: true)
+                        : f.copyWith(categoryId: id),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.s8),
           Expanded(

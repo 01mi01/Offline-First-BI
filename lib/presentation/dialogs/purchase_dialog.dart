@@ -13,6 +13,7 @@ import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
 import '../widgets/focus_utils.dart';
+import '../widgets/searchable_picker.dart';
 import '../../models/default_records.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
@@ -384,24 +385,18 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<int>(
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
+                            // Búsqueda por nombre: escala a listas largas.
+                            child: SearchablePickerField<int>(
+                              label: 'Proveedor',
+                              searchHint: 'Buscar proveedor',
                               value: supplierValue,
-                              decoration: const InputDecoration(
-                                labelText: 'Proveedor',
-                              ),
-                              items: [
-                                const DropdownMenuItem<int>(
-                                  value: null,
-                                  child: Text(DefaultRecords.supplier),
+                              options: [
+                                const PickerOption<int>(
+                                  null,
+                                  DefaultRecords.supplier,
                                 ),
-                                ...suppliers.map(
-                                  (s) => DropdownMenuItem(
-                                    value: s.id,
-                                    child: Text(s.name),
-                                  ),
-                                ),
+                                for (final s in suppliers)
+                                  PickerOption<int>(s.id, s.name),
                               ],
                               onChanged: (val) => setState(() {
                                 _selectedSupplierId = val;
@@ -908,6 +903,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
   final _priceController = TextEditingController();
   int? _selectedMaterialId;
   String? _selectedMaterialName;
+  String? _materialError;
 
   @override
   void dispose() {
@@ -977,27 +973,39 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
             const SizedBox(height: AppSpacing.s24),
 
             // Selector de material existente
-            DropdownButtonFormField<int>(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+            // Búsqueda por nombre: escala a listas largas.
+            SearchablePickerField<int>(
+              label: 'Material',
+              searchHint: 'Buscar material',
               value: _selectedMaterialId,
-              decoration: const InputDecoration(labelText: 'Material'),
-              items: materials
-                  .map(
-                    (m) => DropdownMenuItem(value: m.id, child: Text(m.name)),
-                  )
-                  .toList(),
+              options: [
+                for (final m in materials) PickerOption<int>(m.id, m.name),
+              ],
               onChanged: (val) {
                 final mat = materials.where((m) => m.id == val).firstOrNull;
                 setState(() {
                   _selectedMaterialId = val;
                   _selectedMaterialName = mat?.name;
+                  _materialError = null;
                   if (mat != null) {
                     _priceController.text = formatNumber(mat.pricePerUnit);
                   }
                 });
               },
-              validator: (v) => v == null ? 'Selecciona un material' : null,
             ),
+            if (_materialError != null)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.s16,
+                  top: AppSpacing.s4,
+                ),
+                child: Text(
+                  _materialError!,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
             const SizedBox(height: AppSpacing.s8),
 
             // Botón crear nuevo material
@@ -1134,7 +1142,16 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      if (!_formKey.currentState!.validate()) return;
+                      final valid = _formKey.currentState!.validate();
+                      // El selector con búsqueda no es un campo de formulario:
+                      // se valida aparte.
+                      if (_selectedMaterialId == null) {
+                        setState(
+                          () => _materialError = 'Selecciona un material',
+                        );
+                        return;
+                      }
+                      if (!valid) return;
                       widget.onAdded({
                         'materialId': _selectedMaterialId,
                         'materialName': _selectedMaterialName,

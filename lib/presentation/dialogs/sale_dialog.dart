@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
+import '../../application/search_filter.dart';
+import '../widgets/catalog_filter_bar.dart';
+import '../widgets/searchable_picker.dart';
 import '../../application/client_provider.dart';
 import '../../application/product_provider.dart';
 import '../../application/location_provider.dart';
@@ -26,6 +29,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   final _formKey = GlobalKey<FormState>();
   final _discountController = TextEditingController();
   final _notesController = TextEditingController();
+  // Texto del buscador de la lista de productos.
+  String _productQuery = '';
 
   int? _selectedClientId;
   // Mapa de productId -> cantidad
@@ -244,6 +249,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         .products
         .where((p) => p.isActive)
         .toList();
+    // Lo que se ve en la lista de productos: filtrada por lo que se escribe en
+    // el buscador (el carrito sigue usando la lista completa).
+    final visibleProducts = filterByQuery<ProductModel>(
+      products,
+      _productQuery,
+      (p) => p.name,
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -280,24 +292,18 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<int>(
-                            autovalidateMode:
-                                AutovalidateMode.onUserInteraction,
+                          // Búsqueda por nombre: escala a listas largas.
+                          child: SearchablePickerField<int>(
+                            label: 'Cliente',
+                            searchHint: 'Buscar cliente',
                             value: clientValue,
-                            decoration: const InputDecoration(
-                              labelText: 'Cliente',
-                            ),
-                            items: [
-                              const DropdownMenuItem<int>(
-                                value: null,
-                                child: Text(DefaultRecords.client),
+                            options: [
+                              const PickerOption<int>(
+                                null,
+                                DefaultRecords.client,
                               ),
-                              ...clients.map(
-                                (c) => DropdownMenuItem(
-                                  value: c.id,
-                                  child: Text(c.name),
-                                ),
-                              ),
+                              for (final c in clients)
+                                PickerOption<int>(c.id, c.name),
                             ],
                             onChanged: (val) => setState(() {
                               _selectedClientId = val;
@@ -405,6 +411,14 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                           ),
                     ),
                     const SizedBox(height: AppSpacing.s8),
+                    // Buscador de productos por nombre.
+                    CatalogSearchField(
+                      initialText: _productQuery,
+                      hintText: 'Buscar producto',
+                      onChanged: (value) =>
+                          setState(() => _productQuery = value),
+                    ),
+                    const SizedBox(height: AppSpacing.s8),
                     Container(
                       constraints: const BoxConstraints(maxHeight: 200),
                       decoration: BoxDecoration(
@@ -412,13 +426,25 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppColors.border),
                       ),
-                      child: ListView.builder(
+                      child: visibleProducts.isEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.all(AppSpacing.s16),
+                              child: Center(
+                                child: Text(
+                                  'Sin resultados',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
                         padding: const EdgeInsets.all(AppSpacing.s8),
                         physics: const AlwaysScrollableScrollPhysics(),
                         shrinkWrap: true,
-                        itemCount: products.length,
+                        itemCount: visibleProducts.length,
                         itemBuilder: (context, index) {
-                          final p = products[index];
+                          final p = visibleProducts[index];
                           final inCart = _cartItems.containsKey(p.id);
                           return ListTile(
                             dense: true,

@@ -447,6 +447,10 @@ void main() {
     List<String> names(ProductCatalogFilter f) =>
         f.apply(products).map((p) => p.name).toList();
 
+    test('the result keeps the incoming (alphabetical) order: there is no sorter', () {
+      expect(names(const ProductCatalogFilter()), ['Acuarela', 'Bufanda', 'Cuaderno']);
+    });
+
     test('search matches name or description, ignoring case', () {
       expect(names(const ProductCatalogFilter(query: 'BUF')), ['Bufanda']);
       expect(names(const ProductCatalogFilter(query: 'pintura')), [
@@ -470,28 +474,6 @@ void main() {
       );
     });
 
-    test('sorts by the selected price band, low to high and high to low', () {
-      // Precio A (por defecto)
-      expect(
-        names(const ProductCatalogFilter(sort: ProductSort.priceAsc)),
-        ['Bufanda', 'Cuaderno', 'Acuarela'],
-      );
-      expect(
-        names(const ProductCatalogFilter(sort: ProductSort.priceDesc)),
-        ['Acuarela', 'Cuaderno', 'Bufanda'],
-      );
-      // Precio B cambia el orden
-      expect(
-        names(
-          const ProductCatalogFilter(
-            priceDisplay: PriceDisplay.b,
-            sort: ProductSort.priceAsc,
-          ),
-        ),
-        ['Acuarela', 'Cuaderno', 'Bufanda'],
-      );
-    });
-
     test('price display defaults per view until a choice is made, then applies to both', () {
       const untouched = ProductCatalogFilter();
       expect(untouched.displayFor(grid: false), PriceDisplay.both);
@@ -500,22 +482,10 @@ void main() {
       const chosen = ProductCatalogFilter(priceDisplay: PriceDisplay.both);
       expect(chosen.displayFor(grid: false), PriceDisplay.both);
       expect(chosen.displayFor(grid: true), PriceDisplay.both);
-      // Con "Ambos" el orden por precio usa el Precio A.
-      expect(chosen.canSortByPrice, isTrue);
-      expect(chosen.priceOf(_product(1, 'X', a: 7, b: 9)), 7);
-    });
-
-    test('with "no price" selected the price sorts fall back to name order', () {
-      const f = ProductCatalogFilter(
-        priceDisplay: PriceDisplay.none,
-        sort: ProductSort.priceDesc,
-      );
-      expect(f.canSortByPrice, isFalse);
-      expect(names(f), ['Acuarela', 'Bufanda', 'Cuaderno']);
     });
   });
 
-  group('Categorías: búsqueda, estado y orden', () {
+  group('Categorías: búsqueda por nombre y estado', () {
     CategoryModel cat(int id, String name, {bool active = true, String? d}) =>
         CategoryModel(
           id: id,
@@ -532,28 +502,25 @@ void main() {
     List<String> names(CategoryCatalogFilter f) =>
         f.apply(categories).map((c) => c.name).toList();
 
-    test('sorted A-Z by default, and Z-A on request', () {
+    test('keeps the incoming order (no sorter)', () {
       expect(names(const CategoryCatalogFilter()), [
-        'Acuarelas',
         'Bisutería',
         'Cuadernos',
-      ]);
-      expect(names(const CategoryCatalogFilter(sort: CategorySort.nameDesc)), [
-        'Cuadernos',
-        'Bisutería',
         'Acuarelas',
       ]);
     });
 
-    test('searches name or description', () {
-      expect(names(const CategoryCatalogFilter(query: 'collar')), ['Bisutería']);
-      expect(names(const CategoryCatalogFilter(query: 'cuad')), ['Cuadernos']);
+    test('searches by name only, ignoring case', () {
+      expect(names(const CategoryCatalogFilter(query: 'CUAD')), ['Cuadernos']);
+      expect(names(const CategoryCatalogFilter(query: 'acua')), ['Acuarelas']);
+      // La descripción ya no cuenta: "collar" está en la descripción de Bisutería.
+      expect(names(const CategoryCatalogFilter(query: 'collar')), isEmpty);
     });
 
     test('filters by status', () {
       expect(
         names(const CategoryCatalogFilter(status: CategoryStatusFilter.active)),
-        ['Acuarelas', 'Bisutería'],
+        ['Bisutería', 'Acuarelas'],
       );
       expect(
         names(const CategoryCatalogFilter(status: CategoryStatusFilter.inactive)),

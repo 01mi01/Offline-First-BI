@@ -3,36 +3,29 @@ import '../models/category_model.dart';
 
 enum CategoryStatusFilter { all, active, inactive }
 
-enum CategorySort { nameAsc, nameDesc }
-
-// Búsqueda, estado y orden de Categorías (vistas de lista y de catálogo). Las
-// categorías no tienen precio, así que los filtros son por texto y por estado.
+// Búsqueda por nombre y estado de Categorías. El filtro de estado se controla
+// desde la vista de lista; el catálogo solo lo refleja.
 class CategoryCatalogFilter {
   final String query;
   final CategoryStatusFilter status;
-  final CategorySort sort;
 
   const CategoryCatalogFilter({
     this.query = '',
     this.status = CategoryStatusFilter.all,
-    this.sort = CategorySort.nameAsc,
   });
 
-  CategoryCatalogFilter copyWith({
-    String? query,
-    CategoryStatusFilter? status,
-    CategorySort? sort,
-  }) {
+  CategoryCatalogFilter copyWith({String? query, CategoryStatusFilter? status}) {
     return CategoryCatalogFilter(
       query: query ?? this.query,
       status: status ?? this.status,
-      sort: sort ?? this.sort,
     );
   }
 
+  // Categorías que cumplen la búsqueda por nombre y el estado, en el orden en
+  // que llegan (alfabético por nombre desde el repositorio).
   List<CategoryModel> apply(List<CategoryModel> categories) {
     final q = query.trim().toLowerCase();
-    final result = categories.where((c) {
+    return categories.where((c) {
       switch (status) {
         case CategoryStatusFilter.all:
           break;
@@ -41,16 +34,8 @@ class CategoryCatalogFilter {
         case CategoryStatusFilter.inactive:
           if (c.isActive) return false;
       }
-      if (q.isEmpty) return true;
-      return c.name.toLowerCase().contains(q) ||
-          (c.description ?? '').toLowerCase().contains(q);
+      return q.isEmpty || c.name.toLowerCase().contains(q);
     }).toList();
-
-    result.sort((a, b) {
-      final c = a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      return sort == CategorySort.nameAsc ? c : -c;
-    });
-    return result;
   }
 }
 

@@ -47,9 +47,21 @@ String _pluralizeWord(String word) {
       : '${word}es';
 }
 
-// Selector de fracciones de un envase (un cuarto / la mitad / tres cuartos /
-// entera), para unidades como "contenedor" donde pensar en decimales no es
-// natural para alguien sin formación técnica.
+// Cantidad de envases = contenedores completos + una fracción (0, 1/4, 1/2 o
+// 3/4). "2 tiras y un cuarto" = 2.25. Sigue siendo un único decimal; 0.25, 0.5 y
+// 0.75 son exactos en binario, así que la suma no pierde precisión.
+double combineContainerQuantity(int whole, double fraction) => whole + fraction;
+
+// Inverso de [combineContainerQuantity]: parte entera y fracción de un valor.
+({int whole, double fraction}) splitContainerQuantity(double value) {
+  final whole = value.floor();
+  return (whole: whole, fraction: value - whole);
+}
+
+// Selector de cantidad de un envase, para unidades como "contenedor" donde
+// pensar en decimales no es natural para alguien sin formación técnica: las
+// fracciones de uno (un cuarto / la mitad / tres cuartos / entera) y, además,
+// cuántos envases completos ("2 tiras y un cuarto").
 class FractionQuantityPicker extends StatelessWidget {
   final String unit;
   final double value;
@@ -71,8 +83,20 @@ class FractionQuantityPicker extends StatelessWidget {
     (1.0, 'Entera'),
   ];
 
+  // Un envase "Entero" cuenta como 1 completo sin fracción.
+  void _selectPreset(double fraction, int whole) {
+    if (fraction >= 1) {
+      onChanged(combineContainerQuantity(whole < 1 ? 1 : whole, 0));
+    } else {
+      onChanged(combineContainerQuantity(whole, fraction));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final parts = splitContainerQuantity(value);
+    final whole = parts.whole;
+    final fractionPart = parts.fraction;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -88,9 +112,13 @@ class FractionQuantityPicker extends StatelessWidget {
           runSpacing: AppSpacing.s8,
           children: _presets.map((preset) {
             final (fraction, presetLabel) = preset;
-            final selected = value == fraction;
+            // "Entera" queda marcada con uno o más envases completos sin
+            // fracción; las demás, cuando la fracción coincide.
+            final selected = fraction >= 1
+                ? whole >= 1 && fractionPart == 0
+                : fractionPart == fraction;
             return GestureDetector(
-              onTap: () => onChanged(fraction),
+              onTap: () => _selectPreset(fraction, whole),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.s14,
@@ -118,7 +146,88 @@ class FractionQuantityPicker extends StatelessWidget {
             );
           }).toList(),
         ),
+        const SizedBox(height: AppSpacing.s16),
+        // Envases completos, además de la fracción: "2 tiras y un cuarto".
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Envases completos',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            _StepperButton(
+              key: const ValueKey('container-whole-minus'),
+              icon: Icons.remove,
+              onTap: whole > 0
+                  ? () => onChanged(combineContainerQuantity(whole - 1, fractionPart))
+                  : null,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s14),
+              child: Text(
+                '$whole',
+                key: const ValueKey('container-whole-count'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            _StepperButton(
+              key: const ValueKey('container-whole-plus'),
+              icon: Icons.add,
+              onTap: () => onChanged(combineContainerQuantity(whole + 1, fractionPart)),
+            ),
+          ],
+        ),
+        if (value > 0) ...[
+          const SizedBox(height: AppSpacing.s6),
+          Text(
+            'Total: ${formatNumber(value)} ${unitLabel(unit, value)}',
+            key: const ValueKey('container-total'),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _StepperButton({super.key, required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.background,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: enabled ? AppColors.primary : AppColors.border,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: enabled ? AppColors.primary : AppColors.textSecondary,
+        ),
+      ),
     );
   }
 }

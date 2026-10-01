@@ -8,6 +8,7 @@ import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/purchase_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 Future<void> _openPurchaseDialog(WidgetTester tester, AppDatabase db) async {
@@ -96,7 +97,7 @@ void main() {
       // diálogo de compra, cuyos propios dropdowns (Proveedor/Ubicación/
       // Evento) siguen montados debajo, así que el dropdown de esta hoja es
       // el último en el árbol, no el primero.
-      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tela').last);
       await tester.pumpAndSettle();
@@ -209,7 +210,7 @@ void main() {
 
       await _openPurchaseDialog(tester, db);
 
-      await tester.tap(find.byType(DropdownButtonFormField<int>).at(0));
+      await tester.tap(find.byType(SearchablePickerField<int>).at(0));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Prov Uno').last);
       await tester.pumpAndSettle();
@@ -254,7 +255,7 @@ void main() {
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
       await tester.tap(find.text(material).last);
       await tester.pumpAndSettle();

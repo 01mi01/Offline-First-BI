@@ -11,6 +11,7 @@ import 'package:offline_first_bi/data/repositories/unit_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
 import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/pages/products_page.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 // Pulido tras la revisión en el dispositivo: orden de las unidades, unidad en
@@ -144,7 +145,7 @@ void main() {
     Future<void> addLine(WidgetTester tester, String material, String quantity) async {
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
       await tester.tap(find.text(material).last);
       await tester.pumpAndSettle();

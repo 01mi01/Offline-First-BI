@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
 import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
+import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 
@@ -105,7 +106,12 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.material != null;
-    final units = ref.watch(unitProvider).units;
+    final allUnits = ref.watch(unitProvider).units;
+    // Al editar solo se ofrecen unidades del mismo tipo que la actual.
+    final currentUnit = isEditing
+        ? allUnits.where((u) => u.id == widget.material!.unitId).firstOrNull
+        : null;
+    final units = selectableUnitsFor(allUnits, current: currentUnit);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -160,7 +166,12 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
               DropdownButtonFormField<int>(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 value: _selectedUnitId,
-                decoration: const InputDecoration(labelText: 'Unidad'),
+                decoration: InputDecoration(
+                  labelText: 'Unidad',
+                  helperText: currentUnit != null
+                      ? 'Solo unidades del mismo tipo'
+                      : null,
+                ),
                 items: units
                     .map(
                       (u) => DropdownMenuItem(value: u.id, child: Text(u.name)),

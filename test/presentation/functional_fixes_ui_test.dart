@@ -10,6 +10,7 @@ import 'package:offline_first_bi/data/repositories/sale_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
 import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
 import 'package:offline_first_bi/presentation/pages/categories_page.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/presentation/pages/products_page.dart';
 import 'package:offline_first_bi/presentation/pages/purchases_page.dart';
 import 'package:offline_first_bi/presentation/pages/sales_page.dart';
@@ -272,7 +273,7 @@ void main() {
       await tester.ensureVisible(find.text('Agregar'));
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tela').last);
       await tester.pumpAndSettle();
@@ -345,7 +346,7 @@ void main() {
     });
   });
 
-  group('Productos: catálogo con filtro de precio, búsqueda y categoría', () {
+  group('Productos: filtro de precio (lista), búsqueda y categoría', () {
     setUp(() async {
       final cat2 = await db.into(db.categories).insert(
         CategoriesCompanion.insert(name: 'Papelería'),
@@ -371,46 +372,20 @@ void main() {
       );
     });
 
-    Future<void> openGrid(WidgetTester tester) async {
-      await _pumpPage(tester, db, const ProductsPage());
+    Future<void> openList(WidgetTester tester) =>
+        _pumpPage(tester, db, const ProductsPage());
+
+    Future<void> toGrid(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.grid_view_rounded));
       await tester.pumpAndSettle();
     }
 
-    testWidgets('cards say just "Precio" with the selected band, never A/B', (
-      tester,
-    ) async {
-      await openGrid(tester);
-
-      expect(find.text('Precio: Bs. 30.00'), findsOneWidget); // A
-      expect(find.text('Precio: Bs. 12.00'), findsOneWidget);
-      expect(find.textContaining('A: Bs.'), findsNothing);
-      expect(find.textContaining('B: Bs.'), findsNothing);
-      expect(find.textContaining('Precio A:'), findsNothing,
-          reason: 'ninguna tarjeta lleva etiqueta A/B');
-    }, skip: false);
-
-    testWidgets('the price filter switches the whole catalogue to Precio B or hides prices', (
-      tester,
-    ) async {
-      await openGrid(tester);
-
-      await tester.tap(find.byIcon(Icons.sell_outlined));
+    Future<void> toList(WidgetTester tester) async {
+      await tester.tap(find.byIcon(Icons.list));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Precio B').last);
-      await tester.pumpAndSettle();
-      expect(find.text('Precio: Bs. 11.00'), findsOneWidget);
-      expect(find.text('Precio: Bs. 25.00'), findsOneWidget);
-      expect(find.text('Precio: Bs. 30.00'), findsNothing);
+    }
 
-      await tester.tap(find.byIcon(Icons.sell_outlined));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Sin precio').last);
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Precio: Bs.'), findsNothing);
-      expect(find.text('Acuarela'), findsOneWidget);
-    });
-
+    // El filtro de precio solo se controla desde la vista de lista.
     Future<void> pickPrice(WidgetTester tester, String option) async {
       await tester.tap(find.byIcon(Icons.sell_outlined));
       await tester.pumpAndSettle();
@@ -418,25 +393,97 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    testWidgets('layout: price filter left of the toggle (top row), search and category share the row below', (
+      tester,
+    ) async {
+      await openList(tester);
+
+      final price = tester.getCenter(find.byIcon(Icons.sell_outlined));
+      final listToggle = tester.getCenter(find.byIcon(Icons.list));
+      final gridToggle = tester.getCenter(find.byIcon(Icons.grid_view_rounded));
+      final search = tester.getCenter(find.byType(TextField));
+      final category = tester.getCenter(find.byIcon(Icons.category_outlined));
+
+      // Fila superior: el precio, luego el toggle, pegado a la derecha.
+      expect(price.dy, closeTo(listToggle.dy, 4));
+      expect(price.dx, lessThan(listToggle.dx));
+      expect(gridToggle.dx, greaterThan(listToggle.dx));
+      expect(gridToggle.dx, greaterThan(350)); // alineado a la derecha (ancho 412)
+      // Fila de abajo: buscador y categoría en la misma línea, bajo la primera.
+      expect(search.dy, closeTo(category.dy, 4));
+      expect(search.dy, greaterThan(price.dy + 20));
+      expect(search.dx, lessThan(category.dx));
+    });
+
+    testWidgets('the name and price sorters are gone', (tester) async {
+      await openList(tester);
+
+      expect(find.byIcon(Icons.swap_vert), findsNothing);
+      expect(find.text('Nombre'), findsNothing);
+      expect(find.textContaining('menor a mayor'), findsNothing);
+      // El orden de siempre (alfabético) se mantiene.
+      expect(
+        tester.getTopLeft(find.text('Acuarela')).dy,
+        lessThan(tester.getTopLeft(find.text('Cuaderno')).dy),
+      );
+    });
+
+    testWidgets('the price control exists only in the list view; the catalogue has none', (
+      tester,
+    ) async {
+      await openList(tester);
+      expect(find.byIcon(Icons.sell_outlined), findsOneWidget);
+
+      await toGrid(tester);
+      expect(find.byIcon(Icons.sell_outlined), findsNothing);
+      expect(find.byIcon(Icons.swap_vert), findsNothing);
+    });
+
+    testWidgets('cards say just "Precio" with the selected band, never A/B', (
+      tester,
+    ) async {
+      await openList(tester);
+      await toGrid(tester);
+
+      expect(find.text('Precio: Bs. 30.00'), findsOneWidget); // A
+      expect(find.text('Precio: Bs. 12.00'), findsOneWidget);
+      expect(find.textContaining('A: Bs.'), findsNothing);
+      expect(find.textContaining('B: Bs.'), findsNothing);
+    });
+
     testWidgets('the price filter has four options, including "Ambos"', (
       tester,
     ) async {
-      await openGrid(tester);
+      await openList(tester);
 
       await tester.tap(find.byIcon(Icons.sell_outlined));
       await tester.pumpAndSettle();
       for (final option in ['Precio A', 'Precio B', 'Ambos', 'Sin precio']) {
         expect(find.text(option), findsWidgets, reason: option);
       }
-      expect(find.text('Ambos'), findsOneWidget);
+      expect(find.text('Ambos'), findsNWidgets(2)); // la etiqueta del chip (valor por defecto de la lista) y la opción
     });
 
-    testWidgets('catalogue with "Ambos" shows both prices on each card and in the detail', (
+    testWidgets('the catalogue reflects the price chosen in the list: B, none, both', (
       tester,
     ) async {
-      await openGrid(tester);
-      await pickPrice(tester, 'Ambos');
+      await openList(tester);
 
+      await pickPrice(tester, 'Precio B');
+      await toGrid(tester);
+      expect(find.text('Precio: Bs. 11.00'), findsOneWidget);
+      expect(find.text('Precio: Bs. 25.00'), findsOneWidget);
+      expect(find.text('Precio: Bs. 30.00'), findsNothing);
+
+      await toList(tester);
+      await pickPrice(tester, 'Sin precio');
+      await toGrid(tester);
+      expect(find.textContaining('Precio: Bs.'), findsNothing);
+      expect(find.text('Acuarela'), findsOneWidget);
+
+      await toList(tester);
+      await pickPrice(tester, 'Ambos');
+      await toGrid(tester);
       expect(find.text('A: Bs. 30.00'), findsOneWidget);
       expect(find.text('B: Bs. 11.00'), findsOneWidget);
       expect(find.text('A: Bs. 12.00'), findsOneWidget);
@@ -449,10 +496,10 @@ void main() {
       expect(find.text('Precio B: Bs. 11.00'), findsOneWidget);
     });
 
-    testWidgets('list view follows the same filter: A only, B only, none, both', (
+    testWidgets('list view follows the filter: A only, B only, none, both', (
       tester,
     ) async {
-      await _pumpPage(tester, db, const ProductsPage());
+      await openList(tester);
 
       // Sin elegir nada, la lista sigue mostrando ambos precios.
       expect(find.text('A: Bs. 30.00'), findsOneWidget);
@@ -478,46 +525,29 @@ void main() {
       expect(find.text('B: Bs. 11.00'), findsOneWidget);
     });
 
-    testWidgets('"Ambos" chosen in the catalogue also applies when going back to the list', (
+    testWidgets('the chosen price is kept while switching list, catalogue and list', (
       tester,
     ) async {
-      await openGrid(tester);
-      await pickPrice(tester, 'Precio B'); // cambia el valor por defecto
-      await pickPrice(tester, 'Ambos');
+      await openList(tester);
+      await pickPrice(tester, 'Precio B');
 
-      await tester.tap(find.byIcon(Icons.list));
-      await tester.pumpAndSettle();
-      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      await toGrid(tester);
+      await toList(tester);
+
+      // Sigue en "Precio B": solo la píldora B.
       expect(find.text('B: Bs. 11.00'), findsOneWidget);
-    });
-
-    testWidgets('the chosen price filter is kept while switching list and catalogue', (
-      tester,
-    ) async {
-      await openGrid(tester);
-      await tester.tap(find.byIcon(Icons.sell_outlined));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Precio B').last);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.list));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.grid_view_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Precio: Bs. 11.00'), findsOneWidget);
+      expect(find.text('A: Bs. 30.00'), findsNothing);
     });
 
     testWidgets('search by name or description narrows both views', (tester) async {
-      await openGrid(tester);
+      await openList(tester);
 
       await tester.enterText(find.byType(TextField), 'pintura'); // descripción
       await tester.pumpAndSettle();
       expect(find.text('Acuarela'), findsOneWidget);
       expect(find.text('Cuaderno'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.list));
-      await tester.pumpAndSettle();
+      await toGrid(tester);
       expect(find.text('Acuarela'), findsOneWidget);
       expect(find.text('Cuaderno'), findsNothing);
 
@@ -527,7 +557,7 @@ void main() {
     });
 
     testWidgets('filters by category', (tester) async {
-      await openGrid(tester);
+      await openList(tester);
 
       await tester.tap(find.byIcon(Icons.category_outlined));
       await tester.pumpAndSettle();
@@ -536,35 +566,6 @@ void main() {
 
       expect(find.text('Cuaderno'), findsOneWidget);
       expect(find.text('Acuarela'), findsNothing);
-    });
-
-    testWidgets('sorts by the selected price, low to high and high to low', (
-      tester,
-    ) async {
-      await openGrid(tester);
-
-      double top(String name) => tester.getTopLeft(find.text(name)).dy;
-
-      await tester.tap(find.byIcon(Icons.swap_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Precio: menor a mayor').last);
-      await tester.pumpAndSettle();
-      // Precio A: Cuaderno (12) antes que Acuarela (30). Con la cuadrícula de
-      // dos columnas, el primero queda a la izquierda, en la misma fila.
-      expect(
-        tester.getTopLeft(find.text('Cuaderno')).dx,
-        lessThan(tester.getTopLeft(find.text('Acuarela')).dx),
-      );
-
-      await tester.tap(find.byIcon(Icons.swap_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Precio: mayor a menor').last);
-      await tester.pumpAndSettle();
-      expect(
-        tester.getTopLeft(find.text('Acuarela')).dx,
-        lessThan(tester.getTopLeft(find.text('Cuaderno')).dx),
-      );
-      expect(top('Acuarela'), top('Cuaderno'));
     });
   });
 
@@ -597,7 +598,7 @@ void main() {
       );
       await openAddLine(tester);
 
-      await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+      await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tela').last);
       await tester.pumpAndSettle();
@@ -689,7 +690,8 @@ void main() {
 
       await tester.enterText(find.byType(TextField), '');
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.toggle_on_outlined));
+      // El filtro de estado: sin icono, con el texto "Todas" (valor por defecto).
+      await tester.tap(find.text('Todas'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Inactivas').last);
       await tester.pumpAndSettle();

@@ -4,23 +4,33 @@ import '../models/product_model.dart';
 // Qué precio(s) muestran las tarjetas de Productos (lista y catálogo).
 enum PriceDisplay { a, b, both, none }
 
-enum ProductSort { name, priceAsc, priceDesc }
-
-// Filtros, búsqueda y orden de Productos (vistas de lista y de catálogo).
+// Búsqueda, categoría y precio mostrado de Productos. El filtro de precio se
+// controla desde la vista de lista; el catálogo solo lo refleja.
 class ProductCatalogFilter {
   final String query;
   // null = todas las categorías
   final int? categoryId;
   // null = sin elegir: cada vista usa su valor por defecto (ver [displayFor]).
   final PriceDisplay? priceDisplay;
-  final ProductSort sort;
 
   const ProductCatalogFilter({
     this.query = '',
     this.categoryId,
     this.priceDisplay,
-    this.sort = ProductSort.name,
   });
+
+  ProductCatalogFilter copyWith({
+    String? query,
+    int? categoryId,
+    bool clearCategory = false,
+    PriceDisplay? priceDisplay,
+  }) {
+    return ProductCatalogFilter(
+      query: query ?? this.query,
+      categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
+      priceDisplay: priceDisplay ?? this.priceDisplay,
+    );
+  }
 
   // Mientras no se elija nada, la lista muestra ambos precios (como siempre) y
   // el catálogo uno solo (Precio A). Al elegir, la opción vale para las dos
@@ -28,61 +38,18 @@ class ProductCatalogFilter {
   PriceDisplay displayFor({required bool grid}) =>
       priceDisplay ?? (grid ? PriceDisplay.a : PriceDisplay.both);
 
-  ProductCatalogFilter copyWith({
-    String? query,
-    int? categoryId,
-    bool clearCategory = false,
-    PriceDisplay? priceDisplay,
-    ProductSort? sort,
-  }) {
-    return ProductCatalogFilter(
-      query: query ?? this.query,
-      categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
-      priceDisplay: priceDisplay ?? this.priceDisplay,
-      sort: sort ?? this.sort,
-    );
-  }
-
-  // El orden por precio usa el precio elegido en el filtro de precio; sin
-  // precio elegido no hay con qué ordenar, y el orden vuelve a ser por nombre.
-  bool get canSortByPrice => priceDisplay != PriceDisplay.none;
-
-  ProductSort get effectiveSort =>
-      canSortByPrice ? sort : ProductSort.name;
-
-  // Precio del producto con el que se ordena: el elegido en el filtro de
-  // precio; con "Ambos" (o sin elegir) se usa el Precio A.
-  double priceOf(ProductModel p) =>
-      priceDisplay == PriceDisplay.b ? p.priceB : p.priceA;
-
   bool get isFiltering => query.trim().isNotEmpty || categoryId != null;
 
+  // Productos que cumplen la búsqueda (nombre o descripción) y la categoría,
+  // en el orden en que llegan (alfabético por nombre desde el repositorio).
   List<ProductModel> apply(List<ProductModel> products) {
     final q = query.trim().toLowerCase();
-    final result = products.where((p) {
+    return products.where((p) {
       if (categoryId != null && p.categoryId != categoryId) return false;
       if (q.isEmpty) return true;
       return p.name.toLowerCase().contains(q) ||
           (p.description ?? '').toLowerCase().contains(q);
     }).toList();
-
-    int byName(ProductModel a, ProductModel b) =>
-        a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    switch (effectiveSort) {
-      case ProductSort.name:
-        result.sort(byName);
-      case ProductSort.priceAsc:
-        result.sort((a, b) {
-          final c = priceOf(a).compareTo(priceOf(b));
-          return c != 0 ? c : byName(a, b);
-        });
-      case ProductSort.priceDesc:
-        result.sort((a, b) {
-          final c = priceOf(b).compareTo(priceOf(a));
-          return c != 0 ? c : byName(a, b);
-        });
-    }
-    return result;
   }
 }
 
