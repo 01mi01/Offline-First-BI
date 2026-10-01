@@ -2,7 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product_model.dart';
 
 // Qué precio(s) muestran las tarjetas de Productos (lista y catálogo).
-enum PriceDisplay { a, b, both, none }
+// El orden de las opciones es el del menú: Ambos, Precio A, Precio B, Sin precio.
+enum PriceDisplay { both, a, b, none }
 
 // Búsqueda, categoría y precio mostrado de Productos. El filtro de precio se
 // controla desde la vista de lista; el catálogo solo lo refleja.
@@ -10,13 +11,13 @@ class ProductCatalogFilter {
   final String query;
   // null = todas las categorías
   final int? categoryId;
-  // null = sin elegir: cada vista usa su valor por defecto (ver [displayFor]).
-  final PriceDisplay? priceDisplay;
+  // Por defecto "Ambos", en la lista y en el catálogo.
+  final PriceDisplay priceDisplay;
 
   const ProductCatalogFilter({
     this.query = '',
     this.categoryId,
-    this.priceDisplay,
+    this.priceDisplay = PriceDisplay.both,
   });
 
   ProductCatalogFilter copyWith({
@@ -31,12 +32,6 @@ class ProductCatalogFilter {
       priceDisplay: priceDisplay ?? this.priceDisplay,
     );
   }
-
-  // Mientras no se elija nada, la lista muestra ambos precios (como siempre) y
-  // el catálogo uno solo (Precio A). Al elegir, la opción vale para las dos
-  // vistas.
-  PriceDisplay displayFor({required bool grid}) =>
-      priceDisplay ?? (grid ? PriceDisplay.a : PriceDisplay.both);
 
   bool get isFiltering => query.trim().isNotEmpty || categoryId != null;
 

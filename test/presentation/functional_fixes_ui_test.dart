@@ -15,6 +15,7 @@ import 'package:offline_first_bi/presentation/pages/products_page.dart';
 import 'package:offline_first_bi/presentation/pages/purchases_page.dart';
 import 'package:offline_first_bi/presentation/pages/sales_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'search_helpers.dart';
 
 void _phone(WidgetTester tester, {Size size = const Size(412, 915)}) {
   tester.view.physicalSize = size;
@@ -196,6 +197,7 @@ void main() {
       expect(find.text('Descuento'), findsOneWidget);
       expect(find.text('Total'), findsOneWidget);
 
+      await searchProducts(tester, 'Producto');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, '0'), '5');
@@ -273,10 +275,7 @@ void main() {
       await tester.ensureVisible(find.text('Agregar'));
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(SearchablePickerField<int>).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Tela').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela', 'Tela');
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, '3');
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Agregar').last);
@@ -439,10 +438,11 @@ void main() {
       expect(find.byIcon(Icons.swap_vert), findsNothing);
     });
 
-    testWidgets('cards say just "Precio" with the selected band, never A/B', (
+    testWidgets('cards say just "Precio" with a single band chosen, never A/B', (
       tester,
     ) async {
       await openList(tester);
+      await pickPrice(tester, 'Precio A');
       await toGrid(tester);
 
       expect(find.text('Precio: Bs. 30.00'), findsOneWidget); // A
@@ -461,6 +461,11 @@ void main() {
       for (final option in ['Precio A', 'Precio B', 'Ambos', 'Sin precio']) {
         expect(find.text(option), findsWidgets, reason: option);
       }
+      // Orden del menú: Ambos, Precio A, Precio B, Sin precio.
+      double top(String t) => tester.getTopLeft(find.text(t).last).dy;
+      expect(top('Ambos'), lessThan(top('Precio A')));
+      expect(top('Precio A'), lessThan(top('Precio B')));
+      expect(top('Precio B'), lessThan(top('Sin precio')));
       expect(find.text('Ambos'), findsNWidgets(2)); // la etiqueta del chip (valor por defecto de la lista) y la opción
     });
 
@@ -598,10 +603,7 @@ void main() {
       );
       await openAddLine(tester);
 
-      await tester.tap(find.byType(SearchablePickerField<int>).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Tela').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela', 'Tela');
 
       expect(quantityText(tester, 'Cantidad (metro)'), isEmpty);
     });
@@ -616,10 +618,7 @@ void main() {
         await tester.tap(find.text('Crear nuevo material'));
         await tester.pumpAndSettle();
         await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Cinta');
-        await tester.tap(find.byType(DropdownButtonFormField<int>).last);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('metro').last);
-        await tester.pumpAndSettle();
+        await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'metro', 'metro');
         await tester.enterText(find.widgetWithText(TextFormField, 'Stock'), '5');
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Precio por unidad'),

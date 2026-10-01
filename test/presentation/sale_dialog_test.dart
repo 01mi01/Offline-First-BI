@@ -9,6 +9,7 @@ import 'package:offline_first_bi/data/repositories/sale_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'search_helpers.dart';
 
 Future<void> _openSaleDialog(WidgetTester tester, AppDatabase db) async {
   await tester.pumpWidget(
@@ -72,7 +73,9 @@ void main() {
       await tester.tap(find.text('Sin nombre').last);
       await tester.pumpAndSettle();
 
-      // Agrega el producto al carrito tocando el ícono "+"
+      // Agrega el producto al carrito tocando el ícono "+" (la lista aparece al
+      // escribir en el buscador).
+      await searchProducts(tester, 'Producto');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
@@ -121,6 +124,7 @@ void main() {
       await tester.tap(find.text('Sin nombre').last);
       await tester.pumpAndSettle();
 
+      await searchProducts(tester, 'Producto');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
@@ -171,8 +175,13 @@ void main() {
   Future<void> addToCart(WidgetTester tester, String productName) async {
     // Cada fila del catálogo (ListTile) tiene su propio ícono "+": se toca el
     // de la fila del producto pedido.
+    // La lista solo aparece al escribir en el buscador de productos.
+    await searchProducts(tester, productName);
     final tile = find.ancestor(
-      of: find.text(productName).first,
+      of: find.descendant(
+        of: find.byType(ListTile),
+        matching: find.text(productName),
+      ),
       matching: find.byType(ListTile),
     );
     final add = find.descendant(of: tile.first, matching: find.byIcon(Icons.add));
@@ -188,7 +197,8 @@ void main() {
       await seedDistinctPriceProducts();
       await _openSaleDialog(tester, db);
 
-      // El catálogo muestra ambos precios del producto.
+      // El catálogo (que aparece al buscar) muestra ambos precios del producto.
+      await searchProducts(tester, 'Acuarela');
       expect(find.textContaining('A: Bs. 55.00  •  B: Bs. 40.00'), findsOneWidget);
 
       await addToCart(tester, 'Acuarela');

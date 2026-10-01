@@ -9,6 +9,8 @@ import 'package:offline_first_bi/data/repositories/unit_repository.dart';
 import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
+import 'search_helpers.dart';
 
 // Lista simplificada de unidades (12): contenedor, paquete, rollo y tira son
 // contenedores (con fracciones); el resto son medidas, más el comodín "otro".
@@ -132,16 +134,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Selecciona un producto'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Acuarela').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Acuarela', 'Acuarela');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(DropdownButtonFormField<int>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(materialName).last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, materialName, materialName);
     }
 
     testWidgets('tira uses the fraction picker (un cuarto / la mitad / tres cuartos / entera)', (

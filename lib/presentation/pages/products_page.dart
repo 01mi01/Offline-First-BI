@@ -28,7 +28,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final filter = ref.watch(productCatalogFilterProvider);
     final setFilter = ref.read(productCatalogFilterProvider.notifier);
     final visible = filter.apply(state.products);
-    final priceDisplay = filter.displayFor(grid: _isGrid);
+    final priceDisplay = filter.priceDisplay;
     final selectedCategory = categories
         .where((c) => c.id == filter.categoryId)
         .firstOrNull;
@@ -63,19 +63,19 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   FilterMenuChip<PriceDisplay>(
                     icon: Icons.sell_outlined,
                     label: switch (priceDisplay) {
+                      PriceDisplay.both => 'Ambos',
                       PriceDisplay.a => 'Precio A',
                       PriceDisplay.b => 'Precio B',
-                      PriceDisplay.both => 'Ambos',
                       PriceDisplay.none => 'Sin precio',
                     },
-                    // Resaltado cuando se eligió una opción (si no, cada vista
-                    // usa su valor por defecto).
-                    active: filter.priceDisplay != null,
+                    // Resaltado cuando se eligió algo distinto del valor por
+                    // defecto ("Ambos").
+                    active: filter.priceDisplay != PriceDisplay.both,
                     selected: priceDisplay,
                     options: const [
+                      FilterOption(PriceDisplay.both, 'Ambos'),
                       FilterOption(PriceDisplay.a, 'Precio A'),
                       FilterOption(PriceDisplay.b, 'Precio B'),
-                      FilterOption(PriceDisplay.both, 'Ambos'),
                       FilterOption(PriceDisplay.none, 'Sin precio'),
                     ],
                     onSelected: (value) => setFilter.update(

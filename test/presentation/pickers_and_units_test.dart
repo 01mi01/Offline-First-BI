@@ -16,6 +16,7 @@ import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'search_helpers.dart';
 
 void _phone(WidgetTester tester, {Size size = const Size(412, 915)}) {
   tester.view.physicalSize = size;
@@ -266,8 +267,10 @@ void main() {
         );
       }
       await _openSheet(tester, db, const SaleDialog());
-      expect(find.text('Acuarela'), findsOneWidget);
-      expect(find.text('Cuaderno'), findsOneWidget);
+      // Sin escribir no se muestra ninguna fila: solo la invitación a buscar.
+      expect(find.text('Acuarela'), findsNothing);
+      expect(find.text('Cuaderno'), findsNothing);
+      expect(find.text('Escribe para buscar un producto'), findsOneWidget);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Buscar producto'),
@@ -284,6 +287,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Sin resultados'), findsOneWidget);
+
+      // Borrar lo escrito vuelve al estado inicial: otra vez sin lista.
+      await tester.enterText(find.widgetWithText(TextField, 'Buscar producto'), '');
+      await tester.pumpAndSettle();
+      expect(find.text('Cuaderno'), findsNothing);
+      expect(find.text('Escribe para buscar un producto'), findsOneWidget);
     });
 
     testWidgets('Proveedor (Compras) filters by typed text and picks the match', (
@@ -512,16 +521,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Selecciona un producto'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Collar').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Collar', 'Collar');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(DropdownButtonFormField<int>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Cuentas').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Cuentas', 'Cuentas');
 
       await tester.tap(find.byKey(const ValueKey('container-whole-plus')));
       await tester.pump();

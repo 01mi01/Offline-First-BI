@@ -251,11 +251,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         .toList();
     // Lo que se ve en la lista de productos: filtrada por lo que se escribe en
     // el buscador (el carrito sigue usando la lista completa).
-    final visibleProducts = filterByQuery<ProductModel>(
-      products,
-      _productQuery,
-      (p) => p.name,
-    );
+    // Sin texto no se muestra la lista (puede ser larguísima): hay que escribir.
+    final searchingProducts = _productQuery.trim().isNotEmpty;
+    final visibleProducts = searchingProducts
+        ? filterByQuery<ProductModel>(products, _productQuery, (p) => p.name)
+        : const <ProductModel>[];
 
     return Padding(
       padding: EdgeInsets.only(
@@ -431,7 +431,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                               padding: const EdgeInsets.all(AppSpacing.s16),
                               child: Center(
                                 child: Text(
-                                  'Sin resultados',
+                                  searchingProducts
+                                      ? 'Sin resultados'
+                                      : 'Escribe para buscar un producto',
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
                                   ),

@@ -117,11 +117,18 @@ class _PickerSheetState<T> extends State<_PickerSheet<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = filterByQuery<PickerOption<T>>(
-      widget.options,
-      _query,
-      (o) => o.label,
-    );
+    // Con el buscador vacío no se muestra la lista (podría tener cientos de
+    // elementos): solo la opción predeterminada ("Sin nombre", "Sin proveedor"),
+    // para poder volver a ella, y la invitación a escribir. Los resultados
+    // aparecen al escribir.
+    final hasQuery = _query.trim().isNotEmpty;
+    final visible = hasQuery
+        ? filterByQuery<PickerOption<T>>(
+            widget.options,
+            _query,
+            (o) => o.label,
+          )
+        : widget.options.where((o) => o.value == null).toList();
     return Padding(
       padding: EdgeInsets.only(
         left: AppSpacing.s16,
@@ -156,8 +163,26 @@ class _PickerSheetState<T> extends State<_PickerSheet<T>> {
           ),
           const SizedBox(height: AppSpacing.s8),
           Flexible(
-            child: visible.isEmpty
-                ? Padding(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final option in visible)
+                  _buildTile(context, option),
+                if (!hasQuery)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.s24,
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Escribe para buscar',
+                        key: const ValueKey('picker-type-to-search'),
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  )
+                else if (visible.isEmpty)
+                  Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.s24,
                     ),
@@ -167,45 +192,36 @@ class _PickerSheetState<T> extends State<_PickerSheet<T>> {
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: visible.length,
-                    itemBuilder: (context, index) {
-                      final option = visible[index];
-                      final isSelected = option.value == widget.selected;
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          option.label,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        subtitle: option.subtitle == null
-                            ? null
-                            : Text(
-                                option.subtitle!,
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                        trailing: isSelected
-                            ? const Icon(Icons.check, color: AppColors.primary)
-                            : null,
-                        onTap: () => Navigator.pop(
-                          context,
-                          _PickerChoice<T>(option.value),
-                        ),
-                      );
-                    },
                   ),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTile(BuildContext context, PickerOption<T> option) {
+    final isSelected = option.value == widget.selected;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        option.label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      subtitle: option.subtitle == null
+          ? null
+          : Text(
+              option.subtitle!,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+      trailing: isSelected
+          ? const Icon(Icons.check, color: AppColors.primary)
+          : null,
+      onTap: () => Navigator.pop(context, _PickerChoice<T>(option.value)),
     );
   }
 }

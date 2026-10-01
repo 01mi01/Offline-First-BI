@@ -3,12 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
 import '../../application/product_provider.dart';
+import '../../application/search_filter.dart';
+import '../../application/status_filter.dart';
 import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
 import '../../models/product_material_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/material_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/catalog_filter_bar.dart';
+import '../widgets/searchable_picker.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../widgets/status_badge.dart';
@@ -56,6 +60,14 @@ class MaterialsListTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(materialProvider);
     final units = ref.watch(unitProvider).units;
+    final status = ref.watch(materialStatusFilterProvider);
+    final query = ref.watch(materialListQueryProvider);
+    // Búsqueda por nombre (sin distinguir tildes) y filtro por estado.
+    final visible = filterByQuery<MaterialModel>(
+      state.materials.where((m) => status.matches(m.isActive)),
+      query,
+      (m) => m.name,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -68,30 +80,72 @@ class MaterialsListTab extends ConsumerWidget {
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.materials.isEmpty
-          ? Center(
-              child: Text(
-                'No se registraron materiales',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          : ListView.builder(
-              padding: AppSpacing.listWithFab,
-              itemCount: state.materials.length,
-              itemBuilder: (context, index) {
-                final m = state.materials[index];
-                return _MaterialCard(
-                  material: m,
-                  unitName: units
-                      .where((u) => u.id == m.unitId)
-                      .firstOrNull
-                      ?.name,
-                  onEdit: () => _showDialog(context, m),
-                );
-              },
+      body: Column(
+        children: [
+          // El buscador (por nombre) comparte el ancho con el filtro de estado.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s12,
+              AppSpacing.s16,
+              AppSpacing.s8,
             ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CatalogSearchField(
+                    initialText: query,
+                    hintText: 'Buscar material',
+                    onChanged: (value) =>
+                        ref.read(materialListQueryProvider.notifier).state =
+                            value,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s8),
+                StatusFilterChip(
+                  value: status,
+                  onChanged: (value) =>
+                      ref.read(materialStatusFilterProvider.notifier).state =
+                          value,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.materials.isEmpty
+                ? Center(
+                    child: Text(
+                      'No se registraron materiales',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : visible.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin resultados',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: AppSpacing.listWithFab,
+                    itemCount: visible.length,
+                    itemBuilder: (context, index) {
+                      final m = visible[index];
+                      return _MaterialCard(
+                        material: m,
+                        unitName: units
+                            .where((u) => u.id == m.unitId)
+                            .firstOrNull
+                            ?.name,
+                        onEdit: () => _showDialog(context, m),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -214,38 +268,23 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
           : null,
       body: Column(
         children: [
-          // Selector de producto
+          // Selector de producto: búsqueda por nombre, sin lista hasta escribir.
           Padding(
             padding: const EdgeInsets.all(AppSpacing.s16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.s16,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: _selectedProductId,
-                  isExpanded: true,
-                  hint: const Text('Selecciona un producto'),
-                  items: products
-                      .map(
-                        (p) =>
-                            DropdownMenuItem(value: p.id, child: Text(p.name)),
-                      )
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedProductId = val;
-                      _usageLog = [];
-                    });
-                    if (val != null) _loadUsageLog(val);
-                  },
-                ),
-              ),
+            child: SearchablePickerField<int>(
+              label: 'Producto',
+              searchHint: 'Buscar producto',
+              value: _selectedProductId,
+              options: [
+                for (final p in products) PickerOption<int>(p.id, p.name),
+              ],
+              onChanged: (val) {
+                setState(() {
+                  _selectedProductId = val;
+                  _usageLog = [];
+                });
+                if (val != null) _loadUsageLog(val);
+              },
             ),
           ),
 
@@ -429,8 +468,11 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         : null;
     final usesFractions = unit != null && isFractionFriendlyUnitType(unit.type);
 
+    if (_selectedMaterialId == null) {
+      setState(() => _error = 'Selecciona un material');
+      return;
+    }
     if (!usesFractions && !_formKey.currentState!.validate()) return;
-    if (_selectedMaterialId == null) return;
 
     final quantity = usesFractions
         ? _fractionQuantity
@@ -508,20 +550,19 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
             const SizedBox(height: AppSpacing.s24),
 
             // Selector de material con stock visible
-            DropdownButtonFormField<int>(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+            // Buscar y elegir por nombre, igual que el producto: escala con
+            // la cantidad de materiales y no lista nada hasta escribir.
+            SearchablePickerField<int>(
+              label: 'Material',
+              searchHint: 'Buscar material',
               value: _selectedMaterialId,
-              decoration: const InputDecoration(labelText: 'Material'),
-              items: materials
-                  .map(
-                    (m) => DropdownMenuItem(value: m.id, child: Text(m.name)),
-                  )
-                  .toList(),
+              options: [
+                for (final m in materials) PickerOption<int>(m.id, m.name),
+              ],
               onChanged: (val) => setState(() {
                 _selectedMaterialId = val;
                 _error = null;
               }),
-              validator: (v) => v == null ? 'Selecciona un material' : null,
             ),
             // Muestra el stock disponible del material seleccionado
             if (selectedMaterial != null) ...[

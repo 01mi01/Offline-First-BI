@@ -13,6 +13,8 @@ import 'package:offline_first_bi/presentation/pages/products_page.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
 import 'package:offline_first_bi/presentation/widgets/confirm_cancel_dialog.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
+import 'search_helpers.dart';
 
 // Correcciones tras la revisión en el dispositivo: el formulario de Compras al
 // cambiar de modo, botones siempre alcanzables en Compras/Ventas, título fijo
@@ -211,10 +213,7 @@ void main() {
       for (final name in ['Tela', 'Hilo', 'Botones']) {
         await tester.tap(find.text('Agregar'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byType(DropdownButtonFormField<int>).last);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(name).last);
-        await tester.pumpAndSettle();
+        await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, name, name);
         await tester.enterText(find.widgetWithText(TextFormField, '0').first, '2');
         await tester.pumpAndSettle();
         await tester.tap(find.text('Agregar').last);
@@ -265,8 +264,12 @@ void main() {
       await openSheet(tester, const SaleDialog(), phone);
 
       for (final name in ['Acuarela', 'Marcador', 'Pincel']) {
+        await searchProducts(tester, name);
         final tile = find.ancestor(
-          of: find.text(name).first,
+          of: find.descendant(
+            of: find.byType(ListTile),
+            matching: find.text(name),
+          ),
           matching: find.byType(ListTile),
         );
         final add = find.descendant(of: tile.first, matching: find.byIcon(Icons.add));

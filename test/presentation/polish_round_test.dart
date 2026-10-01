@@ -13,6 +13,7 @@ import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/pages/products_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'search_helpers.dart';
 
 // Pulido tras la revisión en el dispositivo: orden de las unidades, unidad en
 // las líneas de Compras, botón flotante, botón de registrar, espacio con el
@@ -145,10 +146,7 @@ void main() {
     Future<void> addLine(WidgetTester tester, String material, String quantity) async {
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(SearchablePickerField<int>).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(material).last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, material, material);
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, quantity);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Agregar').last);
@@ -290,10 +288,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Selecciona un producto'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Acuarela').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Acuarela', 'Acuarela');
 
       final quantity = find.text('Cantidad: 2 contenedores');
       final price = find.text('Bs. 12.00 / contenedor');

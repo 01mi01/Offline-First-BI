@@ -21,6 +21,7 @@ import 'package:offline_first_bi/presentation/pages/events_page.dart';
 import 'package:offline_first_bi/presentation/pages/suppliers_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'search_helpers.dart';
 
 void main() {
   late AppDatabase db;
@@ -130,6 +131,7 @@ void main() {
           findsOneWidget,
         );
 
+        await searchProducts(tester, 'Collar'); // la lista aparece al escribir
         await tester.tap(find.byIcon(Icons.add)); // agrega el producto
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Registrar venta'));
@@ -156,10 +158,17 @@ void main() {
         await tester.tap(find.byType(SearchablePickerField<int>).first);
         await tester.pumpAndSettle();
 
-        // Una vez en el campo (valor elegido) y una vez en el menú abierto;
-        // no hay una tercera fila "Sin nombre" duplicada.
+        // Una vez en el campo (valor elegido) y una vez en la hoja abierta;
+        // no hay una tercera fila "Sin nombre" duplicada. Los clientes reales
+        // no se listan hasta escribir.
         expect(find.text('Sin nombre'), findsNWidgets(2));
+        expect(find.text('Maria'), findsNothing);
+        expect(find.text('Escribe para buscar'), findsOneWidget);
+
+        await tester.enterText(find.byType(TextField).last, 'mar');
+        await tester.pumpAndSettle();
         expect(find.text('Maria'), findsOneWidget);
+        expect(find.text('Sin nombre'), findsOneWidget); // ya solo el del campo
       },
     );
 

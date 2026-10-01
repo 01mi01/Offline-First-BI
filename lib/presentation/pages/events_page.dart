@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
+import '../../application/status_filter.dart';
 import '../../models/event_model.dart';
 import '../../models/location_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/event_dialog.dart';
 import '../dialogs/location_dialog.dart';
 import '../widgets/app_bar_widget.dart';
+import '../widgets/catalog_filter_bar.dart';
 import '../widgets/status_badge.dart';
 import '../../config/date_formatters.dart';
 
@@ -43,6 +45,26 @@ class EventsPage extends ConsumerWidget {
   }
 }
 
+// Fila superior con el filtro de estado, alineado a la derecha.
+class _StatusFilterRow extends StatelessWidget {
+  final Widget child;
+
+  const _StatusFilterRow({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s12,
+        AppSpacing.s16,
+        AppSpacing.s8,
+      ),
+      child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [child]),
+    );
+  }
+}
+
 // Tab de eventos
 class _EventsTab extends ConsumerWidget {
   const _EventsTab();
@@ -51,6 +73,8 @@ class _EventsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(eventProvider);
     final locations = ref.watch(locationProvider).locations;
+    final status = ref.watch(eventStatusFilterProvider);
+    final visible = state.events.where((e) => status.matches(e.isActive)).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -63,30 +87,50 @@ class _EventsTab extends ConsumerWidget {
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.events.isEmpty
-          ? Center(
-              child: Text(
-                'No se registraron eventos',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          : ListView.builder(
-              padding: AppSpacing.listWithFab,
-              itemCount: state.events.length,
-              itemBuilder: (context, index) {
-                final event = state.events[index];
-                final location = locations
-                    .where((l) => l.id == event.locationId)
-                    .firstOrNull;
-                return _EventCard(
-                  event: event,
-                  location: location,
-                  onEdit: () => _showDialog(context, event),
-                );
-              },
+      body: Column(
+        children: [
+          _StatusFilterRow(
+            child: StatusFilterChip(
+              value: status,
+              onChanged: (value) =>
+                  ref.read(eventStatusFilterProvider.notifier).state = value,
             ),
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.events.isEmpty
+                ? Center(
+                    child: Text(
+                      'No se registraron eventos',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : visible.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin resultados',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: AppSpacing.listWithFab,
+                    itemCount: visible.length,
+                    itemBuilder: (context, index) {
+                      final event = visible[index];
+                      final location = locations
+                          .where((l) => l.id == event.locationId)
+                          .firstOrNull;
+                      return _EventCard(
+                        event: event,
+                        location: location,
+                        onEdit: () => _showDialog(context, event),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -111,6 +155,10 @@ class _LocationsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(locationProvider);
+    final status = ref.watch(locationStatusFilterProvider);
+    final visible = state.locations
+        .where((l) => status.matches(l.isActive))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -123,26 +171,47 @@ class _LocationsTab extends ConsumerWidget {
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.locations.isEmpty
-          ? Center(
-              child: Text(
-                'No se registraron ubicaciones',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          : ListView.builder(
-              padding: AppSpacing.listWithFab,
-              itemCount: state.locations.length,
-              itemBuilder: (context, index) {
-                final loc = state.locations[index];
-                return _LocationCard(
-                  location: loc,
-                  onEdit: () => _showDialog(context, loc),
-                );
-              },
+      body: Column(
+        children: [
+          _StatusFilterRow(
+            child: StatusFilterChip(
+              feminine: true,
+              value: status,
+              onChanged: (value) =>
+                  ref.read(locationStatusFilterProvider.notifier).state = value,
             ),
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.locations.isEmpty
+                ? Center(
+                    child: Text(
+                      'No se registraron ubicaciones',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : visible.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin resultados',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: AppSpacing.listWithFab,
+                    itemCount: visible.length,
+                    itemBuilder: (context, index) {
+                      final loc = visible[index];
+                      return _LocationCard(
+                        location: loc,
+                        onEdit: () => _showDialog(context, loc),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -474,14 +474,19 @@ void main() {
       );
     });
 
-    test('price display defaults per view until a choice is made, then applies to both', () {
-      const untouched = ProductCatalogFilter();
-      expect(untouched.displayFor(grid: false), PriceDisplay.both);
-      expect(untouched.displayFor(grid: true), PriceDisplay.a);
-
-      const chosen = ProductCatalogFilter(priceDisplay: PriceDisplay.both);
-      expect(chosen.displayFor(grid: false), PriceDisplay.both);
-      expect(chosen.displayFor(grid: true), PriceDisplay.both);
+    test('price display defaults to "Ambos" and the menu order is Ambos, A, B, none', () {
+      expect(const ProductCatalogFilter().priceDisplay, PriceDisplay.both);
+      expect(PriceDisplay.values, [
+        PriceDisplay.both,
+        PriceDisplay.a,
+        PriceDisplay.b,
+        PriceDisplay.none,
+      ]);
+      // Elegir otra opción la conserva al seguir filtrando.
+      final chosen = const ProductCatalogFilter().copyWith(
+        priceDisplay: PriceDisplay.b,
+      );
+      expect(chosen.copyWith(query: 'x').priceDisplay, PriceDisplay.b);
     });
   });
 

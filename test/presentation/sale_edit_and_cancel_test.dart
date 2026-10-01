@@ -12,6 +12,8 @@ import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
 import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/pages/sales_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'search_helpers.dart';
+import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 
 // Edición y cancelación de ventas / registros de uso desde la interfaz.
 void main() {
@@ -101,7 +103,9 @@ void main() {
         await openEditDialog(tester, sale);
 
         // El carrito arranca con las 2 unidades de la venta, y el catálogo
-        // ofrece 5 (3 en inventario + 2 de esta venta), no 3.
+        // ofrece 5 (3 en inventario + 2 de esta venta), no 3. El catálogo
+        // aparece al escribir en el buscador de productos.
+        await searchProducts(tester, 'Collar');
         expect(find.textContaining('Stock: 5'), findsOneWidget);
         expect(find.text('2'), findsOneWidget);
 
@@ -152,6 +156,7 @@ void main() {
         await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
 
+        await searchProducts(tester, 'Collar');
         expect(find.textContaining('Stock: 5'), findsOneWidget);
         await tester.tap(find.byIcon(Icons.add)); // agrega al carrito (1)
         await tester.pumpAndSettle();
@@ -249,10 +254,7 @@ void main() {
 
         await tester.pumpWidget(app(const Scaffold(body: MaterialsUsageTab())));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Selecciona un producto'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Collar').last);
-        await tester.pumpAndSettle();
+        await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Collar', 'Collar');
 
         expect(find.text('Cinta'), findsOneWidget);
         expect(find.text('Cancelado'), findsNothing);

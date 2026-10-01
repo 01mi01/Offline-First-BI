@@ -10,6 +10,7 @@ import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'search_helpers.dart';
 
 Future<void> _openPurchaseDialog(WidgetTester tester, AppDatabase db) async {
   // Usa un tamaño de pantalla realista (tipo teléfono) en vez del lienzo de
@@ -97,10 +98,7 @@ void main() {
       // diálogo de compra, cuyos propios dropdowns (Proveedor/Ubicación/
       // Evento) siguen montados debajo, así que el dropdown de esta hoja es
       // el último en el árbol, no el primero.
-      await tester.tap(find.byType(SearchablePickerField<int>).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Tela').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela', 'Tela');
 
       // Cantidad
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, '3');
@@ -210,10 +208,7 @@ void main() {
 
       await _openPurchaseDialog(tester, db);
 
-      await tester.tap(find.byType(SearchablePickerField<int>).at(0));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Prov Uno').last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).at(0), 'Prov Uno', 'Prov Uno');
 
       await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
@@ -255,10 +250,7 @@ void main() {
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(SearchablePickerField<int>).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(material).last);
-      await tester.pumpAndSettle();
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, material, material);
 
       // Primer TextFormField de la hoja con hint "0" = cantidad.
       return find.widgetWithText(TextFormField, '0').first;

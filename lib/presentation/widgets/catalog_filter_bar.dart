@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../application/status_filter.dart';
 import '../../theme/app_theme.dart';
 
 // Piezas reutilizables para buscar y filtrar las vistas de lista y de catálogo
@@ -181,6 +182,41 @@ class FilterChipRow extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+// Chip del filtro por estado (Activos / Inactivos / Todos). [feminine] da las
+// etiquetas en femenino (Activas / Inactivas / Todas) para listas como
+// "Ubicaciones".
+class StatusFilterChip extends StatelessWidget {
+  final StatusFilter value;
+  final ValueChanged<StatusFilter> onChanged;
+  final bool feminine;
+
+  const StatusFilterChip({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.feminine = false,
+  });
+
+  String _label(StatusFilter f) => switch (f) {
+    StatusFilter.all => feminine ? 'Todas' : 'Todos',
+    StatusFilter.active => feminine ? 'Activas' : 'Activos',
+    StatusFilter.inactive => feminine ? 'Inactivas' : 'Inactivos',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterMenuChip<StatusFilter>(
+      label: _label(value),
+      active: value != StatusFilter.all,
+      selected: value,
+      options: [
+        for (final f in StatusFilter.values) FilterOption(f, _label(f)),
+      ],
+      onSelected: onChanged,
     );
   }
 }
