@@ -13,6 +13,7 @@ import '../../application/date_range_filter.dart';
 import '../../config/date_formatters.dart';
 import 'date_range_filter_bar.dart';
 import 'focus_utils.dart';
+import 'searchable_picker.dart';
 
 class ReportFiltersWidget extends ConsumerWidget {
   final ReportFilters filters;
@@ -80,6 +81,33 @@ class ReportFiltersWidget extends ConsumerWidget {
     onChanged(next);
   }
 
+  // Categoría, Producto, Cliente y Evento se eligen con el buscador (la misma
+  // hoja que en los formularios): son listas que pueden ser largas y una lista
+  // fija no cabe en pantalla. [allLabel] es la opción que quita el filtro.
+  Future<void> _pickWithSearch({
+    required BuildContext context,
+    required String title,
+    required String searchHint,
+    required String allLabel,
+    required int? selected,
+    required List<({int id, String name})> entries,
+    required ReportFilters Function(int id) apply,
+    required ReportFilters Function() clear,
+  }) async {
+    final choice = await showSearchablePicker<int>(
+      context,
+      title: 'Filtrar por $title',
+      searchHint: searchHint,
+      selected: selected,
+      options: [
+        PickerOption<int>(null, allLabel),
+        for (final e in entries) PickerOption<int>(e.id, e.name),
+      ],
+    );
+    if (choice == null || !context.mounted) return;
+    onChanged(choice.value == null ? clear() : apply(choice.value!));
+  }
+
   void _showDropdownSheet<T>(
     BuildContext context,
     String label,
@@ -91,6 +119,7 @@ class ReportFiltersWidget extends ConsumerWidget {
     dismissKeyboard();
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -104,12 +133,14 @@ class ReportFiltersWidget extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Filtrar por $label',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                Expanded(
+                  child: Text(
+                    'Filtrar por $label',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
                 if (value != null)
@@ -129,17 +160,25 @@ class ReportFiltersWidget extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.s16),
-            ...items.map(
-              (item) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: item.child,
-                trailing: item.value == value
-                    ? Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () {
-                  onSelect(item.value);
-                  Navigator.pop(context);
-                },
+            // Con la lista larga se desplaza en vez de desbordar la hoja.
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ...items.map(
+                    (item) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: item.child,
+                      trailing: item.value == value
+                          ? Icon(Icons.check, color: AppColors.primary)
+                          : null,
+                      onTap: () {
+                        onSelect(item.value);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -251,20 +290,15 @@ class ReportFiltersWidget extends ConsumerWidget {
                             DropdownMenuItem(value: c.id, child: Text(c.name)),
                       )
                       .toList(),
-                  onTap: () => _showDropdownSheet(
-                    context,
-                    'Cliente',
-                    filters.clientId,
-                    clients
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ),
-                        )
-                        .toList(),
-                    (val) => onChanged(filters.copyWith(clientId: val)),
-                    () => onChanged(filters.copyWith(clearClient: true)),
+                  onTap: () => _pickWithSearch(
+                    context: context,
+                    title: 'Cliente',
+                    searchHint: 'Buscar cliente',
+                    allLabel: 'Todos los clientes',
+                    selected: filters.clientId,
+                    entries: [for (final c in clients) (id: c.id, name: c.name)],
+                    apply: (id) => filters.copyWith(clientId: id),
+                    clear: () => filters.copyWith(clearClient: true),
                   ),
                   onClear: () => onChanged(filters.copyWith(clearClient: true)),
                 ),
@@ -280,20 +314,17 @@ class ReportFiltersWidget extends ConsumerWidget {
                             DropdownMenuItem(value: c.id, child: Text(c.name)),
                       )
                       .toList(),
-                  onTap: () => _showDropdownSheet(
-                    context,
-                    'Categoría',
-                    filters.categoryId,
-                    categories
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ),
-                        )
-                        .toList(),
-                    (val) => onChanged(filters.copyWith(categoryId: val)),
-                    () => onChanged(filters.copyWith(clearCategory: true)),
+                  onTap: () => _pickWithSearch(
+                    context: context,
+                    title: 'Categoría',
+                    searchHint: 'Buscar categoría',
+                    allLabel: 'Todas las categorías',
+                    selected: filters.categoryId,
+                    entries: [
+                      for (final c in categories) (id: c.id, name: c.name),
+                    ],
+                    apply: (id) => filters.copyWith(categoryId: id),
+                    clear: () => filters.copyWith(clearCategory: true),
                   ),
                   onClear: () =>
                       onChanged(filters.copyWith(clearCategory: true)),
@@ -312,25 +343,21 @@ class ReportFiltersWidget extends ConsumerWidget {
                             DropdownMenuItem(value: p.id, child: Text(p.name)),
                       )
                       .toList(),
-                  onTap: () => _showDropdownSheet(
-                    context,
-                    'Producto',
-                    filters.productId,
-                    products
-                        .where(
-                          (p) =>
-                              filters.categoryId == null ||
-                              p.categoryId == filters.categoryId,
-                        )
-                        .map(
-                          (p) => DropdownMenuItem(
-                            value: p.id,
-                            child: Text(p.name),
-                          ),
-                        )
-                        .toList(),
-                    (val) => onChanged(filters.copyWith(productId: val)),
-                    () => onChanged(filters.copyWith(clearProduct: true)),
+                  onTap: () => _pickWithSearch(
+                    context: context,
+                    title: 'Producto',
+                    searchHint: 'Buscar producto',
+                    allLabel: 'Todos los productos',
+                    selected: filters.productId,
+                    // Con una categoría elegida, solo sus productos.
+                    entries: [
+                      for (final p in products)
+                        if (filters.categoryId == null ||
+                            p.categoryId == filters.categoryId)
+                          (id: p.id, name: p.name),
+                    ],
+                    apply: (id) => filters.copyWith(productId: id),
+                    clear: () => filters.copyWith(clearProduct: true),
                   ),
                   onClear: () =>
                       onChanged(filters.copyWith(clearProduct: true)),
@@ -442,18 +469,15 @@ class ReportFiltersWidget extends ConsumerWidget {
                       (e) => DropdownMenuItem(value: e.id, child: Text(e.name)),
                     )
                     .toList(),
-                onTap: () => _showDropdownSheet(
-                  context,
-                  'Evento',
-                  filters.eventId,
-                  events
-                      .map(
-                        (e) =>
-                            DropdownMenuItem(value: e.id, child: Text(e.name)),
-                      )
-                      .toList(),
-                  (val) => onChanged(filters.copyWith(eventId: val)),
-                  () => onChanged(filters.copyWith(clearEvent: true)),
+                onTap: () => _pickWithSearch(
+                  context: context,
+                  title: 'Evento',
+                  searchHint: 'Buscar evento',
+                  allLabel: 'Todos los eventos',
+                  selected: filters.eventId,
+                  entries: [for (final e in events) (id: e.id, name: e.name)],
+                  apply: (id) => filters.copyWith(eventId: id),
+                  clear: () => filters.copyWith(clearEvent: true),
                 ),
                 onClear: () => onChanged(filters.copyWith(clearEvent: true)),
               ),

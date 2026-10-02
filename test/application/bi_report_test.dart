@@ -1,203 +1,36 @@
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:offline_first_bi/application/bi_provider.dart';
-import 'package:offline_first_bi/application/category_provider.dart';
-import 'package:offline_first_bi/application/client_provider.dart';
-import 'package:offline_first_bi/application/database_provider.dart';
-import 'package:offline_first_bi/application/event_provider.dart';
-import 'package:offline_first_bi/application/location_provider.dart';
-import 'package:offline_first_bi/application/material_provider.dart';
-import 'package:offline_first_bi/application/product_provider.dart';
-import 'package:offline_first_bi/application/purchase_provider.dart';
-import 'package:offline_first_bi/application/report_provider.dart';
-import 'package:offline_first_bi/application/sale_provider.dart';
-import 'package:offline_first_bi/application/supplier_provider.dart';
-import 'package:offline_first_bi/application/unit_provider.dart';
-import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/models/bi_models.dart';
 import 'package:offline_first_bi/models/purchase_kind.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/presentation/pages/business_intelligence_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import '../support/bi_harness.dart';
 
 // Business Intelligence: cada indicador sobre una base Drift real en memoria y
 // los providers reales, con ventas y compras de distintas fechas, una venta
 // cancelada y registros con fecha futura.
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final now = DateTime.now();
-  DateTime day(int offset, [int hour = 12]) =>
-      DateTime(now.year, now.month, now.day + offset, hour);
+  final h = BiHarness();
+  setUp(h.setUp);
+  tearDown(h.tearDown);
 
-  late AppDatabase db;
-  late ProviderContainer container;
-
-  setUp(() async {
-    db = AppDatabase.forTesting(NativeDatabase.memory());
-    container = ProviderContainer(
-      overrides: [databaseProvider.overrideWithValue(db)],
-    );
-  });
-
-  tearDown(() async {
-    container.dispose();
-    await db.close();
-  });
-
-  Future<void> refresh() async {
-    await container.read(saleProvider.notifier).load();
-    await container.read(purchaseProvider.notifier).load();
-    await container.read(eventProvider.notifier).load();
-    await container.read(productProvider.notifier).load();
-    await container.read(categoryProvider.notifier).load();
-    await container.read(clientProvider.notifier).load();
-    await container.read(locationProvider.notifier).load();
-    await container.read(supplierProvider.notifier).load();
-    await container.read(materialProvider.notifier).load();
-    await container.read(unitProvider.notifier).load();
-    container.listen(saleItemsMapProvider, (_, _) {});
-    container.invalidate(saleItemsMapProvider);
-    await container.read(saleItemsMapProvider.future);
-    container.listen(purchaseItemsMapProvider, (_, _) {});
-    container.invalidate(purchaseItemsMapProvider);
-    await container.read(purchaseItemsMapProvider.future);
-  }
-
-  Future<int> newCategory(String name) async {
-    await container.read(categoryProvider.notifier).save(name: name);
-    return container
-        .read(categoryProvider)
-        .categories
-        .firstWhere((c) => c.name == name)
-        .id;
-  }
-
-  Future<int> newProduct(
-    String name, {
-    int? categoryId,
-    int stock = 100,
-    bool isActive = true,
-  }) async {
-    await container
-        .read(productProvider.notifier)
-        .save(
-          categoryId: categoryId,
-          name: name,
-          priceA: 10,
-          priceB: 8,
-          stock: stock,
-          isActive: isActive,
-        );
-    return container
-        .read(productProvider)
-        .products
-        .firstWhere((p) => p.name == name)
-        .id;
-  }
-
-  Future<int> newEvent(String name, DateTime start, DateTime? end) async {
-    await container
-        .read(eventProvider.notifier)
-        .save(name: name, startDate: start, endDate: end);
-    return container
-        .read(eventProvider)
-        .events
-        .firstWhere((e) => e.name == name)
-        .id;
-  }
-
-  Future<int> newMaterial(String name) async {
-    await container.read(unitProvider.notifier).load();
-    final unit = container.read(unitProvider).units.first;
-    await container
-        .read(materialProvider.notifier)
-        .save(name: name, unitId: unit.id, stock: 0, pricePerUnit: 1);
-    return container
-        .read(materialProvider)
-        .materials
-        .firstWhere((m) => m.name == name)
-        .id;
-  }
-
-  // Una venta de una sola línea: [qty] unidades de [productId] a [price].
-  Future<void> sell(
-    DateTime date,
-    int productId,
-    int qty,
-    double price, {
-    String priceType = 'A',
-    int? eventId,
-    double discount = 0,
-  }) async {
-    final subtotal = qty * price;
-    final error = await container
-        .read(saleProvider.notifier)
-        .createSale(
-          clientId: null,
-          locationId: null,
-          eventId: eventId,
-          totalAmount: subtotal,
-          discount: discount,
-          finalAmount: subtotal - discount,
-          date: date,
-          items: [
-            {
-              'productId': productId,
-              'quantity': qty,
-              'unitPrice': price,
-              'priceType': priceType,
-            },
-          ],
-        );
-    expect(error, isNull);
-  }
-
-  Future<void> buyMaterial(
-    DateTime date,
-    int materialId,
-    double qty,
-    double price, {
-    int? eventId,
-  }) async {
-    final error = await container
-        .read(purchaseProvider.notifier)
-        .createPurchase(
-          supplierId: null,
-          locationId: null,
-          eventId: eventId,
-          isMaterial: true,
-          description: null,
-          totalAmount: qty * price,
-          date: date,
-          items: [
-            {'materialId': materialId, 'quantity': qty, 'unitPrice': price},
-          ],
-        );
-    expect(error, isNull);
-  }
-
-  Future<void> spend(DateTime date, double amount, {int? eventId}) async {
-    final error = await container
-        .read(purchaseProvider.notifier)
-        .createPurchase(
-          supplierId: null,
-          locationId: null,
-          eventId: eventId,
-          isMaterial: false,
-          description: 'Gasto',
-          totalAmount: amount,
-          date: date,
-          items: const [],
-        );
-    expect(error, isNull);
-  }
-
+  // Atajos a los ayudantes del arnés.
+  DateTime day(int offset, [int hour = 12]) => h.day(offset, hour);
+  final refresh = h.refresh;
+  final newCategory = h.newCategory;
+  final newProduct = h.newProduct;
+  final newEvent = h.newEvent;
+  final newMaterial = h.newMaterial;
+  final sell = h.sell;
+  final buyMaterial = h.buyMaterial;
+  final spend = h.spend;
   BiReport report([ReportFilters filters = const ReportFilters()]) =>
-      container.read(biReportProvider(filters));
-
+      h.report(filters);
   Map<String, double> amounts(List<BiEntry> entries) => {
     for (final e in entries) e.label: e.amount,
   };
@@ -242,12 +75,7 @@ void main() {
       await sell(day(-1), p, 1, 777); // se cancela
       await spend(day(-2), 30);
       await spend(day(4), 888); // futura: no cuenta
-      await refresh();
-      final canceled = container
-          .read(saleProvider)
-          .sales
-          .firstWhere((s) => s.totalAmount == 777);
-      await container.read(saleProvider.notifier).cancelSale(canceled.id);
+      await h.cancelSaleOf(777);
       await refresh();
 
       final summary = report().summary;
@@ -486,14 +314,14 @@ void main() {
   });
 
   group('screen', () {
-    Future<void> pumpPage(WidgetTester tester) async {
+    Future<void> pumpPage(WidgetTester tester, {bool confirm = true}) async {
       tester.view.physicalSize = const Size(900, 8000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         UncontrolledProviderScope(
-          container: container,
+          container: h.container,
           child: MaterialApp(
             theme: lightTheme,
             home: const BusinessIntelligencePage(),
@@ -501,9 +329,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // Primero se muestra la configuración; al confirmarla, el panel.
+      if (confirm) {
+        await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
+        await tester.pumpAndSettle();
+      }
     }
 
-    testWidgets('shows the eight indicators with their data', (tester) async {
+    testWidgets('shows the indicators with their data', (tester) async {
       final pinturas = await newCategory('Pinturas');
       final a = await newProduct('Cuadro', categoryId: pinturas);
       await newProduct('Lienzo', stock: 0);
@@ -517,6 +350,7 @@ void main() {
 
       expect(find.text('Business Intelligence'), findsOneWidget);
       expect(find.text('Próximamente'), findsNothing);
+      // Los predeterminados de la configuración.
       for (final title in [
         'Ventas por producto',
         'Ventas por categoría',
@@ -568,16 +402,19 @@ void main() {
       }
     });
 
-    testWidgets('filters and presets reuse the Reportes components', (
+    testWidgets('the configuration step reuses the Reportes filters and presets', (
       tester,
     ) async {
       final p = await newProduct('Cuadro');
       await sell(day(0), p, 1, 100);
       await sell(day(-40), p, 1, 500);
       await refresh();
-      await pumpPage(tester);
+      await pumpPage(tester, confirm: false);
 
-      expect(find.text('Bs. 600.00'), findsWidgets); // todo el historial
+      // Nada de datos hasta confirmar la configuración.
+      expect(find.byKey(const ValueKey('bi-section-salesByProduct')), findsNothing);
+      expect(find.byKey(const ValueKey('bi-period')), findsNothing);
+      expect(find.text('Bs. 600.00'), findsNothing);
 
       for (final preset in ['Hoy', 'Esta semana', 'Este mes', 'Este año']) {
         expect(find.text(preset), findsOneWidget);
@@ -595,13 +432,22 @@ void main() {
       expect(find.text('Cliente'), findsNothing);
       expect(find.text('Proveedor'), findsNothing);
 
+      // Con "Hoy" solo cuenta la venta de hoy.
       await tester.tap(find.text('Hoy'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.pumpAndSettle();
       expect(find.text('Bs. 100.00'), findsWidgets);
       expect(find.text('Bs. 600.00'), findsNothing);
+      expect(find.byKey(const ValueKey('bi-period')), findsOneWidget);
 
-      // Tocar otra vez el atajo quita el filtro.
+      // Volver a configurar sin salir del módulo, y quitar el atajo.
+      await tester.tap(find.byKey(const ValueKey('bi-configure')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
       await tester.tap(find.text('Hoy'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.pumpAndSettle();
       expect(find.text('Bs. 600.00'), findsWidgets);
     });

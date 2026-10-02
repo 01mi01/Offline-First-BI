@@ -15,9 +15,37 @@ class PickerOption<T> {
 
 // Resultado de la hoja: envuelve el valor para distinguir "se eligió la opción
 // nula" de "se cerró sin elegir".
-class _PickerChoice<T> {
+class PickerChoice<T> {
   final T? value;
-  const _PickerChoice(this.value);
+  const PickerChoice(this.value);
+}
+
+// Abre la hoja de búsqueda y devuelve lo elegido, o null si se cerró sin elegir.
+// La usan el campo [SearchablePickerField] y los chips de filtro de Reportes y
+// Business Intelligence.
+Future<PickerChoice<T>?> showSearchablePicker<T>(
+  BuildContext context, {
+  required String title,
+  required List<PickerOption<T>> options,
+  required T? selected,
+  String searchHint = 'Buscar',
+}) {
+  dismissKeyboard();
+  return showModalBottomSheet<PickerChoice<T>>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: AppColors.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => _PickerSheet<T>(
+      title: title,
+      searchHint: searchHint,
+      options: options,
+      selected: selected,
+    ),
+  );
 }
 
 // Selector de un registro existente con búsqueda: parece el campo desplegable
@@ -48,21 +76,12 @@ class SearchablePickerField<T> extends StatelessWidget {
   }
 
   Future<void> _open(BuildContext context) async {
-    dismissKeyboard();
-    final choice = await showModalBottomSheet<_PickerChoice<T>>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _PickerSheet<T>(
-        title: label,
-        searchHint: searchHint,
-        options: options,
-        selected: value,
-      ),
+    final choice = await showSearchablePicker<T>(
+      context,
+      title: label,
+      options: options,
+      selected: value,
+      searchHint: searchHint,
     );
     if (choice != null) onChanged(choice.value);
   }
@@ -221,7 +240,7 @@ class _PickerSheetState<T> extends State<_PickerSheet<T>> {
       trailing: isSelected
           ? const Icon(Icons.check, color: AppColors.primary)
           : null,
-      onTap: () => Navigator.pop(context, _PickerChoice<T>(option.value)),
+      onTap: () => Navigator.pop(context, PickerChoice<T>(option.value)),
     );
   }
 }

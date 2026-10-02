@@ -304,9 +304,11 @@ void main() {
       await tester.tap(find.text('Business Intelligence'));
       await tester.pumpAndSettle();
       expect(find.byType(BusinessIntelligencePage), findsOneWidget);
-      // Ya no es un marcador "Próximamente": muestra los indicadores.
+      // Ya no es un marcador "Próximamente": abre en el paso de configuración
+      // (periodo e indicadores) antes de mostrar datos.
       expect(find.text('Próximamente'), findsNothing);
-      expect(find.text('Ventas por producto'), findsOneWidget);
+      expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
+      expect(find.byKey(const ValueKey('bi-period')), findsNothing);
 
       // La app usa un ícono de "back" propio (no el widget estándar de
       // Cupertino/Material), así que se toca directamente en vez de usar
