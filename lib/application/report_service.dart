@@ -10,6 +10,7 @@ import '../models/report_models.dart';
 import '../models/sale_item_model.dart';
 import '../models/sale_model.dart';
 import '../models/supplier_model.dart';
+import 'date_range_filter.dart';
 
 // Filtrado, agregación y enriquecimiento de datos para el módulo de reportes
 class ReportService {
@@ -39,15 +40,39 @@ class ReportService {
     return true;
   }
 
+  // ¿La fecha propia de un registro (venta o compra) cae dentro del rango de
+  // los filtros? Trabaja con días completos: [startDate] incluye ese día desde
+  // las 00:00 y el fin incluye ese día completo (con solo "Desde" el fin es
+  // ese mismo día). Un registro con fecha posterior a hoy está solo
+  // "preparado": todavía no ocurrió, así que nunca cuenta, ni siquiera con un
+  // reporte sin fecha de fin. Se usa SIEMPRE la fecha del registro, nunca la de
+  // un evento al que esté vinculado.
+  bool isInReportRange(DateTime date, ReportFilters filters, {DateTime? now}) {
+    final today = dateOnly(now ?? DateTime.now());
+    if (filters.startDate != null &&
+        date.isBefore(dateOnly(filters.startDate!))) {
+      return false;
+    }
+    var lastDay = today;
+    final requestedEnd = filters.effectiveEndDate;
+    if (requestedEnd != null && dateOnly(requestedEnd).isBefore(today)) {
+      lastDay = dateOnly(requestedEnd);
+    }
+    // Límite superior exclusivo: el inicio del día siguiente al último día.
+    final endExclusive = DateTime(lastDay.year, lastDay.month, lastDay.day + 1);
+    return date.isBefore(endExclusive);
+  }
+
   // Filtra ventas según fecha, cliente, ubicación y evento (a nivel de venta)
   // y según producto, categoría y tipo de precio (a nivel de línea): una venta
   // se incluye si al menos una de sus líneas cumple todos los filtros de línea
-  // activos a la vez.
+  // activos a la vez. [now] solo existe para poder probar el corte "hoy".
   List<SaleModel> filterSales({
     required List<SaleModel> sales,
     required List<ProductModel> products,
     required Map<int, List<SaleItemModel>> saleItemsMap,
     required ReportFilters filters,
+    DateTime? now,
   }) {
     final categoryByProduct = {for (final p in products) p.id: p.categoryId};
     final lineFilters = _hasLineFilters(filters);
@@ -55,21 +80,7 @@ class ReportService {
     return sales.where((s) {
       // Una venta cancelada ya no es un ingreso: su stock se devolvió.
       if (s.isCanceled) return false;
-      if (filters.startDate != null && s.date.isBefore(filters.startDate!)) {
-        return false;
-      }
-      if (filters.effectiveEndDate != null) {
-        // Límite superior exclusivo: el inicio del día siguiente a endDate.
-        // Se trunca a fecha (sin hora) para que endDate incluya ese día
-        // completo sin importar la hora exacta de s.date. Con solo "Desde" el
-        // fin es ese mismo día.
-        final endExclusive = DateTime(
-          filters.effectiveEndDate!.year,
-          filters.effectiveEndDate!.month,
-          filters.effectiveEndDate!.day + 1,
-        );
-        if (!s.date.isBefore(endExclusive)) return false;
-      }
+      if (!isInReportRange(s.date, filters, now: now)) return false;
       if (filters.clientId != null && s.clientId != filters.clientId) {
         return false;
       }
@@ -131,20 +142,11 @@ class ReportService {
   List<PurchaseModel> filterPurchases({
     required List<PurchaseModel> purchases,
     required ReportFilters filters,
+    DateTime? now,
   }) {
     return purchases.where((p) {
       if (!filters.purchaseKind.includes(p)) return false;
-      if (filters.startDate != null && p.date.isBefore(filters.startDate!)) {
-        return false;
-      }
-      if (filters.effectiveEndDate != null) {
-        final endExclusive = DateTime(
-          filters.effectiveEndDate!.year,
-          filters.effectiveEndDate!.month,
-          filters.effectiveEndDate!.day + 1,
-        );
-        if (!p.date.isBefore(endExclusive)) return false;
-      }
+      if (!isInReportRange(p.date, filters, now: now)) return false;
       if (filters.supplierId != null && p.supplierId != filters.supplierId) {
         return false;
       }

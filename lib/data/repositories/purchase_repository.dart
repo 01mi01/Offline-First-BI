@@ -39,6 +39,28 @@ class PurchaseRepository {
         );
   }
 
+  // ¿Hay otra compra de este material con fecha posterior a [date]? Si la hay,
+  // el precio vigente del material ya viene de esa compra más reciente.
+  Future<bool> _hasLaterPurchaseOf(
+    int materialId, {
+    required int excludingPurchaseId,
+    required DateTime date,
+  }) async {
+    final query = database.select(database.purchaseItems).join([
+      innerJoin(
+        database.purchases,
+        database.purchases.id.equalsExp(database.purchaseItems.purchaseId),
+      ),
+    ])
+      ..where(
+        database.purchaseItems.materialId.equals(materialId) &
+            database.purchaseItems.purchaseId.equals(excludingPurchaseId).not() &
+            database.purchases.date.isBiggerThanValue(date),
+      )
+      ..limit(1);
+    return (await query.get()).isNotEmpty;
+  }
+
   // Convierte fila a modelo
   PurchaseModel _toModel(Purchase row) {
     return PurchaseModel(
@@ -143,6 +165,11 @@ class PurchaseRepository {
           if (!adjustStock) continue;
 
           // Suma stock y actualiza precio del material
+          final later = await _hasLaterPurchaseOf(
+            materialId,
+            excludingPurchaseId: purchaseId,
+            date: date,
+          );
           final material = await (database.select(
             database.materials,
           )..where((m) => m.id.equals(materialId))).getSingleOrNull();
@@ -153,7 +180,11 @@ class PurchaseRepository {
             )..where((m) => m.id.equals(materialId))).write(
               MaterialsCompanion(
                 stock: Value(material.stock + quantity),
-                pricePerUnit: Value(unitPrice),
+                // Una compra con fecha pasada no pisa el precio que ya fijó
+                // una compra posterior del mismo material.
+                pricePerUnit: later
+                    ? const Value.absent()
+                    : Value(unitPrice),
                 updatedAt: Value(DateTime.now()),
               ),
             );
@@ -241,6 +272,11 @@ class PurchaseRepository {
                 ),
               );
 
+          final later = await _hasLaterPurchaseOf(
+            materialId,
+            excludingPurchaseId: purchaseId,
+            date: date,
+          );
           final material = await (database.select(
             database.materials,
           )..where((m) => m.id.equals(materialId))).getSingleOrNull();
@@ -251,7 +287,9 @@ class PurchaseRepository {
             )..where((m) => m.id.equals(materialId))).write(
               MaterialsCompanion(
                 stock: Value(material.stock + quantity),
-                pricePerUnit: Value(unitPrice),
+                pricePerUnit: later
+                    ? const Value.absent()
+                    : Value(unitPrice),
                 updatedAt: Value(DateTime.now()),
               ),
             );

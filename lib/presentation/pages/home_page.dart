@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
+import '../../application/date_range_filter.dart';
 import '../../application/module_permission_provider.dart';
 import '../../application/sale_provider.dart';
 import '../../application/purchase_provider.dart';
@@ -21,18 +22,27 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
     // Las ventas canceladas no cuentan como ingreso ni como "últimas ventas".
+    // Una venta con fecha futura solo está "preparada": todavía no ocurrió, así
+    // que tampoco cuenta. Se usa la fecha propia de cada venta.
+    final now = DateTime.now();
     final sales = ref
         .watch(saleProvider)
         .sales
-        .where((s) => !s.isCanceled)
+        .where((s) => !s.isCanceled && !isFutureDated(s.date, now: now))
         .toList();
     final purchases = ref.watch(purchaseProvider).purchases;
     final products = ref.watch(productProvider).products;
     final readableModules = ref.watch(readableModulesProvider).valueOrNull ?? [];
 
-    // Métricas rápidas
-    final totalIngresos = sales.fold(0.0, (sum, s) => sum + s.finalAmount);
-    final totalGastos = purchases.fold(0.0, (sum, p) => sum + p.totalAmount);
+    // Métricas rápidas: Ingresos y Gastos son los del MES ACTUAL (del día 1 a
+    // hoy), según la fecha de cada registro; lo anterior vive en Reportes.
+    final month = DateRangeFilter.forPreset(DatePreset.month, now: now);
+    final totalIngresos = sales
+        .where((s) => month.matches(s.date))
+        .fold(0.0, (sum, s) => sum + s.finalAmount);
+    final totalGastos = purchases
+        .where((p) => month.matches(p.date))
+        .fold(0.0, (sum, p) => sum + p.totalAmount);
     final productosActivos = products.where((p) => p.isActive).length;
     final stockBajo = products.where((p) => p.isActive && p.stock <= 3).length;
 
@@ -112,7 +122,7 @@ class HomePage extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _MetricCard(
-                    label: 'Ingresos',
+                    label: 'Ingresos del mes',
                     value: 'Bs. ${totalIngresos.toStringAsFixed(2)}',
                     icon: Icons.trending_up_rounded,
                   ),
@@ -120,7 +130,7 @@ class HomePage extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: _MetricCard(
-                    label: 'Gastos',
+                    label: 'Gastos del mes',
                     value: 'Bs. ${totalGastos.toStringAsFixed(2)}',
                     icon: Icons.trending_down_rounded,
                   ),

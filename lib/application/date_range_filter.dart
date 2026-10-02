@@ -14,6 +14,11 @@ final DateTime filterFirstDate = DateTime(2020);
 
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+// ¿La fecha de un registro es posterior a hoy? Se compara por día: algo
+// fechado hoy a cualquier hora ya cuenta como ocurrido.
+bool isFutureDated(DateTime date, {DateTime? now}) =>
+    dateOnly(date).isAfter(dateOnly(now ?? DateTime.now()));
+
 // Valida un rango Desde/Hasta. Devuelve el mensaje del primer problema o null
 // si es válido: ninguna fecha puede ser posterior a hoy y Hasta no puede ser
 // anterior a Desde (el mismo día en ambas sí es válido).
