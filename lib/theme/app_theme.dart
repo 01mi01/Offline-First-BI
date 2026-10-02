@@ -19,7 +19,38 @@ class AppColors {
   // verde base no llega al contraste mínimo de 4.5:1 sobre fondo claro. Mismo
   // tono, más oscuro (igual que primaryDark respecto de primary).
   static const successDark = Color(0xFF176B31);
+
+  // Paleta de los gráficos de Business Intelligence. Las cinco se derivan del
+  // acento (primary = HSL 177°, 79 %, 35 %) rotando el tono dentro de la
+  // familia verde / verde azulado / cian (146°–189°) y ajustando la
+  // luminosidad; no hay colores arbitrarios. Los gráficos las toman en orden y,
+  // si tienen más de cinco series, vuelven a empezar (ver chartColorAt).
+  // 1: el propio acento (tono 177°, L 35 %).
+  static const chartColor1 = Color(0xFF13A09A);
+  // 2: mismo tono, L 26.5 %: es primaryDark.
+  static const chartColor2 = Color(0xFF0D7A75);
+  // 3: tono −3° (174°), S 62 %, L 45 %: variante clara del acento. La L 56 %
+  // sugerida (#4FD1C5) daba solo 1.9:1 contra blanco; con L 45 % sube a 2.4:1
+  // sin acercarse al acento.
+  static const chartColor3 = Color(0xFF2CBAAD);
+  // 4: tono −31° (146°, verde mar), S 50 %, L 36 %: 4.3:1 contra blanco.
+  static const chartColor4 = Color(0xFF2E8B57);
+  // 5: tono +11° (188°, cian), S 95 %, L 38 %. La L 43 % sugerida (#06B6D4)
+  // daba 2.4:1 contra blanco; con L 38 % llega a 3:1.
+  static const chartColor5 = Color(0xFF05A3BD);
 }
+
+// Color de la serie [index] de un gráfico: recorre los cinco colores de la
+// paleta en orden y vuelve al primero a partir de la sexta serie. Es la única
+// vía para colorear gráficos (nunca colores sueltos ni la paleta por defecto
+// de la librería).
+Color chartColorAt(int index) => const [
+  AppColors.chartColor1,
+  AppColors.chartColor2,
+  AppColors.chartColor3,
+  AppColors.chartColor4,
+  AppColors.chartColor5,
+][index % 5];
 
 // Escala de espaciado de la aplicación (padding, gaps entre elementos)
 class AppSpacing {

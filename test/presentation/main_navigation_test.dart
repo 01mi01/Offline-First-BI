@@ -304,7 +304,9 @@ void main() {
       await tester.tap(find.text('Business Intelligence'));
       await tester.pumpAndSettle();
       expect(find.byType(BusinessIntelligencePage), findsOneWidget);
-      expect(find.text('Próximamente'), findsOneWidget);
+      // Ya no es un marcador "Próximamente": muestra los indicadores.
+      expect(find.text('Próximamente'), findsNothing);
+      expect(find.text('Ventas por producto'), findsOneWidget);
 
       // La app usa un ícono de "back" propio (no el widget estándar de
       // Cupertino/Material), así que se toca directamente en vez de usar

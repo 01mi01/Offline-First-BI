@@ -19,12 +19,45 @@ class ReportFiltersWidget extends ConsumerWidget {
   final ValueChanged<ReportFilters> onChanged;
   final int activeTab;
 
+  // Modo Business Intelligence: un solo panel para ventas y compras a la vez.
+  // Agrega los atajos de fecha, muestra los filtros de ambos lados (menos
+  // cliente y proveedor) y llama "Tipo de operación" al tipo de compra.
+  final bool combined;
+
   const ReportFiltersWidget({
     super.key,
     required this.filters,
     required this.onChanged,
     required this.activeTab,
+    this.combined = false,
   });
+
+  bool get _showSales => combined || activeTab == 0;
+  bool get _showPurchases => combined || activeTab == 1;
+
+  // Atajo activo: el que genera exactamente el rango Desde/Hasta elegido.
+  DatePreset? get _selectedPreset {
+    for (final preset in DatePreset.values) {
+      final range = DateRangeFilter.forPreset(preset);
+      if (filters.startDate != null &&
+          filters.endDate != null &&
+          dateOnly(filters.startDate!) == range.from &&
+          dateOnly(filters.endDate!) == range.to) {
+        return preset;
+      }
+    }
+    return null;
+  }
+
+  // Un atajo reemplaza ambas fechas; volver a tocarlo las quita.
+  void _selectPreset(DatePreset? preset) {
+    if (preset == null) {
+      onChanged(filters.copyWith(clearStartDate: true, clearEndDate: true));
+      return;
+    }
+    final range = DateRangeFilter.forPreset(preset);
+    onChanged(filters.copyWith(startDate: range.from, endDate: range.to));
+  }
 
   String _formatDate(DateTime date) => formatDate(date);
 
@@ -160,6 +193,15 @@ class ReportFiltersWidget extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.s12),
 
+          // Atajos de fecha (solo en Business Intelligence)
+          if (combined) ...[
+            DatePresetChips(
+              selected: _selectedPreset,
+              onSelected: _selectPreset,
+            ),
+            const SizedBox(height: AppSpacing.s8),
+          ],
+
           // Fechas
           Row(
             children: [
@@ -199,7 +241,7 @@ class ReportFiltersWidget extends ConsumerWidget {
             runSpacing: AppSpacing.s8,
             children: [
               // Solo en ventas
-              if (activeTab == 0) ...[
+              if (!combined && activeTab == 0) ...[
                 _DropChip(
                   label: 'Cliente',
                   value: filters.clientId,
@@ -228,7 +270,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                 ),
               ],
               // Categoría y producto - solo en ventas
-              if (activeTab == 0) ...[
+              if (_showSales) ...[
                 _DropChip(
                   label: 'Categoría',
                   value: filters.categoryId,
@@ -317,10 +359,10 @@ class ReportFiltersWidget extends ConsumerWidget {
               ],
 
               // Solo en compras
-              if (activeTab == 1) ...[
+              if (_showPurchases) ...[
                 // Tipo: solo materiales o solo gastos ("Limpiar" = ambos).
                 _DropChip<PurchaseKind>(
-                  label: 'Tipo',
+                  label: combined ? 'Tipo de operación' : 'Tipo',
                   value: filters.purchaseKind == PurchaseKind.all
                       ? null
                       : filters.purchaseKind,
@@ -336,7 +378,7 @@ class ReportFiltersWidget extends ConsumerWidget {
                   ],
                   onTap: () => _showDropdownSheet<PurchaseKind>(
                     context,
-                    'Tipo',
+                    combined ? 'Tipo de operación' : 'Tipo',
                     filters.purchaseKind == PurchaseKind.all
                         ? null
                         : filters.purchaseKind,
@@ -359,20 +401,11 @@ class ReportFiltersWidget extends ConsumerWidget {
                     filters.copyWith(purchaseKind: PurchaseKind.all),
                   ),
                 ),
-                _DropChip(
-                  label: 'Proveedor',
-                  value: filters.supplierId,
-                  items: suppliers
-                      .map(
-                        (s) =>
-                            DropdownMenuItem(value: s.id, child: Text(s.name)),
-                      )
-                      .toList(),
-                  onTap: () => _showDropdownSheet(
-                    context,
-                    'Proveedor',
-                    filters.supplierId,
-                    suppliers
+                if (!combined)
+                  _DropChip(
+                    label: 'Proveedor',
+                    value: filters.supplierId,
+                    items: suppliers
                         .map(
                           (s) => DropdownMenuItem(
                             value: s.id,
@@ -380,12 +413,24 @@ class ReportFiltersWidget extends ConsumerWidget {
                           ),
                         )
                         .toList(),
-                    (val) => onChanged(filters.copyWith(supplierId: val)),
-                    () => onChanged(filters.copyWith(clearSupplier: true)),
+                    onTap: () => _showDropdownSheet(
+                      context,
+                      'Proveedor',
+                      filters.supplierId,
+                      suppliers
+                          .map(
+                            (s) => DropdownMenuItem(
+                              value: s.id,
+                              child: Text(s.name),
+                            ),
+                          )
+                          .toList(),
+                      (val) => onChanged(filters.copyWith(supplierId: val)),
+                      () => onChanged(filters.copyWith(clearSupplier: true)),
+                    ),
+                    onClear: () =>
+                        onChanged(filters.copyWith(clearSupplier: true)),
                   ),
-                  onClear: () =>
-                      onChanged(filters.copyWith(clearSupplier: true)),
-                ),
               ],
 
               // Evento - ambos tabs

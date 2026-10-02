@@ -1,3 +1,7 @@
+// Un producto activo con este stock o menos se considera de "stock bajo" (se
+// cuenta en Inicio y se lista en Business Intelligence).
+const int lowStockThreshold = 3;
+
 // Modelo de producto
 class ProductModel {
   final int id;

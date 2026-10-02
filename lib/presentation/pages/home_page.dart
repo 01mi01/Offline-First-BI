@@ -6,6 +6,7 @@ import '../../application/module_permission_provider.dart';
 import '../../application/sale_provider.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/product_provider.dart';
+import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_bar_widget.dart';
 import '../pages/sales_page.dart';
@@ -44,7 +45,9 @@ class HomePage extends ConsumerWidget {
         .where((p) => month.matches(p.date))
         .fold(0.0, (sum, p) => sum + p.totalAmount);
     final productosActivos = products.where((p) => p.isActive).length;
-    final stockBajo = products.where((p) => p.isActive && p.stock <= 3).length;
+    final stockBajo = products
+        .where((p) => p.isActive && p.stock <= lowStockThreshold)
+        .length;
 
     // Tarjetas de acceso rápido, solo para módulos que el usuario puede leer
     final quickAccessCards = <_QuickAccessCard>[

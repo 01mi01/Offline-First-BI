@@ -140,22 +140,14 @@ class DateRangeFilterBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: AppSpacing.s8,
-            runSpacing: AppSpacing.s8,
-            children: [
-              for (final preset in DatePreset.values)
-                _PresetChip(
-                  preset: preset,
-                  selected: value.preset == preset,
-                  // Volver a tocar el atajo activo quita el filtro.
-                  onTap: () => onChanged(
-                    value.preset == preset
-                        ? const DateRangeFilter()
-                        : DateRangeFilter.forPreset(preset),
-                  ),
-                ),
-            ],
+          DatePresetChips(
+            selected: value.preset,
+            // Volver a tocar el atajo activo quita el filtro.
+            onSelected: (preset) => onChanged(
+              preset == null
+                  ? const DateRangeFilter()
+                  : DateRangeFilter.forPreset(preset),
+            ),
           ),
           const SizedBox(height: AppSpacing.s8),
           Row(
@@ -189,6 +181,35 @@ class DateRangeFilterBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Atajos de fecha (Hoy, Esta semana, Este mes, Este año). Tocar el atajo ya
+// seleccionado lo quita: [onSelected] recibe null.
+class DatePresetChips extends StatelessWidget {
+  final DatePreset? selected;
+  final ValueChanged<DatePreset?> onSelected;
+
+  const DatePresetChips({
+    super.key,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AppSpacing.s8,
+      runSpacing: AppSpacing.s8,
+      children: [
+        for (final preset in DatePreset.values)
+          _PresetChip(
+            preset: preset,
+            selected: selected == preset,
+            onTap: () => onSelected(selected == preset ? null : preset),
+          ),
+      ],
     );
   }
 }
