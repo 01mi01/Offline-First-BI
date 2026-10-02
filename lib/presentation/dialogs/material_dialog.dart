@@ -1,25 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/material_pricing.dart';
 import '../../application/material_provider.dart';
 import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
 import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/confirm_cancel_dialog.dart';
-import '../widgets/info_hint.dart';
+import '../widgets/linked_price_fields.dart';
 import '../widgets/unit_quantity_input.dart';
-
-// Explicaciones del campo de precio (icono "i").
-const String totalPaidInfoTitle = 'Total pagado';
-const String totalPaidInfoMessage =
-    'Ingresa el total que pagaste por la cantidad indicada, y la aplicación '
-    'calculará el precio por unidad completa.';
-const String unitPriceInfoTitle = 'Precio por unidad';
-const String unitPriceInfoMessage =
-    'Este precio corresponde a una unidad completa de medida, por ejemplo un '
-    'metro o un litro.';
 
 class MaterialDialog extends ConsumerStatefulWidget {
   final MaterialModel? material;
@@ -43,11 +32,12 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   late final TextEditingController _descController;
   late final TextEditingController _stockController;
   late final TextEditingController _priceController;
-  // Al EDITAR un contenedor: cantidad a la que corresponde el total pagado.
-  // Empieza en 1 con el precio actual, así que no cambia nada hasta que la
-  // persona escribe un total o una cantidad (_priceTouched).
+  // Precio por unidad y total pagado enlazados, para cualquier tipo de unidad.
+  // Comparte el campo de precio de arriba.
+  late final LinkedPriceController _container;
+  // Al EDITAR un contenedor: cantidad a la que corresponde el total pagado
+  // (empieza en 1, con el precio actual).
   final _quantityController = TextEditingController(text: '1');
-  bool _priceTouched = false;
   int? _selectedUnitId;
   late bool _isActive;
 
@@ -68,9 +58,14 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
           ? formatNumber(widget.material!.pricePerUnit)
           : '',
     );
+    _container = LinkedPriceController(price: _priceController);
+    if (widget.material != null) {
+      // Cantidad 1 al precio actual: guardar sin tocar nada no cambia el precio.
+      _container.setQuantity(1);
+      _container.setPrice(widget.material!.pricePerUnit);
+    }
     _selectedUnitId = widget.material?.unitId;
     _isActive = widget.material?.isActive ?? true;
-
   }
 
   @override
@@ -79,50 +74,19 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     _descController.dispose();
     _stockController.dispose();
     _priceController.dispose();
+    _container.dispose();
     _quantityController.dispose();
     super.dispose();
   }
-
-  // Al CREAR un material tipo contenedor con stock inicial, el campo de precio
-  // es el total pagado por ese stock (35 por media botella) y de ahí se calcula
-  // el precio de la botella entera. Sin stock, o en cualquier otro tipo de
-  // unidad (metro, litro...), el campo sigue siendo el precio por unidad.
-  bool _paysTotal(UnitModel? unit) =>
-      widget.material == null &&
-      unit != null &&
-      isFractionFriendlyUnitType(unit.type) &&
-      (double.tryParse(_stockController.text.trim()) ?? 0) > 0;
-
-  // Al EDITAR un material tipo contenedor, el precio se corrige con el total
-  // pagado por una cantidad (igual que al crearlo).
-  bool _editsTotal(UnitModel? unit) =>
-      widget.material != null &&
-      unit != null &&
-      isFractionFriendlyUnitType(unit.type);
 
   UnitModel? _unitById(List<UnitModel> units) =>
       units.where((u) => u.id == _selectedUnitId).firstOrNull;
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final entered = double.tryParse(_priceController.text.trim()) ?? 0;
     final stock = double.tryParse(_stockController.text.trim()) ?? 0;
-    final unit = _unitById(ref.read(unitProvider).units);
-    final double pricePerUnit;
-    if (_editsTotal(unit)) {
-      // Sin tocar el total ni la cantidad se conserva el precio exacto.
-      pricePerUnit = _priceTouched
-          ? (pricePerWholeUnit(
-                  totalPaid: entered,
-                  quantity: double.tryParse(_quantityController.text.trim()) ?? 0,
-                ) ??
-                widget.material!.pricePerUnit)
-          : widget.material!.pricePerUnit;
-    } else if (_paysTotal(unit)) {
-      pricePerUnit = pricePerWholeUnit(totalPaid: entered, quantity: stock) ?? 0;
-    } else {
-      pricePerUnit = entered;
-    }
+    // Manda el último campo escrito (precio por unidad o total pagado).
+    final pricePerUnit = _container.resolvedPrice ?? 0;
     await ref
         .read(materialProvider.notifier)
         .save(
@@ -170,20 +134,8 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
         : null;
     final units = selectableUnitsFor(allUnits, current: currentUnit);
     final selectedUnit = _unitById(allUnits);
-    final paysTotal = _paysTotal(selectedUnit);
-    final stockEntered = double.tryParse(_stockController.text.trim()) ?? 0;
-    final totalEntered = double.tryParse(_priceController.text.trim()) ?? 0;
-    final computedPrice = paysTotal
-        ? pricePerWholeUnit(totalPaid: totalEntered, quantity: stockEntered)
-        : null;
-    final unitName = selectedUnit?.name ?? 'unidad';
-    final editsTotal = _editsTotal(selectedUnit);
     final isMedida = selectedUnit?.type == unitTypeMedida;
-    final editQuantity = double.tryParse(_quantityController.text.trim()) ?? 0;
-    // Precio de 1 unidad que se guardaría al editar un contenedor.
-    final editedPrice = !_priceTouched
-        ? widget.material?.pricePerUnit
-        : pricePerWholeUnit(totalPaid: totalEntered, quantity: editQuantity);
+    final unitName = selectedUnit?.name ?? 'unidad';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -249,9 +201,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                       (u) => DropdownMenuItem(value: u.id, child: Text(u.name)),
                     )
                     .toList(),
-                onChanged: (val) {
-                  setState(() => _selectedUnitId = val);
-                },
+                onChanged: (val) => setState(() => _selectedUnitId = val),
                 validator: (v) => v == null ? 'Selecciona una unidad' : null,
               ),
               const SizedBox(height: AppSpacing.s16),
@@ -268,55 +218,23 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                   labelText: 'Stock',
                   hintText: '0',
                 ),
-                onChanged: (_) => setState(() {}),
+                // Al crear, el stock es la cantidad a la que corresponde el total.
+                onChanged: (v) => setState(() {
+                  if (!isEditing) {
+                    _container.setQuantity(double.tryParse(v.trim()) ?? 0);
+                  }
+                }),
                 validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: AppSpacing.s16),
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _priceController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                ],
-                decoration: InputDecoration(
-                  labelText: (paysTotal || editsTotal)
-                      ? (editsTotal
-                            ? 'Total pagado (Bs.)'
-                            : 'Total pagado por el stock (Bs.)')
-                      : 'Precio por unidad',
-                  hintText: '0',
-                  // Muestra qué precio por unidad entera se va a guardar.
-                  helperText: paysTotal
-                      ? (computedPrice != null
-                            ? 'Precio de 1 $unitName: Bs. ${computedPrice.toStringAsFixed(2)}'
-                            : 'Se calcula el precio de 1 $unitName')
-                      : null,
-                  // Explicación del campo (contenedor: total pagado; medida:
-                  // precio de una unidad completa).
-                  suffixIcon: (paysTotal || editsTotal)
-                      ? const InfoHintButton(
-                          title: totalPaidInfoTitle,
-                          message: totalPaidInfoMessage,
-                        )
-                      : isMedida
-                      ? const InfoHintButton(
-                          title: unitPriceInfoTitle,
-                          message: unitPriceInfoMessage,
-                        )
-                      : null,
-                ),
-                onChanged: (_) => setState(() => _priceTouched = true),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Campo requerido';
-                  if ((paysTotal || editsTotal) && (double.tryParse(v) ?? 0) <= 0) {
-                    return 'Ingresa lo que pagaste';
-                  }
-                  return null;
-                },
+              // Precio por unidad y total pagado, enlazados (todas las unidades).
+              LinkedPriceFields(
+                controller: _container,
+                onChanged: () => setState(() {}),
+                extraInfo: isMedida ? measureUnitInfoMessage : null,
               ),
-              // Editar un contenedor: la cantidad a la que corresponde el total.
-              if (editsTotal) ...[
+              // Editar: la cantidad a la que corresponde el total.
+              if (isEditing) ...[
                 const SizedBox(height: AppSpacing.s16),
                 TextFormField(
                   autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -328,11 +246,10 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                   decoration: InputDecoration(
                     labelText: 'Cantidad ($unitName)',
                     hintText: '1',
-                    helperText: editedPrice != null
-                        ? 'Precio de 1 $unitName: Bs. ${editedPrice.toStringAsFixed(2)}'
-                        : 'Se calcula el precio de 1 $unitName',
                   ),
-                  onChanged: (_) => setState(() => _priceTouched = true),
+                  onChanged: (v) => setState(
+                    () => _container.setQuantity(double.tryParse(v.trim()) ?? 0),
+                  ),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Campo requerido';
                     if ((double.tryParse(v) ?? 0) <= 0) {

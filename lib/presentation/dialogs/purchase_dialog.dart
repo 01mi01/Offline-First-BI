@@ -3,15 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
-import '../../application/material_pricing.dart';
 import '../../application/material_provider.dart';
 import '../../application/unit_provider.dart';
-import '../../models/material_model.dart';
 import '../../models/purchase_model.dart';
 import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
 import '../dialogs/material_dialog.dart';
+import '../widgets/linked_price_fields.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
@@ -908,16 +907,31 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
   String? _selectedMaterialName;
   String? _materialError;
   // Materiales tipo contenedor: la cantidad se elige con fracciones (media
-  // botella) y el campo de precio es el TOTAL pagado por esa cantidad.
+  // botella) y se muestran enlazados el precio por unidad y el total pagado.
   double _fractionQuantity = 0;
   String? _quantityError;
-  // Si la persona ya escribió el total, no se le vuelve a sugerir uno.
-  bool _totalEdited = false;
+  // Comparte el campo de precio. Vale para todos los tipos de unidad.
+  late final LinkedPriceController _container = LinkedPriceController(
+    price: _priceController,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // Al escribir la cantidad (campo numérico) se recalcula el campo de precio
+    // que no se escribió último.
+    _quantityController.addListener(() {
+      if (!_isContainer(_selectedMaterialId)) {
+        setState(() => _container.setQuantity(_currentQuantity));
+      }
+    });
+  }
 
   @override
   void dispose() {
     _quantityController.dispose();
     _priceController.dispose();
+    _container.dispose();
     super.dispose();
   }
 
@@ -940,18 +954,20 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
     return unit != null && isFractionFriendlyUnitType(unit.type);
   }
 
-  // Sugiere el total (precio actual por unidad entera x cantidad) mientras la
-  // persona no haya escrito el suyo; ella puede cambiarlo por lo que pagó.
-  void _suggestTotal(MaterialModel? material) {
-    if (_totalEdited || material == null) return;
-    _priceController.text = _fractionQuantity > 0
-        ? formatNumber(
-            totalForQuantity(
-              pricePerUnit: material.pricePerUnit,
-              quantity: _fractionQuantity,
-            ),
-          )
-        : '';
+  bool _isMedida(int? materialId) => _unitOf(materialId)?.type == unitTypeMedida;
+
+  // Cantidad actual de la línea: fracciones (contenedor) o el campo numérico.
+  double get _currentQuantity => _isContainer(_selectedMaterialId)
+      ? _fractionQuantity
+      : (double.tryParse(_quantityController.text.trim()) ?? 0);
+
+  // Material elegido: sin cantidad todavía y con su precio actual por unidad.
+  void _resetFor(double? pricePerUnit) {
+    _fractionQuantity = 0;
+    _quantityError = null;
+    _quantityController.clear();
+    _container.setQuantity(0);
+    _container.setPrice(pricePerUnit);
   }
 
   void _showCreateMaterialSheet() {
@@ -970,14 +986,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
             setState(() {
               _selectedMaterialId = materialId;
               _selectedMaterialName = materialName;
-              _fractionQuantity = 0;
-              _quantityError = null;
-              _totalEdited = false;
-              // Tipo contenedor: el campo es el total pagado, no el precio
-              // por unidad entera.
-              _priceController.text = _isContainer(materialId)
-                  ? ''
-                  : formatNumber(pricePerUnit);
+              _resetFor(pricePerUnit);
               // La cantidad NO se rellena con el stock del material: ese stock
               // inicial ya quedó registrado como su propia compra al crearlo.
               // Aquí se escribe lo que se compra en esta ocasión, que se suma
@@ -1006,306 +1015,243 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
         top: AppSpacing.s24,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Agregar material',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s24),
-
-            // Selector de material existente
-            // Búsqueda por nombre: escala a listas largas.
-            SearchablePickerField<int>(
-              label: 'Material',
-              searchHint: 'Buscar material',
-              value: _selectedMaterialId,
-              options: [
-                for (final m in materials) PickerOption<int>(m.id, m.name),
-              ],
-              onChanged: (val) {
-                final mat = materials.where((m) => m.id == val).firstOrNull;
-                setState(() {
-                  _selectedMaterialId = val;
-                  _selectedMaterialName = mat?.name;
-                  _materialError = null;
-                  _fractionQuantity = 0;
-                  _quantityError = null;
-                  _totalEdited = false;
-                  if (mat != null) {
-                    // Tipo contenedor: se pide el total pagado (se sugiere al
-                    // elegir la cantidad); si no, el precio por unidad.
-                    _priceController.text = _isContainer(val)
-                        ? ''
-                        : formatNumber(mat.pricePerUnit);
-                  }
-                });
-              },
-            ),
-            if (_materialError != null)
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.s16,
-                  top: AppSpacing.s4,
+      // Con el teclado abierto la hoja (con dos campos de precio) no cabe:
+      // se desplaza en vez de desbordarse.
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Agregar material',
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
-                child: Text(
-                  _materialError!,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.error,
+              ),
+              const SizedBox(height: AppSpacing.s24),
+
+              // Selector de material existente
+              // Búsqueda por nombre: escala a listas largas.
+              SearchablePickerField<int>(
+                label: 'Material',
+                searchHint: 'Buscar material',
+                value: _selectedMaterialId,
+                options: [
+                  for (final m in materials) PickerOption<int>(m.id, m.name),
+                ],
+                onChanged: (val) {
+                  final mat = materials.where((m) => m.id == val).firstOrNull;
+                  setState(() {
+                    _selectedMaterialId = val;
+                    _selectedMaterialName = mat?.name;
+                    _materialError = null;
+                    _resetFor(mat?.pricePerUnit);
+                  });
+                },
+              ),
+              if (_materialError != null)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: AppSpacing.s16,
+                    top: AppSpacing.s4,
+                  ),
+                  child: Text(
+                    _materialError!,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(color: AppColors.error),
                   ),
                 ),
-              ),
-            const SizedBox(height: AppSpacing.s8),
+              const SizedBox(height: AppSpacing.s8),
 
-            // Botón crear nuevo material
-            GestureDetector(
-              onTap: _showCreateMaterialSheet,
-              child: Row(
+              // Botón crear nuevo material
+              GestureDetector(
+                onTap: _showCreateMaterialSheet,
+                child: Row(
+                  children: [
+                    const Icon(Icons.add, color: AppColors.primary, size: 14),
+                    const SizedBox(width: AppSpacing.s4),
+                    Text(
+                      'Crear nuevo material',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s16),
+
+              // Cantidad: unidades "por pieza" (contenedor, paquete, unidad...) solo
+              // aceptan enteros, porque a un proveedor se le compran piezas
+              // completas, no fracciones.
+              Builder(
+                builder: (context) {
+                  final selectedMaterial = materials
+                      .where((m) => m.id == _selectedMaterialId)
+                      .firstOrNull;
+                  final selectedUnit = selectedMaterial != null
+                      ? units
+                            .where((u) => u.id == selectedMaterial.unitId)
+                            .firstOrNull
+                      : null;
+                  final discrete =
+                      selectedUnit != null &&
+                      isDiscreteUnit(selectedUnit.type, selectedUnit.name);
+                  final label = selectedUnit != null
+                      ? 'Cantidad (${selectedUnit.name})'
+                      : 'Cantidad';
+                  // Contenedores: se puede comprar media botella, un cuarto...
+                  if (selectedUnit != null &&
+                      isFractionFriendlyUnitType(selectedUnit.type)) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FractionQuantityPicker(
+                          unit: selectedUnit.name,
+                          value: _fractionQuantity,
+                          onChanged: (v) => setState(() {
+                            _fractionQuantity = v;
+                            _quantityError = null;
+                            // Recalcula el campo que no se escribió último.
+                            _container.setQuantity(v);
+                          }),
+                        ),
+                        if (_quantityError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.s4),
+                            child: Text(
+                              _quantityError!,
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(color: AppColors.error),
+                            ),
+                          ),
+                      ],
+                    );
+                  }
+                  if (discrete) {
+                    return WholeNumberQuantityField(
+                      controller: _quantityController,
+                      labelText: label,
+                    );
+                  }
+                  return TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: _quantityController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        if (newValue.text.isEmpty) return newValue;
+                        if (newValue.text == '0') return newValue;
+                        if (newValue.text.startsWith('0') &&
+                            !newValue.text.startsWith('0.')) {
+                          return oldValue;
+                        }
+                        if (double.tryParse(newValue.text) == null &&
+                            newValue.text != '.') {
+                          return oldValue;
+                        }
+                        return newValue;
+                      }),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: label,
+                      hintText: '0',
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Campo requerido';
+                      final qty = double.tryParse(v);
+                      if (qty == null || qty <= 0) return 'Cantidad inválida';
+                      return null;
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.s16),
+
+              // Precio por unidad y total pagado, enlazados, para cualquier unidad.
+              LinkedPriceFields(
+                controller: _container,
+                onChanged: () => setState(() {}),
+                priceLabel: 'Precio por unidad (Bs.)',
+                extraInfo: _isMedida(_selectedMaterialId)
+                    ? measureUnitInfoMessage
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.s24),
+
+              // Botones
+              Row(
                 children: [
-                  const Icon(Icons.add, color: AppColors.primary, size: 14),
-                  const SizedBox(width: AppSpacing.s4),
-                  Text(
-                    'Crear nuevo material',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      child: const Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final valid = _formKey.currentState!.validate();
+                        // El selector con búsqueda no es un campo de formulario:
+                        // se valida aparte.
+                        if (_selectedMaterialId == null) {
+                          setState(
+                            () => _materialError = 'Selecciona un material',
+                          );
+                          return;
+                        }
+                        final container = _isContainer(_selectedMaterialId);
+                        if (container && _fractionQuantity <= 0) {
+                          setState(
+                            () => _quantityError = 'Selecciona una cantidad',
+                          );
+                          return;
+                        }
+                        if (!valid) return;
+                        final quantity = _currentQuantity;
+                        // Manda el último campo escrito (precio por unidad o
+                        // total pagado).
+                        final unitPrice = _container.resolvedPrice ?? 0;
+                        widget.onAdded({
+                          'materialId': _selectedMaterialId,
+                          'materialName': _selectedMaterialName,
+                          'quantity': quantity,
+                          'unitPrice': unitPrice,
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        'Agregar',
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.s16),
-
-            // Cantidad: unidades "por pieza" (contenedor, paquete, unidad...) solo
-            // aceptan enteros, porque a un proveedor se le compran piezas
-            // completas, no fracciones.
-            Builder(
-              builder: (context) {
-                final selectedMaterial = materials
-                    .where((m) => m.id == _selectedMaterialId)
-                    .firstOrNull;
-                final selectedUnit = selectedMaterial != null
-                    ? units
-                          .where((u) => u.id == selectedMaterial.unitId)
-                          .firstOrNull
-                    : null;
-                final discrete =
-                    selectedUnit != null &&
-                    isDiscreteUnit(selectedUnit.type, selectedUnit.name);
-                final label = selectedUnit != null
-                    ? 'Cantidad (${selectedUnit.name})'
-                    : 'Cantidad';
-                // Contenedores: se puede comprar media botella, un cuarto...
-                if (selectedUnit != null &&
-                    isFractionFriendlyUnitType(selectedUnit.type)) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FractionQuantityPicker(
-                        unit: selectedUnit.name,
-                        value: _fractionQuantity,
-                        onChanged: (v) => setState(() {
-                          _fractionQuantity = v;
-                          _quantityError = null;
-                          _suggestTotal(selectedMaterial);
-                        }),
-                      ),
-                      if (_quantityError != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.s4),
-                          child: Text(
-                            _quantityError!,
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(color: AppColors.error),
-                          ),
-                        ),
-                    ],
-                  );
-                }
-                if (discrete) {
-                  return WholeNumberQuantityField(
-                    controller: _quantityController,
-                    labelText: label,
-                  );
-                }
-                return TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  controller: _quantityController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text == '0') return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          !newValue.text.startsWith('0.')) {
-                        return oldValue;
-                      }
-                      if (double.tryParse(newValue.text) == null &&
-                          newValue.text != '.') {
-                        return oldValue;
-                      }
-                      return newValue;
-                    }),
-                  ],
-                  decoration: InputDecoration(labelText: label, hintText: '0'),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Campo requerido';
-                    final qty = double.tryParse(v);
-                    if (qty == null || qty <= 0) return 'Cantidad inválida';
-                    return null;
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.s16),
-
-            // Contenedores: total pagado por la cantidad (de ahí sale el precio
-            // por unidad entera). Resto de unidades: precio por unidad.
-            Builder(
-              builder: (context) {
-                final selectedMaterial = materials
-                    .where((m) => m.id == _selectedMaterialId)
-                    .firstOrNull;
-                final unit = selectedMaterial == null
-                    ? null
-                    : units
-                          .where((u) => u.id == selectedMaterial.unitId)
-                          .firstOrNull;
-                final paysTotal =
-                    unit != null && isFractionFriendlyUnitType(unit.type);
-                final entered =
-                    double.tryParse(_priceController.text.trim()) ?? 0;
-                final computed = paysTotal
-                    ? pricePerWholeUnit(
-                        totalPaid: entered,
-                        quantity: _fractionQuantity,
-                      )
-                    : null;
-                return TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text == '0') return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          !newValue.text.startsWith('0.')) {
-                        return oldValue;
-                      }
-                      if (double.tryParse(newValue.text) == null &&
-                          newValue.text != '.') {
-                        return oldValue;
-                      }
-                      return newValue;
-                    }),
-                  ],
-                  onChanged: (_) => setState(() => _totalEdited = true),
-                  decoration: InputDecoration(
-                    labelText: paysTotal
-                        ? 'Total pagado (Bs.)'
-                        : 'Precio por unidad (Bs.)',
-                    hintText: '0',
-                    helperText: paysTotal
-                        ? (computed != null
-                              ? 'Precio de 1 ${unit.name}: Bs. ${computed.toStringAsFixed(2)}'
-                              : 'Se calcula el precio de 1 ${unit.name}')
-                        : null,
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Campo requerido';
-                    final price = double.tryParse(v);
-                    if (price == null || price <= 0) return 'Precio inválido';
-                    return null;
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.s24),
-
-            // Botones
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final valid = _formKey.currentState!.validate();
-                      // El selector con búsqueda no es un campo de formulario:
-                      // se valida aparte.
-                      if (_selectedMaterialId == null) {
-                        setState(
-                          () => _materialError = 'Selecciona un material',
-                        );
-                        return;
-                      }
-                      final container = _isContainer(_selectedMaterialId);
-                      if (container && _fractionQuantity <= 0) {
-                        setState(
-                          () => _quantityError = 'Selecciona una cantidad',
-                        );
-                        return;
-                      }
-                      if (!valid) return;
-                      final entered = double.parse(_priceController.text.trim());
-                      final quantity = container
-                          ? _fractionQuantity
-                          : double.parse(_quantityController.text.trim());
-                      // Contenedores: lo escrito es el total pagado; el precio
-                      // por unidad entera se calcula dividiendo por la cantidad.
-                      final unitPrice = container
-                          ? (pricePerWholeUnit(
-                                  totalPaid: entered,
-                                  quantity: quantity,
-                                ) ??
-                                entered)
-                          : entered;
-                      widget.onAdded({
-                        'materialId': _selectedMaterialId,
-                        'materialName': _selectedMaterialName,
-                        'quantity': quantity,
-                        'unitPrice': unitPrice,
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      'Agregar',
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
