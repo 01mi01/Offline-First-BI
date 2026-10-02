@@ -278,13 +278,14 @@ void main() {
       await expectDecimalRejected(tester, quantity);
     });
 
-    testWidgets('contenedor rejects a decimal with visible feedback', (
+    testWidgets('contenedor takes fractions (half a bottle), not a free decimal field', (
       tester,
     ) async {
       await addMaterial('Pintura', 'contenedor');
-      final quantity = await openAddSheetWith(tester, 'Pintura');
+      await openAddSheetWith(tester, 'Pintura');
+      expect(find.byType(FractionQuantityPicker), findsOneWidget);
+      expect(find.byType(WholeNumberQuantityField), findsNothing);
       expect(find.text('Cantidad (contenedor)'), findsOneWidget);
-      await expectDecimalRejected(tester, quantity);
     });
 
     testWidgets('metro (medida continua) still accepts a plain decimal', (
