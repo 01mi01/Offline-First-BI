@@ -64,6 +64,9 @@ class DateRangeFilter {
 
   bool get isActive => from != null || to != null;
 
+  // Con solo "Desde" (sin "Hasta") se filtra ese único día.
+  DateTime? get effectiveTo => to ?? from;
+
   // Cambia solo Desde / Hasta (siempre es un rango a medida, sin atajo).
   DateRangeFilter withFrom(DateTime? value) =>
       DateRangeFilter(from: value == null ? null : dateOnly(value), to: to);
@@ -80,7 +83,8 @@ class DateRangeFilter {
     final s = dateOnly(start);
     final e = dateOnly(end ?? start);
     if (from != null && e.isBefore(dateOnly(from!))) return false;
-    if (to != null && s.isAfter(dateOnly(to!))) return false;
+    final last = effectiveTo;
+    if (last != null && s.isAfter(dateOnly(last))) return false;
     return true;
   }
 

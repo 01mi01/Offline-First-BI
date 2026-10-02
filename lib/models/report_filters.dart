@@ -27,6 +27,9 @@ class ReportFilters {
     this.purchaseKind = PurchaseKind.all,
   });
 
+  // Con solo "Desde" (sin "Hasta") se filtra ese único día.
+  DateTime? get effectiveEndDate => endDate ?? startDate;
+
   bool get hasActive =>
       purchaseKind != PurchaseKind.all ||
       startDate != null ||

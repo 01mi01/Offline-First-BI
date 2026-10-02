@@ -467,4 +467,97 @@ void main() {
       expect(emitted.single.startDate, yesterday);
     });
   });
+
+  // Con solo "Desde" (sin "Hasta") se muestra ese único día.
+  group('Solo Desde = un solo día', () {
+    testWidgets('Ventas: picking only Desde shows that day only', (tester) async {
+      final ana = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Ana'));
+      final beto = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Beto'));
+      Future<void> sale(int client, DateTime date) => db.into(db.sales).insert(
+        SalesCompanion.insert(
+          clientId: Value(client),
+          totalAmount: 10,
+          finalAmount: 10,
+          date: date,
+        ),
+      );
+      await sale(ana, now);
+      await sale(beto, longAgo.add(const Duration(hours: 15)));
+      await sale(beto, longAgo.add(const Duration(days: 1)));
+      await pump(tester, const SalesListBody());
+      await tester.tap(find.text('Desde'));
+      await tester.pumpAndSettle();
+      await _typeDate(tester, longAgo);
+      // Solo hay Desde: aparece su chip y Hasta sigue vacío.
+      expect(find.text('Desde: ${formatDate(longAgo)}'), findsOneWidget);
+      expect(find.text('Hasta'), findsOneWidget);
+      // Solo la venta de ese día (a cualquier hora); ni hoy ni el día siguiente.
+      expect(find.text('Ana'), findsNothing);
+      expect(find.text('Beto'), findsOneWidget);
+    });
+
+    testWidgets('Compras: Desde alone shows that day only', (tester) async {
+      Future<void> purchase(String description, DateTime date) =>
+          db.into(db.purchases).insert(
+            PurchasesCompanion.insert(
+              isMaterial: const Value(false),
+              description: Value(description),
+              totalAmount: 5,
+              date: date,
+            ),
+          );
+      await purchase('Compra de hoy', now);
+      await purchase('Compra del día', longAgo.add(const Duration(hours: 9)));
+      await purchase('Compra del día siguiente', longAgo.add(const Duration(days: 1)));
+      await pump(tester, const PurchasesListBody());
+      containerOf(tester, PurchasesListBody)
+          .read(purchaseDateFilterProvider.notifier)
+          .state = DateRangeFilter(from: longAgo);
+      await tester.pumpAndSettle();
+      expect(find.text('Compra del día'), findsOneWidget);
+      expect(find.text('Compra de hoy'), findsNothing);
+      expect(find.text('Compra del día siguiente'), findsNothing);
+    });
+
+    testWidgets('Eventos: Desde alone shows the events that cover that day', (
+      tester,
+    ) async {
+      await db.into(db.events).insert(
+        EventsCompanion.insert(name: 'Feria de hoy', startDate: today),
+      );
+      await db.into(db.events).insert(
+        EventsCompanion.insert(
+          name: 'Feria de varios días',
+          startDate: DateTime(longAgo.year, longAgo.month, 14),
+          endDate: Value(DateTime(longAgo.year, longAgo.month, 18)),
+        ),
+      );
+      await pump(tester, const EventsPage());
+      containerOf(tester, EventsPage)
+          .read(eventDateFilterProvider.notifier)
+          .state = DateRangeFilter(
+        from: DateTime(longAgo.year, longAgo.month, 16),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Feria de varios días'), findsOneWidget);
+      expect(find.text('Feria de hoy'), findsNothing);
+    });
+  });
+
+  testWidgets('Compras: the single Tipo chip sits on the right', (tester) async {
+    await db.into(db.purchases).insert(
+      PurchasesCompanion.insert(
+        isMaterial: const Value(false),
+        description: const Value('Algo'),
+        totalAmount: 5,
+        date: now,
+      ),
+    );
+    await pump(tester, const PurchasesListBody());
+    final chip = tester.getRect(find.text('Tipo').first);
+    final screen = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    // Pegado al margen derecho (16), no centrado.
+    expect(chip.right, greaterThan(screen * 0.8));
+    expect(chip.left, greaterThan(screen / 2));
+  });
 }

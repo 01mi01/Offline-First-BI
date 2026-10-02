@@ -58,14 +58,15 @@ class ReportService {
       if (filters.startDate != null && s.date.isBefore(filters.startDate!)) {
         return false;
       }
-      if (filters.endDate != null) {
+      if (filters.effectiveEndDate != null) {
         // Límite superior exclusivo: el inicio del día siguiente a endDate.
         // Se trunca a fecha (sin hora) para que endDate incluya ese día
-        // completo sin importar la hora exacta de s.date.
+        // completo sin importar la hora exacta de s.date. Con solo "Desde" el
+        // fin es ese mismo día.
         final endExclusive = DateTime(
-          filters.endDate!.year,
-          filters.endDate!.month,
-          filters.endDate!.day + 1,
+          filters.effectiveEndDate!.year,
+          filters.effectiveEndDate!.month,
+          filters.effectiveEndDate!.day + 1,
         );
         if (!s.date.isBefore(endExclusive)) return false;
       }
@@ -136,11 +137,11 @@ class ReportService {
       if (filters.startDate != null && p.date.isBefore(filters.startDate!)) {
         return false;
       }
-      if (filters.endDate != null) {
+      if (filters.effectiveEndDate != null) {
         final endExclusive = DateTime(
-          filters.endDate!.year,
-          filters.endDate!.month,
-          filters.endDate!.day + 1,
+          filters.effectiveEndDate!.year,
+          filters.effectiveEndDate!.month,
+          filters.effectiveEndDate!.day + 1,
         );
         if (!p.date.isBefore(endExclusive)) return false;
       }

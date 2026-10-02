@@ -5,6 +5,7 @@ import '../../application/sale_provider.dart';
 import '../../application/search_filter.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/searchable_picker.dart';
+import '../widgets/transaction_date_field.dart';
 import '../../application/client_provider.dart';
 import '../../application/product_provider.dart';
 import '../../application/location_provider.dart';
@@ -45,6 +46,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   int? _selectedLocationId;
   int? _selectedEventId;
   String? _error;
+  // Fecha de la venta: hoy por defecto, pero se puede registrar una pasada o
+  // futura. Si no se toca, una venta nueva toma el momento de guardarla.
+  late DateTime _date = widget.sale?.date ?? DateTime.now();
+  bool _dateChanged = false;
 
   @override
   void initState() {
@@ -193,7 +198,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
             totalAmount: _subtotal,
             discount: discount,
             finalAmount: _total,
-            date: DateTime.now(),
+            date: _dateChanged ? _date : DateTime.now(),
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -210,7 +215,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
             totalAmount: _subtotal,
             discount: discount,
             finalAmount: _total,
-            date: widget.sale!.date,
+            date: _date,
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -398,6 +403,16 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       ],
                       onChanged: (val) =>
                           setState(() => _selectedEventId = val),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // Fecha de la venta (sin límite: pasada, hoy o futura)
+                    TransactionDateField(
+                      date: _date,
+                      onChanged: (value) => setState(() {
+                        _date = value;
+                        _dateChanged = true;
+                      }),
                     ),
                     const SizedBox(height: AppSpacing.s20),
 

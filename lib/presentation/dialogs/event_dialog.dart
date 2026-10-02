@@ -8,6 +8,7 @@ import 'location_dialog.dart';
 import '../../config/date_formatters.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
+import '../widgets/transaction_date_field.dart';
 
 class EventDialog extends ConsumerStatefulWidget {
   final EventModel? event;
@@ -51,8 +52,8 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
+      firstDate: transactionFirstDate,
+      lastDate: transactionLastDate,
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,
@@ -74,8 +75,8 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _endDate ?? _startDate ?? DateTime.now(),
-      firstDate: _startDate ?? DateTime(2020),
-      lastDate: DateTime(2100),
+      firstDate: _startDate ?? transactionFirstDate,
+      lastDate: transactionLastDate,
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,

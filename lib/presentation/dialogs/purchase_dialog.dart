@@ -16,6 +16,7 @@ import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
 import '../widgets/focus_utils.dart';
 import '../widgets/searchable_picker.dart';
+import '../widgets/transaction_date_field.dart';
 import '../../models/default_records.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
@@ -45,6 +46,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   // solo el monto de la compra; el stock y el precio de cada material siguen
   // saliendo de los ítems.
   bool _totalOverridden = false;
+  // Fecha de la compra: hoy por defecto, pero se puede registrar una pasada o
+  // futura. Si no se toca, una compra nueva toma el momento de guardarla.
+  late DateTime _date = widget.purchase?.date ?? DateTime.now();
+  bool _dateChanged = false;
 
   @override
   void initState() {
@@ -222,7 +227,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ? null
                 : _descriptionController.text.trim(),
             totalAmount: total,
-            date: DateTime.now(),
+            date: _dateChanged ? _date : DateTime.now(),
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -241,7 +246,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ? null
                 : _descriptionController.text.trim(),
             totalAmount: total,
-            date: widget.purchase!.date,
+            date: _date,
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -494,6 +499,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         ],
                         onChanged: (val) =>
                             setState(() => _selectedEventId = val),
+                      ),
+                      const SizedBox(height: AppSpacing.s16),
+
+                      // Fecha de la compra (sin límite: pasada, hoy o futura)
+                      TransactionDateField(
+                        date: _date,
+                        onChanged: (value) => setState(() {
+                          _date = value;
+                          _dateChanged = true;
+                        }),
                       ),
                       const SizedBox(height: AppSpacing.s20),
 

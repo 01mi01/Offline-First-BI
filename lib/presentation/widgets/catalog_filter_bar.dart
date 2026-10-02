@@ -169,18 +169,20 @@ class FilterChipRow extends StatelessWidget {
 
   const FilterChipRow({super.key, required this.chips});
 
+  // Alineados a la derecha, igual que el chip de estado de las demás listas;
+  // si no caben en una línea pasan a la siguiente.
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-      child: Row(
-        children: [
-          for (var i = 0; i < chips.length; i++) ...[
-            if (i > 0) const SizedBox(width: AppSpacing.s8),
-            chips[i],
-          ],
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          spacing: AppSpacing.s8,
+          runSpacing: AppSpacing.s8,
+          children: chips,
+        ),
       ),
     );
   }

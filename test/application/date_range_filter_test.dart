@@ -154,13 +154,26 @@ void main() {
       expect(r.matches(DateTime(2026, 9, 13)), isFalse);
     });
 
-    test('only Desde or only Hasta leave the other side open', () {
+    test('only Desde filters that single day; only Hasta leaves the start open', () {
       final from = DateRangeFilter(from: DateTime(2026, 9, 10));
-      expect(from.matches(DateTime(2030)), isTrue);
-      expect(from.matches(DateTime(2026, 9, 9)), isFalse);
+      expect(from.effectiveTo, DateTime(2026, 9, 10));
+      expect(from.matches(DateTime(2026, 9, 9, 23, 59)), isFalse);
+      expect(from.matches(DateTime(2026, 9, 10, 0, 0)), isTrue);
+      expect(from.matches(DateTime(2026, 9, 10, 23, 59)), isTrue);
+      expect(from.matches(DateTime(2026, 9, 11)), isFalse);
+      expect(from.matches(DateTime(2030)), isFalse);
+
       final to = DateRangeFilter(to: DateTime(2026, 9, 10));
       expect(to.matches(DateTime(2020)), isTrue);
       expect(to.matches(DateTime(2026, 9, 11)), isFalse);
+    });
+
+    test('with only Desde a multi-day event matches if it covers that day', () {
+      final r = DateRangeFilter(from: DateTime(2026, 9, 12));
+      expect(r.overlaps(DateTime(2026, 9, 10), DateTime(2026, 9, 14)), isTrue);
+      expect(r.overlaps(DateTime(2026, 9, 12), null), isTrue);
+      expect(r.overlaps(DateTime(2026, 9, 1), DateTime(2026, 9, 11)), isFalse);
+      expect(r.overlaps(DateTime(2026, 9, 13), DateTime(2026, 9, 20)), isFalse);
     });
 
     test('a multi-day event matches when any of its days is in range', () {
