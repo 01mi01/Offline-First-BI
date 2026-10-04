@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'bi_models.dart' show coPurchaseMinSales;
 import 'report_filters.dart';
 
 // Configuración de Business Intelligence: qué periodo y filtros se aplican,
@@ -157,6 +158,102 @@ enum BiIndicator {
         'evento, dentro del periodo.\n\n'
         'Para qué sirve: responder si vale la pena asistir a eventos. Es una '
         'comparación orientativa: no descuenta lo que cuesta ir al evento.',
+  ),
+  coPurchase(
+    group: BiGroup.ventas,
+    title: 'Productos comprados juntos',
+    description: 'Qué productos suelen venderse en la misma venta',
+    chartTypes: [BiChartType.list, BiChartType.bar],
+    info:
+        'Qué muestra: los pares de productos que aparecen juntos en una misma '
+        'venta, con el número de ventas que incluyen a ambos y el porcentaje '
+        'que eso representa sobre todas las ventas del periodo. Solo cuentan '
+        'las ventas con 2 o más productos distintos, y solo se muestran los '
+        'pares que coinciden en al menos $coPurchaseMinSales ventas, para no '
+        'confundir una casualidad con un patrón. Respeta el periodo, el '
+        'evento y la ubicación elegidos; si filtras por producto, categoría o '
+        'tipo de precio, se consideran las ventas que incluyen ese producto, '
+        'con todos sus productos.\n\n'
+        'Para qué sirve: descubrir qué productos se llevan juntos para armar '
+        'combos, ofrecerlos uno junto al otro o exhibirlos cerca.',
+  ),
+  weekdaySales(
+    group: BiGroup.ventas,
+    title: 'Ventas por día de la semana',
+    description: 'Ingresos y número de ventas de lunes a domingo',
+    chartTypes: [BiChartType.bar, BiChartType.line],
+    info:
+        'Qué muestra: los ingresos (ya descontados los descuentos) y el número '
+        'de ventas de cada día de la semana, de lunes a domingo, sumando todo '
+        'el periodo. Cada venta cuenta en el día de su propia fecha. Puedes '
+        'alternar entre ingresos y número de ventas.\n\n'
+        'Para qué sirve: saber qué días se vende más y cuáles menos, para '
+        'planificar cuándo producir, abrir o asistir a una feria.',
+  ),
+  averageTicket(
+    group: BiGroup.ventas,
+    title: 'Ticket promedio',
+    description: 'Cuánto se vende en promedio por cada venta',
+    chartTypes: [BiChartType.cards, BiChartType.line],
+    info:
+        'Qué muestra: el monto promedio de cada venta del periodo (ingresos '
+        'después de descuentos ÷ número de ventas) y cómo cambia en el '
+        'tiempo, con los mismos intervalos (día, semana o mes) que '
+        'Evolución en el tiempo.\n\n'
+        'Para qué sirve: saber si las ventas son cada vez más grandes o más '
+        'chicas. Subir el ticket (con combos o sugiriendo un producto más) '
+        'aumenta los ingresos sin necesitar más clientes.',
+  ),
+  eventProfit(
+    group: BiGroup.ventas,
+    title: 'Rentabilidad por evento',
+    description: 'Lo que dejó cada evento después de sus gastos',
+    chartTypes: [BiChartType.bar, BiChartType.list],
+    info:
+        'Qué muestra: por cada evento, los ingresos de sus ventas vinculadas '
+        'menos el total de TODAS las compras vinculadas a ese evento: tanto '
+        'los gastos generales (hotel, pasajes, participación en la feria...) '
+        'como las compras de materiales. Cada venta y cada compra cuenta por '
+        'su propia fecha dentro del periodo elegido, no por la fecha del '
+        'evento. Se incluyen todas las compras vinculadas aunque filtres por '
+        'tipo de operación o proveedor. Las pérdidas aparecen en rojo.\n\n'
+        'No descuenta el costo de producción de lo vendido ni las compras que '
+        'no se vincularon al evento.\n\n'
+        'Para qué sirve: saber si cada evento valió la pena después de pagar '
+        'lo que costó asistir.',
+  ),
+  discountImpact(
+    group: BiGroup.ventas,
+    title: 'Impacto de los descuentos',
+    description: 'Cuánto se dejó de cobrar en descuentos',
+    chartTypes: [BiChartType.cards, BiChartType.line],
+    info:
+        'Qué muestra: el total de descuentos dados en el periodo, como monto '
+        'y como porcentaje de las ventas brutas (antes de descontar), y cómo '
+        'evolucionan en el tiempo con los mismos intervalos que Evolución en '
+        'el tiempo.\n\n'
+        'Para qué sirve: ver cuánto dinero se cede en descuentos y si pesan '
+        'demasiado sobre lo que se vende.',
+  ),
+  costReturn(
+    group: BiGroup.ventas,
+    title: 'Retorno sobre el costo de producción',
+    description: 'Ganancia por cada Bs. 1 de costo de producción',
+    chartTypes: [BiChartType.bar, BiChartType.list],
+    info:
+        'Qué muestra: para cada producto vendido, cuánto ganaste por cada '
+        'Bs. 1 que costó producirlo: (ingresos después de descuentos − costo '
+        'de producción × unidades vendidas) ÷ (costo de producción × '
+        'unidades vendidas). Se ordena del mejor al peor retorno y las '
+        'pérdidas aparecen en rojo. Los productos sin costo de producción '
+        'registrado no aparecen; se indica cuántos quedaron fuera.\n\n'
+        'Importante: el resultado depende del costo de producción manual, '
+        'que fija el propietario y que puede incluir o no materiales, mano de '
+        'obra y tiempo. Además usa el costo actual del producto, no el costo '
+        'que tenía cuando se hizo cada venta. No usa precios ni cantidades de '
+        'materiales.\n\n'
+        'Para qué sirve: ver qué productos devuelven más por cada boliviano '
+        'invertido en producirlos, no solo cuáles venden más.',
   ),
   purchasesByMaterial(
     group: BiGroup.compras,

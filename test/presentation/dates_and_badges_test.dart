@@ -84,7 +84,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Collar',
+          name: 'Tote bag negra',
           priceA: 10,
           priceB: 10,
           stock: const Value(5),
@@ -111,9 +111,9 @@ void main() {
 
     testWidgets('events list: a single day and a range use dd/MM/yyyy', (tester) async {
       final repository = EventRepository(db);
-      await repository.save(name: 'Feria', startDate: DateTime(2024, 3, 5));
+      await repository.save(name: 'Feria de Arte', startDate: DateTime(2024, 3, 5));
       await repository.save(
-        name: 'Expo',
+        name: 'Exposición de Arte',
         startDate: DateTime(2024, 4, 5),
         endDate: DateTime(2024, 4, 7),
       );
@@ -186,8 +186,8 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         final repository = CategoryRepository(db);
-        await repository.save(name: 'Bisutería');
-        await repository.save(name: 'Vieja', isActive: false);
+        await repository.save(name: 'Pines');
+        await repository.save(name: 'Libros', isActive: false);
 
         await tester.pumpWidget(
           ProviderScope(

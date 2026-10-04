@@ -394,6 +394,152 @@ class _RankingRow extends StatelessWidget {
   }
 }
 
+// Una fila de [BiSignedBars]: nombre, valor (con su texto) y líneas de detalle.
+class BiBarItem {
+  final String label;
+  final List<String> details;
+  final double value;
+  final String valueLabel;
+
+  const BiBarItem({
+    required this.label,
+    required this.value,
+    required this.valueLabel,
+    this.details = const [],
+  });
+}
+
+// Barras horizontales que admiten valores negativos (pérdidas): el cero queda
+// donde corresponde, las barras positivas toman los colores de la paleta (en
+// orden, repetidos a partir de la sexta) y las negativas salen en rojo, igual
+// que su valor. Muestra todas las filas, en el orden recibido: recortar una
+// lista ordenada ocultaría justo las peores.
+class BiSignedBars extends StatelessWidget {
+  final List<BiBarItem> items;
+
+  const BiSignedBars({super.key, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const BiEmptyState();
+    final maxPositive = items.fold(0.0, (m, i) => math.max(m, i.value));
+    final maxNegative = items.fold(0.0, (m, i) => math.max(m, -i.value));
+    final span = maxPositive + maxNegative;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < items.length; i++)
+          Padding(
+            padding: EdgeInsets.only(bottom: i == items.length - 1 ? 0 : 12),
+            child: _SignedBarRow(
+              index: i,
+              item: items[i],
+              maxNegative: maxNegative,
+              span: span,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _SignedBarRow extends StatelessWidget {
+  final int index;
+  final BiBarItem item;
+  final double maxNegative;
+  final double span;
+
+  const _SignedBarRow({
+    required this.index,
+    required this.item,
+    required this.maxNegative,
+    required this.span,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = Theme.of(
+      context,
+    ).textTheme.labelMedium?.copyWith(color: AppColors.textPrimary);
+    final detailStyle = Theme.of(
+      context,
+    ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary);
+    final isLoss = item.value < 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s8),
+            Text(
+              item.valueLabel,
+              key: ValueKey('bi-bar-value-$index'),
+              style: labelStyle?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isLoss ? AppColors.error : AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        for (final detail in item.details) Text(detail, style: detailStyle),
+        const SizedBox(height: AppSpacing.s4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            height: 10,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final scale = span > 0 ? width / span : 0.0;
+                final zeroX = maxNegative * scale;
+                var barWidth = item.value.abs() * scale;
+                if (item.value != 0 && barWidth < 3) barWidth = 3;
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Container(color: AppColors.background),
+                    ),
+                    if (maxNegative > 0)
+                      Positioned(
+                        left: zeroX,
+                        top: 0,
+                        bottom: 0,
+                        width: 1,
+                        child: Container(color: AppColors.textSecondary),
+                      ),
+                    if (item.value != 0)
+                      Positioned(
+                        left: isLoss ? zeroX - barWidth : zeroX,
+                        top: 0,
+                        bottom: 0,
+                        width: barWidth,
+                        child: Container(
+                          key: ValueKey('bi-bar-$index'),
+                          color: isLoss ? AppColors.error : chartColorAt(index),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // Interruptor pequeño entre dos métricas de un mismo gráfico (p. ej. ingresos
 // o unidades), con el estilo de los chips de Reportes.
 class BiMetricToggle extends StatelessWidget {

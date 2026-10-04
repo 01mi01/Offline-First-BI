@@ -50,7 +50,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Producto Test',
+        name: 'Libro',
         priceA: 20,
         priceB: 20,
         stock: const Value(50),
@@ -101,7 +101,7 @@ void main() {
   group('Venta', () {
     Future<void> sellWith(WidgetTester tester, DateTime? date) async {
       await openSheet(tester, const SaleDialog());
-      await searchProducts(tester, 'Producto');
+      await searchProducts(tester, 'Libro');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       if (date != null) {
@@ -117,7 +117,7 @@ void main() {
     ) async {
       await openSheet(tester, const SaleDialog());
       expect(find.text('Fecha: ${formatDate(today)}'), findsOneWidget);
-      await searchProducts(tester, 'Producto');
+      await searchProducts(tester, 'Libro');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       await tapText(tester, 'Registrar venta');
@@ -145,7 +145,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Descripción del gasto'),
-        'Transporte',
+        'Pasaje de bus',
       );
       await tester.enterText(find.widgetWithText(TextFormField, 'Total (Bs.)'), '15');
       await tester.pumpAndSettle();
@@ -181,7 +181,7 @@ void main() {
       await openSheet(tester, const EventDialog());
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Nombre del evento'),
-        'Feria',
+        'Feria de Arte',
       );
       await tapText(tester, 'Fecha de inicio');
       await _typeDate(tester, date);

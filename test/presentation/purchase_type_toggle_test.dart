@@ -118,7 +118,7 @@ void main() {
       purchase: PurchaseModel(
         id: 1,
         isMaterial: false,
-        description: 'Alquiler',
+        description: 'Participación en feria',
         totalAmount: 50,
         date: DateTime(2024, 3, 5),
         createdAt: DateTime(2024, 3, 5),

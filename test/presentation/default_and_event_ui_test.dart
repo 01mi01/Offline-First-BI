@@ -75,7 +75,7 @@ void main() {
   Future<void> seedProduct() => db.into(db.products).insert(
     ProductsCompanion.insert(
       categoryId: 1,
-      name: 'Collar',
+      name: 'Tote bag negra',
       priceA: 10,
       priceB: 10,
       stock: const Value(5),
@@ -86,11 +86,11 @@ void main() {
     testWidgets('categories: "Sin categoría" is locked, the others stay editable', (
       tester,
     ) async {
-      await CategoryRepository(db).save(name: 'Bisutería');
+      await CategoryRepository(db).save(name: 'Pines');
       await pumpApp(tester, const CategoriesPage());
 
       expect(find.text('Sin categoría'), findsOneWidget);
-      expect(find.text('Bisutería'), findsOneWidget);
+      expect(find.text('Pines'), findsOneWidget);
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
     });
@@ -98,7 +98,7 @@ void main() {
     testWidgets('clients: the default client is locked, the others stay editable', (
       tester,
     ) async {
-      await ClientRepository(db).save(name: 'Maria');
+      await ClientRepository(db).save(name: 'Michael Brown');
       await pumpApp(tester, const ClientsPage());
 
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
@@ -108,7 +108,7 @@ void main() {
     testWidgets('suppliers: "Sin proveedor" is locked, the others stay editable', (
       tester,
     ) async {
-      await SupplierRepository(db).save(name: 'Andino');
+      await SupplierRepository(db).save(name: 'Riverside Supply Co.');
       await pumpApp(tester, const SuppliersPage());
 
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
@@ -131,7 +131,7 @@ void main() {
           findsOneWidget,
         );
 
-        await searchProducts(tester, 'Collar'); // la lista aparece al escribir
+        await searchProducts(tester, 'Tote bag negra'); // la lista aparece al escribir
         await tester.tap(find.byIcon(Icons.add)); // agrega el producto
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Registrar venta'));
@@ -152,7 +152,7 @@ void main() {
       'sale form: the default client is offered once ("Sin nombre"), next to '
       'the real clients',
       (tester) async {
-        await ClientRepository(db).save(name: 'Maria');
+        await ClientRepository(db).save(name: 'Michael Brown');
         await openSheet(tester, const SaleDialog());
 
         await tester.tap(find.byType(SearchablePickerField<int>).first);
@@ -162,12 +162,12 @@ void main() {
         // no hay una tercera fila "Sin nombre" duplicada. Los clientes reales
         // no se listan hasta escribir.
         expect(find.text('Sin nombre'), findsNWidgets(2));
-        expect(find.text('Maria'), findsNothing);
+        expect(find.text('Michael Brown'), findsNothing);
         expect(find.text('Escribe para buscar'), findsOneWidget);
 
-        await tester.enterText(find.byType(TextField).last, 'mar');
+        await tester.enterText(find.byType(TextField).last, 'mic');
         await tester.pumpAndSettle();
-        expect(find.text('Maria'), findsOneWidget);
+        expect(find.text('Michael Brown'), findsOneWidget);
         expect(find.text('Sin nombre'), findsOneWidget); // ya solo el del campo
       },
     );
@@ -189,7 +189,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Descripción del gasto'),
-          'Alquiler',
+          'Participación en feria',
         );
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Total (Bs.)'),
@@ -212,15 +212,15 @@ void main() {
   group('deactivating an event', () {
     Future<void> seedEvents() async {
       final repository = EventRepository(db);
-      await repository.save(name: 'Feria', startDate: DateTime(2024, 3, 5));
-      await repository.save(name: 'Expo', startDate: DateTime(2024, 4, 5));
+      await repository.save(name: 'Feria de Arte', startDate: DateTime(2024, 3, 5));
+      await repository.save(name: 'Exposición de Arte', startDate: DateTime(2024, 4, 5));
     }
 
     testWidgets(
       'asks for confirmation, keeps the record, and the list marks it "Inactivo"',
       (tester) async {
         await seedEvents();
-        final expo = (await EventRepository(db).getAll()).firstWhere((e) => e.name == 'Expo');
+        final expo = (await EventRepository(db).getAll()).firstWhere((e) => e.name == 'Exposición de Arte');
 
         await openSheet(tester, EventDialog(event: expo));
         expect(find.text('Evento activo'), findsOneWidget);
@@ -237,13 +237,13 @@ void main() {
 
         final events = await EventRepository(db).getAll();
         expect(events, hasLength(2)); // no se borra
-        expect(events.firstWhere((e) => e.name == 'Expo').isActive, isFalse);
-        expect(events.firstWhere((e) => e.name == 'Feria').isActive, isTrue);
+        expect(events.firstWhere((e) => e.name == 'Exposición de Arte').isActive, isFalse);
+        expect(events.firstWhere((e) => e.name == 'Feria de Arte').isActive, isTrue);
 
         // La lista sigue mostrando ambos, con su estado.
         await pumpApp(tester, const EventsPage());
-        expect(find.text('Expo'), findsOneWidget);
-        expect(find.text('Feria'), findsOneWidget);
+        expect(find.text('Exposición de Arte'), findsOneWidget);
+        expect(find.text('Feria de Arte'), findsOneWidget);
         expect(find.text('Inactivo'), findsOneWidget);
         expect(find.text('Activo'), findsOneWidget);
       },
@@ -253,7 +253,7 @@ void main() {
       tester,
     ) async {
       await seedEvents();
-      final expo = (await EventRepository(db).getAll()).firstWhere((e) => e.name == 'Expo');
+      final expo = (await EventRepository(db).getAll()).firstWhere((e) => e.name == 'Exposición de Arte');
       await openSheet(tester, EventDialog(event: expo));
 
       await tester.tap(find.byType(Switch));
@@ -276,10 +276,10 @@ void main() {
     ) async {
       await seedEvents();
       final repository = EventRepository(db);
-      final expo = (await repository.getAll()).firstWhere((e) => e.name == 'Expo');
+      final expo = (await repository.getAll()).firstWhere((e) => e.name == 'Exposición de Arte');
       await repository.save(
         id: expo.id,
-        name: 'Expo',
+        name: 'Exposición de Arte',
         startDate: expo.startDate,
         isActive: false,
       );
@@ -290,8 +290,8 @@ void main() {
       await tester.ensureVisible(saleEventField);
       await tester.tap(saleEventField);
       await tester.pumpAndSettle();
-      expect(find.text('Feria'), findsOneWidget);
-      expect(find.text('Expo'), findsNothing);
+      expect(find.text('Feria de Arte'), findsOneWidget);
+      expect(find.text('Exposición de Arte'), findsNothing);
     });
 
     testWidgets('purchases: the event picker also hides the inactive event', (
@@ -299,10 +299,10 @@ void main() {
     ) async {
       await seedEvents();
       final repository = EventRepository(db);
-      final expo = (await repository.getAll()).firstWhere((e) => e.name == 'Expo');
+      final expo = (await repository.getAll()).firstWhere((e) => e.name == 'Exposición de Arte');
       await repository.save(
         id: expo.id,
-        name: 'Expo',
+        name: 'Exposición de Arte',
         startDate: expo.startDate,
         isActive: false,
       );
@@ -313,8 +313,8 @@ void main() {
       await tester.ensureVisible(purchaseEventField);
       await tester.tap(purchaseEventField);
       await tester.pumpAndSettle();
-      expect(find.text('Feria'), findsOneWidget);
-      expect(find.text('Expo'), findsNothing);
+      expect(find.text('Feria de Arte'), findsOneWidget);
+      expect(find.text('Exposición de Arte'), findsNothing);
     });
 
     testWidgets(
@@ -323,7 +323,7 @@ void main() {
       (tester) async {
         await seedEvents();
         final repository = EventRepository(db);
-        final expo = (await repository.getAll()).firstWhere((e) => e.name == 'Expo');
+        final expo = (await repository.getAll()).firstWhere((e) => e.name == 'Exposición de Arte');
         await seedProduct();
         await SaleRepository(db).createSale(
           clientId: null,
@@ -339,7 +339,7 @@ void main() {
         );
         await repository.save(
           id: expo.id,
-          name: 'Expo',
+          name: 'Exposición de Arte',
           startDate: expo.startDate,
           isActive: false,
         );
@@ -348,7 +348,7 @@ void main() {
         await openSheet(tester, SaleDialog(sale: sale));
 
         final eventField = find.byType(DropdownButtonFormField<int>).at(1);
-        expect(find.descendant(of: eventField, matching: find.text('Expo')), findsOneWidget);
+        expect(find.descendant(of: eventField, matching: find.text('Exposición de Arte')), findsOneWidget);
       },
     );
   });

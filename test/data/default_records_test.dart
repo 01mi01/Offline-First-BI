@@ -94,20 +94,20 @@ void main() {
         );
       }
       // Renombrar otra categoría a ese nombre tampoco vale.
-      await repository.save(name: 'Bisutería');
-      final bisuteria = await categoryNamed('Bisutería');
+      await repository.save(name: 'Pines');
+      final pines = await categoryNamed('Pines');
       await expectLater(
-        repository.save(id: bisuteria.id, name: 'Sin categoría'),
+        repository.save(id: pines.id, name: 'Sin categoría'),
         throwsA(isA<ProtectedRecordException>()),
       );
     });
 
     test('other categories are still editable and deactivatable', () async {
-      await repository.save(name: 'Bisutería');
-      final bisuteria = await categoryNamed('Bisutería');
-      await repository.save(id: bisuteria.id, name: 'Joyería');
-      await repository.deactivate((await categoryNamed('Joyería')).id);
-      expect((await categoryNamed('Joyería')).isActive, isFalse);
+      await repository.save(name: 'Pines');
+      final pines = await categoryNamed('Pines');
+      await repository.save(id: pines.id, name: 'Bolsas');
+      await repository.deactivate((await categoryNamed('Bolsas')).id);
+      expect((await categoryNamed('Bolsas')).isActive, isFalse);
     });
 
     test('the provider surfaces the protection as an error message, not a crash', () async {
@@ -135,7 +135,7 @@ void main() {
 
     test('it cannot be renamed, edited or deactivated', () async {
       await expectLater(
-        repository.save(id: defaultId, name: 'Otro nombre'),
+        repository.save(id: defaultId, name: 'Robert Clark'),
         throwsA(isA<ProtectedRecordException>()),
       );
       await expectLater(
@@ -159,10 +159,10 @@ void main() {
     });
 
     test('other clients are still editable and deactivatable', () async {
-      final id = await repository.save(name: 'Maria');
-      await repository.save(id: id, name: 'Maria P.', isActive: false);
+      final id = await repository.save(name: 'Michael Brown');
+      await repository.save(id: id, name: 'Michael Brown P.', isActive: false);
       final row = await (db.select(db.clients)..where((c) => c.id.equals(id))).getSingle();
-      expect(row.name, 'Maria P.');
+      expect(row.name, 'Michael Brown P.');
       expect(row.isActive, isFalse);
     });
 
@@ -174,7 +174,7 @@ void main() {
 
       final error = await container
           .read(clientProvider.notifier)
-          .save(id: defaultId, name: 'Renombrado');
+          .save(id: defaultId, name: 'Robert Clark');
 
       expect(error, DefaultRecords.protectedClientMessage);
     });
@@ -191,7 +191,7 @@ void main() {
 
     test('it cannot be renamed, edited or deactivated', () async {
       await expectLater(
-        repository.save(id: defaultId, name: 'Otro proveedor'),
+        repository.save(id: defaultId, name: 'Monroe Studio'),
         throwsA(isA<ProtectedRecordException>()),
       );
       await expectLater(
@@ -215,10 +215,10 @@ void main() {
     });
 
     test('other suppliers are still editable and deactivatable', () async {
-      final id = await repository.save(name: 'Andino');
-      await repository.save(id: id, name: 'Andino SRL', isActive: false);
+      final id = await repository.save(name: 'Riverside Supply Co.');
+      await repository.save(id: id, name: 'Crestview Supply', isActive: false);
       final row = await (db.select(db.suppliers)..where((s) => s.id.equals(id))).getSingle();
-      expect(row.name, 'Andino SRL');
+      expect(row.name, 'Crestview Supply');
       expect(row.isActive, isFalse);
     });
 
@@ -230,7 +230,7 @@ void main() {
 
       final error = await container
           .read(supplierProvider.notifier)
-          .save(id: defaultId, name: 'Renombrado');
+          .save(id: defaultId, name: 'Northgate Trading');
 
       expect(error, DefaultRecords.protectedSupplierMessage);
     });
@@ -243,7 +243,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Collar',
+          name: 'Tote bag negra',
           priceA: 10,
           priceB: 10,
           stock: const Value(5),
@@ -270,11 +270,11 @@ void main() {
     test('editing a sale and leaving the client empty keeps it on the default client', () async {
       final repository = SaleRepository(db);
       final defaultId = (await clientNamed(DefaultRecords.client)).id;
-      final other = await ClientRepository(db).save(name: 'Maria');
+      final other = await ClientRepository(db).save(name: 'Michael Brown');
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Collar',
+          name: 'Tote bag negra',
           priceA: 10,
           priceB: 10,
           stock: const Value(5),
@@ -319,7 +319,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Collar',
+          name: 'Tote bag negra',
           priceA: 10,
           priceB: 10,
           stock: const Value(5),
@@ -350,7 +350,7 @@ void main() {
       await repository.createPurchase(
         supplierId: null,
         isMaterial: false,
-        description: 'Alquiler',
+        description: 'Participación en feria',
         totalAmount: 50,
         date: DateTime(2024, 1, 1),
         locationId: null,
@@ -365,7 +365,7 @@ void main() {
       final defaultId = (await categoryNamed(DefaultRecords.category)).id;
 
       await ProductRepository(db).save(
-        name: 'Collar',
+        name: 'Tote bag negra',
         priceA: 10,
         priceB: 8,
         stock: 1,
@@ -392,28 +392,28 @@ void main() {
         );
 
     test('a new event is active by default', () async {
-      await saveEvent('Feria');
+      await saveEvent('Feria de Arte');
       expect((await repository.getAll()).single.isActive, isTrue);
     });
 
     test('deactivating keeps the record (no hard delete) with its data', () async {
-      await saveEvent('Feria');
+      await saveEvent('Feria de Arte');
       final event = (await repository.getAll()).single;
 
-      await saveEvent('Feria', id: event.id, isActive: false);
+      await saveEvent('Feria de Arte', id: event.id, isActive: false);
 
       final all = await repository.getAll();
       expect(all, hasLength(1)); // sigue existiendo
       expect(all.single.id, event.id);
       expect(all.single.isActive, isFalse);
-      expect(all.single.name, 'Feria');
+      expect(all.single.name, 'Feria de Arte');
     });
 
     test('an event can be reactivated', () async {
-      await saveEvent('Feria');
+      await saveEvent('Feria de Arte');
       final id = (await repository.getAll()).single.id;
-      await saveEvent('Feria', id: id, isActive: false);
-      await saveEvent('Feria', id: id, isActive: true);
+      await saveEvent('Feria de Arte', id: id, isActive: false);
+      await saveEvent('Feria de Arte', id: id, isActive: true);
 
       expect((await repository.getAll()).single.isActive, isTrue);
     });
@@ -425,20 +425,20 @@ void main() {
       addTearDown(container.dispose);
       final notifier = container.read(eventProvider.notifier);
       await notifier.load();
-      await notifier.save(name: 'Feria', startDate: DateTime(2024, 3, 5));
-      await notifier.save(name: 'Expo', startDate: DateTime(2024, 4, 5));
-      final expo = container.read(eventProvider).events.firstWhere((e) => e.name == 'Expo');
+      await notifier.save(name: 'Feria de Arte', startDate: DateTime(2024, 3, 5));
+      await notifier.save(name: 'Exposición de Arte', startDate: DateTime(2024, 4, 5));
+      final expo = container.read(eventProvider).events.firstWhere((e) => e.name == 'Exposición de Arte');
 
       await notifier.save(
         id: expo.id,
-        name: 'Expo',
+        name: 'Exposición de Arte',
         startDate: DateTime(2024, 4, 5),
         isActive: false,
       );
 
       final events = container.read(eventProvider).events;
       expect(events, hasLength(2));
-      expect(events.where((e) => e.isActive).map((e) => e.name), ['Feria']);
+      expect(events.where((e) => e.isActive).map((e) => e.name), ['Feria de Arte']);
     });
   });
 }

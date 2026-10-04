@@ -103,19 +103,19 @@ void main() {
   final fullSaleRows = [
     SaleReportRow(
       sale: buildSale(1, DateTime(2024, 1, 1), 200, 0),
-      clientName: 'Ana (incluida)',
-      locationName: 'La Paz, Bolivia',
-      eventName: 'Feria Enero',
+      clientName: 'John Smith (incluida)',
+      locationName: 'La Paz - Calacoto, Bolivia',
+      eventName: 'Feria del Libro Cochabamba',
     ),
     SaleReportRow(
       sale: buildSale(2, DateTime(2024, 2, 10), 999, 0),
-      clientName: 'Beto (excluido del filtro)',
-      locationName: 'Cochabamba, Bolivia',
-      eventName: 'Expo',
+      clientName: 'Emily Johnson (excluido del filtro)',
+      locationName: 'Santa Cruz - Equipetrol, Bolivia',
+      eventName: 'Exposición de Arte',
     ),
     SaleReportRow(
       sale: buildSale(3, DateTime(2024, 1, 15), 40, 5),
-      clientName: 'Carla (excluida del filtro)',
+      clientName: 'Ana Martínez (excluida del filtro)',
       locationName: null,
       eventName: null,
     ),
@@ -128,15 +128,15 @@ void main() {
   final fullPurchaseRows = [
     PurchaseReportRow(
       purchase: buildPurchase(1, DateTime(2024, 1, 1), 100),
-      supplierName: 'Proveedor Andino (incluido)',
-      locationName: 'La Paz, Bolivia',
-      eventName: 'Feria Enero',
+      supplierName: 'Riverside Supply Co. (incluido)',
+      locationName: 'La Paz - Calacoto, Bolivia',
+      eventName: 'Feria del Libro Cochabamba',
     ),
     PurchaseReportRow(
       purchase: buildPurchase(2, DateTime(2024, 2, 10), 500),
-      supplierName: 'Proveedor Valle (excluido del filtro)',
-      locationName: 'Cochabamba, Bolivia',
-      eventName: 'Expo',
+      supplierName: 'Harbor Textiles (excluido del filtro)',
+      locationName: 'Santa Cruz - Equipetrol, Bolivia',
+      eventName: 'Exposición de Arte',
     ),
   ];
   final filteredPurchaseRows = [fullPurchaseRows.first];
@@ -173,7 +173,7 @@ void main() {
       // Solo debe haber 1 fila de datos (la filtrada), no las 3 del dataset completo.
       expect(rows.length, 2);
       final dataRow = rows[1];
-      expect(dataRow[1]!.value, xl.TextCellValue('Ana (incluida)'));
+      expect(dataRow[1]!.value, xl.TextCellValue('John Smith (incluida)'));
       expect(_cellNum(dataRow[6]!.value), 200);
 
       // Los clientes excluidos por el filtro no deben aparecer en ninguna celda.
@@ -197,17 +197,17 @@ void main() {
 
   group('exportSalesExcel with per-line filtering', () {
     // Venta mixta de 120 (descuento 12) filtrada a "Sin categoría": solo la
-    // línea Marcador (20, con 2 de descuento) debe salir en el reporte.
-    SaleReportRow mixedSaleFilteredToMarcador() => SaleReportRow(
+    // línea Pines grandes (20, con 2 de descuento) debe salir en el reporte.
+    SaleReportRow mixedSaleFilteredToPinesGrandes() => SaleReportRow(
       sale: buildSale(1, DateTime(2024, 1, 10), 108, 12),
-      clientName: 'Ana',
+      clientName: 'John Smith',
       lines: [
         SaleLineReport(
           item: SaleItemModel(
             id: 2,
             saleId: 1,
             productId: 2,
-            productName: 'Marcador',
+            productName: 'Pines grandes',
             quantity: 2,
             unitPrice: 10,
             priceType: 'B',
@@ -223,7 +223,7 @@ void main() {
     test('the sale row carries the filtered line amounts, not the whole sale', () async {
       await repository.exportSalesExcel(
         title: 'Reporte mixto',
-        rows: [mixedSaleFilteredToMarcador()],
+        rows: [mixedSaleFilteredToPinesGrandes()],
       );
       final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
       final sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
@@ -237,21 +237,21 @@ void main() {
     test('a "Detalle" sheet lists one row per included line with its category', () async {
       await repository.exportSalesExcel(
         title: 'Reporte mixto',
-        rows: [mixedSaleFilteredToMarcador()],
+        rows: [mixedSaleFilteredToPinesGrandes()],
       );
       final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
       final detail = xl.Excel.decodeBytes(bytes).tables['Detalle']!;
 
       expect(detail.rows, hasLength(2)); // encabezado + 1 línea
       final row = detail.rows[1];
-      expect(row[2]!.value, xl.TextCellValue('Marcador'));
+      expect(row[2]!.value, xl.TextCellValue('Pines grandes'));
       expect(row[3]!.value, xl.TextCellValue('Sin categoría'));
       expect(row[4]!.value, xl.TextCellValue('B'));
       expect(_cellNum(row[6]!.value), 10); // precio unitario
       expect(_cellNum(row[7]!.value), 20); // subtotal bruto de la línea
-      // Acuarela (la otra línea de la venta) no debe aparecer.
+      // Estuches (la otra línea de la venta) no debe aparecer.
       final text = detail.rows.expand((r) => r).whereType<xl.Data>().join(' ');
-      expect(text, isNot(contains('Acuarela')));
+      expect(text, isNot(contains('Estuches')));
     });
 
     test('rows without lines (whole sales) produce no "Detalle" sheet', () async {
@@ -261,7 +261,7 @@ void main() {
     });
 
     test('the PDF export of filtered rows is written and non-empty', () async {
-      final row = mixedSaleFilteredToMarcador();
+      final row = mixedSaleFilteredToPinesGrandes();
       await repository.exportSalesPdf(
         title: 'Reporte mixto',
         rows: [row],
@@ -281,16 +281,16 @@ void main() {
 
     SaleReportRow accentedSaleRow() => SaleReportRow(
       sale: buildSale(1, DateTime(2024, 1, 10), 108, 12),
-      clientName: 'Peña Núñez',
-      locationName: 'Potosí, Bolivia',
-      eventName: 'Exposición Ñandú',
+      clientName: 'Ana Martínez',
+      locationName: 'Santa Cruz - Urubó, Bolivia',
+      eventName: 'Exposición de Arte',
       lines: [
         SaleLineReport(
           item: SaleItemModel(
             id: 1,
             saleId: 1,
             productId: 1,
-            productName: 'Acuarela',
+            productName: 'Estuches',
             quantity: 2,
             unitPrice: 50,
             priceType: 'A',
@@ -316,11 +316,11 @@ void main() {
       expect(text, contains('Ubicación'));
       expect(text, contains('Categoría'));
       // Datos con tilde y ñ
-      expect(text, contains('Peña'));
-      expect(text, contains('Núñez'));
-      expect(text, contains('Potosí'));
+      expect(text, contains('Ana'));
+      expect(text, contains('Martínez'));
+      expect(text, contains('Urubó'));
       expect(text, contains('Exposición'));
-      expect(text, contains('Ñandú'));
+      expect(text, contains('Arte'));
       expect(text, contains('categoría'));
       // Nada roto: ni caracteres de reemplazo ni la forma sin tilde.
       expect(text, isNot(contains('\uFFFD')));
@@ -348,12 +348,12 @@ void main() {
             purchase: PurchaseModel(
               id: 1,
               isMaterial: false,
-              description: 'Papelería y envío',
+              description: 'Pasaje de avión',
               totalAmount: 30,
               date: DateTime(2024, 1, 5),
               createdAt: DateTime(2024, 1, 5),
             ),
-            supplierName: 'Compañía Andina',
+            supplierName: 'Northgate Trading',
           ),
         ],
         summary: const PurchasesSummary(count: 1, totalAmount: 30, materialCount: 0),
@@ -361,9 +361,9 @@ void main() {
       final text = (await lastPdfText()).text;
 
       expect(text, contains('Descripción'));
-      expect(text, contains('Compañía'));
-      expect(text, contains('Papelería'));
-      expect(text, contains('envío'));
+      expect(text, contains('Northgate'));
+      expect(text, contains('Pasaje'));
+      expect(text, contains('avión'));
       expect(text, isNot(contains('\uFFFD')));
     });
 
@@ -379,28 +379,28 @@ void main() {
     });
   });
 
-  // Venta multi-producto con descuento: Collar 3 x 8 (B) = 24 y Pulsera
+  // Venta multi-producto con descuento: Tote bag negra 3 x 8 (B) = 24 y Set de pines pequeños
   // 1 x 16 (A) = 16 -> subtotal 40, descuento 4, total 36. discountShare se
   // pasa prorrateado (2.4 / 1.6) tal como lo entrega ReportService; los
   // exports no deben mostrarlo por línea.
   group('sales exports: line totals and sale-level discount', () {
     SaleReportRow multiProductSale() => SaleReportRow(
       sale: buildSale(1, DateTime(2024, 3, 5), 36, 4),
-      clientName: 'Ana',
+      clientName: 'John Smith',
       lines: [
         SaleLineReport(
           item: SaleItemModel(
             id: 1,
             saleId: 1,
             productId: 1,
-            productName: 'Collar',
+            productName: 'Tote bag negra',
             quantity: 3,
             unitPrice: 8,
             priceType: 'B',
             subtotal: 24,
           ),
           categoryId: 1,
-          categoryName: 'Bisutería',
+          categoryName: 'Pines',
           discountShare: 2.4,
         ),
         SaleLineReport(
@@ -408,14 +408,14 @@ void main() {
             id: 2,
             saleId: 1,
             productId: 2,
-            productName: 'Pulsera',
+            productName: 'Set de pines pequeños',
             quantity: 1,
             unitPrice: 16,
             priceType: 'A',
             subtotal: 16,
           ),
           categoryId: 1,
-          categoryName: 'Bisutería',
+          categoryName: 'Pines',
           discountShare: 1.6,
         ),
       ],
@@ -441,8 +441,8 @@ void main() {
     test('PDF: each product line shows its own gross total, not the discounted sale total', () async {
       final text = (await salesPdf()).text;
 
-      expect(text, contains('Bs. 24.00')); // Collar: 3 x 8
-      expect(text, contains('Bs. 16.00')); // Pulsera: 1 x 16
+      expect(text, contains('Bs. 24.00')); // Tote bag negra: 3 x 8
+      expect(text, contains('Bs. 16.00')); // Set de pines pequeños: 1 x 16
       // Ni el total de la venta con descuento (36) ni el neto prorrateado por
       // línea (21.60 / 14.40) deben aparecer como total de una línea.
       expect(text, isNot(contains('Bs. 21.60')));
@@ -503,19 +503,19 @@ void main() {
       ]);
       expect(detail.rows, hasLength(3)); // encabezado + 2 líneas
 
-      final collar = detail.rows[1];
-      expect(collar[2]!.value, xl.TextCellValue('Collar'));
-      expect(_cellNum(collar[5]!.value), 3);
-      expect(_cellNum(collar[6]!.value), 8);
-      expect(_cellNum(collar[7]!.value), 24);
+      final toteNegra = detail.rows[1];
+      expect(toteNegra[2]!.value, xl.TextCellValue('Tote bag negra'));
+      expect(_cellNum(toteNegra[5]!.value), 3);
+      expect(_cellNum(toteNegra[6]!.value), 8);
+      expect(_cellNum(toteNegra[7]!.value), 24);
 
-      final pulsera = detail.rows[2];
-      expect(pulsera[2]!.value, xl.TextCellValue('Pulsera'));
-      expect(_cellNum(pulsera[7]!.value), 16);
+      final setPines = detail.rows[2];
+      expect(setPines[2]!.value, xl.TextCellValue('Set de pines pequeños'));
+      expect(_cellNum(setPines[7]!.value), 16);
 
       // Sumar las líneas da el subtotal de la venta; el descuento (4) solo
       // existe en la hoja "Reporte", así que no se cuenta dos veces.
-      final lineSum = _cellNum(collar[7]!.value) + _cellNum(pulsera[7]!.value);
+      final lineSum = _cellNum(toteNegra[7]!.value) + _cellNum(setPines[7]!.value);
       expect(lineSum, 40);
     });
   });
@@ -529,13 +529,13 @@ void main() {
         date: DateTime(2024, 3, 5),
         createdAt: DateTime(2024, 3, 5),
       ),
-      supplierName: 'Andino',
+      supplierName: 'Riverside Supply Co.',
       items: [
         PurchaseItemModel(
           id: 1,
           purchaseId: 1,
           materialId: 1,
-          materialName: 'Vidrio fino',
+          materialName: 'Tela beige',
           quantity: 2,
           unitPrice: 3.5,
           subtotal: 7,
@@ -544,7 +544,7 @@ void main() {
           id: 2,
           purchaseId: 1,
           materialId: 2,
-          materialName: 'Hilo',
+          materialName: 'Resina parte A',
           quantity: 2.5,
           unitPrice: 2,
           subtotal: 5,
@@ -557,7 +557,7 @@ void main() {
       purchase: PurchaseModel(
         id: 2,
         isMaterial: false,
-        description: 'Alquiler',
+        description: 'Participación en feria',
         totalAmount: 50,
         date: DateTime(2024, 3, 6),
         createdAt: DateTime(2024, 3, 6),
@@ -581,11 +581,11 @@ void main() {
       for (final header in ['Material', 'Cant.', 'Precio', 'unit.', 'Subtotal']) {
         expect(pdf.runs, contains(header));
       }
-      expect(pdf.text, contains('Vidrio fino'));
+      expect(pdf.text, contains('Tela beige'));
       expect(pdf.runs, contains('2')); // cantidad entera sin decimales
       expect(pdf.text, contains('Bs. 3.50'));
       expect(pdf.text, contains('Bs. 7.00'));
-      expect(pdf.runs, contains('Hilo'));
+      expect(pdf.text, contains('Resina parte A'));
       expect(pdf.runs, contains('2.5'));
       expect(pdf.text, contains('Bs. 2.00'));
       expect(pdf.text, contains('Bs. 5.00'));
@@ -626,18 +626,18 @@ void main() {
       ]);
       expect(detail.rows, hasLength(3)); // encabezado + 2 líneas (el gasto no aporta)
 
-      final vidrio = detail.rows[1];
-      expect(vidrio[1]!.value, xl.TextCellValue('Andino'));
-      expect(vidrio[2]!.value, xl.TextCellValue('Vidrio fino'));
-      expect(_cellNum(vidrio[3]!.value), 2);
-      expect(_cellNum(vidrio[4]!.value), 3.5);
-      expect(_cellNum(vidrio[5]!.value), 7);
+      final telaBeige = detail.rows[1];
+      expect(telaBeige[1]!.value, xl.TextCellValue('Riverside Supply Co.'));
+      expect(telaBeige[2]!.value, xl.TextCellValue('Tela beige'));
+      expect(_cellNum(telaBeige[3]!.value), 2);
+      expect(_cellNum(telaBeige[4]!.value), 3.5);
+      expect(_cellNum(telaBeige[5]!.value), 7);
 
-      final hilo = detail.rows[2];
-      expect(hilo[2]!.value, xl.TextCellValue('Hilo'));
-      expect(_cellNum(hilo[3]!.value), 2.5);
-      expect(_cellNum(hilo[4]!.value), 2);
-      expect(_cellNum(hilo[5]!.value), 5);
+      final resinaA = detail.rows[2];
+      expect(resinaA[2]!.value, xl.TextCellValue('Resina parte A'));
+      expect(_cellNum(resinaA[3]!.value), 2.5);
+      expect(_cellNum(resinaA[4]!.value), 2);
+      expect(_cellNum(resinaA[5]!.value), 5);
     });
 
     test('Excel: without any material lines there is no "Detalle" sheet', () async {
@@ -731,7 +731,7 @@ void main() {
       final rows = excel.tables['Reporte']!.rows;
 
       expect(rows.length, 2);
-      expect(rows[1][1]!.value, xl.TextCellValue('Proveedor Andino (incluido)'));
+      expect(rows[1][1]!.value, xl.TextCellValue('Riverside Supply Co. (incluido)'));
       expect(_cellNum(rows[1][6]!.value), 100);
 
       final allText = rows

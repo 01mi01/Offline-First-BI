@@ -14,6 +14,7 @@ import '../widgets/app_bar_widget.dart';
 import '../widgets/bi_charts.dart';
 import '../widgets/bi_config_view.dart';
 import '../widgets/bi_insight_widgets.dart';
+import '../widgets/bi_sales_widgets.dart';
 
 // Business Intelligence: primero se configura el periodo, los filtros y los
 // indicadores; al confirmar se muestra el panel, y desde él se puede volver a
@@ -165,6 +166,44 @@ class _BusinessIntelligencePageState
         case BiIndicator.eventComparison:
           return BiEventComparisonSection(
             comparison: report.eventComparison,
+            chartType: type,
+            onChartTypeChanged: onType,
+          );
+        case BiIndicator.coPurchase:
+          return BiCoPurchaseSection(
+            report: report.coPurchases,
+            chartType: type,
+            onChartTypeChanged: onType,
+          );
+        case BiIndicator.weekdaySales:
+          return BiWeekdaySection(
+            entries: report.weekdays,
+            chartType: type,
+            onChartTypeChanged: onType,
+          );
+        case BiIndicator.averageTicket:
+          return BiTicketSection(
+            report: report.ticket,
+            series: report.timeSeries,
+            chartType: type,
+            onChartTypeChanged: onType,
+          );
+        case BiIndicator.eventProfit:
+          return BiEventProfitSection(
+            entries: report.eventProfit,
+            chartType: type,
+            onChartTypeChanged: onType,
+          );
+        case BiIndicator.discountImpact:
+          return BiDiscountSection(
+            report: report.discounts,
+            series: report.timeSeries,
+            chartType: type,
+            onChartTypeChanged: onType,
+          );
+        case BiIndicator.costReturn:
+          return BiCostReturnSection(
+            report: report.costReturn,
             chartType: type,
             onChartTypeChanged: onType,
           );

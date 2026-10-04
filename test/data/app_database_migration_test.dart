@@ -53,7 +53,7 @@ void main() {
       final oldDb = v8.DatabaseAtV8(schema.newConnection());
       final categoryId = await oldDb
           .into(oldDb.categories)
-          .insert(v8.CategoriesCompanion.insert(name: 'Bisutería'));
+          .insert(v8.CategoriesCompanion.insert(name: 'Pines'));
       final withCategoryId = await oldDb.into(oldDb.products).insert(
         v8.ProductsCompanion.insert(
           categoryId: Value(categoryId),
@@ -256,14 +256,14 @@ void main() {
       // Mayúsculas distintas a propósito: el mapeo debe ser insensible.
       final matchedRowId = await oldDb.into(oldDb.materials).insert(
         v9.MaterialsCompanion.insert(
-          name: 'Cerveza artesanal',
+          name: 'Stickers holográficos',
           unit: const Value('Botella'),
           pricePerUnit: 12.0,
         ),
       );
       final unmatchedRowId = await oldDb.into(oldDb.materials).insert(
         v9.MaterialsCompanion.insert(
-          name: 'Material raro',
+          name: 'Tela negra',
           unit: const Value('unidad-inventada-xyz'),
           pricePerUnit: 3.0,
         ),
@@ -311,7 +311,7 @@ void main() {
           .insert(v10.SuppliersCompanion.insert(name: 'Sin nombre'));
       final otherId = await oldDb
           .into(oldDb.suppliers)
-          .insert(v10.SuppliersCompanion.insert(name: 'Proveedor Andino'));
+          .insert(v10.SuppliersCompanion.insert(name: 'Riverside Supply Co.'));
       final purchaseId = await oldDb.into(oldDb.purchases).insert(
         v10.PurchasesCompanion.insert(
           supplierId: Value(defaultId),
@@ -331,7 +331,7 @@ void main() {
       final suppliers = await checkDb.select(checkDb.suppliers).get();
       final byId = {for (final s in suppliers) s.id: s.name};
       expect(byId[defaultId], 'Sin proveedor');
-      expect(byId[otherId], 'Proveedor Andino');
+      expect(byId[otherId], 'Riverside Supply Co.');
       expect(byId.values.where((n) => n == 'Sin nombre'), isEmpty);
 
       final purchase = await (checkDb.select(
@@ -558,7 +558,7 @@ void main() {
 
       final oldDb = v13.DatabaseAtV13(schema.newConnection());
       final eventId = await oldDb.into(oldDb.events).insert(
-        v13.EventsCompanion.insert(name: 'Feria', startDate: 1704067200),
+        v13.EventsCompanion.insert(name: 'Feria de Arte', startDate: 1704067200),
       );
       await oldDb.close();
 
@@ -573,7 +573,7 @@ void main() {
         checkDb.events,
       )..where((e) => e.id.equals(eventId))).getSingle();
       expect(event.isActive, 1); // booleano: 1 = true
-      expect(event.name, 'Feria');
+      expect(event.name, 'Feria de Arte');
     },
   );
 
@@ -594,7 +594,7 @@ void main() {
       );
       final otherCategoryId = await oldDb.into(oldDb.categories).insert(
         v13.CategoriesCompanion.insert(
-          name: 'Bisutería',
+          name: 'Pines',
           isActive: const Value(0),
         ),
       );
@@ -624,7 +624,7 @@ void main() {
           c.name: c.isActive,
       };
       expect(categories['Sin categoría'], 1);
-      expect(categories['Bisutería'], 0); // una inactiva cualquiera no se toca
+      expect(categories['Pines'], 0); // una inactiva cualquiera no se toca
       expect(otherCategoryId, isNonZero);
 
       final client = await checkDb.select(checkDb.clients).getSingle();
@@ -797,7 +797,7 @@ void main() {
       );
       final materialId = await oldDb.into(oldDb.materials).insert(
         v15.MaterialsCompanion.insert(
-          name: 'Pintura',
+          name: 'Papel holográfico para stickers',
           unitId: botellaId,
           pricePerUnit: 12,
         ),
@@ -805,7 +805,7 @@ void main() {
       final productId = await oldDb.into(oldDb.products).insert(
         v15.ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Cuadro',
+          name: 'Tote bag negra',
           priceA: 50,
           priceB: 45,
         ),

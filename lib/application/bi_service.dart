@@ -228,9 +228,15 @@ class BiService {
 
     final ingresos = <DateTime, double>{};
     final gastos = <DateTime, double>{};
+    final ventas = <DateTime, int>{};
+    final bruto = <DateTime, double>{};
+    final descuentos = <DateTime, double>{};
     for (final r in rows) {
       final key = _bucketStart(r.sale.date, granularity);
       ingresos[key] = (ingresos[key] ?? 0) + r.netAmount;
+      ventas[key] = (ventas[key] ?? 0) + 1;
+      bruto[key] = (bruto[key] ?? 0) + r.subtotalAmount;
+      descuentos[key] = (descuentos[key] ?? 0) + r.discountAmount;
     }
     for (final p in purchases) {
       final key = _bucketStart(p.date, granularity);
@@ -246,6 +252,9 @@ class BiService {
           start: cursor,
           ingresos: ingresos[cursor] ?? 0,
           gastos: gastos[cursor] ?? 0,
+          ventas: ventas[cursor] ?? 0,
+          bruto: bruto[cursor] ?? 0,
+          descuentos: descuentos[cursor] ?? 0,
         ),
       );
       cursor = _nextBucket(cursor, granularity);
@@ -329,6 +338,194 @@ class BiService {
       return byProfit != 0 ? byProfit : a.name.compareTo(b.name);
     });
     return BiMarginReport(entries: entries, withoutCost: withoutCost);
+  }
+
+  // ---------------------------------------------------------------------
+  // Indicadores de ventas adicionales
+  // ---------------------------------------------------------------------
+
+  // Productos comprados juntos: para cada par de productos DISTINTOS, en
+  // cuántas ventas del periodo aparecen los dos (una venta cuenta una sola vez
+  // por par, aunque repita un producto en varias líneas). Solo cuentan ventas
+  // con 2 o más productos distintos y solo se devuelven los pares vistos en al
+  // menos [minSales] ventas. Se usan TODOS los ítems de cada venta (no solo las
+  // líneas que pasan los filtros de producto/categoría/precio), para poder ver
+  // con qué se compra un producto. El porcentaje es sobre todas las ventas del
+  // periodo.
+  BiCoPurchaseReport coPurchases({
+    required List<SaleReportRow> rows,
+    required Map<int, List<SaleItemModel>> saleItemsMap,
+    required List<ProductModel> products,
+    int minSales = coPurchaseMinSales,
+  }) {
+    final names = {for (final p in products) p.id: p.name};
+    final counts = <(int, int), int>{};
+    final fallbackNames = <int, String>{};
+    var multiProduct = 0;
+    for (final row in rows) {
+      final items = saleItemsMap[row.sale.id] ?? const <SaleItemModel>[];
+      for (final item in items) {
+        fallbackNames[item.productId] = item.productName;
+      }
+      final ids = {for (final item in items) item.productId}.toList()..sort();
+      if (ids.length < 2) continue;
+      multiProduct++;
+      for (var i = 0; i < ids.length; i++) {
+        for (var j = i + 1; j < ids.length; j++) {
+          final key = (ids[i], ids[j]);
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+      }
+    }
+
+    String nameOf(int id) => names[id] ?? fallbackNames[id] ?? 'Producto';
+    final pairs = <BiPairEntry>[];
+    counts.forEach((key, sales) {
+      if (sales < minSales) return;
+      final a = nameOf(key.$1);
+      final b = nameOf(key.$2);
+      final aFirst = a.compareTo(b) <= 0;
+      pairs.add(
+        BiPairEntry(
+          productA: aFirst ? a : b,
+          productB: aFirst ? b : a,
+          sales: sales,
+          pct: sales / rows.length * 100,
+        ),
+      );
+    });
+    pairs.sort((x, y) {
+      final bySales = y.sales.compareTo(x.sales);
+      return bySales != 0 ? bySales : x.label.compareTo(y.label);
+    });
+    return BiCoPurchaseReport(
+      pairs: pairs,
+      totalSales: rows.length,
+      multiProductSales: multiProduct,
+    );
+  }
+
+  // Ingresos netos y número de ventas de cada día de la semana (lunes
+  // primero), con 0 en los días sin ventas. Cada venta cuenta por su fecha.
+  List<BiWeekdayEntry> salesByWeekday({required List<SaleReportRow> rows}) {
+    final ingresos = List<double>.filled(7, 0);
+    final ventas = List<int>.filled(7, 0);
+    for (final row in rows) {
+      final i = row.sale.date.weekday - DateTime.monday;
+      ingresos[i] += row.netAmount;
+      ventas[i]++;
+    }
+    return [
+      for (var i = 0; i < 7; i++)
+        BiWeekdayEntry(
+          weekday: DateTime.monday + i,
+          ingresos: ingresos[i],
+          ventas: ventas[i],
+        ),
+    ];
+  }
+
+  // Ticket promedio: ingresos netos de las ventas del periodo entre su número.
+  BiTicketReport ticket({required List<SaleReportRow> rows}) {
+    return BiTicketReport(
+      salesCount: rows.length,
+      total: rows.fold(0.0, (sum, r) => sum + r.netAmount),
+    );
+  }
+
+  // Descuentos dados frente a las ventas brutas (antes de descontar).
+  BiDiscountReport discountImpact({required List<SaleReportRow> rows}) {
+    return BiDiscountReport(
+      totalDiscount: rows.fold(0.0, (sum, r) => sum + r.discountAmount),
+      grossSales: rows.fold(0.0, (sum, r) => sum + r.subtotalAmount),
+      salesCount: rows.length,
+      discountedSales: rows.where((r) => r.discountAmount > 0).length,
+    );
+  }
+
+  // Resultado por evento: ingresos netos de sus ventas vinculadas menos el
+  // total de TODAS sus compras vinculadas (gastos generales y compras de
+  // materiales). [rows] y [purchases] ya vienen del periodo (cada registro por
+  // su propia fecha); el llamador no debe haberles aplicado el filtro de tipo
+  // de operación ni de proveedor. Aparecen los eventos con ventas o compras,
+  // del mejor al peor resultado.
+  List<BiEventProfitEntry> eventProfitability({
+    required List<SaleReportRow> rows,
+    required List<PurchaseModel> purchases,
+    required List<EventModel> events,
+  }) {
+    final names = {for (final e in events) e.id: e.name};
+    final income = <int, double>{};
+    final expenses = <int, double>{};
+    final salesCount = <int, int>{};
+    final purchaseCount = <int, int>{};
+    final fallbackNames = <int, String>{};
+    for (final row in rows) {
+      final id = row.sale.eventId;
+      if (id == null) continue;
+      income[id] = (income[id] ?? 0) + row.netAmount;
+      salesCount[id] = (salesCount[id] ?? 0) + 1;
+      fallbackNames[id] = row.eventName ?? 'Evento';
+    }
+    for (final p in purchases) {
+      final id = p.eventId;
+      if (id == null) continue;
+      expenses[id] = (expenses[id] ?? 0) + p.totalAmount;
+      purchaseCount[id] = (purchaseCount[id] ?? 0) + 1;
+    }
+    final entries = [
+      for (final id in {...income.keys, ...expenses.keys})
+        BiEventProfitEntry(
+          name: names[id] ?? fallbackNames[id] ?? 'Evento',
+          income: income[id] ?? 0,
+          expenses: expenses[id] ?? 0,
+          salesCount: salesCount[id] ?? 0,
+          purchaseCount: purchaseCount[id] ?? 0,
+        ),
+    ];
+    entries.sort((a, b) {
+      final byProfit = b.profit.compareTo(a.profit);
+      return byProfit != 0 ? byProfit : a.name.compareTo(b.name);
+    });
+    return entries;
+  }
+
+  // Retorno sobre el costo de producción: por cada Bs. 1 de costo de
+  // producción de las unidades vendidas, cuánto fue la ganancia (ingresos
+  // netos después de descuentos menos ese costo). Usa SOLO el costo de
+  // producción actual de cada producto (nunca precios ni cantidades de
+  // materiales). Los productos sin costo de producción (o con costo 0, que no
+  // permite dividir) no entran al ranking; solo se cuentan.
+  BiReturnReport costReturn({
+    required List<SaleReportRow> rows,
+    required List<ProductModel> products,
+  }) {
+    final byId = {for (final p in products) p.id: p};
+    final entries = <BiReturnEntry>[];
+    var withoutCost = 0;
+    _productStats(rows).forEach((id, stat) {
+      final product = byId[id];
+      final unitCost = product?.productionCost;
+      if (unitCost == null || unitCost <= 0) {
+        withoutCost++;
+        return;
+      }
+      entries.add(
+        BiReturnEntry(
+          name: product?.name ?? stat.name,
+          revenue: stat.revenue,
+          cost: unitCost * stat.units,
+          units: stat.units,
+        ),
+      );
+    });
+    entries.sort((a, b) {
+      final byRatio = b.ratio.compareTo(a.ratio);
+      if (byRatio != 0) return byRatio;
+      final byProfit = b.profit.compareTo(a.profit);
+      return byProfit != 0 ? byProfit : a.name.compareTo(b.name);
+    });
+    return BiReturnReport(entries: entries, withoutCost: withoutCost);
   }
 
   // Primer y último día del periodo: de "Desde" (o del primer registro, si no

@@ -85,22 +85,22 @@ void main() {
 
   group('Materiales', () {
     setUp(() async {
-      await addMaterial('Botones');
-      await addMaterial('Cinta');
-      await addMaterial('Tela vieja', active: false);
+      await addMaterial('Base metálica grande para pines');
+      await addMaterial('Papel para stickers');
+      await addMaterial('Tela para estuches', active: false);
     });
 
     testWidgets('search by name (accent/case-insensitive) narrows the list', (
       tester,
     ) async {
       await pump(tester, const Scaffold(body: MaterialsListTab()));
-      expect(find.text('Botones'), findsOneWidget);
-      expect(find.text('Cinta'), findsOneWidget);
+      expect(find.text('Base metálica grande para pines'), findsOneWidget);
+      expect(find.text('Papel para stickers'), findsOneWidget);
 
-      await tester.enterText(find.widgetWithText(TextField, 'Buscar material'), 'BOT');
+      await tester.enterText(find.widgetWithText(TextField, 'Buscar material'), 'BASE');
       await tester.pumpAndSettle();
-      expect(find.text('Botones'), findsOneWidget);
-      expect(find.text('Cinta'), findsNothing);
+      expect(find.text('Base metálica grande para pines'), findsOneWidget);
+      expect(find.text('Papel para stickers'), findsNothing);
 
       await tester.enterText(find.widgetWithText(TextField, 'Buscar material'), 'zzz');
       await tester.pumpAndSettle();
@@ -112,25 +112,25 @@ void main() {
     ) async {
       await pump(tester, const Scaffold(body: MaterialsListTab()));
       expect(find.text('Todos'), findsOneWidget);
-      expect(find.text('Tela vieja'), findsOneWidget);
+      expect(find.text('Tela para estuches'), findsOneWidget);
 
       await chooseStatus(tester, 'Todos', 'Activos');
-      expect(find.text('Botones'), findsOneWidget);
-      expect(find.text('Tela vieja'), findsNothing);
+      expect(find.text('Base metálica grande para pines'), findsOneWidget);
+      expect(find.text('Tela para estuches'), findsNothing);
 
       await chooseStatus(tester, 'Activos', 'Inactivos');
-      expect(find.text('Tela vieja'), findsOneWidget);
-      expect(find.text('Botones'), findsNothing);
+      expect(find.text('Tela para estuches'), findsOneWidget);
+      expect(find.text('Base metálica grande para pines'), findsNothing);
     });
 
     testWidgets('Registro de uso: no separate "Buscar material" bar; the whole log is listed', (
       tester,
     ) async {
       final productId = await db.into(db.products).insert(
-        ProductsCompanion.insert(categoryId: 1, name: 'Acuarela', priceA: 55, priceB: 40),
+        ProductsCompanion.insert(categoryId: 1, name: 'Estuches', priceA: 55, priceB: 40),
       );
       final materials = await db.select(db.materials).get();
-      for (final m in materials.where((m) => m.name != 'Tela vieja')) {
+      for (final m in materials.where((m) => m.name != 'Tela para estuches')) {
         await db.into(db.productMaterials).insert(
           ProductMaterialsCompanion.insert(
             productId: productId,
@@ -140,9 +140,9 @@ void main() {
         );
       }
       await pump(tester, const Scaffold(body: MaterialsUsageTab()));
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Acuarela', 'Acuarela');
-      expect(find.text('Botones'), findsOneWidget);
-      expect(find.text('Cinta'), findsOneWidget);
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
+      expect(find.text('Base metálica grande para pines'), findsOneWidget);
+      expect(find.text('Papel para stickers'), findsOneWidget);
       // La pestaña ya no tiene buscador de materiales.
       expect(find.widgetWithText(TextField, 'Buscar material'), findsNothing);
       expect(find.byType(TextField), findsNothing);
@@ -152,10 +152,10 @@ void main() {
       tester,
     ) async {
       await db.into(db.products).insert(
-        ProductsCompanion.insert(categoryId: 1, name: 'Acuarela', priceA: 55, priceB: 40),
+        ProductsCompanion.insert(categoryId: 1, name: 'Estuches', priceA: 55, priceB: 40),
       );
       await db.into(db.products).insert(
-        ProductsCompanion.insert(categoryId: 1, name: 'Collar', priceA: 10, priceB: 8),
+        ProductsCompanion.insert(categoryId: 1, name: 'Tote bag negra', priceA: 10, priceB: 8),
       );
       await pump(tester, const Scaffold(body: MaterialsUsageTab()));
       expect(find.byType(DropdownButton<int>), findsNothing);
@@ -164,18 +164,18 @@ void main() {
       await tester.pumpAndSettle();
       // Sin escribir no hay lista de productos.
       expect(find.text('Escribe para buscar'), findsOneWidget);
-      expect(find.text('Acuarela'), findsNothing);
-      expect(find.text('Collar'), findsNothing);
+      expect(find.text('Estuches'), findsNothing);
+      expect(find.text('Tote bag negra'), findsNothing);
 
-      await tester.enterText(find.byType(TextField).last, 'COL');
+      await tester.enterText(find.byType(TextField).last, 'TOTE');
       await tester.pumpAndSettle();
-      expect(find.text('Collar'), findsOneWidget);
-      expect(find.text('Acuarela'), findsNothing);
+      expect(find.text('Tote bag negra'), findsOneWidget);
+      expect(find.text('Estuches'), findsNothing);
 
-      await tester.tap(find.text('Collar').last);
+      await tester.tap(find.text('Tote bag negra').last);
       await tester.pumpAndSettle();
       // Elegido: el campo muestra el producto y se habilita el registro.
-      expect(find.text('Collar'), findsOneWidget);
+      expect(find.text('Tote bag negra'), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
@@ -183,10 +183,10 @@ void main() {
       tester,
     ) async {
       await db.into(db.products).insert(
-        ProductsCompanion.insert(categoryId: 1, name: 'Acuarela', priceA: 55, priceB: 40),
+        ProductsCompanion.insert(categoryId: 1, name: 'Estuches', priceA: 55, priceB: 40),
       );
       await pump(tester, const Scaffold(body: MaterialsUsageTab()));
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Acuarela', 'Acuarela');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
@@ -198,18 +198,18 @@ void main() {
       await tester.pumpAndSettle();
       // Sin escribir no hay lista de materiales.
       expect(find.text('Escribe para buscar'), findsOneWidget);
-      expect(find.text('Botones'), findsNothing);
-      expect(find.text('Cinta'), findsNothing);
+      expect(find.text('Base metálica grande para pines'), findsNothing);
+      expect(find.text('Papel para stickers'), findsNothing);
 
-      await tester.enterText(find.byType(TextField).last, 'cin');
+      await tester.enterText(find.byType(TextField).last, 'papel');
       await tester.pumpAndSettle();
-      expect(find.text('Cinta'), findsOneWidget);
-      expect(find.text('Botones'), findsNothing);
+      expect(find.text('Papel para stickers'), findsOneWidget);
+      expect(find.text('Base metálica grande para pines'), findsNothing);
 
       // Los inactivos nunca se ofrecen.
       await tester.enterText(find.byType(TextField).last, 'tela');
       await tester.pumpAndSettle();
-      expect(find.text('Tela vieja'), findsNothing);
+      expect(find.text('Tela para estuches'), findsNothing);
       expect(find.text('Sin resultados'), findsOneWidget);
     });
   });
@@ -217,11 +217,11 @@ void main() {
   group('Eventos y Ubicaciones', () {
     setUp(() async {
       final activeLoc = await db.into(db.locations).insert(
-        LocationsCompanion.insert(city: 'La Paz', country: 'Bolivia'),
+        LocationsCompanion.insert(city: 'La Paz - Calacoto', country: 'Bolivia'),
       );
       await db.into(db.locations).insert(
         LocationsCompanion.insert(
-          city: 'Sucre',
+          city: 'Santa Cruz - Las Palmas',
           country: 'Bolivia',
           isActive: const Value(false),
         ),
@@ -235,7 +235,7 @@ void main() {
       );
       await db.into(db.events).insert(
         EventsCompanion.insert(
-          name: 'Feria Cerrada',
+          name: 'Feria Cancelada',
           startDate: DateTime(2026, 2, 1),
           isActive: const Value(false),
         ),
@@ -246,14 +246,14 @@ void main() {
       await pump(tester, const EventsPage());
       expect(find.text('Todos'), findsOneWidget);
       expect(find.text('Feria Activa'), findsOneWidget);
-      expect(find.text('Feria Cerrada'), findsOneWidget);
+      expect(find.text('Feria Cancelada'), findsOneWidget);
 
       await chooseStatus(tester, 'Todos', 'Activos');
       expect(find.text('Feria Activa'), findsOneWidget);
-      expect(find.text('Feria Cerrada'), findsNothing);
+      expect(find.text('Feria Cancelada'), findsNothing);
 
       await chooseStatus(tester, 'Activos', 'Inactivos');
-      expect(find.text('Feria Cerrada'), findsOneWidget);
+      expect(find.text('Feria Cancelada'), findsOneWidget);
       expect(find.text('Feria Activa'), findsNothing);
     });
 
@@ -262,28 +262,28 @@ void main() {
       await tester.tap(find.text('Ubicaciones').first);
       await tester.pumpAndSettle();
       expect(find.text('Todas'), findsOneWidget);
-      expect(find.textContaining('La Paz'), findsWidgets);
-      expect(find.textContaining('Sucre'), findsWidgets);
+      expect(find.textContaining('La Paz - Calacoto'), findsWidgets);
+      expect(find.textContaining('Santa Cruz - Las Palmas'), findsWidgets);
 
       await chooseStatus(tester, 'Todas', 'Activas');
-      expect(find.textContaining('La Paz'), findsWidgets);
-      expect(find.textContaining('Sucre'), findsNothing);
+      expect(find.textContaining('La Paz - Calacoto'), findsWidgets);
+      expect(find.textContaining('Santa Cruz - Las Palmas'), findsNothing);
 
       await chooseStatus(tester, 'Activas', 'Inactivas');
-      expect(find.textContaining('Sucre'), findsWidgets);
-      expect(find.textContaining('La Paz'), findsNothing);
+      expect(find.textContaining('Santa Cruz - Las Palmas'), findsWidgets);
+      expect(find.textContaining('La Paz - Calacoto'), findsNothing);
     });
   });
 
   group('Selectores sin lista hasta escribir', () {
     setUp(() async {
-      await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Maria'));
-      await db.into(db.suppliers).insert(SuppliersCompanion.insert(name: 'Proveedor Andino'));
-      await addMaterial('Tela');
+      await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Michael Brown'));
+      await db.into(db.suppliers).insert(SuppliersCompanion.insert(name: 'Riverside Supply Co.'));
+      await addMaterial('Tela negra');
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Collar',
+          name: 'Tote bag negra',
           priceA: 10,
           priceB: 8,
           stock: const Value(5),
@@ -315,18 +315,18 @@ void main() {
       tester,
     ) async {
       await openSheet(tester, const SaleDialog());
-      expect(find.text('Collar'), findsNothing);
+      expect(find.text('Tote bag negra'), findsNothing);
       expect(find.text('Escribe para buscar un producto'), findsOneWidget);
-      await searchProducts(tester, 'col');
-      expect(find.text('Collar'), findsOneWidget);
+      await searchProducts(tester, 'tote');
+      expect(find.text('Tote bag negra'), findsOneWidget);
 
       await tester.tap(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
-      expect(find.text('Maria'), findsNothing);
+      expect(find.text('Michael Brown'), findsNothing);
       expect(find.text('Escribe para buscar'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'mar');
+      await tester.enterText(find.byType(TextField).last, 'mic');
       await tester.pumpAndSettle();
-      expect(find.text('Maria'), findsOneWidget);
+      expect(find.text('Michael Brown'), findsOneWidget);
     });
 
     testWidgets('Compras: Proveedor and Material show nothing until typing', (
@@ -335,23 +335,23 @@ void main() {
       await openSheet(tester, const PurchaseDialog());
       await tester.tap(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
-      expect(find.text('Proveedor Andino'), findsNothing);
+      expect(find.text('Riverside Supply Co.'), findsNothing);
       expect(find.text('Escribe para buscar'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'and');
+      await tester.enterText(find.byType(TextField).last, 'river');
       await tester.pumpAndSettle();
-      expect(find.text('Proveedor Andino'), findsOneWidget);
-      await tester.tap(find.text('Proveedor Andino').last);
+      expect(find.text('Riverside Supply Co.'), findsOneWidget);
+      await tester.tap(find.text('Riverside Supply Co.').last);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
-      expect(find.text('Tela'), findsNothing);
+      expect(find.text('Tela negra'), findsNothing);
       expect(find.text('Escribe para buscar'), findsOneWidget);
       await tester.enterText(find.byType(TextField).last, 'tel');
       await tester.pumpAndSettle();
-      expect(find.text('Tela'), findsOneWidget);
+      expect(find.text('Tela negra'), findsOneWidget);
     });
   });
 }

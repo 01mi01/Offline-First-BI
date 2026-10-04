@@ -79,7 +79,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Cuadro',
+        name: 'Tote bag negra',
         priceA: 100,
         priceB: 100,
         stock: const Value(100),
@@ -134,7 +134,7 @@ void main() {
         locationId: null,
         eventId: eventId,
         isMaterial: false,
-        description: 'Gasto',
+        description: 'Participación en feria',
         totalAmount: amount,
         date: date,
         items: const [],
@@ -386,7 +386,7 @@ void main() {
         locationId: null,
         eventId: null,
         isMaterial: false,
-        description: 'Gasto',
+        description: 'Participación en feria',
         totalAmount: 60,
         date: today,
         newItems: const [],
@@ -423,7 +423,7 @@ void main() {
     test('canceling a material usage has no date and only returns stock', () async {
       final matId = await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Tela',
+          name: 'Tela negra',
           unitId: 1,
           stock: const Value(10),
           pricePerUnit: 5,
@@ -449,7 +449,7 @@ void main() {
       // Evento de 3 días, hace ~3 semanas.
       final evStart = DateTime(now.year, now.month, now.day - 21);
       final evEnd = DateTime(now.year, now.month, now.day - 19);
-      final eventId = await newEvent('Feria', evStart, evEnd);
+      final eventId = await newEvent('Feria de Arte', evStart, evEnd);
       final evMid = DateTime(evStart.year, evStart.month, evStart.day + 1, 12);
 
       await sell(DateTime(evStart.year, evStart.month, evStart.day, 10), amount: 10, eventId: eventId);
@@ -486,7 +486,7 @@ void main() {
     });
 
     test('a sale linked to an event but dated in the future is not counted', () async {
-      final eventId = await newEvent('Feria futura', nextWeek, null);
+      final eventId = await newEvent('Feria de Navidad', nextWeek, null);
       await sell(nextWeek, amount: 300, eventId: eventId);
       await refresh();
       expect(income(ReportFilters(eventId: eventId)), 0);
@@ -512,7 +512,7 @@ void main() {
     test('a backdated purchase does not overwrite the price set by a later one', () async {
       final matId = await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Hilo',
+          name: 'Resina parte A',
           unitId: 1,
           stock: const Value(0),
           pricePerUnit: 1,

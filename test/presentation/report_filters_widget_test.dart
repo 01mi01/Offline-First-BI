@@ -53,22 +53,22 @@ void main() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     categoryId = await db
         .into(db.categories)
-        .insert(CategoriesCompanion.insert(name: 'Bebidas'));
-    clientId = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Ana'));
+        .insert(CategoriesCompanion.insert(name: 'Bolsas'));
+    clientId = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'John Smith'));
     await db.into(db.products).insert(
           ProductsCompanion.insert(
             categoryId: categoryId,
-            name: 'Cerveza',
+            name: 'Pines grandes',
             priceA: 10,
             priceB: 8,
           ),
         );
-    await db.into(db.suppliers).insert(SuppliersCompanion.insert(name: 'Proveedor X'));
+    await db.into(db.suppliers).insert(SuppliersCompanion.insert(name: 'Lino & Co.'));
     await db.into(db.locations).insert(
-          LocationsCompanion.insert(city: 'La Paz', country: 'Bolivia'),
+          LocationsCompanion.insert(city: 'La Paz - Calacoto', country: 'Bolivia'),
         );
     await db.into(db.events).insert(
-          EventsCompanion.insert(name: 'Feria', startDate: DateTime(2024, 1, 1)),
+          EventsCompanion.insert(name: 'Feria de Arte', startDate: DateTime(2024, 1, 1)),
         );
   });
 
@@ -230,7 +230,7 @@ void main() {
 
       // Se resuelve el nombre real de la categoría vía el provider real
       // (categoryProvider respaldado por la base sembrada), no un texto fijo.
-      expect(find.text('Bebidas'), findsOneWidget);
+      expect(find.text('Bolsas'), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.close));
@@ -243,7 +243,7 @@ void main() {
     testWidgets('tapping the Proveedor chip close icon clears only supplierId on the purchases tab', (tester) async {
       final supplier = await (db.select(
         db.suppliers,
-      )..where((s) => s.name.equals('Proveedor X'))).getSingle();
+      )..where((s) => s.name.equals('Lino & Co.'))).getSingle();
       final supplierId = supplier.id;
 
       ReportFilters? lastEmitted;
@@ -254,7 +254,7 @@ void main() {
         onChanged: (f) => lastEmitted = f,
       );
 
-      expect(find.text('Proveedor X'), findsOneWidget);
+      expect(find.text('Lino & Co.'), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.close));

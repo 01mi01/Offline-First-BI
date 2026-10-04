@@ -22,7 +22,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Acuarela',
+        name: 'Estuches',
         priceA: 55,
         priceB: 40,
         stock: const Value(10),
@@ -134,7 +134,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Acuarela', 'Acuarela');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, materialName, materialName);
@@ -143,8 +143,8 @@ void main() {
     testWidgets('tira uses the fraction picker (un cuarto / la mitad / tres cuartos / entera)', (
       tester,
     ) async {
-      await material('Cuentas', 'tira', 5);
-      await openUsage(tester, 'Cuentas');
+      await material('Base metálica pequeña para pines', 'tira', 5);
+      await openUsage(tester, 'Base metálica pequeña para pines');
 
       expect(find.byType(FractionQuantityPicker), findsOneWidget);
       for (final preset in ['Un cuarto', 'La mitad', 'Tres cuartos', 'Entera']) {
@@ -159,8 +159,8 @@ void main() {
     testWidgets('registering "La mitad" of a tira takes 0.5 from the stock', (
       tester,
     ) async {
-      await material('Cuentas', 'tira', 5);
-      await openUsage(tester, 'Cuentas');
+      await material('Base metálica pequeña para pines', 'tira', 5);
+      await openUsage(tester, 'Base metálica pequeña para pines');
 
       await tester.tap(find.text('La mitad'));
       await tester.pump();
@@ -175,8 +175,8 @@ void main() {
     testWidgets('metro is a plain decimal field, shown with its plural', (
       tester,
     ) async {
-      await material('Tela', 'metro', 3);
-      await openUsage(tester, 'Tela');
+      await material('Tela negra', 'metro', 3);
+      await openUsage(tester, 'Tela negra');
 
       expect(find.byType(FractionQuantityPicker), findsNothing);
       expect(find.byType(WholeNumberQuantityField), findsNothing);
@@ -189,8 +189,8 @@ void main() {
     });
 
     testWidgets('centímetro is also a plain decimal field', (tester) async {
-      await material('Cinta', 'centímetro', 40);
-      await openUsage(tester, 'Cinta');
+      await material('Papel para stickers', 'centímetro', 40);
+      await openUsage(tester, 'Papel para stickers');
 
       expect(find.byType(FractionQuantityPicker), findsNothing);
       expect(find.text('Stock disponible: 40 centímetros'), findsOneWidget);

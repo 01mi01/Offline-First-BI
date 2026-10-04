@@ -26,14 +26,14 @@ void main() {
 
   group('margen de ganancia por producto', () {
     test('ranks by margin, not by revenue, and skips products without cost', () async {
-      final oleo = await h.newProduct('Óleo', productionCost: 90);
-      final bufanda = await h.newProduct('Bufanda', productionCost: 70);
-      final taza = await h.newProduct('Taza', productionCost: 40);
-      final llavero = await h.newProduct('Llavero'); // sin costo de producción
+      final oleo = await h.newProduct('Miniaturas', productionCost: 90);
+      final libro = await h.newProduct('Libro', productionCost: 70);
+      final stickersHolo = await h.newProduct('Stickers holográficos', productionCost: 40);
+      final pinesGrandes = await h.newProduct('Pines grandes'); // sin costo de producción
       await h.sell(day(0), oleo, 2, 300); // 600, costo 180 → 420 (70 %)
-      await h.sell(day(-1), bufanda, 20, 90); // 1800, costo 1400 → 400 (22.2 %)
-      await h.sell(day(-2), taza, 5, 45); // 225, costo 200 → 25 (11.1 %)
-      await h.sell(day(-2), llavero, 3, 12); // sin costo: no entra
+      await h.sell(day(-1), libro, 20, 90); // 1800, costo 1400 → 400 (22.2 %)
+      await h.sell(day(-2), stickersHolo, 5, 45); // 225, costo 200 → 25 (11.1 %)
+      await h.sell(day(-2), pinesGrandes, 3, 12); // sin costo: no entra
       await h.sell(day(-3), oleo, 10, 300); // se cancela
       await h.sell(day(4), oleo, 5, 300); // futura
       await h.refresh();
@@ -42,7 +42,7 @@ void main() {
 
       final margins = h.report().productMargins;
       expect(margins.withoutCost, 1);
-      expect(margins.entries.map((e) => e.name), ['Óleo', 'Bufanda', 'Taza']);
+      expect(margins.entries.map((e) => e.name), ['Miniaturas', 'Libro', 'Stickers holográficos']);
 
       final o = margins.entries[0];
       expect(o.revenue, 600);
@@ -60,13 +60,13 @@ void main() {
       expect(t.profit, 25);
       expect(t.marginPct, closeTo(11.1111, 1e-3));
 
-      // Por ingresos, Bufanda iría primero: el margen cuenta otra historia.
+      // Por ingresos, Libro iría primero: el margen cuenta otra historia.
       final byRevenue = h.report().salesByProduct.first;
-      expect(byRevenue.label, 'Bufanda');
+      expect(byRevenue.label, 'Libro');
     });
 
     test('uses the net amount after the sale discount', () async {
-      final p = await h.newProduct('Cuadro', productionCost: 50);
+      final p = await h.newProduct('Tote bag negra', productionCost: 50);
       await h.sell(day(0), p, 2, 100, discount: 20); // neto 180, costo 100
       await h.refresh();
       final e = h.report().productMargins.entries.single;
@@ -76,7 +76,7 @@ void main() {
     });
 
     test('respects the period filter', () async {
-      final p = await h.newProduct('Cuadro', productionCost: 50);
+      final p = await h.newProduct('Tote bag negra', productionCost: 50);
       await h.sell(day(0), p, 1, 100);
       await h.sell(day(-30), p, 1, 500);
       await h.refresh();
@@ -87,7 +87,7 @@ void main() {
 
   group('proyección de ventas', () {
     test('a perfectly linear weekly trend is extended exactly', () async {
-      final p = await h.newProduct('Cuadro', stock: 1000);
+      final p = await h.newProduct('Tote bag negra', stock: 1000);
       final monday = thisMonday();
       // 16 semanas completas, una venta cada una (el miércoles): 300, 340, ...
       // 900, es decir 300 + 40 por semana.
@@ -126,7 +126,7 @@ void main() {
     });
 
     test('a short daily period projects the next 7 days from complete days only', () async {
-      final p = await h.newProduct('Cuadro', stock: 1000);
+      final p = await h.newProduct('Tote bag negra', stock: 1000);
       // 9 días completos (hace 9 a hace 1) con 100, 110 ... 180, y hoy a medias.
       for (var i = 0; i < 9; i++) {
         await h.sell(day(-9 + i), p, 1, 100.0 + 10 * i);
@@ -147,7 +147,7 @@ void main() {
     });
 
     test('never projects below zero', () async {
-      final p = await h.newProduct('Cuadro', stock: 1000);
+      final p = await h.newProduct('Tote bag negra', stock: 1000);
       final monday = thisMonday();
       // Cae 120 por semana: la recta cruza el cero dentro del horizonte.
       for (var k = 5; k >= 1; k--) {
@@ -163,7 +163,7 @@ void main() {
     });
 
     test('is unavailable when the period ends before today', () async {
-      final p = await h.newProduct('Cuadro');
+      final p = await h.newProduct('Tote bag negra');
       for (var i = 1; i <= 10; i++) {
         await h.sell(day(-i), p, 1, 100);
       }
@@ -176,7 +176,7 @@ void main() {
     });
 
     test('is unavailable with fewer than 3 complete intervals or no sales', () async {
-      final p = await h.newProduct('Cuadro');
+      final p = await h.newProduct('Tote bag negra');
       await h.sell(day(-1), p, 1, 100);
       await h.sell(day(0), p, 1, 100);
       await h.refresh();
@@ -193,8 +193,8 @@ void main() {
 
   group('evento vs. días regulares', () {
     test('splits days and sales by the event dates and the sale\'s own date', () async {
-      final p = await h.newProduct('Cuadro', stock: 1000);
-      final feria = await h.newEvent('Feria', day(-6), day(-4)); // 3 días
+      final p = await h.newProduct('Tote bag negra', stock: 1000);
+      final feria = await h.newEvent('Feria de Arte', day(-6), day(-4)); // 3 días
       // Días de evento: -6, -5, -4.
       await h.sell(day(-5), p, 1, 200, eventId: feria);
       await h.sell(day(-5), p, 1, 100, eventId: feria);
@@ -228,8 +228,8 @@ void main() {
     });
 
     test('an event that runs past today only counts the days up to today', () async {
-      final p = await h.newProduct('Cuadro', stock: 1000);
-      await h.newEvent('Expo', day(-1), day(3));
+      final p = await h.newProduct('Tote bag negra', stock: 1000);
+      await h.newEvent('Exposición de Arte', day(-1), day(3));
       await h.sell(day(-1), p, 1, 100);
       await h.sell(day(0), p, 1, 300);
       await h.sell(day(-4), p, 1, 40);
@@ -243,8 +243,8 @@ void main() {
     });
 
     test('no event days in the period leaves the comparison without data', () async {
-      final p = await h.newProduct('Cuadro');
-      await h.newEvent('Antigua', day(-100), day(-98));
+      final p = await h.newProduct('Tote bag negra');
+      await h.newEvent('Feria del Libro La Paz', day(-100), day(-98));
       await h.sell(day(0), p, 1, 100);
       await h.refresh();
       final c = h.report(ReportFilters(startDate: day(-5), endDate: day(0))).eventComparison;
@@ -256,8 +256,8 @@ void main() {
 
   group('costo de materiales vs. ingresos', () {
     test('compares material purchases against sales revenue', () async {
-      final p = await h.newProduct('Cuadro');
-      final tela = await h.newMaterial('Tela');
+      final p = await h.newProduct('Tote bag negra');
+      final tela = await h.newMaterial('Tela negra');
       await h.sell(day(0), p, 4, 200); // 800
       await h.buyMaterial(day(-1), tela, 10, 10); // 100
       await h.buyMaterial(day(-3), tela, 6, 10); // 60
@@ -272,7 +272,7 @@ void main() {
     });
 
     test('has no ratio without revenue and follows the purchase kind filter', () async {
-      final tela = await h.newMaterial('Tela');
+      final tela = await h.newMaterial('Tela negra');
       await h.buyMaterial(day(0), tela, 1, 40);
       await h.refresh();
       expect(h.report().materialCost.ratioPct, isNull);
@@ -286,12 +286,12 @@ void main() {
 
   group('productos sin movimiento', () {
     test('lists active products with no valid sale in the window, never-sold first', () async {
-      final a = await h.newProduct('Reciente');
-      final b = await h.newProduct('Antiguo');
-      await h.newProduct('Nunca');
-      await h.newProduct('Inactivo', isActive: false);
-      final cancelada = await h.newProduct('SoloCancelada');
-      final futura = await h.newProduct('SoloFutura');
+      final a = await h.newProduct('Stickers');
+      final b = await h.newProduct('Pines grandes');
+      await h.newProduct('Estuches');
+      await h.newProduct('Tote bag beige', isActive: false);
+      final cancelada = await h.newProduct('Libro');
+      final futura = await h.newProduct('Miniaturas');
       await h.sell(day(-5), a, 1, 10);
       await h.sell(day(-40), b, 1, 20);
       await h.sell(day(-2), cancelada, 1, 77);
@@ -302,47 +302,47 @@ void main() {
 
       final entries = h.report().noMovement; // 30 días
       expect(entries.map((e) => e.product.name), [
-        'Nunca',
-        'SoloCancelada',
-        'SoloFutura',
-        'Antiguo',
+        'Estuches',
+        'Libro',
+        'Miniaturas',
+        'Pines grandes',
       ]);
       expect(entries.first.lastSale, isNull);
       expect(entries.first.daysSinceLastSale, isNull);
-      final antiguo = entries.last;
-      expect(antiguo.daysSinceLastSale, 40);
-      expect(antiguo.lastSale, DateTime(day(-40).year, day(-40).month, day(-40).day));
+      final pinesGrandes = entries.last;
+      expect(pinesGrandes.daysSinceLastSale, 40);
+      expect(pinesGrandes.lastSale, DateTime(day(-40).year, day(-40).month, day(-40).day));
 
-      // La ventana es configurable: con 60 días "Antiguo" ya vendió; con 7,
-      // "Reciente" (hace 5 días) sigue contando como movimiento.
+      // La ventana es configurable: con 60 días "Pines grandes" ya vendió; con 7,
+      // "Stickers" (hace 5 días) sigue contando como movimiento.
       expect(
         h.report(const ReportFilters(), 60).noMovement.map((e) => e.product.name),
-        ['Nunca', 'SoloCancelada', 'SoloFutura'],
+        ['Estuches', 'Libro', 'Miniaturas'],
       );
       expect(
         h.report(const ReportFilters(), 7).noMovement.map((e) => e.product.name),
-        contains('Antiguo'),
+        contains('Pines grandes'),
       );
       expect(
         h.report(const ReportFilters(), 7).noMovement.map((e) => e.product.name),
-        isNot(contains('Reciente')),
+        isNot(contains('Stickers')),
       );
       expect(
         h.report(const ReportFilters(), 3).noMovement.map((e) => e.product.name),
-        contains('Reciente'),
+        contains('Stickers'),
       );
     });
 
     test('ignores the period and every filter (it measures recency)', () async {
-      final p = await h.newProduct('Reciente');
-      final q = await h.newProduct('Viejo');
+      final p = await h.newProduct('Stickers');
+      final q = await h.newProduct('Libro');
       await h.sell(day(-1), p, 1, 10);
       await h.sell(day(-50), q, 1, 10);
       await h.refresh();
       final filtered = h.report(
         ReportFilters(startDate: day(-300), endDate: day(-200), productId: p),
       );
-      expect(filtered.noMovement.map((e) => e.product.name), ['Viejo']);
+      expect(filtered.noMovement.map((e) => e.product.name), ['Libro']);
     });
   });
 
@@ -431,7 +431,7 @@ void main() {
 
     test('shows totals and % change against the previous equivalent period', () async {
       final r = plainRange();
-      final p = await h.newProduct('Cuadro', stock: 1000);
+      final p = await h.newProduct('Tote bag negra', stock: 1000);
       // Periodo actual: ingresos 600, gastos 200.
       await h.sell(DateTime(r.start.year, r.start.month, r.start.day + 1, 12), p, 1, 400);
       await h.sell(day(0), p, 1, 200);
@@ -460,7 +460,7 @@ void main() {
 
     test('canceled and future-dated records are excluded from both periods', () async {
       final r = plainRange();
-      final p = await h.newProduct('Cuadro', stock: 1000);
+      final p = await h.newProduct('Tote bag negra', stock: 1000);
       final before = DateTime(r.start.year, r.start.month, r.start.day - 2, 12);
       await h.sell(before, p, 1, 300);
       await h.sell(before, p, 1, 555); // se cancela
@@ -493,8 +493,8 @@ void main() {
 
     test('other filters carry over to the previous period', () async {
       final r = plainRange();
-      final a = await h.newProduct('A', stock: 1000);
-      final b = await h.newProduct('B', stock: 1000);
+      final a = await h.newProduct('Estuches', stock: 1000);
+      final b = await h.newProduct('Libro', stock: 1000);
       final before = DateTime(r.start.year, r.start.month, r.start.day - 2, 12);
       await h.sell(before, a, 1, 100);
       await h.sell(before, b, 1, 900);
@@ -511,19 +511,19 @@ void main() {
 
   group('radar de productos', () {
     test('normalizes the four axes against the best product of the period', () async {
-      // Stock inicial = lo vendido + lo que queda: Óleo queda con 3, Bufanda con 0
-      // y Taza con 10.
-      final oleo = await h.newProduct('Óleo', productionCost: 90, stock: 5);
-      final bufanda = await h.newProduct('Bufanda', productionCost: 70, stock: 20);
-      final taza = await h.newProduct('Taza', stock: 20); // sin costo
+      // Stock inicial = lo vendido + lo que queda: Miniaturas queda con 3, Libro con 0
+      // y Stickers holográficos con 10.
+      final oleo = await h.newProduct('Miniaturas', productionCost: 90, stock: 5);
+      final libro = await h.newProduct('Libro', productionCost: 70, stock: 20);
+      final stickersHolo = await h.newProduct('Stickers holográficos', stock: 20); // sin costo
       await h.sell(day(0), oleo, 2, 300); // 600, 2 uds, costo 180 → 70 %
-      await h.sell(day(-1), bufanda, 20, 90); // 1800, 20 uds, costo 1400 → 22.2 %
-      await h.sell(day(-1), taza, 10, 5); // 50, 10 uds
+      await h.sell(day(-1), libro, 20, 90); // 1800, 20 uds, costo 1400 → 22.2 %
+      await h.sell(day(-1), stickersHolo, 10, 5); // 50, 10 uds
       await h.refresh();
 
-      final radar = h.report(const ReportFilters(), 30, [oleo, bufanda, taza]).radar;
+      final radar = h.report(const ReportFilters(), 30, [oleo, libro, stickersHolo]).radar;
       expect(radar.autoSelected, isFalse);
-      expect(radar.products.map((p) => p.name), ['Óleo', 'Bufanda', 'Taza']);
+      expect(radar.products.map((p) => p.name), ['Miniaturas', 'Libro', 'Stickers holográficos']);
 
       final o = radar.products[0];
       expect(o.revenueNorm, closeTo(600 / 1800, 1e-9));
@@ -549,7 +549,7 @@ void main() {
     test('without a valid selection the 3 best sellers are used', () async {
       final ids = <int>[];
       for (var i = 0; i < 5; i++) {
-        final id = await h.newProduct('P$i');
+        final id = await h.newProduct('Producto $i');
         ids.add(id);
         await h.sell(day(0), id, 1, 100.0 + i * 10);
       }
@@ -557,7 +557,7 @@ void main() {
 
       final auto = h.report().radar;
       expect(auto.autoSelected, isTrue);
-      expect(auto.products.map((p) => p.name), ['P4', 'P3', 'P2']);
+      expect(auto.products.map((p) => p.name), ['Producto 4', 'Producto 3', 'Producto 2']);
 
       // Una sola elegida no alcanza (mínimo 2): también cae a los más vendidos.
       expect(h.report(const ReportFilters(), 30, [ids.first]).radar.autoSelected, isTrue);
@@ -568,24 +568,24 @@ void main() {
     test('at most four products are drawn, in the order chosen', () async {
       final ids = <int>[];
       for (var i = 0; i < 6; i++) {
-        final id = await h.newProduct('P$i');
+        final id = await h.newProduct('Producto $i');
         ids.add(id);
         await h.sell(day(0), id, 1, 100.0);
       }
       await h.refresh();
       final radar = h.report(const ReportFilters(), 30, ids.reversed.toList()).radar;
       expect(radar.autoSelected, isFalse);
-      expect(radar.products.map((p) => p.name), ['P5', 'P4', 'P3', 'P2']);
+      expect(radar.products.map((p) => p.name), ['Producto 5', 'Producto 4', 'Producto 3', 'Producto 2']);
     });
 
     test('a selected product with no sales in the period shows zeros, not an error', () async {
-      final a = await h.newProduct('Vendido');
-      final b = await h.newProduct('Quieto', stock: 8, productionCost: 5);
+      final a = await h.newProduct('Estuches');
+      final b = await h.newProduct('Libro', stock: 8, productionCost: 5);
       await h.sell(day(0), a, 1, 100);
       await h.refresh();
       final radar = h.report(const ReportFilters(), 30, [a, b]).radar;
       final quiet = radar.products.last;
-      expect(quiet.name, 'Quieto');
+      expect(quiet.name, 'Libro');
       expect(quiet.revenueNorm, 0);
       expect(quiet.unitsNorm, 0);
       expect(quiet.rotationNorm, 0);
@@ -595,8 +595,8 @@ void main() {
 
   group('exclusión de registros cancelados y futuros en todos los indicadores nuevos', () {
     test('a canceled sale and a future sale leave no trace', () async {
-      final p = await h.newProduct('Cuadro', productionCost: 10, stock: 1000);
-      final q = await h.newProduct('Otro', productionCost: 10, stock: 1000);
+      final p = await h.newProduct('Tote bag negra', productionCost: 10, stock: 1000);
+      final q = await h.newProduct('Libro', productionCost: 10, stock: 1000);
       await h.sell(day(0), p, 1, 100);
       await h.sell(day(-1), q, 5, 321); // se cancela
       await h.sell(day(3), q, 7, 654); // futura
@@ -605,12 +605,12 @@ void main() {
       await h.refresh();
 
       final r = h.report(ReportFilters(startDate: day(-5), endDate: day(0)));
-      expect(r.productMargins.entries.map((e) => e.name), ['Cuadro']);
-      expect(r.radar.products.map((e) => e.name), isNot(contains('Otro')));
+      expect(r.productMargins.entries.map((e) => e.name), ['Tote bag negra']);
+      expect(r.radar.products.map((e) => e.name), isNot(contains('Libro')));
       expect(r.eventComparison.eventRevenue + r.eventComparison.regularRevenue, 100);
       expect(r.periodComparison.current.ingresos, 100);
       expect(r.materialCost.revenue, 100);
-      expect(r.noMovement.map((e) => e.product.name), ['Otro']);
+      expect(r.noMovement.map((e) => e.product.name), ['Libro']);
     });
   });
 }

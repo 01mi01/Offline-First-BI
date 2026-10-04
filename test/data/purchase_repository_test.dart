@@ -105,7 +105,7 @@ void main() {
       await repository.createPurchase(
         supplierId: null,
         isMaterial: false,
-        description: 'Transporte',
+        description: 'Pasaje de bus',
         totalAmount: 50,
         date: DateTime(2024, 1, 1),
         locationId: null,
@@ -122,7 +122,7 @@ void main() {
       final purchases = await repository.getAll();
       expect(purchases, hasLength(1));
       expect(purchases.first.isMaterial, isFalse);
-      expect(purchases.first.description, 'Transporte');
+      expect(purchases.first.description, 'Pasaje de bus');
 
       final items = await repository.getItemsForPurchase(purchases.first.id);
       expect(items, isEmpty);
@@ -197,7 +197,7 @@ void main() {
       await repository.createPurchase(
         supplierId: null,
         isMaterial: false,
-        description: 'Transporte',
+        description: 'Pasaje de bus',
         totalAmount: 25,
         date: DateTime(2024, 1, 1),
         locationId: null,
@@ -213,12 +213,12 @@ void main() {
     test('createPurchase with a real supplier keeps that supplier', () async {
       final chosen = await db
           .into(db.suppliers)
-          .insert(SuppliersCompanion.insert(name: 'Proveedor Andino'));
+          .insert(SuppliersCompanion.insert(name: 'Riverside Supply Co.'));
 
       await repository.createPurchase(
         supplierId: chosen,
         isMaterial: false,
-        description: 'Transporte',
+        description: 'Pasaje de bus',
         totalAmount: 25,
         date: DateTime(2024, 1, 1),
         locationId: null,
@@ -232,11 +232,11 @@ void main() {
     test('editPurchase with no supplier falls back to "Sin proveedor" too', () async {
       final chosen = await db
           .into(db.suppliers)
-          .insert(SuppliersCompanion.insert(name: 'Proveedor Andino'));
+          .insert(SuppliersCompanion.insert(name: 'Riverside Supply Co.'));
       await repository.createPurchase(
         supplierId: chosen,
         isMaterial: false,
-        description: 'Transporte',
+        description: 'Pasaje de bus',
         totalAmount: 25,
         date: DateTime(2024, 1, 1),
         locationId: null,
@@ -249,7 +249,7 @@ void main() {
         purchaseId: purchaseId,
         supplierId: null,
         isMaterial: false,
-        description: 'Transporte',
+        description: 'Pasaje de bus',
         totalAmount: 25,
         date: DateTime(2024, 1, 1),
         locationId: null,

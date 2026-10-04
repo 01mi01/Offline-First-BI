@@ -65,7 +65,7 @@ void main() {
   group('product prices: only one is required', () {
     test('saving with only Precio A copies it to Precio B', () async {
       final repo = ProductRepository(db);
-      await repo.save(name: 'Acuarela', priceA: 55, stock: 1);
+      await repo.save(name: 'Estuches', priceA: 55, stock: 1);
       final p = (await repo.getAllIncludingInactive()).single;
       expect(p.priceA, 55.0);
       expect(p.priceB, 55.0);
@@ -73,7 +73,7 @@ void main() {
 
     test('saving with only Precio B copies it to Precio A', () async {
       final repo = ProductRepository(db);
-      await repo.save(name: 'Acuarela', priceB: 40, stock: 1);
+      await repo.save(name: 'Estuches', priceB: 40, stock: 1);
       final p = (await repo.getAllIncludingInactive()).single;
       expect(p.priceA, 40.0);
       expect(p.priceB, 40.0);
@@ -81,7 +81,7 @@ void main() {
 
     test('two different prices are kept as they are', () async {
       final repo = ProductRepository(db);
-      await repo.save(name: 'Acuarela', priceA: 55, priceB: 40, stock: 1);
+      await repo.save(name: 'Estuches', priceA: 55, priceB: 40, stock: 1);
       final p = (await repo.getAllIncludingInactive()).single;
       expect(p.priceA, 55.0);
       expect(p.priceB, 40.0);
@@ -89,9 +89,9 @@ void main() {
 
     test('editing to a single price also equalizes the other one', () async {
       final repo = ProductRepository(db);
-      await repo.save(name: 'Acuarela', priceA: 55, priceB: 40, stock: 1);
+      await repo.save(name: 'Estuches', priceA: 55, priceB: 40, stock: 1);
       final id = (await repo.getAllIncludingInactive()).single.id;
-      await repo.save(id: id, name: 'Acuarela', priceA: 70, stock: 1);
+      await repo.save(id: id, name: 'Estuches', priceA: 70, stock: 1);
       final p = (await repo.getAllIncludingInactive()).single;
       expect([p.priceA, p.priceB], [70.0, 70.0]);
     });
@@ -99,7 +99,7 @@ void main() {
     test('with no price at all it refuses to save', () async {
       final repo = ProductRepository(db);
       await expectLater(
-        repo.save(name: 'Acuarela', stock: 1),
+        repo.save(name: 'Estuches', stock: 1),
         throwsArgumentError,
       );
       expect(await repo.getAllIncludingInactive(), isEmpty);
@@ -312,7 +312,7 @@ void main() {
     test('stock > 0 registers a Material purchase and does not double the stock', () async {
       final repo = MaterialRepository(db);
       await repo.save(
-        name: 'Tela',
+        name: 'Tela negra',
         unitId: await unitId('metro'),
         stock: 5,
         pricePerUnit: 3,
@@ -338,7 +338,7 @@ void main() {
 
     test('the purchase goes to the default supplier "Sin proveedor"', () async {
       await MaterialRepository(db).save(
-        name: 'Tela',
+        name: 'Tela negra',
         unitId: await unitId('metro'),
         stock: 2,
         pricePerUnit: 1,
@@ -352,7 +352,7 @@ void main() {
 
     test('stock 0 creates the material without any purchase', () async {
       await MaterialRepository(db).save(
-        name: 'Hilo',
+        name: 'Resina parte A',
         unitId: await unitId('metro'),
         stock: 0,
         pricePerUnit: 2,
@@ -364,12 +364,12 @@ void main() {
     test('editing an existing material never creates another purchase', () async {
       final repo = MaterialRepository(db);
       final unit = await unitId('metro');
-      await repo.save(name: 'Tela', unitId: unit, stock: 5, pricePerUnit: 3);
+      await repo.save(name: 'Tela negra', unitId: unit, stock: 5, pricePerUnit: 3);
       final id = (await db.select(db.materials).getSingle()).id;
 
       await repo.save(
         id: id,
-        name: 'Tela fina',
+        name: 'Tela beige',
         unitId: unit,
         stock: 9,
         pricePerUnit: 4,
@@ -388,7 +388,7 @@ void main() {
       container.read(purchaseProvider); // la lista de Compras ya está abierta
 
       await container.read(materialProvider.notifier).save(
-        name: 'Tela',
+        name: 'Tela negra',
         unitId: await unitId('metro'),
         stock: 4,
         pricePerUnit: 2,
@@ -406,7 +406,7 @@ void main() {
       final unit = await unitId('metro');
       final materialId = await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Tela',
+          name: 'Tela negra',
           unitId: unit,
           pricePerUnit: 4,
           stock: const Value(10),
@@ -439,38 +439,38 @@ void main() {
 
   group('Productos: búsqueda, categoría y orden por precio', () {
     final products = [
-      _product(1, 'Acuarela', a: 30, b: 10, category: 1, description: 'Pintura'),
-      _product(2, 'Bufanda', a: 10, b: 50, category: 2),
-      _product(3, 'Cuaderno', a: 20, b: 30, category: 2, description: 'Con pintura'),
+      _product(1, 'Estuches', a: 30, b: 10, category: 1, description: 'Pintura'),
+      _product(2, 'Libro', a: 10, b: 50, category: 2),
+      _product(3, 'Miniaturas', a: 20, b: 30, category: 2, description: 'Con pintura'),
     ];
 
     List<String> names(ProductCatalogFilter f) =>
         f.apply(products).map((p) => p.name).toList();
 
     test('the result keeps the incoming (alphabetical) order: there is no sorter', () {
-      expect(names(const ProductCatalogFilter()), ['Acuarela', 'Bufanda', 'Cuaderno']);
+      expect(names(const ProductCatalogFilter()), ['Estuches', 'Libro', 'Miniaturas']);
     });
 
     test('search matches name or description, ignoring case', () {
-      expect(names(const ProductCatalogFilter(query: 'BUF')), ['Bufanda']);
+      expect(names(const ProductCatalogFilter(query: 'LIB')), ['Libro']);
       expect(names(const ProductCatalogFilter(query: 'pintura')), [
-        'Acuarela',
-        'Cuaderno',
+        'Estuches',
+        'Miniaturas',
       ]);
       expect(names(const ProductCatalogFilter(query: 'zzz')), isEmpty);
     });
 
     test('filters by category', () {
       expect(names(const ProductCatalogFilter(categoryId: 2)), [
-        'Bufanda',
-        'Cuaderno',
+        'Libro',
+        'Miniaturas',
       ]);
     });
 
     test('category and search combine', () {
       expect(
         names(const ProductCatalogFilter(categoryId: 2, query: 'pintura')),
-        ['Cuaderno'],
+        ['Miniaturas'],
       );
     });
 
@@ -500,36 +500,36 @@ void main() {
           createdAt: DateTime(2026),
         );
     final categories = [
-      cat(1, 'Bisutería', d: 'Collares'),
-      cat(2, 'Cuadernos', active: false),
-      cat(3, 'Acuarelas'),
+      cat(1, 'Pines', d: 'Collares'),
+      cat(2, 'Libros', active: false),
+      cat(3, 'Papelería'),
     ];
     List<String> names(CategoryCatalogFilter f) =>
         f.apply(categories).map((c) => c.name).toList();
 
     test('keeps the incoming order (no sorter)', () {
       expect(names(const CategoryCatalogFilter()), [
-        'Bisutería',
-        'Cuadernos',
-        'Acuarelas',
+        'Pines',
+        'Libros',
+        'Papelería',
       ]);
     });
 
     test('searches by name only, ignoring case', () {
-      expect(names(const CategoryCatalogFilter(query: 'CUAD')), ['Cuadernos']);
-      expect(names(const CategoryCatalogFilter(query: 'acua')), ['Acuarelas']);
-      // La descripción ya no cuenta: "collar" está en la descripción de Bisutería.
+      expect(names(const CategoryCatalogFilter(query: 'LIB')), ['Libros']);
+      expect(names(const CategoryCatalogFilter(query: 'PAPE')), ['Papelería']);
+      // La descripción ya no cuenta: "collar" está en la descripción de Pines.
       expect(names(const CategoryCatalogFilter(query: 'collar')), isEmpty);
     });
 
     test('filters by status', () {
       expect(
         names(const CategoryCatalogFilter(status: CategoryStatusFilter.active)),
-        ['Bisutería', 'Acuarelas'],
+        ['Pines', 'Papelería'],
       );
       expect(
         names(const CategoryCatalogFilter(status: CategoryStatusFilter.inactive)),
-        ['Cuadernos'],
+        ['Libros'],
       );
     });
   });

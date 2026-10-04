@@ -29,7 +29,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Collar',
+        name: 'Tote bag negra',
         priceA: 10,
         priceB: 8,
         stock: const Value(5),
@@ -38,7 +38,7 @@ void main() {
     final unit = await (db.select(
       db.units,
     )..where((u) => u.name.equals('contenedor'))).getSingle();
-    for (final name in ['Vidrio fino', 'Hilo']) {
+    for (final name in ['Tela beige', 'Resina parte A']) {
       await db.into(db.materials).insert(
         MaterialsCompanion.insert(
           name: name,
@@ -245,7 +245,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Pulsera',
+          name: 'Set de pines pequeños',
           priceA: 5,
           priceB: 5,
           stock: const Value(1),
@@ -346,9 +346,9 @@ void main() {
 
       expect(log, hasLength(2));
       final byName = {for (final e in log) e.materialName: e};
-      expect(byName['Vidrio fino']!.isCanceled, isTrue);
-      expect(byName['Vidrio fino']!.canceledAt, isNotNull);
-      expect(byName['Hilo']!.isCanceled, isFalse);
+      expect(byName['Tela beige']!.isCanceled, isTrue);
+      expect(byName['Tela beige']!.canceledAt, isNotNull);
+      expect(byName['Resina parte A']!.isCanceled, isFalse);
     });
 
     test('canceled usage no longer counts as a material of the product', () async {
@@ -364,9 +364,9 @@ void main() {
       );
       await repository.cancelMaterialUsage((await recordFor(1, 1)).id);
 
-      expect(await repository.getUniqueMaterialNamesForProduct(1), ['Hilo']);
+      expect(await repository.getUniqueMaterialNamesForProduct(1), ['Resina parte A']);
       final priced = await repository.getMaterialsWithPriceForProduct(1);
-      expect(priced.map((m) => m['name']), ['Hilo']);
+      expect(priced.map((m) => m['name']), ['Resina parte A']);
     });
   });
 }

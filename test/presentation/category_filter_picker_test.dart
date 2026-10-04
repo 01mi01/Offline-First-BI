@@ -48,14 +48,11 @@ void main() {
   final clientIds = <String, int>{};
   final eventIds = <String, int>{};
   const categoryNames = [
-    'Cerámica',
-    'Joyería',
-    'Madera',
+    'Bolsas',
+    'Miniaturas',
     'Papelería',
-    'Pinturas',
+    'Pines',
     'Sin categoría',
-    'Textiles',
-    'Vidrio',
   ];
 
   setUp(() async {
@@ -71,12 +68,12 @@ void main() {
     )..where((c) => c.name.equals('Sin categoría'))).getSingle();
     categoryIds['Sin categoría'] = defaultCategory.id;
     for (var i = 0; i < 25; i++) {
-      final name = 'P${i.toString().padLeft(2, '0')}';
+      final name = 'Producto ${i + 1}';
       productIds[name] = await db
           .into(db.products)
           .insert(
             ProductsCompanion.insert(
-              categoryId: categoryIds['Joyería']!,
+              categoryId: categoryIds['Bolsas']!,
               name: name,
               priceA: 10,
               priceB: 8,
@@ -84,14 +81,14 @@ void main() {
           );
     }
     for (final name in [
-      'Ana Pérez',
-      'Beto Rojas',
-      'Carla Mamani',
-      'Diego Quispe',
-      'Elena Torres',
-      'Fabio Vega',
-      'Gloria Paz',
-      'Hugo Salas',
+      'John Smith',
+      'Emily Johnson',
+      'Ana Martínez',
+      'Jessica Taylor',
+      'Daniel Anderson',
+      'Laura Thompson',
+      'Robert Clark',
+      'Michael Brown',
     ]) {
       clientIds[name] = await db
           .into(db.clients)
@@ -99,13 +96,13 @@ void main() {
     }
     for (final name in [
       'Feria de Arte',
-      'Bazar Navideño',
-      'Expo Cultural',
-      'Mercado Artesanal',
-      'Festival de Otoño',
-      'Muestra Anual',
-      'Taller Abierto',
-      'Noche de Museos',
+      'Feria del Libro La Paz',
+      'Feria del Libro Cochabamba',
+      'Feria del Libro Santa Cruz',
+      'Exposición de Arte',
+      'Feria de Lima',
+      'Feria de Octubre',
+      'Larga Noche de Museos La Paz',
     ]) {
       eventIds[name] = await db
           .into(db.events)
@@ -117,7 +114,7 @@ void main() {
       await db
           .into(db.locations)
           .insert(
-            LocationsCompanion.insert(city: 'Ciudad $i', country: 'Bolivia'),
+            LocationsCompanion.insert(city: 'Zona $i', country: 'Bolivia'),
           );
     }
   });
@@ -165,8 +162,8 @@ void main() {
         expect(find.byType(TextField), findsOneWidget);
         expect(find.text('Buscar categoría'), findsOneWidget);
         expect(find.byKey(const ValueKey('picker-type-to-search')), findsOneWidget);
-        // Las 8 categorías no se listan hasta buscar (ya no hay nada que desborde).
-        expect(find.text('Madera'), findsNothing);
+        // Las categorías no se listan hasta buscar (ya no hay nada que desborde).
+        expect(find.text('Pines'), findsNothing);
         expect(tester.takeException(), isNull);
       });
 
@@ -178,17 +175,17 @@ void main() {
         await tester.tap(find.text('Categoría'));
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byType(TextField), 'jo');
+        await tester.enterText(find.byType(TextField), 'bol');
         await tester.pumpAndSettle();
-        expect(find.text('Joyería'), findsOneWidget);
-        expect(find.text('Madera'), findsNothing);
+        expect(find.text('Bolsas'), findsOneWidget);
+        expect(find.text('Pines'), findsNothing);
 
-        await tester.tap(find.text('Joyería'));
+        await tester.tap(find.text('Bolsas'));
         await tester.pumpAndSettle();
-        expect(last!.categoryId, categoryIds['Joyería']);
+        expect(last!.categoryId, categoryIds['Bolsas']);
         // La hoja se cerró y el chip muestra la categoría elegida.
         expect(find.text('Filtrar por Categoría'), findsNothing);
-        expect(find.text('Joyería'), findsOneWidget);
+        expect(find.text('Bolsas'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
@@ -199,9 +196,9 @@ void main() {
         await tester.tap(find.text('Categoría'));
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byType(TextField), 'CERAMICA');
+        await tester.enterText(find.byType(TextField), 'PAPELERIA');
         await tester.pumpAndSettle();
-        expect(find.text('Cerámica'), findsOneWidget);
+        expect(find.text('Papelería'), findsOneWidget);
 
         await tester.enterText(find.byType(TextField), 'zzz');
         await tester.pumpAndSettle();
@@ -235,11 +232,11 @@ void main() {
           await tester.pumpAndSettle();
         }
 
-        await choose('mad', 'Madera');
-        expect(last!.categoryId, categoryIds['Madera']);
+        await choose('pin', 'Pines');
+        expect(last!.categoryId, categoryIds['Pines']);
 
         // Volver a abrir: la elegida aparece marcada y "Todas" la quita.
-        await tester.tap(find.text('Madera'));
+        await tester.tap(find.text('Pines'));
         await tester.pumpAndSettle();
         expect(find.text('Todas las categorías'), findsOneWidget);
         await tester.tap(find.text('Todas las categorías'));
@@ -248,8 +245,8 @@ void main() {
         expect(find.text('Categoría'), findsOneWidget);
 
         // La X del chip también la quita, como antes.
-        await choose('tex', 'Textiles');
-        expect(last!.categoryId, categoryIds['Textiles']);
+        await choose('mini', 'Miniaturas');
+        expect(last!.categoryId, categoryIds['Miniaturas']);
         await tester.tap(find.byIcon(Icons.close));
         await tester.pumpAndSettle();
         expect(last!.categoryId, isNull);
@@ -278,11 +275,11 @@ void main() {
       title: 'Filtrar por Producto',
       hint: 'Buscar producto',
       all: 'Todos los productos',
-      query: 'p24',
-      result: 'P24',
-      other: 'P03',
+      query: 'producto 25',
+      result: 'Producto 25',
+      other: 'Producto 4',
       read: (ReportFilters f) => f.productId,
-      expected: () => productIds['P24'],
+      expected: () => productIds['Producto 25'],
     ),
     (
       chip: 'Cliente',
@@ -290,11 +287,11 @@ void main() {
       title: 'Filtrar por Cliente',
       hint: 'Buscar cliente',
       all: 'Todos los clientes',
-      query: 'carla',
-      result: 'Carla Mamani',
-      other: 'Hugo Salas',
+      query: 'martinez',
+      result: 'Ana Martínez',
+      other: 'Michael Brown',
       read: (ReportFilters f) => f.clientId,
-      expected: () => clientIds['Carla Mamani'],
+      expected: () => clientIds['Ana Martínez'],
     ),
     (
       chip: 'Evento',
@@ -302,11 +299,11 @@ void main() {
       title: 'Filtrar por Evento',
       hint: 'Buscar evento',
       all: 'Todos los eventos',
-      query: 'otono',
-      result: 'Festival de Otoño',
-      other: 'Muestra Anual',
+      query: 'exposicion',
+      result: 'Exposición de Arte',
+      other: 'Feria de Lima',
       read: (ReportFilters f) => f.eventId,
-      expected: () => eventIds['Festival de Otoño'],
+      expected: () => eventIds['Exposición de Arte'],
     ),
   ];
 
@@ -400,13 +397,13 @@ void main() {
     ) async {
       final otro = await db
           .into(db.categories)
-          .insert(CategoriesCompanion.insert(name: 'Otra'));
+          .insert(CategoriesCompanion.insert(name: 'Libros'));
       await db
           .into(db.products)
           .insert(
             ProductsCompanion.insert(
               categoryId: otro,
-              name: 'Solo en Otra',
+              name: 'Libro',
               priceA: 1,
               priceB: 1,
             ),
@@ -416,20 +413,20 @@ void main() {
 
       await tester.tap(find.text('Categoría'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'otra');
+      await tester.enterText(find.byType(TextField), 'libros');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Otra'));
+      await tester.tap(find.text('Libros'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Producto'));
       await tester.pumpAndSettle();
-      // P00..P24 son de Joyería: con "Otra" elegida no aparecen.
-      await tester.enterText(find.byType(TextField), 'p0');
+      // P00..P24 son de Bolsas: con "Libros" elegida no aparecen.
+      await tester.enterText(find.byType(TextField), 'producto 1');
       await tester.pumpAndSettle();
       expect(find.text('Sin resultados'), findsOneWidget);
-      await tester.enterText(find.byType(TextField), 'solo');
+      await tester.enterText(find.byType(TextField), 'libro');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Solo en Otra'));
+      await tester.tap(find.text('Libro'));
       await tester.pumpAndSettle();
       expect(last!.categoryId, isNotNull);
       expect(last!.productId, isNotNull);
@@ -448,18 +445,18 @@ void main() {
         expect(find.text('Filtrar por Ubicación'), findsOneWidget);
         expect(find.byType(TextField), findsNothing);
         expect(find.text('Escribe para buscar'), findsNothing);
-        expect(find.text('Ciudad 0, Bolivia'), findsOneWidget); // ya listada
+        expect(find.text('Zona 0, Bolivia'), findsOneWidget); // ya listada
         expect(tester.takeException(), isNull); // 20 ubicaciones en 640 px
 
         await tester.scrollUntilVisible(
-          find.text('Ciudad 19, Bolivia'),
+          find.text('Zona 19, Bolivia'),
           200,
           scrollable: find.descendant(
             of: find.byType(BottomSheet),
             matching: find.byType(Scrollable),
           ),
         );
-        await tester.tap(find.text('Ciudad 19, Bolivia'));
+        await tester.tap(find.text('Zona 19, Bolivia'));
         await tester.pumpAndSettle();
         expect(last!.locationId, isNotNull);
         expect(tester.takeException(), isNull);

@@ -113,8 +113,8 @@ void main() {
         );
       }
 
-      await material('Tela', 'metro');
-      await material('Botones', 'unidad');
+      await material('Tela negra', 'metro');
+      await material('Base metálica grande para pines', 'unidad');
     }
 
     Future<void> openPurchase(WidgetTester tester, {Size size = const Size(412, 915)}) async {
@@ -159,10 +159,10 @@ void main() {
       await seedMaterials();
       await openPurchase(tester);
 
-      await addLine(tester, 'Tela', '2');
+      await addLine(tester, 'Tela negra', '2');
       expect(find.text('2 metros'), findsOneWidget);
 
-      await addLine(tester, 'Botones', '1');
+      await addLine(tester, 'Base metálica grande para pines', '1');
       expect(find.text('1 unidad'), findsOneWidget);
 
       // El botón "+" sube la cantidad y la unidad concuerda con el nuevo número.
@@ -260,11 +260,11 @@ void main() {
         db.units,
       )..where((u) => u.name.equals('contenedor'))).getSingle();
       final productId = await db.into(db.products).insert(
-        ProductsCompanion.insert(categoryId: 1, name: 'Acuarela', priceA: 55, priceB: 40),
+        ProductsCompanion.insert(categoryId: 1, name: 'Estuches', priceA: 55, priceB: 40),
       );
       final materialId = await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Pintura',
+          name: 'Papel holográfico para stickers',
           unitId: unit.id,
           pricePerUnit: 12,
           stock: const Value(10),
@@ -288,7 +288,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Acuarela', 'Acuarela');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
 
       final quantity = find.text('Cantidad: 2 contenedores');
       final price = find.text('Bs. 12.00 / contenedor');

@@ -48,11 +48,27 @@ class BiTimeBucket {
   final double ingresos;
   final double gastos;
 
+  // Número de ventas del intervalo, sus ventas brutas (antes de descuentos) y
+  // los descuentos dados: de ahí salen el ticket promedio y el impacto de los
+  // descuentos en el tiempo, con los mismos intervalos que ingresos y gastos.
+  final int ventas;
+  final double bruto;
+  final double descuentos;
+
   const BiTimeBucket({
     required this.start,
     required this.ingresos,
     required this.gastos,
+    this.ventas = 0,
+    this.bruto = 0,
+    this.descuentos = 0,
   });
+
+  // Ticket promedio del intervalo; null si no hubo ventas.
+  double? get ticket => ventas > 0 ? ingresos / ventas : null;
+
+  // Descuentos como % de las ventas brutas del intervalo; null sin ventas.
+  double? get descuentoPct => bruto > 0 ? descuentos / bruto * 100 : null;
 }
 
 class BiTimeSeries {
@@ -104,6 +120,165 @@ class BiMarginReport {
   final int withoutCost;
 
   const BiMarginReport({required this.entries, required this.withoutCost});
+}
+
+// ---------------------------------------------------------------------------
+// Indicadores de ventas adicionales
+// ---------------------------------------------------------------------------
+
+// Un par de productos que aparecen juntos en las mismas ventas.
+class BiPairEntry {
+  final String productA;
+  final String productB;
+
+  // Ventas (del periodo) que contienen ambos productos.
+  final int sales;
+
+  // Esas ventas como % de todas las ventas del periodo.
+  final double pct;
+
+  const BiPairEntry({
+    required this.productA,
+    required this.productB,
+    required this.sales,
+    required this.pct,
+  });
+
+  String get label => '$productA + $productB';
+}
+
+class BiCoPurchaseReport {
+  // Pares con al menos [coPurchaseMinSales] ventas, de más a menos ventas.
+  final List<BiPairEntry> pairs;
+
+  // Todas las ventas del periodo (base del porcentaje) y cuántas de ellas
+  // llevan 2 o más productos distintos.
+  final int totalSales;
+  final int multiProductSales;
+
+  const BiCoPurchaseReport({
+    required this.pairs,
+    required this.totalSales,
+    required this.multiProductSales,
+  });
+}
+
+// Mínimo de ventas en común para que un par se muestre.
+const int coPurchaseMinSales = 3;
+
+// Ingresos y ventas de un día de la semana.
+class BiWeekdayEntry {
+  // DateTime.monday (1) ... DateTime.sunday (7).
+  final int weekday;
+  final double ingresos;
+  final int ventas;
+
+  const BiWeekdayEntry({
+    required this.weekday,
+    required this.ingresos,
+    required this.ventas,
+  });
+
+  static const List<String> names = [
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo',
+  ];
+
+  static const List<String> shortNames = [
+    'Lun',
+    'Mar',
+    'Mié',
+    'Jue',
+    'Vie',
+    'Sáb',
+    'Dom',
+  ];
+
+  String get name => names[weekday - 1];
+  String get shortName => shortNames[weekday - 1];
+}
+
+// Ticket promedio del periodo: ingresos netos ÷ número de ventas.
+class BiTicketReport {
+  final int salesCount;
+  final double total;
+
+  const BiTicketReport({required this.salesCount, required this.total});
+
+  double? get average => salesCount > 0 ? total / salesCount : null;
+}
+
+// Descuentos dados en el periodo frente a las ventas brutas.
+class BiDiscountReport {
+  final double totalDiscount;
+  final double grossSales;
+  final int salesCount;
+  final int discountedSales;
+
+  const BiDiscountReport({
+    required this.totalDiscount,
+    required this.grossSales,
+    required this.salesCount,
+    required this.discountedSales,
+  });
+
+  double? get pct => grossSales > 0 ? totalDiscount / grossSales * 100 : null;
+}
+
+// Resultado de un evento: ingresos de sus ventas menos todas sus compras.
+class BiEventProfitEntry {
+  final String name;
+  final double income;
+  final double expenses;
+  final int salesCount;
+  final int purchaseCount;
+
+  const BiEventProfitEntry({
+    required this.name,
+    required this.income,
+    required this.expenses,
+    required this.salesCount,
+    required this.purchaseCount,
+  });
+
+  double get profit => income - expenses;
+}
+
+// Retorno sobre el costo de producción de un producto vendido: ganancia
+// (ingresos netos menos costo de producción × unidades) por cada Bs. 1 de ese
+// costo.
+class BiReturnEntry {
+  final String name;
+  final double revenue;
+  final double cost;
+  final int units;
+
+  const BiReturnEntry({
+    required this.name,
+    required this.revenue,
+    required this.cost,
+    required this.units,
+  });
+
+  double get profit => revenue - cost;
+
+  // Ganancia por cada Bs. 1 de costo (el costo siempre es mayor que 0).
+  double get ratio => profit / cost;
+}
+
+class BiReturnReport {
+  // Del mejor al peor retorno.
+  final List<BiReturnEntry> entries;
+
+  // Productos vendidos sin costo de producción registrado (no entran).
+  final int withoutCost;
+
+  const BiReturnReport({required this.entries, required this.withoutCost});
 }
 
 // Un punto de la línea de tendencia/proyección.
@@ -310,6 +485,12 @@ class BiReport {
   final List<NoMovementEntry> noMovement;
   final BiPeriodComparison periodComparison;
   final BiRadar radar;
+  final BiCoPurchaseReport coPurchases;
+  final List<BiWeekdayEntry> weekdays;
+  final BiTicketReport ticket;
+  final List<BiEventProfitEntry> eventProfit;
+  final BiDiscountReport discounts;
+  final BiReturnReport costReturn;
 
   const BiReport({
     required this.summary,
@@ -327,5 +508,11 @@ class BiReport {
     required this.noMovement,
     required this.periodComparison,
     required this.radar,
+    required this.coPurchases,
+    required this.weekdays,
+    required this.ticket,
+    required this.eventProfit,
+    required this.discounts,
+    required this.costReturn,
   });
 }

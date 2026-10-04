@@ -76,7 +76,7 @@ void main() {
         ClientDialog(
           client: ClientModel(
             id: 99,
-            name: 'Maria',
+            name: 'Michael Brown',
             isActive: true,
             createdAt: DateTime(2024, 1, 1),
           ),
@@ -111,7 +111,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Campo requerido'), findsOneWidget);
 
-        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Maria');
+        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Michael Brown');
         await tester.pump();
 
         expect(find.text('Campo requerido'), findsNothing);
@@ -123,7 +123,7 @@ void main() {
       (tester) async {
         await openSheet(tester, const MaterialDialog());
 
-        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Hilo');
+        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Resina parte A');
         await tester.pump();
 
         expect(find.text('Campo requerido'), findsNothing);
@@ -175,7 +175,7 @@ void main() {
 
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Nombre del evento'),
-          'Feria',
+          'Feria de Arte',
         );
         await tester.tap(find.text('Crear'));
         await tester.pumpAndSettle();
@@ -256,6 +256,6 @@ void main() {
 
 Future<EventModel> _seedEvent(AppDatabase db) async {
   final repository = EventRepository(db);
-  await repository.save(name: 'Feria', startDate: DateTime(2024, 3, 5));
+  await repository.save(name: 'Feria de Arte', startDate: DateTime(2024, 3, 5));
   return (await repository.getAll()).single;
 }

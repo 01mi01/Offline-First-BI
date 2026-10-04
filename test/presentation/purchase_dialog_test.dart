@@ -64,7 +64,7 @@ void main() {
     )..where((u) => u.name.equals('unidad'))).getSingle();
     await db.into(db.materials).insert(
       MaterialsCompanion.insert(
-        name: 'Tela',
+        name: 'Tela negra',
         unitId: unit.id,
         pricePerUnit: 4.0,
         stock: const Value(100.0),
@@ -98,7 +98,7 @@ void main() {
       // diálogo de compra, cuyos propios dropdowns (Proveedor/Ubicación/
       // Evento) siguen montados debajo, así que el dropdown de esta hoja es
       // el último en el árbol, no el primero.
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela', 'Tela');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela negra', 'Tela negra');
 
       // Cantidad
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, '3');
@@ -150,7 +150,7 @@ void main() {
 
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),
-        'Transporte',
+        'Pasaje de bus',
       );
       await tester.enterText(find.widgetWithText(TextFormField, '0'), '50');
       await tester.pumpAndSettle();
@@ -204,11 +204,11 @@ void main() {
     (tester) async {
       final chosenId = await db
           .into(db.suppliers)
-          .insert(SuppliersCompanion.insert(name: 'Prov Uno'));
+          .insert(SuppliersCompanion.insert(name: 'Bellamy House'));
 
       await _openPurchaseDialog(tester, db);
 
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).at(0), 'Prov Uno', 'Prov Uno');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).at(0), 'Bellamy House', 'Bellamy House');
 
       await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
@@ -273,7 +273,7 @@ void main() {
 
     testWidgets('unidad rejects a decimal with visible feedback', (tester) async {
       // "Tela" (unidad) ya existe en el setUp.
-      final quantity = await openAddSheetWith(tester, 'Tela');
+      final quantity = await openAddSheetWith(tester, 'Tela negra');
       expect(find.text('Cantidad (unidad)'), findsOneWidget);
       await expectDecimalRejected(tester, quantity);
     });
@@ -281,8 +281,8 @@ void main() {
     testWidgets('contenedor takes fractions (half a bottle), not a free decimal field', (
       tester,
     ) async {
-      await addMaterial('Pintura', 'contenedor');
-      await openAddSheetWith(tester, 'Pintura');
+      await addMaterial('Papel holográfico para stickers', 'contenedor');
+      await openAddSheetWith(tester, 'Papel holográfico para stickers');
       expect(find.byType(FractionQuantityPicker), findsOneWidget);
       expect(find.byType(WholeNumberQuantityField), findsNothing);
       expect(find.text('Cantidad (contenedor)'), findsOneWidget);
@@ -291,8 +291,8 @@ void main() {
     testWidgets('metro (medida continua) still accepts a plain decimal', (
       tester,
     ) async {
-      await addMaterial('Cinta', 'metro');
-      final quantity = await openAddSheetWith(tester, 'Cinta');
+      await addMaterial('Papel para stickers', 'metro');
+      final quantity = await openAddSheetWith(tester, 'Papel para stickers');
       expect(find.text('Cantidad (metro)'), findsOneWidget);
 
       await tester.enterText(quantity, '3.5');

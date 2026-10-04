@@ -136,7 +136,7 @@ void main() {
       final productId = await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Acuarela',
+          name: 'Estuches',
           priceA: 10,
           priceB: 8,
           image: Value(productImage.path),
@@ -144,7 +144,7 @@ void main() {
       );
       final categoryId = await db.into(db.categories).insert(
         CategoriesCompanion.insert(
-          name: 'Pinturas',
+          name: 'Miniaturas',
           image: Value(categoryImage.path),
         ),
       );
@@ -173,7 +173,7 @@ void main() {
       final productId = await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Acuarela',
+          name: 'Estuches',
           priceA: 10,
           priceB: 8,
           image: Value(gone),
@@ -195,7 +195,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Con imagen',
+          name: 'Tote bag negra',
           priceA: 1,
           priceB: 1,
           image: Value(savedPath),
@@ -204,22 +204,22 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Sin imagen',
+          name: 'Libro',
           priceA: 1,
           priceB: 1,
         ),
       );
       final legacy = await cachedImage('b.png');
       await db.into(db.categories).insert(
-        CategoriesCompanion.insert(name: 'Vieja', image: Value(legacy.path)),
+        CategoriesCompanion.insert(name: 'Libros', image: Value(legacy.path)),
       );
 
       expect(await storage.migrateLegacyImages(db), 1);
       expect(await storage.migrateLegacyImages(db), 0);
 
       final products = await db.select(db.products).get();
-      expect(products.firstWhere((x) => x.name == 'Con imagen').image, savedPath);
-      expect(products.firstWhere((x) => x.name == 'Sin imagen').image, isNull);
+      expect(products.firstWhere((x) => x.name == 'Tote bag negra').image, savedPath);
+      expect(products.firstWhere((x) => x.name == 'Libro').image, isNull);
     });
   });
 }

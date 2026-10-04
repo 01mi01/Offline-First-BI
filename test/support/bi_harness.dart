@@ -158,6 +158,63 @@ class BiHarness {
     expect(error, isNull);
   }
 
+  // Una venta de varias líneas: cada una es (productId, cantidad, precio).
+  // [discount] es el descuento global de la venta.
+  Future<void> sellMany(
+    DateTime date,
+    List<(int, int, double)> lines, {
+    String priceType = 'A',
+    int? eventId,
+    int? locationId,
+    double discount = 0,
+  }) async {
+    final gross = lines.fold(0.0, (t, l) => t + l.$2 * l.$3);
+    final error = await container
+        .read(saleProvider.notifier)
+        .createSale(
+          clientId: null,
+          locationId: locationId,
+          eventId: eventId,
+          totalAmount: gross,
+          discount: discount,
+          finalAmount: gross - discount,
+          date: date,
+          items: [
+            for (final l in lines)
+              {
+                'productId': l.$1,
+                'quantity': l.$2,
+                'unitPrice': l.$3,
+                'priceType': priceType,
+              },
+          ],
+        );
+    expect(error, isNull);
+  }
+
+  Future<int> newLocation(String city, {String country = 'Bolivia'}) async {
+    await container
+        .read(locationProvider.notifier)
+        .save(city: city, country: country);
+    return container
+        .read(locationProvider)
+        .locations
+        .firstWhere((l) => l.city == city)
+        .id;
+  }
+
+  Future<int> newSupplier(String name) async {
+    final error = await container
+        .read(supplierProvider.notifier)
+        .save(name: name, contactInfo: '@${name.replaceAll(' ', '').toLowerCase()}');
+    expect(error, isNull);
+    return container
+        .read(supplierProvider)
+        .suppliers
+        .firstWhere((s) => s.name == name)
+        .id;
+  }
+
   // Cancela la venta cuyo total bruto es [totalAmount].
   Future<void> cancelSaleOf(double totalAmount) async {
     await container.read(saleProvider.notifier).load();
@@ -192,15 +249,21 @@ class BiHarness {
     expect(error, isNull);
   }
 
-  Future<void> spend(DateTime date, double amount, {int? eventId}) async {
+  Future<void> spend(
+    DateTime date,
+    double amount, {
+    int? eventId,
+    int? supplierId,
+    int? locationId,
+  }) async {
     final error = await container
         .read(purchaseProvider.notifier)
         .createPurchase(
-          supplierId: null,
-          locationId: null,
+          supplierId: supplierId,
+          locationId: locationId,
           eventId: eventId,
           isMaterial: false,
-          description: 'Gasto',
+          description: 'Participación en feria',
           totalAmount: amount,
           date: date,
           items: const [],

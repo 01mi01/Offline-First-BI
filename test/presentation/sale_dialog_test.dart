@@ -45,7 +45,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Producto Test',
+        name: 'Libro',
         priceA: 20.0,
         priceB: 20.0,
         stock: const Value(50),
@@ -75,7 +75,7 @@ void main() {
 
       // Agrega el producto al carrito tocando el ícono "+" (la lista aparece al
       // escribir en el buscador).
-      await searchProducts(tester, 'Producto');
+      await searchProducts(tester, 'Libro');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
@@ -124,7 +124,7 @@ void main() {
       await tester.tap(find.text('Sin nombre').last);
       await tester.pumpAndSettle();
 
-      await searchProducts(tester, 'Producto');
+      await searchProducts(tester, 'Libro');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
@@ -155,7 +155,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Acuarela',
+        name: 'Estuches',
         priceA: 55.0,
         priceB: 40.0,
         stock: const Value(10),
@@ -164,7 +164,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Marcador',
+        name: 'Pines grandes',
         priceA: 8.0,
         priceB: 6.5,
         stock: const Value(20),
@@ -198,10 +198,10 @@ void main() {
       await _openSaleDialog(tester, db);
 
       // El catálogo (que aparece al buscar) muestra ambos precios del producto.
-      await searchProducts(tester, 'Acuarela');
+      await searchProducts(tester, 'Estuches');
       expect(find.textContaining('A: Bs. 55.00  •  B: Bs. 40.00'), findsOneWidget);
 
-      await addToCart(tester, 'Acuarela');
+      await addToCart(tester, 'Estuches');
       // Por defecto se cobra Precio A: el ítem del carrito y el total.
       expect(find.text('Bs. 55.00'), findsWidgets);
       expect(find.text('Bs. 40.00'), findsNothing);
@@ -241,7 +241,7 @@ void main() {
 
       final product = await (db.select(
         db.products,
-      )..where((p) => p.name.equals('Acuarela'))).getSingle();
+      )..where((p) => p.name.equals('Estuches'))).getSingle();
       expect(product.stock, 9);
     },
   );
@@ -253,13 +253,13 @@ void main() {
       await seedDistinctPriceProducts();
       await _openSaleDialog(tester, db);
 
-      await addToCart(tester, 'Acuarela');
-      await addToCart(tester, 'Marcador');
+      await addToCart(tester, 'Estuches');
+      await addToCart(tester, 'Pines grandes');
 
       // Los dos ítems arrancan en Precio A: 55 + 8 = 63.
       expect(find.text('Bs. 63.00'), findsWidgets);
 
-      // Solo el ítem del carrito de Marcador (el segundo) pasa a Precio B.
+      // Solo el ítem del carrito de Pines grandes (el segundo) pasa a Precio B.
       await tester.tap(find.text('Precio B').last);
       await tester.pumpAndSettle();
 
@@ -284,10 +284,10 @@ void main() {
 
       final items = await repository.getItemsForSale(sale.id);
       final byName = {for (final i in items) i.productName: i};
-      expect(byName['Acuarela']!.priceType, 'A');
-      expect(byName['Acuarela']!.unitPrice, 55.0);
-      expect(byName['Marcador']!.priceType, 'B');
-      expect(byName['Marcador']!.unitPrice, 6.5);
+      expect(byName['Estuches']!.priceType, 'A');
+      expect(byName['Estuches']!.unitPrice, 55.0);
+      expect(byName['Pines grandes']!.priceType, 'B');
+      expect(byName['Pines grandes']!.unitPrice, 6.5);
     },
   );
 }

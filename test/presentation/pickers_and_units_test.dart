@@ -71,7 +71,7 @@ void main() {
       (await (db.select(db.units)..where((u) => u.name.equals(name))).getSingle());
 
   group('filterByQuery (texto escrito -> coincidencias)', () {
-    final names = ['Ana', 'Beatriz', 'Café Central', 'Cañete', 'Zoila'];
+    final names = ['Ana Martínez', 'Sarah Davis', 'Café Central', 'Cañete', 'Laura Thompson'];
 
     List<String> find(String q) => filterByQuery<String>(names, q, (n) => n);
 
@@ -81,9 +81,9 @@ void main() {
     });
 
     test('matches anywhere in the name, ignoring case', () {
-      expect(find('bea'), ['Beatriz']);
-      expect(find('RIZ'), ['Beatriz']);
-      expect(find('a'), ['Ana', 'Beatriz', 'Café Central', 'Cañete', 'Zoila']);
+      expect(find('sar'), ['Sarah Davis']);
+      expect(find('DAV'), ['Sarah Davis']);
+      expect(find('a'), ['Ana Martínez', 'Sarah Davis', 'Café Central', 'Cañete', 'Laura Thompson']);
     });
 
     test('ignores accents and ñ in both the text and the query', () {
@@ -230,32 +230,32 @@ void main() {
     testWidgets('Cliente (Ventas) filters by typed text and picks the match', (
       tester,
     ) async {
-      for (final name in ['Ana Pérez', 'Beatriz Soto', 'Carlos Ruiz']) {
+      for (final name in ['John Smith', 'Sarah Davis', 'David Wilson']) {
         await db.into(db.clients).insert(ClientsCompanion.insert(name: name));
       }
       await _openSheet(tester, db, const SaleDialog());
 
       await tester.tap(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextField, 'Buscar cliente'), 'soto');
+      await tester.enterText(find.widgetWithText(TextField, 'Buscar cliente'), 'davis');
       await tester.pumpAndSettle();
-      expect(find.text('Beatriz Soto'), findsOneWidget);
-      expect(find.text('Ana Pérez'), findsNothing);
-      expect(find.text('Carlos Ruiz'), findsNothing);
+      expect(find.text('Sarah Davis'), findsOneWidget);
+      expect(find.text('John Smith'), findsNothing);
+      expect(find.text('David Wilson'), findsNothing);
 
-      await tester.tap(find.text('Beatriz Soto'));
+      await tester.tap(find.text('Sarah Davis'));
       await tester.pumpAndSettle();
       expect(
         find.descendant(
           of: find.byType(SearchablePickerField<int>).first,
-          matching: find.text('Beatriz Soto'),
+          matching: find.text('Sarah Davis'),
         ),
         findsOneWidget,
       );
     });
 
     testWidgets('Producto (Ventas) is searchable by name', (tester) async {
-      for (final name in ['Acuarela', 'Bufanda', 'Cuaderno']) {
+      for (final name in ['Estuches', 'Libro', 'Miniaturas']) {
         await db.into(db.products).insert(
           ProductsCompanion.insert(
             categoryId: 1,
@@ -268,18 +268,18 @@ void main() {
       }
       await _openSheet(tester, db, const SaleDialog());
       // Sin escribir no se muestra ninguna fila: solo la invitación a buscar.
-      expect(find.text('Acuarela'), findsNothing);
-      expect(find.text('Cuaderno'), findsNothing);
+      expect(find.text('Estuches'), findsNothing);
+      expect(find.text('Miniaturas'), findsNothing);
       expect(find.text('Escribe para buscar un producto'), findsOneWidget);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Buscar producto'),
-        'cuad',
+        'mini',
       );
       await tester.pumpAndSettle();
-      expect(find.text('Cuaderno'), findsOneWidget);
-      expect(find.text('Acuarela'), findsNothing);
-      expect(find.text('Bufanda'), findsNothing);
+      expect(find.text('Miniaturas'), findsOneWidget);
+      expect(find.text('Estuches'), findsNothing);
+      expect(find.text('Libro'), findsNothing);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Buscar producto'),
@@ -291,32 +291,32 @@ void main() {
       // Borrar lo escrito vuelve al estado inicial: otra vez sin lista.
       await tester.enterText(find.widgetWithText(TextField, 'Buscar producto'), '');
       await tester.pumpAndSettle();
-      expect(find.text('Cuaderno'), findsNothing);
+      expect(find.text('Miniaturas'), findsNothing);
       expect(find.text('Escribe para buscar un producto'), findsOneWidget);
     });
 
     testWidgets('Proveedor (Compras) filters by typed text and picks the match', (
       tester,
     ) async {
-      for (final name in ['Andino SRL', 'Bolivia Telas', 'Cordillera']) {
+      for (final name in ['Riverside Supply Co.', 'Lunaris Supply', 'Veridian Trading']) {
         await db.into(db.suppliers).insert(SuppliersCompanion.insert(name: name));
       }
       await _openSheet(tester, db, const PurchaseDialog());
 
       await tester.tap(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextField, 'Buscar proveedor'), 'telas');
+      await tester.enterText(find.widgetWithText(TextField, 'Buscar proveedor'), 'lunaris');
       await tester.pumpAndSettle();
-      expect(find.text('Bolivia Telas'), findsOneWidget);
-      expect(find.text('Andino SRL'), findsNothing);
-      expect(find.text('Cordillera'), findsNothing);
+      expect(find.text('Lunaris Supply'), findsOneWidget);
+      expect(find.text('Riverside Supply Co.'), findsNothing);
+      expect(find.text('Veridian Trading'), findsNothing);
 
-      await tester.tap(find.text('Bolivia Telas'));
+      await tester.tap(find.text('Lunaris Supply'));
       await tester.pumpAndSettle();
       expect(
         find.descendant(
           of: find.byType(SearchablePickerField<int>).first,
-          matching: find.text('Bolivia Telas'),
+          matching: find.text('Lunaris Supply'),
         ),
         findsOneWidget,
       );
@@ -326,7 +326,7 @@ void main() {
       tester,
     ) async {
       final unit = await unitNamed('metro');
-      for (final name in ['Hilo grueso', 'Tela de algodón', 'Cinta']) {
+      for (final name in ['Resina parte B', 'Tela beige', 'Papel para stickers']) {
         await db.into(db.materials).insert(
           MaterialsCompanion.insert(
             name: name,
@@ -346,13 +346,13 @@ void main() {
 
       await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextField, 'Buscar material'), 'algodon');
+      await tester.enterText(find.widgetWithText(TextField, 'Buscar material'), 'beige');
       await tester.pumpAndSettle();
-      expect(find.text('Tela de algodón'), findsOneWidget);
-      expect(find.text('Hilo grueso'), findsNothing);
-      expect(find.text('Cinta'), findsNothing);
+      expect(find.text('Tela beige'), findsOneWidget);
+      expect(find.text('Resina parte B'), findsNothing);
+      expect(find.text('Papel para stickers'), findsNothing);
 
-      await tester.tap(find.text('Tela de algodón'));
+      await tester.tap(find.text('Tela beige'));
       await tester.pumpAndSettle();
       // El precio del material elegido se rellena igual que antes.
       expect(find.text('Cantidad (metro)'), findsOneWidget);
@@ -496,7 +496,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Collar',
+          name: 'Tote bag negra',
           priceA: 10,
           priceB: 10,
           stock: const Value(5),
@@ -504,7 +504,7 @@ void main() {
       );
       await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Cuentas',
+          name: 'Base metálica pequeña para pines',
           unitId: unit.id,
           pricePerUnit: 2,
           stock: const Value(10),
@@ -521,10 +521,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Collar', 'Collar');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Tote bag negra', 'Tote bag negra');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Cuentas', 'Cuentas');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Base metálica pequeña para pines', 'Base metálica pequeña para pines');
 
       await tester.tap(find.byKey(const ValueKey('container-whole-plus')));
       await tester.pump();
@@ -580,7 +580,7 @@ void main() {
 
     Future<int> seedMaterial(String unitName) async => db.into(db.materials).insert(
       MaterialsCompanion.insert(
-        name: 'Cuentas',
+        name: 'Base metálica pequeña para pines',
         unitId: (await unitNamed(unitName)).id,
         pricePerUnit: 2,
         stock: const Value(0),
@@ -594,7 +594,7 @@ void main() {
       await expectLater(
         MaterialRepository(db).save(
           id: id,
-          name: 'Cuentas',
+          name: 'Base metálica pequeña para pines',
           unitId: litro.id,
           stock: 0,
           pricePerUnit: 2,
@@ -618,7 +618,7 @@ void main() {
 
       await MaterialRepository(db).save(
         id: id,
-        name: 'Cuentas',
+        name: 'Base metálica pequeña para pines',
         unitId: rollo.id,
         stock: 0,
         pricePerUnit: 2,
@@ -633,7 +633,7 @@ void main() {
 
       await repo.save(
         id: id,
-        name: 'Cuentas',
+        name: 'Base metálica pequeña para pines',
         unitId: (await unitNamed('kg')).id,
         stock: 0,
         pricePerUnit: 2,
@@ -644,7 +644,7 @@ void main() {
         await expectLater(
           repo.save(
             id: id,
-            name: 'Cuentas',
+            name: 'Base metálica pequeña para pines',
             unitId: (await unitNamed(other)).id,
             stock: 0,
             pricePerUnit: 2,
@@ -659,19 +659,19 @@ void main() {
       final id = await seedMaterial('tira');
       await MaterialRepository(db).save(
         id: id,
-        name: 'Cuentas finas',
+        name: 'Tela para estuches',
         unitId: (await unitNamed('tira')).id,
         stock: 3,
         pricePerUnit: 5,
       );
       final row = await db.select(db.materials).getSingle();
-      expect(row.name, 'Cuentas finas');
+      expect(row.name, 'Tela para estuches');
       expect(row.stock, 3.0);
     });
 
     test('creating a material may use any unit', () async {
       await MaterialRepository(db).save(
-        name: 'Aceite',
+        name: 'Resina parte B',
         unitId: (await unitNamed('litro')).id,
         stock: 0,
         pricePerUnit: 3,

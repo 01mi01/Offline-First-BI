@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/bi_config.dart';
 import '../models/bi_models.dart';
+import '../models/purchase_kind.dart';
 import '../models/report_filters.dart';
 import 'bi_service.dart';
 import 'category_provider.dart';
@@ -43,6 +44,14 @@ final biReportProvider = Provider.autoDispose.family<BiReport, BiQuery>((
 
   final rows = ref.watch(saleReportRowsProvider(filters));
   final purchases = ref.watch(filteredPurchasesProvider(filters));
+  // La rentabilidad por evento suma TODAS las compras vinculadas (gastos
+  // generales y de materiales): ni el tipo de operación ni el proveedor
+  // elegidos las recortan.
+  final eventPurchases = ref.watch(
+    filteredPurchasesProvider(
+      filters.copyWith(purchaseKind: PurchaseKind.all, clearSupplier: true),
+    ),
+  );
   final summary = bi.summarize(
     sales: reports.summarizeSaleRows(rows),
     purchases: reports.summarizePurchases(purchases),
@@ -90,6 +99,20 @@ final biReportProvider = Provider.autoDispose.family<BiReport, BiQuery>((
       products: products,
       selectedIds: query.radarProductIds,
     ),
+    coPurchases: bi.coPurchases(
+      rows: rows,
+      saleItemsMap: saleItemsMap,
+      products: products,
+    ),
+    weekdays: bi.salesByWeekday(rows: rows),
+    ticket: bi.ticket(rows: rows),
+    eventProfit: bi.eventProfitability(
+      rows: rows,
+      purchases: eventPurchases,
+      events: events,
+    ),
+    discounts: bi.discountImpact(rows: rows),
+    costReturn: bi.costReturn(rows: rows, products: products),
   );
 });
 

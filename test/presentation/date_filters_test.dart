@@ -217,8 +217,8 @@ void main() {
 
   group('Ventas', () {
     setUp(() async {
-      final ana = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Ana'));
-      final beto = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Beto'));
+      final ana = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'John Smith'));
+      final emily = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Emily Johnson'));
       Future<void> sale(int client, DateTime date) => db.into(db.sales).insert(
         SalesCompanion.insert(
           clientId: Value(client),
@@ -228,26 +228,26 @@ void main() {
         ),
       );
       await sale(ana, now);
-      await sale(beto, longAgo);
+      await sale(emily, longAgo);
     });
 
     testWidgets('lists everything until a date filter is applied', (tester) async {
       await pump(tester, const SalesListBody());
-      expect(find.text('Ana'), findsOneWidget);
-      expect(find.text('Beto'), findsOneWidget);
+      expect(find.text('John Smith'), findsOneWidget);
+      expect(find.text('Emily Johnson'), findsOneWidget);
     });
 
     testWidgets('Hoy and Este año keep only the recent sale', (tester) async {
       await pump(tester, const SalesListBody());
       await tester.tap(find.text('Hoy'));
       await tester.pumpAndSettle();
-      expect(find.text('Ana'), findsOneWidget);
-      expect(find.text('Beto'), findsNothing);
+      expect(find.text('John Smith'), findsOneWidget);
+      expect(find.text('Emily Johnson'), findsNothing);
 
       await tester.tap(find.text('Este año'));
       await tester.pumpAndSettle();
-      expect(find.text('Ana'), findsOneWidget);
-      expect(find.text('Beto'), findsNothing);
+      expect(find.text('John Smith'), findsOneWidget);
+      expect(find.text('Emily Johnson'), findsNothing);
     });
 
     testWidgets('a custom Desde/Hasta range finds the old sale; same day is valid', (
@@ -258,8 +258,8 @@ void main() {
           .read(saleDateFilterProvider.notifier)
           .state = DateRangeFilter(from: longAgo, to: longAgo);
       await tester.pumpAndSettle();
-      expect(find.text('Beto'), findsOneWidget);
-      expect(find.text('Ana'), findsNothing);
+      expect(find.text('Emily Johnson'), findsOneWidget);
+      expect(find.text('John Smith'), findsNothing);
     });
 
     testWidgets('a range with no sales says "Sin resultados" and can be cleared', (
@@ -279,8 +279,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.close).first);
       await tester.pumpAndSettle();
-      expect(find.text('Ana'), findsOneWidget);
-      expect(find.text('Beto'), findsOneWidget);
+      expect(find.text('John Smith'), findsOneWidget);
+      expect(find.text('Emily Johnson'), findsOneWidget);
     });
   });
 
@@ -295,19 +295,19 @@ void main() {
               date: date,
             ),
           );
-      await purchase('Compra reciente', now);
-      await purchase('Compra antigua', longAgo);
+      await purchase('Hotel', now);
+      await purchase('Pasaje de bus', longAgo);
     });
 
     testWidgets('presets and a custom range narrow the purchases', (tester) async {
       await pump(tester, const PurchasesListBody());
-      expect(find.text('Compra reciente'), findsOneWidget);
-      expect(find.text('Compra antigua'), findsOneWidget);
+      expect(find.text('Hotel'), findsOneWidget);
+      expect(find.text('Pasaje de bus'), findsOneWidget);
 
       await tester.tap(find.text('Hoy'));
       await tester.pumpAndSettle();
-      expect(find.text('Compra reciente'), findsOneWidget);
-      expect(find.text('Compra antigua'), findsNothing);
+      expect(find.text('Hotel'), findsOneWidget);
+      expect(find.text('Pasaje de bus'), findsNothing);
 
       containerOf(tester, PurchasesListBody)
           .read(purchaseDateFilterProvider.notifier)
@@ -316,8 +316,8 @@ void main() {
         to: DateTime(longAgo.year, longAgo.month, 28),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Compra antigua'), findsOneWidget);
-      expect(find.text('Compra reciente'), findsNothing);
+      expect(find.text('Pasaje de bus'), findsOneWidget);
+      expect(find.text('Hotel'), findsNothing);
     });
 
     testWidgets('the Ventas date filter does not affect the Compras list', (
@@ -329,18 +329,18 @@ void main() {
           .state = DateRangeFilter.forPreset(DatePreset.today);
       await tester.pumpAndSettle();
       // El filtro de Ventas no toca la lista de Compras.
-      expect(find.text('Compra antigua'), findsOneWidget);
+      expect(find.text('Pasaje de bus'), findsOneWidget);
     });
   });
 
   group('Eventos', () {
     setUp(() async {
       await db.into(db.events).insert(
-        EventsCompanion.insert(name: 'Feria de hoy', startDate: today),
+        EventsCompanion.insert(name: 'Feria de Octubre', startDate: today),
       );
       await db.into(db.events).insert(
         EventsCompanion.insert(
-          name: 'Feria de antaño',
+          name: 'Feria del Libro La Paz',
           startDate: DateTime(longAgo.year, longAgo.month, 14),
           endDate: Value(DateTime(longAgo.year, longAgo.month, 18)),
         ),
@@ -349,12 +349,12 @@ void main() {
 
     testWidgets('Hoy keeps the event of today', (tester) async {
       await pump(tester, const EventsPage());
-      expect(find.text('Feria de hoy'), findsOneWidget);
-      expect(find.text('Feria de antaño'), findsOneWidget);
+      expect(find.text('Feria de Octubre'), findsOneWidget);
+      expect(find.text('Feria del Libro La Paz'), findsOneWidget);
       await tester.tap(find.text('Hoy'));
       await tester.pumpAndSettle();
-      expect(find.text('Feria de hoy'), findsOneWidget);
-      expect(find.text('Feria de antaño'), findsNothing);
+      expect(find.text('Feria de Octubre'), findsOneWidget);
+      expect(find.text('Feria del Libro La Paz'), findsNothing);
     });
 
     testWidgets('a custom range touching only one day of a multi-day event matches it', (
@@ -366,8 +366,8 @@ void main() {
           .read(eventDateFilterProvider.notifier)
           .state = DateRangeFilter(from: middle, to: middle);
       await tester.pumpAndSettle();
-      expect(find.text('Feria de antaño'), findsOneWidget);
-      expect(find.text('Feria de hoy'), findsNothing);
+      expect(find.text('Feria del Libro La Paz'), findsOneWidget);
+      expect(find.text('Feria de Octubre'), findsNothing);
     });
 
     testWidgets('shows the date bar together with the status chip', (
@@ -471,8 +471,8 @@ void main() {
   // Con solo "Desde" (sin "Hasta") se muestra ese único día.
   group('Solo Desde = un solo día', () {
     testWidgets('Ventas: picking only Desde shows that day only', (tester) async {
-      final ana = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Ana'));
-      final beto = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Beto'));
+      final ana = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'John Smith'));
+      final emily = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Emily Johnson'));
       Future<void> sale(int client, DateTime date) => db.into(db.sales).insert(
         SalesCompanion.insert(
           clientId: Value(client),
@@ -482,8 +482,8 @@ void main() {
         ),
       );
       await sale(ana, now);
-      await sale(beto, longAgo.add(const Duration(hours: 15)));
-      await sale(beto, longAgo.add(const Duration(days: 1)));
+      await sale(emily, longAgo.add(const Duration(hours: 15)));
+      await sale(emily, longAgo.add(const Duration(days: 1)));
       await pump(tester, const SalesListBody());
       await tester.tap(find.text('Desde'));
       await tester.pumpAndSettle();
@@ -492,8 +492,8 @@ void main() {
       expect(find.text('Desde: ${formatDate(longAgo)}'), findsOneWidget);
       expect(find.text('Hasta'), findsOneWidget);
       // Solo la venta de ese día (a cualquier hora); ni hoy ni el día siguiente.
-      expect(find.text('Ana'), findsNothing);
-      expect(find.text('Beto'), findsOneWidget);
+      expect(find.text('John Smith'), findsNothing);
+      expect(find.text('Emily Johnson'), findsOneWidget);
     });
 
     testWidgets('Compras: Desde alone shows that day only', (tester) async {
@@ -506,28 +506,28 @@ void main() {
               date: date,
             ),
           );
-      await purchase('Compra de hoy', now);
-      await purchase('Compra del día', longAgo.add(const Duration(hours: 9)));
-      await purchase('Compra del día siguiente', longAgo.add(const Duration(days: 1)));
+      await purchase('Hotel', now);
+      await purchase('Pasaje de avión', longAgo.add(const Duration(hours: 9)));
+      await purchase('Participación en feria', longAgo.add(const Duration(days: 1)));
       await pump(tester, const PurchasesListBody());
       containerOf(tester, PurchasesListBody)
           .read(purchaseDateFilterProvider.notifier)
           .state = DateRangeFilter(from: longAgo);
       await tester.pumpAndSettle();
-      expect(find.text('Compra del día'), findsOneWidget);
-      expect(find.text('Compra de hoy'), findsNothing);
-      expect(find.text('Compra del día siguiente'), findsNothing);
+      expect(find.text('Pasaje de avión'), findsOneWidget);
+      expect(find.text('Hotel'), findsNothing);
+      expect(find.text('Participación en feria'), findsNothing);
     });
 
     testWidgets('Eventos: Desde alone shows the events that cover that day', (
       tester,
     ) async {
       await db.into(db.events).insert(
-        EventsCompanion.insert(name: 'Feria de hoy', startDate: today),
+        EventsCompanion.insert(name: 'Feria de Octubre', startDate: today),
       );
       await db.into(db.events).insert(
         EventsCompanion.insert(
-          name: 'Feria de varios días',
+          name: 'Feria del Libro Santa Cruz',
           startDate: DateTime(longAgo.year, longAgo.month, 14),
           endDate: Value(DateTime(longAgo.year, longAgo.month, 18)),
         ),
@@ -539,8 +539,8 @@ void main() {
         from: DateTime(longAgo.year, longAgo.month, 16),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Feria de varios días'), findsOneWidget);
-      expect(find.text('Feria de hoy'), findsNothing);
+      expect(find.text('Feria del Libro Santa Cruz'), findsOneWidget);
+      expect(find.text('Feria de Octubre'), findsNothing);
     });
   });
 

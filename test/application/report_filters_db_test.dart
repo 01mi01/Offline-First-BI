@@ -101,8 +101,8 @@ void main() {
   late PurchaseRepository purchaseRepo;
   final service = ReportService();
 
-  late int catBebidasId, catComidaId, catSinCategoriaId;
-  late int p1Id, p2Id, p3Id; // Cerveza (Bebidas), Empanada (Comida), Suvenir (Sin categoría)
+  late int catBolsasId, catLibrosId, catSinCategoriaId;
+  late int p1Id, p2Id, p3Id; // Pines grandes (Bolsas), Set de pines pequeños (Libros), Stickers (Sin categoría)
   late int l1Id, l2Id, l3Id; // L3 no se usa en ninguna venta/compra
   late int e1Id, e2Id, e3Id; // E3 no se usa en ninguna venta/compra
   late int cl1Id, cl2Id, cl3Id; // CL3 no se usa en ninguna venta
@@ -122,12 +122,12 @@ void main() {
     saleRepo = SaleRepository(db);
     purchaseRepo = PurchaseRepository(db);
 
-    catBebidasId = await db
+    catBolsasId = await db
         .into(db.categories)
-        .insert(CategoriesCompanion.insert(name: 'Bebidas'));
-    catComidaId = await db
+        .insert(CategoriesCompanion.insert(name: 'Bolsas'));
+    catLibrosId = await db
         .into(db.categories)
-        .insert(CategoriesCompanion.insert(name: 'Comida'));
+        .insert(CategoriesCompanion.insert(name: 'Libros'));
     // AppDatabase.onCreate ya siembra "Sin categoría" en toda base nueva
     // (ver app_database.dart), así que aquí solo se recupera su id.
     catSinCategoriaId = (await (db.select(
@@ -136,16 +136,16 @@ void main() {
 
     p1Id = await db.into(db.products).insert(
           ProductsCompanion.insert(
-            categoryId: catBebidasId,
-            name: 'Cerveza',
+            categoryId: catBolsasId,
+            name: 'Pines grandes',
             priceA: 100,
             priceB: 80,
           ),
         );
     p2Id = await db.into(db.products).insert(
           ProductsCompanion.insert(
-            categoryId: catComidaId,
-            name: 'Empanada',
+            categoryId: catLibrosId,
+            name: 'Set de pines pequeños',
             priceA: 50,
             priceB: 40,
           ),
@@ -153,56 +153,56 @@ void main() {
     p3Id = await db.into(db.products).insert(
           ProductsCompanion.insert(
             categoryId: catSinCategoriaId,
-            name: 'Suvenir',
+            name: 'Stickers',
             priceA: 20,
             priceB: 15,
           ),
         );
     productCategory = {
-      p1Id: catBebidasId,
-      p2Id: catComidaId,
+      p1Id: catBolsasId,
+      p2Id: catLibrosId,
       p3Id: catSinCategoriaId,
     };
 
     l1Id = await db
         .into(db.locations)
-        .insert(LocationsCompanion.insert(city: 'La Paz', country: 'Bolivia'));
+        .insert(LocationsCompanion.insert(city: 'La Paz - Calacoto', country: 'Bolivia'));
     l2Id = await db.into(db.locations).insert(
-          LocationsCompanion.insert(city: 'Cochabamba', country: 'Bolivia'),
+          LocationsCompanion.insert(city: 'Santa Cruz - Equipetrol', country: 'Bolivia'),
         );
     l3Id = await db
         .into(db.locations)
-        .insert(LocationsCompanion.insert(city: 'Sucre', country: 'Bolivia'));
+        .insert(LocationsCompanion.insert(city: 'Santa Cruz - Las Palmas', country: 'Bolivia'));
 
     e1Id = await db.into(db.events).insert(
-          EventsCompanion.insert(name: 'Feria Enero', startDate: DateTime(2024, 1, 1)),
+          EventsCompanion.insert(name: 'Feria del Libro Cochabamba', startDate: DateTime(2024, 1, 1)),
         );
     e2Id = await db.into(db.events).insert(
           EventsCompanion.insert(
-            name: 'Expo Gastronómica',
+            name: 'Larga Noche de Museos La Paz',
             startDate: DateTime(2024, 1, 15),
           ),
         );
     e3Id = await db.into(db.events).insert(
           EventsCompanion.insert(
-            name: 'Evento sin uso',
+            name: 'Feria Activa',
             startDate: DateTime(2024, 6, 1),
           ),
         );
 
-    cl1Id = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Ana'));
-    cl2Id = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Beto'));
-    cl3Id = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Carla'));
+    cl1Id = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'John Smith'));
+    cl2Id = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Emily Johnson'));
+    cl3Id = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Ana Martínez'));
 
     su1Id = await db
         .into(db.suppliers)
-        .insert(SuppliersCompanion.insert(name: 'Proveedor Andino'));
+        .insert(SuppliersCompanion.insert(name: 'Riverside Supply Co.'));
     su2Id = await db
         .into(db.suppliers)
-        .insert(SuppliersCompanion.insert(name: 'Proveedor Valle'));
+        .insert(SuppliersCompanion.insert(name: 'Harbor Textiles'));
     su3Id = await db
         .into(db.suppliers)
-        .insert(SuppliersCompanion.insert(name: 'Proveedor sin uso'));
+        .insert(SuppliersCompanion.insert(name: 'Aurelia Studio'));
 
     // Ventas. S1 cae exactamente en el límite inicial del rango de prueba,
     // S3 exactamente en el límite final; S4/S5 quedan justo fuera (después y
@@ -287,7 +287,7 @@ void main() {
     await purchaseRepo.createPurchase(
       supplierId: su1Id,
       isMaterial: true,
-      description: 'Insumos enero',
+      description: 'Hotel',
       totalAmount: 100,
       date: rangeStart,
       locationId: l1Id,
@@ -298,7 +298,7 @@ void main() {
     await purchaseRepo.createPurchase(
       supplierId: su2Id,
       isMaterial: false,
-      description: 'Transporte',
+      description: 'Pasaje de bus',
       totalAmount: 30,
       date: DateTime(2024, 1, 15),
       locationId: l2Id,
@@ -309,7 +309,7 @@ void main() {
     await purchaseRepo.createPurchase(
       supplierId: su1Id,
       isMaterial: true,
-      description: 'Insumos fin de mes',
+      description: 'Participación en feria',
       totalAmount: 70,
       date: rangeEnd,
       locationId: l1Id,
@@ -320,7 +320,7 @@ void main() {
     await purchaseRepo.createPurchase(
       supplierId: su2Id,
       isMaterial: true,
-      description: 'Insumos febrero',
+      description: 'Pasaje de avión',
       totalAmount: 20,
       // Ver el comentario sobre S4 más arriba: se evita a propósito la fecha
       // exacta rangeEnd + 1 día por el bug documentado en el grupo 'known bugs'.
@@ -333,7 +333,7 @@ void main() {
     await purchaseRepo.createPurchase(
       supplierId: su1Id,
       isMaterial: true,
-      description: 'Insumos diciembre',
+      description: 'Hotel',
       totalAmount: 10,
       date: DateTime(2023, 12, 31), // fuera del rango (antes)
       locationId: l1Id,
@@ -483,7 +483,7 @@ void main() {
         (name: 'location', apply: (f) => f.copyWith(locationId: l1Id)),
         (name: 'event', apply: (f) => f.copyWith(eventId: e1Id)),
         (name: 'product', apply: (f) => f.copyWith(productId: p2Id)),
-        (name: 'category', apply: (f) => f.copyWith(categoryId: catComidaId)),
+        (name: 'category', apply: (f) => f.copyWith(categoryId: catLibrosId)),
         (name: 'priceType', apply: (f) => f.copyWith(priceType: 'A')),
       ];
     });
@@ -717,7 +717,7 @@ void main() {
           endDate: rangeEnd,
           clientId: cl2Id, // no purchase has a clientId at all
           productId: p1Id,
-          categoryId: catBebidasId,
+          categoryId: catBolsasId,
           priceType: 'B',
         );
         final withoutThem = ReportFilters(startDate: rangeStart, endDate: rangeEnd);

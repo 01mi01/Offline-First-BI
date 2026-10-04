@@ -264,27 +264,27 @@ void main() {
       await db.close();
     });
 
-    final acuarela = _product(id: 1, price: 55, priceB: 40);
-    final marcador = _product(id: 2, price: 8, priceB: 6.5);
+    final estuches = _product(id: 1, price: 55, priceB: 40);
+    final pinesGrandes = _product(id: 2, price: 8, priceB: 6.5);
 
     test('calculateSubtotal charges Precio A when the band is A (or unspecified)', () {
-      expect(repository.calculateSubtotal([acuarela], {1: 2}), 110);
+      expect(repository.calculateSubtotal([estuches], {1: 2}), 110);
       expect(
-        repository.calculateSubtotal([acuarela], {1: 2}, priceTypes: {1: 'A'}),
+        repository.calculateSubtotal([estuches], {1: 2}, priceTypes: {1: 'A'}),
         110,
       );
     });
 
     test('calculateSubtotal charges Precio B when the band is B', () {
       expect(
-        repository.calculateSubtotal([acuarela], {1: 2}, priceTypes: {1: 'B'}),
+        repository.calculateSubtotal([estuches], {1: 2}, priceTypes: {1: 'B'}),
         80,
       );
     });
 
     test('calculateSubtotal mixes bands per item: one at A and another at B', () {
       final subtotal = repository.calculateSubtotal(
-        [acuarela, marcador],
+        [estuches, pinesGrandes],
         {1: 2, 2: 3},
         priceTypes: {1: 'A', 2: 'B'},
       );
@@ -293,9 +293,9 @@ void main() {
 
     test('calculateSubtotal: bands are independent per product', () {
       final subtotal = repository.calculateSubtotal(
-        [acuarela, marcador],
+        [estuches, pinesGrandes],
         {1: 1, 2: 1},
-        priceTypes: {1: 'B'}, // marcador sin banda -> A
+        priceTypes: {1: 'B'}, // pinesGrandes sin banda -> A
       );
       expect(subtotal, 40 + 8);
     });
@@ -304,7 +304,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Acuarela',
+          name: 'Estuches',
           priceA: 55,
           priceB: 40,
           stock: const Value(10),
@@ -313,7 +313,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Marcador',
+          name: 'Pines grandes',
           priceA: 8,
           priceB: 6.5,
           stock: const Value(20),
@@ -339,12 +339,12 @@ void main() {
 
       final items = await repository.getItemsForSale(sale.id);
       final byName = {for (final i in items) i.productName: i};
-      expect(byName['Acuarela']!.priceType, 'A');
-      expect(byName['Acuarela']!.unitPrice, 55);
-      expect(byName['Acuarela']!.subtotal, 110);
-      expect(byName['Marcador']!.priceType, 'B');
-      expect(byName['Marcador']!.unitPrice, 6.5);
-      expect(byName['Marcador']!.subtotal, 19.5);
+      expect(byName['Estuches']!.priceType, 'A');
+      expect(byName['Estuches']!.unitPrice, 55);
+      expect(byName['Estuches']!.subtotal, 110);
+      expect(byName['Pines grandes']!.priceType, 'B');
+      expect(byName['Pines grandes']!.unitPrice, 6.5);
+      expect(byName['Pines grandes']!.subtotal, 19.5);
     });
   });
 

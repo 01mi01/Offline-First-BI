@@ -32,7 +32,7 @@ Future<void> _openUsageTab(WidgetTester tester, AppDatabase db) async {
   await tester.pumpAndSettle();
 
   // Elige el producto y abre la hoja "Registrar el uso de un material".
-  await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Acuarela', 'Acuarela');
+  await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
   await tester.tap(find.byIcon(Icons.add));
   await tester.pumpAndSettle();
 }
@@ -49,7 +49,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Acuarela',
+        name: 'Estuches',
         priceA: 55,
         priceB: 40,
         stock: const Value(10),
@@ -69,9 +69,9 @@ void main() {
       );
     }
 
-    await material('Botones', 'unidad', 30);
-    await material('Cinta', 'metro', 10);
-    await material('Pintura', 'contenedor', 5);
+    await material('Base metálica grande para pines', 'unidad', 30);
+    await material('Papel para stickers', 'metro', 10);
+    await material('Papel holográfico para stickers', 'contenedor', 5);
   });
 
   tearDown(() async {
@@ -82,7 +82,7 @@ void main() {
     tester,
   ) async {
     await _openUsageTab(tester, db);
-    await _pickMaterial(tester, 'Botones');
+    await _pickMaterial(tester, 'Base metálica grande para pines');
 
     expect(find.text('Cantidad utilizada (unidad)'), findsOneWidget);
     // El stock disponible muestra el nombre de la unidad.
@@ -104,7 +104,7 @@ void main() {
 
   testWidgets('metro: a plain field that accepts decimals', (tester) async {
     await _openUsageTab(tester, db);
-    await _pickMaterial(tester, 'Cinta');
+    await _pickMaterial(tester, 'Papel para stickers');
 
     expect(find.byType(WholeNumberQuantityField), findsNothing);
     expect(find.byType(FractionQuantityPicker), findsNothing);
@@ -121,7 +121,7 @@ void main() {
     tester,
   ) async {
     await _openUsageTab(tester, db);
-    await _pickMaterial(tester, 'Pintura');
+    await _pickMaterial(tester, 'Papel holográfico para stickers');
 
     expect(find.byType(FractionQuantityPicker), findsOneWidget);
     expect(find.byType(WholeNumberQuantityField), findsNothing);
@@ -132,7 +132,7 @@ void main() {
     'unidad usage registered, and the edit sheet rejects decimals too',
     (tester) async {
       await _openUsageTab(tester, db);
-      await _pickMaterial(tester, 'Botones');
+      await _pickMaterial(tester, 'Base metálica grande para pines');
 
       final field = find.descendant(
         of: find.byType(WholeNumberQuantityField),
@@ -146,7 +146,7 @@ void main() {
       // Se registró el uso y descontó el stock: 30 - 3.
       final material = await (db.select(
         db.materials,
-      )..where((m) => m.name.equals('Botones'))).getSingle();
+      )..where((m) => m.name.equals('Base metálica grande para pines'))).getSingle();
       expect(material.stock, 27);
 
       // El renglón del registro muestra la unidad junto a la cantidad y al

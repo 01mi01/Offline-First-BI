@@ -102,7 +102,7 @@ void main() {
 
       await tester.tap(option('Gasto general'));
       await tester.pumpAndSettle();
-      await tester.enterText(description, 'Transporte');
+      await tester.enterText(description, 'Pasaje de bus');
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Total (Bs.)'),
         '30',
@@ -153,7 +153,7 @@ void main() {
 
       await tester.tap(option('Gasto general'));
       await tester.pumpAndSettle();
-      await tester.enterText(description, 'Transporte');
+      await tester.enterText(description, 'Pasaje de bus');
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Total (Bs.)'),
         '30',
@@ -198,7 +198,7 @@ void main() {
       final unit = await (db.select(
         db.units,
       )..where((u) => u.name.equals('unidad'))).getSingle();
-      for (final name in ['Tela', 'Hilo', 'Botones']) {
+      for (final name in ['Tela negra', 'Resina parte A', 'Base metálica grande para pines']) {
         await db.into(db.materials).insert(
           MaterialsCompanion.insert(
             name: name,
@@ -210,7 +210,7 @@ void main() {
       }
       await openSheet(tester, const PurchaseDialog(), phone);
 
-      for (final name in ['Tela', 'Hilo', 'Botones']) {
+      for (final name in ['Tela negra', 'Resina parte A', 'Base metálica grande para pines']) {
         await tester.tap(find.text('Agregar'));
         await tester.pumpAndSettle();
         await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, name, name);
@@ -250,7 +250,7 @@ void main() {
     testWidgets('Ventas: con 3 productos en el carrito el botón sigue a la vista', (
       tester,
     ) async {
-      for (final name in ['Acuarela', 'Marcador', 'Pincel']) {
+      for (final name in ['Estuches', 'Pines grandes', 'Stickers']) {
         await db.into(db.products).insert(
           ProductsCompanion.insert(
             categoryId: 1,
@@ -263,7 +263,7 @@ void main() {
       }
       await openSheet(tester, const SaleDialog(), phone);
 
-      for (final name in ['Acuarela', 'Marcador', 'Pincel']) {
+      for (final name in ['Estuches', 'Pines grandes', 'Stickers']) {
         await searchProducts(tester, name);
         final tile = find.ancestor(
           of: find.descendant(
@@ -388,7 +388,7 @@ void main() {
       final productId = await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Acuarela',
+          name: 'Estuches',
           priceA: priceA,
           priceB: priceB,
           productionCost: const Value(30),
@@ -397,7 +397,7 @@ void main() {
       );
       final materialId = await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Pintura',
+          name: 'Papel holográfico para stickers',
           unitId: unit.id,
           pricePerUnit: 50,
           stock: const Value(10),
@@ -459,14 +459,14 @@ void main() {
     final productId = await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Bufanda',
+        name: 'Libro',
         priceA: 20,
         priceB: 18,
       ),
     );
     final materialId = await db.into(db.materials).insert(
       MaterialsCompanion.insert(
-        name: 'Lana',
+        name: 'Tela beige',
         unitId: unit.id,
         pricePerUnit: 12.5,
       ),
@@ -481,7 +481,7 @@ void main() {
 
     final rows = await MaterialRepository(db).getMaterialsWithPriceForProduct(productId);
     expect(rows, hasLength(1));
-    expect(rows.single['name'], 'Lana');
+    expect(rows.single['name'], 'Tela beige');
     expect(rows.single['price'], 12.5);
     expect(rows.single['unit'], 'metro');
   });

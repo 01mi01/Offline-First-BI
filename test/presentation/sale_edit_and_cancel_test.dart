@@ -58,7 +58,7 @@ void main() {
     await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: 1,
-        name: 'Collar',
+        name: 'Tote bag negra',
         priceA: 10,
         priceB: 10,
         stock: const Value(5),
@@ -105,7 +105,7 @@ void main() {
         // El carrito arranca con las 2 unidades de la venta, y el catálogo
         // ofrece 5 (3 en inventario + 2 de esta venta), no 3. El catálogo
         // aparece al escribir en el buscador de productos.
-        await searchProducts(tester, 'Collar');
+        await searchProducts(tester, 'Tote bag negra');
         expect(find.textContaining('Stock: 5'), findsOneWidget);
         expect(find.text('2'), findsOneWidget);
 
@@ -156,7 +156,7 @@ void main() {
         await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
 
-        await searchProducts(tester, 'Collar');
+        await searchProducts(tester, 'Tote bag negra');
         expect(find.textContaining('Stock: 5'), findsOneWidget);
         await tester.tap(find.byIcon(Icons.add)); // agrega al carrito (1)
         await tester.pumpAndSettle();
@@ -238,7 +238,7 @@ void main() {
         )..where((u) => u.name.equals('metro'))).getSingle();
         await db.into(db.materials).insert(
           MaterialsCompanion.insert(
-            name: 'Cinta',
+            name: 'Papel para stickers',
             unitId: unit.id,
             pricePerUnit: 2,
             stock: const Value(10),
@@ -254,9 +254,9 @@ void main() {
 
         await tester.pumpWidget(app(const Scaffold(body: MaterialsUsageTab())));
         await tester.pumpAndSettle();
-        await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Collar', 'Collar');
+        await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Tote bag negra', 'Tote bag negra');
 
-        expect(find.text('Cinta'), findsOneWidget);
+        expect(find.text('Papel para stickers'), findsOneWidget);
         expect(find.text('Cancelado'), findsNothing);
 
         await tester.tap(find.byIcon(Icons.cancel_outlined));
@@ -266,7 +266,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(await materialStock(), 10); // los 4 metros volvieron
-        expect(find.text('Cinta'), findsOneWidget); // sigue en la lista
+        expect(find.text('Papel para stickers'), findsOneWidget); // sigue en la lista
         expect(find.text('Cancelado'), findsOneWidget);
         expect(find.byIcon(Icons.edit_outlined), findsNothing);
         expect(find.byIcon(Icons.cancel_outlined), findsNothing);

@@ -165,7 +165,7 @@ void main() {
       await pickImage(tester, picked);
       final shown = shownImagePath(tester)!;
 
-      await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Acuarela');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Estuches');
       await tester.enterText(find.widgetWithText(TextFormField, 'Precio A'), '10');
       await tester.enterText(find.widgetWithText(TextFormField, 'Precio B'), '8');
       await tester.enterText(find.widgetWithText(TextFormField, 'Stock'), '3');
@@ -187,7 +187,7 @@ void main() {
           product: ProductModel(
             id: 1,
             categoryId: 1,
-            name: 'Acuarela',
+            name: 'Estuches',
             image: missing,
             priceA: 10,
             priceB: 8,

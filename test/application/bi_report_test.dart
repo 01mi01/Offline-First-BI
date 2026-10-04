@@ -68,7 +68,7 @@ void main() {
 
   group('indicators', () {
     test('summary excludes canceled and future-dated records', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 2, 100); // 200
       await sell(day(-5), p, 1, 50); // 50
       await sell(day(3), p, 1, 999); // futura: no cuenta
@@ -85,15 +85,15 @@ void main() {
     });
 
     test('summary uses the net amount after discounts', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 2, 100, discount: 20);
       await refresh();
       expect(report().summary.ingresos, 180);
     });
 
     test('sales by product ranks by revenue with units', () async {
-      final a = await newProduct('Cuadro');
-      final b = await newProduct('Taza');
+      final a = await newProduct('Tote bag negra');
+      final b = await newProduct('Stickers holográficos');
       await sell(day(0), a, 1, 300);
       await sell(day(-1), b, 5, 20);
       await sell(day(-2), b, 3, 20);
@@ -101,7 +101,7 @@ void main() {
       await refresh();
 
       final entries = report().salesByProduct;
-      expect(entries.map((e) => e.label), ['Cuadro', 'Taza']);
+      expect(entries.map((e) => e.label), ['Tote bag negra', 'Stickers holográficos']);
       expect(entries[0].amount, 300);
       expect(entries[0].quantity, 1);
       expect(entries[1].amount, 160);
@@ -109,21 +109,21 @@ void main() {
     });
 
     test('sales by category treats "Sin categoría" as a normal category', () async {
-      final pinturas = await newCategory('Pinturas');
-      final a = await newProduct('Cuadro', categoryId: pinturas);
-      final b = await newProduct('Llavero'); // sin categoría
+      final miniaturas = await newCategory('Miniaturas');
+      final a = await newProduct('Tote bag negra', categoryId: miniaturas);
+      final b = await newProduct('Pines grandes'); // sin categoría
       await sell(day(0), a, 1, 100);
       await sell(day(0), b, 4, 10);
       await refresh();
 
       expect(amounts(report().salesByCategory), {
-        'Pinturas': 100,
+        'Miniaturas': 100,
         'Sin categoría': 40,
       });
     });
 
     test('sales by price type splits A and B in A, B order', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 1, 100, priceType: 'B');
       await sell(day(0), p, 2, 50, priceType: 'A');
       await sell(day(-1), p, 1, 25, priceType: 'A');
@@ -136,7 +136,7 @@ void main() {
     });
 
     test('price type filter leaves only that type', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 1, 100, priceType: 'B');
       await sell(day(0), p, 2, 50, priceType: 'A');
       await refresh();
@@ -147,37 +147,37 @@ void main() {
     });
 
     test('sales by event use each sale\'s own date, not the event\'s', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       // El evento duró hace un mes, pero las ventas tienen fechas propias.
-      final feria = await newEvent('Feria', day(-40), day(-38));
-      final bazar = await newEvent('Bazar', day(-1), null);
+      final feria = await newEvent('Feria de Arte', day(-40), day(-38));
+      final octubre = await newEvent('Feria de Octubre', day(-1), null);
       await sell(day(-3), p, 1, 100, eventId: feria);
       await sell(day(-60), p, 1, 500, eventId: feria); // fuera del periodo
-      await sell(day(0), p, 2, 40, eventId: bazar);
+      await sell(day(0), p, 2, 40, eventId: octubre);
       await sell(day(0), p, 1, 10); // sin evento
-      await sell(day(5), p, 1, 999, eventId: bazar); // futura
+      await sell(day(5), p, 1, 999, eventId: octubre); // futura
       await refresh();
 
       final range = ReportFilters(startDate: day(-10), endDate: day(0));
       final entries = report(range).salesByEvent;
-      expect(amounts(entries), {'Feria': 100, 'Bazar': 80});
-      expect(entries.first.label, 'Feria');
+      expect(amounts(entries), {'Feria de Arte': 100, 'Feria de Octubre': 80});
+      expect(entries.first.label, 'Feria de Arte');
       // Sin filtro de fechas entra la venta antigua del evento.
-      expect(amounts(report().salesByEvent), {'Feria': 600, 'Bazar': 80});
+      expect(amounts(report().salesByEvent), {'Feria de Arte': 600, 'Feria de Octubre': 80});
     });
 
     test('purchases by material add up item spending, expenses excluded', () async {
-      final tela = await newMaterial('Tela');
-      final hilo = await newMaterial('Hilo');
+      final tela = await newMaterial('Tela negra');
+      final resinaA = await newMaterial('Resina parte A');
       await buyMaterial(day(0), tela, 3, 20); // 60
       await buyMaterial(day(-2), tela, 2, 20); // 40
-      await buyMaterial(day(-1), hilo, 1, 15); // 15
-      await buyMaterial(day(6), hilo, 100, 100); // futura
+      await buyMaterial(day(-1), resinaA, 1, 15); // 15
+      await buyMaterial(day(6), resinaA, 100, 100); // futura
       await spend(day(0), 500); // gasto general: sin material
       await refresh();
 
       final entries = report().purchasesByMaterial;
-      expect(entries.map((e) => e.label), ['Tela', 'Hilo']);
+      expect(entries.map((e) => e.label), ['Tela negra', 'Resina parte A']);
       expect(entries[0].amount, 100);
       expect(entries[0].quantity, 5);
       expect(entries[0].unit, isNotNull);
@@ -187,8 +187,8 @@ void main() {
     });
 
     test('purchase kind filter only touches purchases', () async {
-      final p = await newProduct('Cuadro');
-      final tela = await newMaterial('Tela');
+      final p = await newProduct('Tote bag negra');
+      final tela = await newMaterial('Tela negra');
       await sell(day(0), p, 1, 100);
       await buyMaterial(day(0), tela, 1, 40);
       await spend(day(0), 25);
@@ -208,11 +208,11 @@ void main() {
     });
 
     test('low stock lists active products at or below the threshold, ignoring filters', () async {
-      await newProduct('Agotado', stock: 0);
-      await newProduct('Poco', stock: 2);
-      await newProduct('Justo', stock: 3);
-      await newProduct('Suficiente', stock: 4);
-      await newProduct('Inactivo', stock: 1, isActive: false);
+      await newProduct('Estuches', stock: 0);
+      await newProduct('Libro', stock: 2);
+      await newProduct('Miniaturas', stock: 3);
+      await newProduct('Pines grandes', stock: 4);
+      await newProduct('Tote bag beige', stock: 1, isActive: false);
       await refresh();
 
       // Un rango sin ningún registro no cambia el stock bajo.
@@ -220,9 +220,9 @@ void main() {
         ReportFilters(startDate: day(-400), endDate: day(-399)),
       );
       expect(empty.lowStock.map((e) => e.product.name), [
-        'Agotado',
-        'Poco',
-        'Justo',
+        'Estuches',
+        'Libro',
+        'Miniaturas',
       ]);
       expect(empty.lowStock.first.isOutOfStock, isTrue);
       expect(empty.lowStock.last.categoryName, 'Sin categoría');
@@ -233,8 +233,8 @@ void main() {
     });
 
     test('date range and Desde-only single day apply to every indicator', () async {
-      final p = await newProduct('Cuadro');
-      final tela = await newMaterial('Tela');
+      final p = await newProduct('Tote bag negra');
+      final tela = await newMaterial('Tela negra');
       await sell(day(0), p, 1, 100);
       await sell(day(-1), p, 1, 40);
       await buyMaterial(day(0), tela, 1, 10);
@@ -252,7 +252,7 @@ void main() {
 
   group('time series', () {
     test('short range is daily and fills empty days with zeros', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 1, 100);
       await sell(day(-4), p, 1, 40);
       await spend(day(-2), 30);
@@ -266,7 +266,7 @@ void main() {
     });
 
     test('a long range is bucketed monthly, a medium one weekly', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 1, 100);
       await sell(day(-200), p, 1, 40);
       await refresh();
@@ -297,7 +297,7 @@ void main() {
     });
 
     test('future-dated records never appear in the series', () async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 1, 100);
       await sell(day(10), p, 1, 999);
       await refresh();
@@ -337,11 +337,11 @@ void main() {
     }
 
     testWidgets('shows the indicators with their data', (tester) async {
-      final pinturas = await newCategory('Pinturas');
-      final a = await newProduct('Cuadro', categoryId: pinturas);
-      await newProduct('Lienzo', stock: 0);
-      final tela = await newMaterial('Tela');
-      final feria = await newEvent('Feria', day(-2), null);
+      final miniaturas = await newCategory('Miniaturas');
+      final a = await newProduct('Tote bag negra', categoryId: miniaturas);
+      await newProduct('Set de pines pequeños', stock: 0);
+      final tela = await newMaterial('Tela negra');
+      final feria = await newEvent('Feria de Arte', day(-2), null);
       await sell(day(0), a, 1, 100, eventId: feria);
       await buyMaterial(day(-1), tela, 2, 10);
       await refresh();
@@ -366,7 +366,7 @@ void main() {
       expect(find.text('Bs. 20.00'), findsWidgets); // gastos
       expect(find.text('Bs. 80.00'), findsOneWidget); // balance
       expect(find.text('Agotado'), findsOneWidget);
-      expect(find.text('Feria'), findsOneWidget);
+      expect(find.text('Feria de Arte'), findsOneWidget);
     });
 
     testWidgets('bars cycle through the five palette colors past the fifth', (
@@ -374,8 +374,8 @@ void main() {
     ) async {
       // 7 categorías con ventas: las barras 6 y 7 reutilizan los colores 1 y 2.
       for (var i = 0; i < 7; i++) {
-        final cat = await newCategory('Cat $i');
-        final p = await newProduct('Prod $i', categoryId: cat);
+        final cat = await newCategory('Categoría $i');
+        final p = await newProduct('Producto $i', categoryId: cat);
         await sell(day(0), p, 1, 100.0 - i * 10);
       }
       await refresh();
@@ -405,7 +405,7 @@ void main() {
     testWidgets('the configuration step reuses the Reportes filters and presets', (
       tester,
     ) async {
-      final p = await newProduct('Cuadro');
+      final p = await newProduct('Tote bag negra');
       await sell(day(0), p, 1, 100);
       await sell(day(-40), p, 1, 500);
       await refresh();

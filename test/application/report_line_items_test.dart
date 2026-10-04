@@ -22,46 +22,46 @@ import 'package:offline_first_bi/models/report_models.dart';
 // venta completa. Escenario con una venta mixta:
 //
 //   Venta 1 (10/01/2024), descuento global 12:
-//     Acuarela  (Pinturas)      x2 @ Precio A 50 = 100
-//     Marcador  (Sin categoría) x2 @ Precio B 10 =  20   -> subtotal 120, final 108
+//     Estuches  (Miniaturas)    x2 @ Precio A 50 = 100
+//     Pines grandes  (Sin categoría) x2 @ Precio B 10 =  20   -> subtotal 120, final 108
 //   Venta 2 (11/01/2024), sin descuento:
-//     Acuarela  (Pinturas)      x1 @ Precio B 40 =  40
+//     Estuches  (Miniaturas)    x1 @ Precio B 40 =  40
 //
 // El descuento de la venta 1 se prorratea por subtotal de línea:
-// Acuarela 12 * 100/120 = 10, Marcador 12 * 20/120 = 2.
+// Estuches 12 * 100/120 = 10, Pines grandes 12 * 20/120 = 2.
 void main() {
   late AppDatabase db;
   late SaleRepository saleRepo;
   final service = ReportService();
 
-  late int pinturasId, sinCategoriaId;
-  late int acuarelaId, marcadorId;
+  late int miniaturasId, sinCategoriaId;
+  late int estuchesId, pinesGrandesId;
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     saleRepo = SaleRepository(db);
 
-    pinturasId = await db
+    miniaturasId = await db
         .into(db.categories)
-        .insert(CategoriesCompanion.insert(name: 'Pinturas'));
+        .insert(CategoriesCompanion.insert(name: 'Miniaturas'));
     // onCreate ya siembra "Sin categoría".
     sinCategoriaId = (await (db.select(
       db.categories,
     )..where((c) => c.name.equals('Sin categoría'))).getSingle()).id;
 
-    acuarelaId = await db.into(db.products).insert(
+    estuchesId = await db.into(db.products).insert(
       ProductsCompanion.insert(
-        categoryId: pinturasId,
-        name: 'Acuarela',
+        categoryId: miniaturasId,
+        name: 'Estuches',
         priceA: 50,
         priceB: 40,
         stock: const Value(100),
       ),
     );
-    marcadorId = await db.into(db.products).insert(
+    pinesGrandesId = await db.into(db.products).insert(
       ProductsCompanion.insert(
         categoryId: sinCategoriaId,
-        name: 'Marcador',
+        name: 'Pines grandes',
         priceA: 12,
         priceB: 10,
         stock: const Value(100),
@@ -77,8 +77,8 @@ void main() {
       finalAmount: 108,
       date: DateTime(2024, 1, 10),
       items: [
-        {'productId': acuarelaId, 'quantity': 2, 'unitPrice': 50.0, 'priceType': 'A'},
-        {'productId': marcadorId, 'quantity': 2, 'unitPrice': 10.0, 'priceType': 'B'},
+        {'productId': estuchesId, 'quantity': 2, 'unitPrice': 50.0, 'priceType': 'A'},
+        {'productId': pinesGrandesId, 'quantity': 2, 'unitPrice': 10.0, 'priceType': 'B'},
       ],
     );
     await saleRepo.createSale(
@@ -90,7 +90,7 @@ void main() {
       finalAmount: 40,
       date: DateTime(2024, 1, 11),
       items: [
-        {'productId': acuarelaId, 'quantity': 1, 'unitPrice': 40.0, 'priceType': 'B'},
+        {'productId': estuchesId, 'quantity': 1, 'unitPrice': 40.0, 'priceType': 'B'},
       ],
     );
   });
@@ -142,14 +142,14 @@ void main() {
     expect(summary.totalDiscount, closeTo(12, 1e-9));
   });
 
-  test('filtering by "Sin categoría" keeps only the Marcador line of the mixed sale', () async {
+  test('filtering by "Sin categoría" keeps only the Pines grandes line of the mixed sale', () async {
     final rows = await rowsFor(ReportFilters(categoryId: sinCategoriaId));
 
-    expect(rows, hasLength(1)); // la venta 2 (solo Acuarela) no aparece
+    expect(rows, hasLength(1)); // la venta 2 (solo Estuches) no aparece
     final row = rows.single;
-    expect(lineNames(row), ['Marcador']);
+    expect(lineNames(row), ['Pines grandes']);
     expect(row.lines!.single.categoryName, 'Sin categoría');
-    // No los 108 de la venta completa: solo la línea Marcador (20 - 2 de descuento).
+    // No los 108 de la venta completa: solo la línea Pines grandes (20 - 2 de descuento).
     expect(row.subtotalAmount, closeTo(20, 1e-9));
     expect(row.discountAmount, closeTo(2, 1e-9));
     expect(row.netAmount, closeTo(18, 1e-9));
@@ -161,13 +161,13 @@ void main() {
   });
 
   test('filtering by the other category breaks the same sale down the other way', () async {
-    final rows = await rowsFor(ReportFilters(categoryId: pinturasId));
+    final rows = await rowsFor(ReportFilters(categoryId: miniaturasId));
 
     expect(rows, hasLength(2));
     final byDate = {for (final r in rows) r.sale.date.day: r};
-    expect(lineNames(byDate[10]!), ['Acuarela']);
+    expect(lineNames(byDate[10]!), ['Estuches']);
     expect(byDate[10]!.netAmount, closeTo(90, 1e-9)); // 100 - 10
-    expect(lineNames(byDate[11]!), ['Acuarela']);
+    expect(lineNames(byDate[11]!), ['Estuches']);
     expect(byDate[11]!.netAmount, closeTo(40, 1e-9));
 
     final summary = service.summarizeSaleRows(rows);
@@ -181,11 +181,11 @@ void main() {
     );
     final pin = service.summarizeSaleRows(
       await rowsFor(ReportFilters(
-        categoryId: pinturasId,
+        categoryId: miniaturasId,
         endDate: DateTime(2024, 1, 10),
       )),
     );
-    // Venta 1 completa = 108 = Pinturas (90) + Sin categoría (18)
+    // Venta 1 completa = 108 = Miniaturas (90) + Sin categoría (18)
     expect(pin.totalAmount + sin.totalAmount, closeTo(108, 1e-9));
     expect(pin.totalDiscount + sin.totalDiscount, closeTo(12, 1e-9));
   });
@@ -194,34 +194,34 @@ void main() {
     final b = await rowsFor(const ReportFilters(priceType: 'B'));
     expect(b, hasLength(2));
     final bByDay = {for (final r in b) r.sale.date.day: r};
-    expect(lineNames(bByDay[10]!), ['Marcador']); // no Acuarela (A) de la venta 1
+    expect(lineNames(bByDay[10]!), ['Pines grandes']); // no Estuches (A) de la venta 1
     expect(bByDay[10]!.netAmount, closeTo(18, 1e-9));
     expect(bByDay[11]!.netAmount, closeTo(40, 1e-9));
     expect(service.summarizeSaleRows(b).totalAmount, closeTo(58, 1e-9));
 
     final a = await rowsFor(const ReportFilters(priceType: 'A'));
     expect(a, hasLength(1));
-    expect(lineNames(a.single), ['Acuarela']);
+    expect(lineNames(a.single), ['Estuches']);
     expect(a.single.netAmount, closeTo(90, 1e-9));
   });
 
   test('filtering by product totals only that product\'s line', () async {
-    final rows = await rowsFor(ReportFilters(productId: marcadorId));
+    final rows = await rowsFor(ReportFilters(productId: pinesGrandesId));
     expect(rows, hasLength(1));
-    expect(lineNames(rows.single), ['Marcador']);
+    expect(lineNames(rows.single), ['Pines grandes']);
     expect(rows.single.netAmount, closeTo(18, 1e-9));
   });
 
   test('line filters combine on the SAME line, not across different lines of a sale', () async {
-    // Acuarela + Precio B: la venta 1 tiene Acuarela (a Precio A) y otra línea
-    // a Precio B (Marcador), pero ninguna línea es Acuarela a Precio B.
-    final acuarelaB = await rowsFor(
-      ReportFilters(productId: acuarelaId, priceType: 'B'),
+    // Estuches + Precio B: la venta 1 tiene Estuches (a Precio A) y otra línea
+    // a Precio B (Pines grandes), pero ninguna línea es Estuches a Precio B.
+    final estuchesB = await rowsFor(
+      ReportFilters(productId: estuchesId, priceType: 'B'),
     );
-    expect(acuarelaB.map((r) => r.sale.date.day), [11]);
-    expect(service.summarizeSaleRows(acuarelaB).totalAmount, closeTo(40, 1e-9));
+    expect(estuchesB.map((r) => r.sale.date.day), [11]);
+    expect(service.summarizeSaleRows(estuchesB).totalAmount, closeTo(40, 1e-9));
 
-    // "Sin categoría" + Precio A: Marcador es Precio B -> nada coincide.
+    // "Sin categoría" + Precio A: Pines grandes es Precio B -> nada coincide.
     final none = await rowsFor(
       ReportFilters(categoryId: sinCategoriaId, priceType: 'A'),
     );
@@ -232,7 +232,7 @@ void main() {
   test('sale-level filters (date) still apply on top of the line filters', () async {
     final rows = await rowsFor(
       ReportFilters(
-        categoryId: pinturasId,
+        categoryId: miniaturasId,
         startDate: DateTime(2024, 1, 11),
         endDate: DateTime(2024, 1, 11),
       ),
@@ -270,7 +270,7 @@ void main() {
       final summary = container.read(salesSummaryProvider(filters));
 
       expect(rows, hasLength(1));
-      expect(rows.single.lines!.map((l) => l.item.productName), ['Marcador']);
+      expect(rows.single.lines!.map((l) => l.item.productName), ['Pines grandes']);
       expect(summary.count, 1);
       expect(summary.totalAmount, closeTo(18, 1e-9));
       expect(summary.totalDiscount, closeTo(2, 1e-9));

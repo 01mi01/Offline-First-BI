@@ -534,7 +534,7 @@ void main() {
       final clients = [
         ClientModel(
           id: 1,
-          name: 'Ana',
+          name: 'John Smith',
           isActive: true,
           createdAt: DateTime(2024, 1, 1),
         ),
@@ -542,7 +542,7 @@ void main() {
       final locations = [
         LocationModel(
           id: 10,
-          city: 'La Paz',
+          city: 'La Paz - Calacoto',
           country: 'Bolivia',
           isActive: true,
           createdAt: DateTime(2024, 1, 1),
@@ -551,7 +551,7 @@ void main() {
       final events = [
         EventModel(
           id: 100,
-          name: 'Feria',
+          name: 'Feria de Arte',
           startDate: DateTime(2024, 1, 1),
           createdAt: DateTime(2024, 1, 1),
         ),
@@ -565,9 +565,9 @@ void main() {
       );
 
       expect(rows, hasLength(1));
-      expect(rows.first.clientName, 'Ana');
-      expect(rows.first.locationName, 'La Paz, Bolivia');
-      expect(rows.first.eventName, 'Feria');
+      expect(rows.first.clientName, 'John Smith');
+      expect(rows.first.locationName, 'La Paz - Calacoto, Bolivia');
+      expect(rows.first.eventName, 'Feria de Arte');
     });
 
     test('falls back to "Sin nombre" and null when relations are missing', () {
@@ -598,7 +598,7 @@ void main() {
       final suppliers = [
         SupplierModel(
           id: 1,
-          name: 'Proveedor X',
+          name: 'Lino & Co.',
           isActive: true,
           createdAt: DateTime(2024, 1, 1),
         ),
@@ -606,7 +606,7 @@ void main() {
       final locations = [
         LocationModel(
           id: 10,
-          city: 'Cochabamba',
+          city: 'Santa Cruz - Equipetrol',
           country: 'Bolivia',
           isActive: true,
           createdAt: DateTime(2024, 1, 1),
@@ -615,7 +615,7 @@ void main() {
       final events = [
         EventModel(
           id: 100,
-          name: 'Expo',
+          name: 'Exposición de Arte',
           startDate: DateTime(2024, 1, 1),
           createdAt: DateTime(2024, 1, 1),
         ),
@@ -629,9 +629,9 @@ void main() {
       );
 
       expect(rows, hasLength(1));
-      expect(rows.first.supplierName, 'Proveedor X');
-      expect(rows.first.locationName, 'Cochabamba, Bolivia');
-      expect(rows.first.eventName, 'Expo');
+      expect(rows.first.supplierName, 'Lino & Co.');
+      expect(rows.first.locationName, 'Santa Cruz - Equipetrol, Bolivia');
+      expect(rows.first.eventName, 'Exposición de Arte');
       expect(rows.first.items, isEmpty);
     });
 
@@ -642,7 +642,7 @@ void main() {
         id: 9,
         purchaseId: 3,
         materialId: 1,
-        materialName: 'Ajeno',
+        materialName: 'Tela para estuches',
         quantity: 1,
         unitPrice: 1,
         subtotal: 1,
@@ -651,7 +651,7 @@ void main() {
         id: 1,
         purchaseId: 1,
         materialId: 1,
-        materialName: 'Vidrio fino',
+        materialName: 'Tela beige',
         quantity: 2,
         unitPrice: 3.5,
         subtotal: 7,

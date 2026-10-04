@@ -66,7 +66,7 @@ void main() {
       expect(find.widgetWithText(TextFormField, 'Precio A'), findsOneWidget);
       expect(find.widgetWithText(TextFormField, 'Precio B'), findsOneWidget);
 
-      await _type(tester, 'Nombre', 'Acuarela');
+      await _type(tester, 'Nombre', 'Estuches');
       await _type(tester, 'Precio A', '55');
       await _type(tester, 'Precio B', '40');
       await _type(tester, 'Stock', '10');
@@ -108,7 +108,7 @@ void main() {
     (tester) async {
       await _openProductDialog(tester, db);
 
-      await _type(tester, 'Nombre', 'Acuarela');
+      await _type(tester, 'Nombre', 'Estuches');
       await _type(tester, 'Precio A', '55');
       await _type(tester, 'Stock', '10');
       await create(tester);
@@ -126,7 +126,7 @@ void main() {
     (tester) async {
       await _openProductDialog(tester, db);
 
-      await _type(tester, 'Nombre', 'Acuarela');
+      await _type(tester, 'Nombre', 'Estuches');
       await _type(tester, 'Precio B', '40');
       await _type(tester, 'Stock', '10');
       await create(tester);
@@ -143,7 +143,7 @@ void main() {
   ) async {
     await _openProductDialog(tester, db);
 
-    await _type(tester, 'Nombre', 'Acuarela');
+    await _type(tester, 'Nombre', 'Estuches');
     await _type(tester, 'Stock', '10');
     await create(tester);
 
@@ -193,7 +193,7 @@ void main() {
     (tester) async {
       await _openProductDialog(tester, db);
 
-      await _type(tester, 'Nombre', 'Acuarela');
+      await _type(tester, 'Nombre', 'Estuches');
       await _type(tester, 'Precio A', '55');
       await _type(tester, 'Precio B', '40');
       await _type(tester, 'Costo de producción', '45'); // < A pero >= B
@@ -216,7 +216,7 @@ void main() {
     'two prices change independently',
     (tester) async {
       await ProductRepository(db).save(
-        name: 'Acuarela',
+        name: 'Estuches',
         priceA: 50.0,
         priceB: 35.5,
         productionCost: 20.0,
@@ -247,7 +247,7 @@ void main() {
 
   group('Stock is a whole number', () {
     Future<void> fillValidProduct(WidgetTester tester) async {
-      await _type(tester, 'Nombre', 'Acuarela');
+      await _type(tester, 'Nombre', 'Estuches');
       await _type(tester, 'Precio A', '55');
       await _type(tester, 'Precio B', '40');
     }
@@ -332,7 +332,7 @@ void main() {
       tester,
     ) async {
       await ProductRepository(db).save(
-        name: 'Acuarela',
+        name: 'Estuches',
         priceA: 50,
         priceB: 40,
         stock: 10,

@@ -84,7 +84,7 @@ void main() {
       )..where((u) => u.name.equals('unidad'))).getSingle();
       final materialId = await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Tela',
+          name: 'Tela negra',
           unitId: unit.id,
           pricePerUnit: 4,
           stock: const Value(10),
@@ -106,7 +106,7 @@ void main() {
       await repo.createPurchase(
         supplierId: null,
         isMaterial: false,
-        description: 'Transporte',
+        description: 'Pasaje de bus',
         totalAmount: 30,
         date: DateTime(2026, 1, 2),
         locationId: null,
@@ -133,7 +133,7 @@ void main() {
       await pick(tester, 'Gastos');
       expect(find.text('Gasto'), findsOneWidget);
       expect(find.text('Material'), findsNothing);
-      expect(find.text('Transporte'), findsOneWidget);
+      expect(find.text('Pasaje de bus'), findsOneWidget);
 
       await pick(tester, 'Materiales');
       expect(find.text('Material'), findsOneWidget);
@@ -161,7 +161,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Producto Test',
+          name: 'Libro',
           priceA: 20,
           priceB: 20,
           stock: const Value(50),
@@ -197,7 +197,7 @@ void main() {
       expect(find.text('Descuento'), findsOneWidget);
       expect(find.text('Total'), findsOneWidget);
 
-      await searchProducts(tester, 'Producto');
+      await searchProducts(tester, 'Libro');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, '0'), '5');
@@ -263,7 +263,7 @@ void main() {
       )..where((u) => u.name.equals('unidad'))).getSingle();
       await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Tela',
+          name: 'Tela negra',
           unitId: unit.id,
           pricePerUnit: 4,
           stock: const Value(100),
@@ -275,7 +275,7 @@ void main() {
       await tester.ensureVisible(find.text('Agregar'));
       await tester.tap(find.text('Agregar'));
       await tester.pumpAndSettle();
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela', 'Tela');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela negra', 'Tela negra');
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, '3');
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Agregar').last);
@@ -353,7 +353,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
-          name: 'Acuarela',
+          name: 'Estuches',
           description: const Value('Pintura'),
           priceA: 30,
           priceB: 11,
@@ -363,7 +363,7 @@ void main() {
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: cat2,
-          name: 'Cuaderno',
+          name: 'Miniaturas',
           priceA: 12,
           priceB: 25,
           stock: const Value(5),
@@ -422,8 +422,8 @@ void main() {
       expect(find.textContaining('menor a mayor'), findsNothing);
       // El orden de siempre (alfabético) se mantiene.
       expect(
-        tester.getTopLeft(find.text('Acuarela')).dy,
-        lessThan(tester.getTopLeft(find.text('Cuaderno')).dy),
+        tester.getTopLeft(find.text('Estuches')).dy,
+        lessThan(tester.getTopLeft(find.text('Miniaturas')).dy),
       );
     });
 
@@ -484,7 +484,7 @@ void main() {
       await pickPrice(tester, 'Sin precio');
       await toGrid(tester);
       expect(find.textContaining('Precio: Bs.'), findsNothing);
-      expect(find.text('Acuarela'), findsOneWidget);
+      expect(find.text('Estuches'), findsOneWidget);
 
       await toList(tester);
       await pickPrice(tester, 'Ambos');
@@ -495,7 +495,7 @@ void main() {
       expect(find.text('B: Bs. 25.00'), findsOneWidget);
       expect(find.textContaining('Precio: Bs.'), findsNothing);
 
-      await tester.tap(find.text('Acuarela'));
+      await tester.tap(find.text('Estuches'));
       await tester.pumpAndSettle();
       expect(find.text('Precio A: Bs. 30.00'), findsOneWidget);
       expect(find.text('Precio B: Bs. 11.00'), findsOneWidget);
@@ -523,7 +523,7 @@ void main() {
       await pickPrice(tester, 'Sin precio');
       expect(find.textContaining('Bs. 30.00'), findsNothing);
       expect(find.textContaining('Bs. 11.00'), findsNothing);
-      expect(find.text('Acuarela'), findsOneWidget);
+      expect(find.text('Estuches'), findsOneWidget);
 
       await pickPrice(tester, 'Ambos');
       expect(find.text('A: Bs. 30.00'), findsOneWidget);
@@ -549,12 +549,12 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'pintura'); // descripción
       await tester.pumpAndSettle();
-      expect(find.text('Acuarela'), findsOneWidget);
-      expect(find.text('Cuaderno'), findsNothing);
+      expect(find.text('Estuches'), findsOneWidget);
+      expect(find.text('Miniaturas'), findsNothing);
 
       await toGrid(tester);
-      expect(find.text('Acuarela'), findsOneWidget);
-      expect(find.text('Cuaderno'), findsNothing);
+      expect(find.text('Estuches'), findsOneWidget);
+      expect(find.text('Miniaturas'), findsNothing);
 
       await tester.enterText(find.byType(TextField), 'nada que coincida');
       await tester.pumpAndSettle();
@@ -569,8 +569,8 @@ void main() {
       await tester.tap(find.text('Papelería').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Cuaderno'), findsOneWidget);
-      expect(find.text('Acuarela'), findsNothing);
+      expect(find.text('Miniaturas'), findsOneWidget);
+      expect(find.text('Estuches'), findsNothing);
     });
   });
 
@@ -595,7 +595,7 @@ void main() {
       )..where((u) => u.name.equals('metro'))).getSingle();
       await db.into(db.materials).insert(
         MaterialsCompanion.insert(
-          name: 'Tela',
+          name: 'Tela negra',
           unitId: unit.id,
           pricePerUnit: 4,
           stock: const Value(40),
@@ -603,7 +603,7 @@ void main() {
       );
       await openAddLine(tester);
 
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela', 'Tela');
+      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela negra', 'Tela negra');
 
       expect(quantityText(tester, 'Cantidad (metro)'), isEmpty);
     });
@@ -617,7 +617,7 @@ void main() {
         // "Crear nuevo material" con stock inicial 5 a Bs. 3 el metro.
         await tester.tap(find.text('Crear nuevo material'));
         await tester.pumpAndSettle();
-        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Cinta');
+        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Papel para stickers');
         await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'metro', 'metro');
         await tester.enterText(find.widgetWithText(TextFormField, 'Stock'), '5');
         await tester.enterText(
@@ -631,11 +631,11 @@ void main() {
 
         // Su stock inicial ya quedó como su propia compra...
         expect(await PurchaseRepository(db).getAll(), hasLength(1));
-        var cinta = await db.select(db.materials).getSingle();
-        expect(cinta.stock, 5.0);
+        var papelStickers = await db.select(db.materials).getSingle();
+        expect(papelStickers.stock, 5.0);
 
         // ...así que la línea de esta compra NO trae el 5 de relleno.
-        expect(find.text('Cinta'), findsWidgets); // ya seleccionada
+        expect(find.text('Papel para stickers'), findsWidgets); // ya seleccionada
         expect(quantityText(tester, 'Cantidad (metro)'), isEmpty);
         expect(quantityText(tester, 'Precio por unidad (Bs.)'), '3');
 
@@ -653,8 +653,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // El stock suma (5 + 2), no se reemplaza ni se duplica (5 + 5).
-        cinta = await db.select(db.materials).getSingle();
-        expect(cinta.stock, 7.0);
+        papelStickers = await db.select(db.materials).getSingle();
+        expect(papelStickers.stock, 7.0);
         final purchases = await PurchaseRepository(db).getAll();
         expect(purchases, hasLength(2));
         expect(
@@ -668,10 +668,10 @@ void main() {
   group('Categorías: búsqueda y estado', () {
     setUp(() async {
       await db.into(db.categories).insert(
-        CategoriesCompanion.insert(name: 'Bisutería'),
+        CategoriesCompanion.insert(name: 'Pines'),
       );
       await db.into(db.categories).insert(
-        CategoriesCompanion.insert(name: 'Cuadernos', isActive: const Value(false)),
+        CategoriesCompanion.insert(name: 'Libros', isActive: const Value(false)),
       );
     });
 
@@ -679,13 +679,13 @@ void main() {
       tester,
     ) async {
       await _pumpPage(tester, db, const CategoriesPage());
-      expect(find.text('Bisutería'), findsOneWidget);
-      expect(find.text('Cuadernos'), findsOneWidget);
+      expect(find.text('Pines'), findsOneWidget);
+      expect(find.text('Libros'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), 'cuad');
+      await tester.enterText(find.byType(TextField), 'libr');
       await tester.pumpAndSettle();
-      expect(find.text('Cuadernos'), findsOneWidget);
-      expect(find.text('Bisutería'), findsNothing);
+      expect(find.text('Libros'), findsOneWidget);
+      expect(find.text('Pines'), findsNothing);
 
       await tester.enterText(find.byType(TextField), '');
       await tester.pumpAndSettle();
@@ -694,8 +694,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Inactivas').last);
       await tester.pumpAndSettle();
-      expect(find.text('Cuadernos'), findsOneWidget);
-      expect(find.text('Bisutería'), findsNothing);
+      expect(find.text('Libros'), findsOneWidget);
+      expect(find.text('Pines'), findsNothing);
     });
   });
 }
