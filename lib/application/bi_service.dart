@@ -66,6 +66,7 @@ class BiService {
           label: names[id] ?? fallbackNames[id] ?? 'Producto',
           amount: amounts[id]!,
           quantity: quantities[id]!,
+          refId: id,
         ),
     ]);
   }
@@ -121,6 +122,7 @@ class BiService {
           amount: amounts[id]!,
           quantity: quantities[id]!,
           unit: unitNames[materialById[id]?.unitId],
+          refId: id,
         ),
     ]);
   }
@@ -164,7 +166,12 @@ class BiService {
     }
     return _ranked([
       for (final id in amounts.keys)
-        BiEntry(label: names[id]!, amount: amounts[id]!, quantity: counts[id]!),
+        BiEntry(
+          label: names[id]!,
+          amount: amounts[id]!,
+          quantity: counts[id]!,
+          refId: id,
+        ),
     ]);
   }
 
@@ -851,6 +858,214 @@ class BiService {
       );
     }
     return BiRadar(products: result, autoSelected: auto);
+  }
+
+  // ---------------------------------------------------------------------
+  // Detalle de una barra (lo que se abre al tocarla)
+  // ---------------------------------------------------------------------
+  //
+  // Parten de las mismas ventas y compras ya filtradas que los indicadores
+  // (cada registro por su propia fecha, sin ventas canceladas ni registros
+  // con fecha futura, con los filtros vigentes), así que sus totales
+  // coinciden con los de la barra que se tocó. Los intervalos son los de
+  // [series] (los de Evolución en el tiempo).
+
+  List<BiDrillBucket> _drillBuckets(
+    BiTimeSeries series,
+    Map<DateTime, double> amounts,
+    Map<DateTime, double> quantities,
+    Map<DateTime, int> counts,
+  ) {
+    return [
+      for (final b in series.buckets)
+        BiDrillBucket(
+          start: b.start,
+          amount: amounts[b.start] ?? 0,
+          quantity: quantities[b.start] ?? 0,
+          count: counts[b.start] ?? 0,
+        ),
+    ];
+  }
+
+  // Ingresos netos y unidades de un producto en el tiempo.
+  BiProductDetail productDetail({
+    required List<SaleReportRow> rows,
+    required List<ProductModel> products,
+    required int productId,
+    required BiTimeSeries series,
+  }) {
+    final g = series.granularity;
+    final amounts = <DateTime, double>{};
+    final quantities = <DateTime, double>{};
+    final counts = <DateTime, int>{};
+    var revenue = 0.0;
+    var units = 0.0;
+    var salesCount = 0;
+    String? fallbackName;
+    for (final row in rows) {
+      var inSale = false;
+      for (final line in row.lines ?? const <SaleLineReport>[]) {
+        if (line.item.productId != productId) continue;
+        final key = _bucketStart(row.sale.date, g);
+        amounts[key] = (amounts[key] ?? 0) + line.netAmount;
+        quantities[key] = (quantities[key] ?? 0) + line.item.quantity;
+        revenue += line.netAmount;
+        units += line.item.quantity;
+        fallbackName = line.item.productName;
+        if (!inSale) {
+          inSale = true;
+          salesCount++;
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+      }
+    }
+    final name = {for (final p in products) p.id: p.name}[productId];
+    return BiProductDetail(
+      name: name ?? fallbackName ?? 'Producto',
+      granularity: g,
+      buckets: _drillBuckets(series, amounts, quantities, counts),
+      revenue: revenue,
+      units: units,
+      salesCount: salesCount,
+    );
+  }
+
+  // Los productos de una categoría, de mayor a menor ingreso.
+  BiCategoryDetail categoryDetail({
+    required List<SaleReportRow> rows,
+    required List<ProductModel> products,
+    required String categoryName,
+  }) {
+    final names = {for (final p in products) p.id: p.name};
+    final amounts = <int, double>{};
+    final quantities = <int, double>{};
+    final fallbackNames = <int, String>{};
+    for (final row in rows) {
+      for (final line in row.lines ?? const <SaleLineReport>[]) {
+        if (line.categoryName != categoryName) continue;
+        final id = line.item.productId;
+        amounts[id] = (amounts[id] ?? 0) + line.netAmount;
+        quantities[id] = (quantities[id] ?? 0) + line.item.quantity;
+        fallbackNames[id] = line.item.productName;
+      }
+    }
+    final ranked = _ranked([
+      for (final id in amounts.keys)
+        BiEntry(
+          label: names[id] ?? fallbackNames[id] ?? 'Producto',
+          amount: amounts[id]!,
+          quantity: quantities[id]!,
+          refId: id,
+        ),
+    ]);
+    return BiCategoryDetail(
+      name: categoryName,
+      revenue: ranked.fold(0.0, (s, e) => s + e.amount),
+      units: ranked.fold(0.0, (s, e) => s + e.quantity),
+      products: ranked,
+    );
+  }
+
+  // Ventas y compras (gastos generales y de materiales) vinculadas a un
+  // evento. [purchases] debe venir sin el filtro de tipo de operación ni de
+  // proveedor, igual que en Rentabilidad por evento.
+  BiEventDetail eventDetail({
+    required List<SaleReportRow> rows,
+    required List<PurchaseModel> purchases,
+    required Map<int, List<PurchaseItemModel>> itemsByPurchase,
+    required List<EventModel> events,
+    required int eventId,
+  }) {
+    final sales = [
+      for (final row in rows)
+        if (row.sale.eventId == eventId) row,
+    ]..sort((a, b) => a.sale.date.compareTo(b.sale.date));
+    final linked = [
+      for (final p in purchases)
+        if (p.eventId == eventId) p,
+    ]..sort((a, b) => a.date.compareTo(b.date));
+
+    String describe(PurchaseModel p) {
+      if (!p.isMaterial) {
+        final text = p.description?.trim();
+        return text == null || text.isEmpty ? 'Gasto general' : text;
+      }
+      final names = {
+        for (final item in itemsByPurchase[p.id] ?? const <PurchaseItemModel>[])
+          item.materialName,
+      };
+      return names.isEmpty ? 'Compra de materiales' : names.join(', ');
+    }
+
+    final name = {for (final e in events) e.id: e.name}[eventId];
+    return BiEventDetail(
+      name: name ?? (sales.isEmpty ? null : sales.first.eventName) ?? 'Evento',
+      sales: [
+        for (final row in sales)
+          BiEventSaleLine(
+            date: row.sale.date,
+            clientName: row.clientName,
+            amount: row.netAmount,
+          ),
+      ],
+      expenses: [
+        for (final p in linked)
+          BiEventExpenseLine(
+            date: p.date,
+            description: describe(p),
+            isMaterial: p.isMaterial,
+            amount: p.totalAmount,
+          ),
+      ],
+    );
+  }
+
+  // Lo gastado y la cantidad comprada de un material en el tiempo.
+  BiMaterialDetail materialDetail({
+    required List<PurchaseModel> purchases,
+    required Map<int, List<PurchaseItemModel>> itemsByPurchase,
+    required List<MaterialModel> materials,
+    required List<UnitModel> units,
+    required int materialId,
+    required BiTimeSeries series,
+  }) {
+    final g = series.granularity;
+    final amounts = <DateTime, double>{};
+    final quantities = <DateTime, double>{};
+    final counts = <DateTime, int>{};
+    var spend = 0.0;
+    var quantity = 0.0;
+    var purchaseCount = 0;
+    String? fallbackName;
+    for (final purchase in purchases) {
+      if (!purchase.isMaterial) continue;
+      var inPurchase = false;
+      for (final item in itemsByPurchase[purchase.id] ?? const []) {
+        if (item.materialId != materialId) continue;
+        final key = _bucketStart(purchase.date, g);
+        amounts[key] = (amounts[key] ?? 0) + item.subtotal;
+        quantities[key] = (quantities[key] ?? 0) + item.quantity;
+        spend += item.subtotal;
+        quantity += item.quantity;
+        fallbackName = item.materialName;
+        if (!inPurchase) {
+          inPurchase = true;
+          purchaseCount++;
+          counts[key] = (counts[key] ?? 0) + 1;
+        }
+      }
+    }
+    final material = {for (final m in materials) m.id: m}[materialId];
+    final unitName = {for (final u in units) u.id: u.name}[material?.unitId];
+    return BiMaterialDetail(
+      name: material?.name ?? fallbackName ?? 'Material',
+      unit: unitName,
+      granularity: g,
+      buckets: _drillBuckets(series, amounts, quantities, counts),
+      spend: spend,
+      quantity: quantity,
+      purchaseCount: purchaseCount,
+    );
   }
 }
 

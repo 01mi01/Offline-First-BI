@@ -13,6 +13,7 @@ import '../../theme/app_theme.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/bi_charts.dart';
 import '../widgets/bi_config_view.dart';
+import '../widgets/bi_drilldown.dart';
 import '../widgets/bi_insight_widgets.dart';
 import '../widgets/bi_sales_widgets.dart';
 
@@ -42,6 +43,12 @@ class _BusinessIntelligencePageState
     _config.copyWith(chartTypes: {..._config.chartTypes, indicator: type}),
   );
 
+  // La opción del interruptor de métrica vive en la configuración (no en el
+  // gráfico) para que no se pierda al salir de pantalla y volver.
+  void _setMetric(BiIndicator indicator, int metric) => _update(
+    _config.copyWith(metrics: {..._config.metrics, indicator: metric}),
+  );
+
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(biConfigProvider);
@@ -66,7 +73,11 @@ class _BusinessIntelligencePageState
           : BiConfigView(
               config: config,
               onChanged: _update,
-              onConfirm: () => setState(() => _showDashboard = true),
+              // Un panel nuevo empieza con las métricas por omisión.
+              onConfirm: () {
+                _update(_config.copyWith(metrics: const {}));
+                setState(() => _showDashboard = true);
+              },
             ),
     );
   }
@@ -78,6 +89,8 @@ class _BusinessIntelligencePageState
     Widget? sectionFor(BiIndicator indicator) {
       final type = config.chartTypeFor(indicator);
       void onType(BiChartType t) => _setChartType(indicator, t);
+      final metric = config.metricFor(indicator);
+      void onMetric(int m) => _setMetric(indicator, m);
 
       switch (indicator) {
         case BiIndicator.summary:
@@ -112,34 +125,54 @@ class _BusinessIntelligencePageState
           );
         case BiIndicator.salesByProduct:
           return BiRankingSection(
+            metric: metric,
+            onMetricChanged: onMetric,
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
             subtitle: 'Los productos que más se vendieron',
             entries: report.salesByProduct,
+            onEntryTap: (e) => showBiDrillDown(
+              context,
+              kind: BiDrillKind.product,
+              entry: e,
+              query: config.query,
+            ),
             amountLabel: 'Ingresos',
             quantityLabel: 'Unidades',
             quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
           );
         case BiIndicator.productMargin:
           return BiMarginSection(
+            metric: metric,
+            onMetricChanged: onMetric,
             report: report.productMargins,
             chartType: type,
             onChartTypeChanged: onType,
           );
         case BiIndicator.salesByCategory:
           return BiRankingSection(
+            metric: metric,
+            onMetricChanged: onMetric,
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
             subtitle: 'Ingresos o unidades por categoría de producto',
             entries: report.salesByCategory,
+            onEntryTap: (e) => showBiDrillDown(
+              context,
+              kind: BiDrillKind.category,
+              entry: e,
+              query: config.query,
+            ),
             amountLabel: 'Ingresos',
             quantityLabel: 'Unidades',
             quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
           );
         case BiIndicator.salesByPriceType:
           return BiRankingSection(
+            metric: metric,
+            onMetricChanged: onMetric,
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
@@ -152,11 +185,19 @@ class _BusinessIntelligencePageState
           );
         case BiIndicator.salesByEvent:
           return BiRankingSection(
+            metric: metric,
+            onMetricChanged: onMetric,
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
             subtitle: 'Ingresos de las ventas vinculadas a cada evento',
             entries: report.salesByEvent,
+            onEntryTap: (e) => showBiDrillDown(
+              context,
+              kind: BiDrillKind.event,
+              entry: e,
+              query: config.query,
+            ),
             amountLabel: 'Ingresos',
             quantityText: (e) {
               final n = e.quantity.round();
@@ -177,6 +218,8 @@ class _BusinessIntelligencePageState
           );
         case BiIndicator.weekdaySales:
           return BiWeekdaySection(
+            metric: metric,
+            onMetricChanged: onMetric,
             entries: report.weekdays,
             chartType: type,
             onChartTypeChanged: onType,
@@ -209,11 +252,19 @@ class _BusinessIntelligencePageState
           );
         case BiIndicator.purchasesByMaterial:
           return BiRankingSection(
+            metric: metric,
+            onMetricChanged: onMetric,
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
             subtitle: 'Gasto en cada material comprado',
             entries: report.purchasesByMaterial,
+            onEntryTap: (e) => showBiDrillDown(
+              context,
+              kind: BiDrillKind.material,
+              entry: e,
+              query: config.query,
+            ),
             amountLabel: 'Gasto',
             quantityText: (e) =>
                 '${formatQuantity(e.quantity)}${e.unit == null ? '' : ' ${e.unit}'}',

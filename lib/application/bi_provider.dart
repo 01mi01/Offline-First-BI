@@ -160,3 +160,78 @@ BiPeriodComparison _periodComparison(
     previous: prevSummary,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Detalle de una barra
+// ---------------------------------------------------------------------------
+//
+// Cada detalle parte de los mismos datos filtrados que el panel (mismos
+// filtros, cada registro por su propia fecha, sin ventas canceladas ni
+// registros con fecha futura) y usa los mismos intervalos que Evolución en el
+// tiempo.
+
+typedef BiIdKey = ({BiQuery query, int id});
+typedef BiCategoryKey = ({BiQuery query, String name});
+
+final biProductDetailProvider = Provider.autoDispose
+    .family<BiProductDetail, BiIdKey>((ref, key) {
+      final filters = key.query.filters;
+      final bi = ref.watch(biServiceProvider);
+      final rows = ref.watch(saleReportRowsProvider(filters));
+      final purchases = ref.watch(filteredPurchasesProvider(filters));
+      return bi.productDetail(
+        rows: rows,
+        products: ref.watch(productProvider).products,
+        productId: key.id,
+        series: bi.timeSeries(rows: rows, purchases: purchases, filters: filters),
+      );
+    });
+
+final biCategoryDetailProvider = Provider.autoDispose
+    .family<BiCategoryDetail, BiCategoryKey>((ref, key) {
+      return ref
+          .watch(biServiceProvider)
+          .categoryDetail(
+            rows: ref.watch(saleReportRowsProvider(key.query.filters)),
+            products: ref.watch(productProvider).products,
+            categoryName: key.name,
+          );
+    });
+
+final biEventDetailProvider = Provider.autoDispose
+    .family<BiEventDetail, BiIdKey>((ref, key) {
+      final filters = key.query.filters;
+      // Igual que Rentabilidad por evento: todas las compras vinculadas, sin
+      // recortarlas por tipo de operación ni por proveedor.
+      final eventPurchases = ref.watch(
+        filteredPurchasesProvider(
+          filters.copyWith(purchaseKind: PurchaseKind.all, clearSupplier: true),
+        ),
+      );
+      return ref
+          .watch(biServiceProvider)
+          .eventDetail(
+            rows: ref.watch(saleReportRowsProvider(filters)),
+            purchases: eventPurchases,
+            itemsByPurchase:
+                ref.watch(purchaseItemsMapProvider).valueOrNull ?? {},
+            events: ref.watch(eventProvider).events,
+            eventId: key.id,
+          );
+    });
+
+final biMaterialDetailProvider = Provider.autoDispose
+    .family<BiMaterialDetail, BiIdKey>((ref, key) {
+      final filters = key.query.filters;
+      final bi = ref.watch(biServiceProvider);
+      final rows = ref.watch(saleReportRowsProvider(filters));
+      final purchases = ref.watch(filteredPurchasesProvider(filters));
+      return bi.materialDetail(
+        purchases: purchases,
+        itemsByPurchase: ref.watch(purchaseItemsMapProvider).valueOrNull ?? {},
+        materials: ref.watch(materialProvider).materials,
+        units: ref.watch(unitProvider).units,
+        materialId: key.id,
+        series: bi.timeSeries(rows: rows, purchases: purchases, filters: filters),
+      );
+    });

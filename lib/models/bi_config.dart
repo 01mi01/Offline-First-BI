@@ -363,6 +363,10 @@ class BiConfig {
   final int noMovementDays;
   // Productos elegidos para el radar; vacío = los 3 con más ingresos.
   final List<int> radarProductIds;
+  // Opción elegida en el interruptor de métrica de cada indicador (Ingresos /
+  // Unidades, Margen % / Ganancia...): 0 es la primera. Solo cambia lo que se
+  // ve, no los cálculos, y se descarta al empezar un panel nuevo.
+  final Map<BiIndicator, int> metrics;
 
   BiConfig({
     this.filters = const ReportFilters(),
@@ -370,6 +374,7 @@ class BiConfig {
     this.chartTypes = const {},
     this.noMovementDays = defaultNoMovementDays,
     this.radarProductIds = const [],
+    this.metrics = const {},
   }) : indicators = indicators ?? defaultIndicators;
 
   static Set<BiIndicator> get defaultIndicators => {
@@ -386,12 +391,16 @@ class BiConfig {
         : indicator.chartTypes.first;
   }
 
+  // Opción vigente del interruptor de métrica de un indicador (0 = la primera).
+  int metricFor(BiIndicator indicator) => metrics[indicator] ?? 0;
+
   BiConfig copyWith({
     ReportFilters? filters,
     Set<BiIndicator>? indicators,
     Map<BiIndicator, BiChartType>? chartTypes,
     int? noMovementDays,
     List<int>? radarProductIds,
+    Map<BiIndicator, int>? metrics,
   }) {
     return BiConfig(
       filters: filters ?? this.filters,
@@ -399,6 +408,7 @@ class BiConfig {
       chartTypes: chartTypes ?? this.chartTypes,
       noMovementDays: noMovementDays ?? this.noMovementDays,
       radarProductIds: radarProductIds ?? this.radarProductIds,
+      metrics: metrics ?? this.metrics,
     );
   }
 

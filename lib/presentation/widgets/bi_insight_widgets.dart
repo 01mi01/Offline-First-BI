@@ -8,6 +8,7 @@ import '../../models/bi_models.dart';
 import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
 import 'bi_charts.dart';
+import 'bi_interaction.dart';
 
 // Vistas de los indicadores de Business Intelligence que no son un ranking
 // simple: resumen, comparaciones, proyección, listas de inventario y radar.
@@ -108,8 +109,10 @@ class _SummaryTile extends StatelessWidget {
 }
 
 // Barras agrupadas genéricas: [groups] en el eje X y una serie por barra de
-// cada grupo (la serie i toma chartColorAt(i)). Admite valores negativos.
-class _GroupedBars extends StatelessWidget {
+// cada grupo (la serie i toma chartColorAt(i)). Admite valores negativos. Las
+// barras crecen al aparecer, tocar un grupo muestra el valor de cada serie y la
+// leyenda oculta o muestra cada serie (siempre queda una visible).
+class _GroupedBars extends StatefulWidget {
   final List<String> groups;
   final List<String> seriesNames;
   // values[serie][grupo]
@@ -124,8 +127,63 @@ class _GroupedBars extends StatelessWidget {
   });
 
   @override
+  State<_GroupedBars> createState() => _GroupedBarsState();
+}
+
+class _GroupedBarsState extends State<_GroupedBars> {
+  Set<int> _hidden = {};
+  int? _touchedGroup;
+  final _tip = GlobalKey<BiTooltipLayerState>();
+
+  List<int> get _visible => [
+    for (var s = 0; s < widget.values.length; s++)
+      if (!_hidden.contains(s)) s,
+  ];
+
+  void _toggle(int series) {
+    _tip.currentState?.hide();
+    setState(() {
+      _hidden = toggleSeries(_hidden, series, widget.values.length);
+      _touchedGroup = null;
+    });
+  }
+
+  // Quita la marca del grupo tocado (el globo ya no está).
+  void _clearMarker() {
+    if (_touchedGroup != null) setState(() => _touchedGroup = null);
+  }
+
+  void _touch(FlTouchEvent event, int? group) {
+    if (event is! FlTapUpEvent &&
+        event is! FlLongPressStart &&
+        event is! FlLongPressMoveUpdate) {
+      return;
+    }
+    final position = event.localPosition;
+    if (group == null || position == null) {
+      _tip.currentState?.hide();
+      if (_touchedGroup != null) setState(() => _touchedGroup = null);
+      return;
+    }
+    setState(() => _touchedGroup = group);
+    _tip.currentState?.showLocal(
+      position,
+      BiTip(
+        title: widget.groups[group],
+        lines: [
+          for (final s in _visible)
+            '${widget.seriesNames[s]}: ${widget.format(widget.values[s][group])}',
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final all = values.expand((v) => v).toList();
+    final groups = widget.groups;
+    final values = widget.values;
+    final visible = _visible;
+    final all = [for (final s in visible) ...values[s]];
     final maxV = all.fold(0.0, math.max);
     final minV = all.fold(0.0, math.min);
     final maxY = maxV <= 0 && minV >= 0 ? 1.0 : math.max(maxV * 1.15, 0.0);
@@ -138,79 +196,90 @@ class _GroupedBars extends StatelessWidget {
           height: 200,
           child: Padding(
             padding: const EdgeInsets.only(right: AppSpacing.s8),
-            child: BarChart(
-              BarChartData(
-                minY: minY,
-                maxY: maxY == 0 ? 1 : maxY,
-                alignment: BarChartAlignment.spaceAround,
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) =>
-                      const FlLine(color: AppColors.border, strokeWidth: 1),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(),
-                  rightTitles: const AxisTitles(),
-                  leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 28,
-                      getTitlesWidget: (value, meta) {
-                        final i = value.toInt();
-                        if (i < 0 || i >= groups.length) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.s6),
-                          child: Text(groups[i], style: _small(context)),
-                        );
-                      },
+            child: BiTooltipLayer(
+              key: _tip,
+              onHidden: _clearMarker,
+              child: BiEntrance(
+                builder: (context, t) => BarChart(
+                  BarChartData(
+                    minY: minY,
+                    maxY: maxY == 0 ? 1 : maxY,
+                    alignment: BarChartAlignment.spaceAround,
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(
+                      drawVerticalLine: false,
+                      getDrawingHorizontalLine: (_) =>
+                          const FlLine(color: AppColors.border, strokeWidth: 1),
                     ),
-                  ),
-                ),
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    fitInsideHorizontally: true,
-                    getTooltipColor: (_) => AppColors.surface,
-                    getTooltipItem: (group, g, rod, r) => BarTooltipItem(
-                      '${seriesNames[r]}: ${format(rod.toY)}',
-                      TextStyle(
-                        color: chartColorAt(r),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                    titlesData: FlTitlesData(
+                      topTitles: const AxisTitles(),
+                      rightTitles: const AxisTitles(),
+                      leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 28,
+                          getTitlesWidget: (value, meta) {
+                            final i = value.toInt();
+                            if (i < 0 || i >= groups.length) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                top: AppSpacing.s6,
+                              ),
+                              child: Text(groups[i], style: _small(context)),
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                barGroups: [
-                  for (var g = 0; g < groups.length; g++)
-                    BarChartGroupData(
-                      x: g,
-                      barsSpace: 4,
-                      barRods: [
-                        for (var s = 0; s < values.length; s++)
-                          BarChartRodData(
-                            toY: values[s][g],
-                            color: chartColorAt(s),
-                            width: 18,
-                            borderRadius: BorderRadius.zero,
-                          ),
-                      ],
+                    barTouchData: BarTouchData(
+                      handleBuiltInTouches: false,
+                      touchExtraThreshold: const EdgeInsets.fromLTRB(
+                        6,
+                        14,
+                        6,
+                        14,
+                      ),
+                      touchCallback: (event, response) =>
+                          _touch(event, response?.spot?.touchedBarGroupIndex),
                     ),
-                ],
+                    barGroups: [
+                      for (var g = 0; g < groups.length; g++)
+                        BarChartGroupData(
+                          x: g,
+                          barsSpace: 4,
+                          barRods: [
+                            for (final s in visible)
+                              BarChartRodData(
+                                toY: values[s][g] * t,
+                                color: _touchedGroup == null || _touchedGroup == g
+                                    ? chartColorAt(s)
+                                    : chartColorAt(s).withValues(alpha: 0.4),
+                                width: 18,
+                                borderRadius: BorderRadius.zero,
+                              ),
+                          ],
+                        ),
+                    ],
+                  ),
+                  swapAnimationDuration: t < 1
+                      ? Duration.zero
+                      : const Duration(milliseconds: 150),
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.s12),
-        Wrap(
-          spacing: AppSpacing.s16,
-          runSpacing: AppSpacing.s4,
-          children: [
-            for (var s = 0; s < seriesNames.length; s++)
-              BiLegendDot(color: chartColorAt(s), label: seriesNames[s]),
+        BiToggleLegend(
+          keyPrefix: 'bi-legend-grouped',
+          hidden: _hidden,
+          onToggle: _toggle,
+          items: [
+            for (var s = 0; s < widget.seriesNames.length; s++)
+              BiLegendItem(color: chartColorAt(s), label: widget.seriesNames[s]),
           ],
         ),
       ],
@@ -382,31 +451,28 @@ class _ComparisonRow extends StatelessWidget {
 // Margen de ganancia por producto
 // ---------------------------------------------------------------------------
 
-class BiMarginSection extends StatefulWidget {
+class BiMarginSection extends StatelessWidget {
   final BiMarginReport report;
   final BiChartType chartType;
   final ValueChanged<BiChartType> onChartTypeChanged;
+  // 0 = margen %, 1 = ganancia en monto. La guarda quien usa el widget
+  // (BiConfig.metrics) para que sobreviva a que se reconstruya.
+  final int metric;
+  final ValueChanged<int> onMetricChanged;
 
   const BiMarginSection({
     super.key,
     required this.report,
     required this.chartType,
     required this.onChartTypeChanged,
+    required this.metric,
+    required this.onMetricChanged,
   });
-
-  @override
-  State<BiMarginSection> createState() => _BiMarginSectionState();
-}
-
-class _BiMarginSectionState extends State<BiMarginSection> {
-  // 0 = margen %, 1 = ganancia en monto.
-  int _metric = 0;
 
   @override
   Widget build(BuildContext context) {
     const indicator = BiIndicator.productMargin;
-    final report = widget.report;
-    final byMargin = _metric == 0;
+    final byMargin = metric == 0;
 
     Widget body;
     if (report.entries.isEmpty) {
@@ -416,7 +482,7 @@ class _BiMarginSectionState extends State<BiMarginSection> {
                   'registrado: agrégalo en Productos para ver su margen.'
             : 'Sin datos para los filtros aplicados',
       );
-    } else if (widget.chartType == BiChartType.list) {
+    } else if (chartType == BiChartType.list) {
       body = _MarginList(entries: _sorted(report.entries, byMargin));
     } else {
       body = BiRankingChart(
@@ -436,14 +502,14 @@ class _BiMarginSectionState extends State<BiMarginSection> {
       info: indicator.info,
       controls: BiControls.of(
         indicator: indicator,
-        chartType: widget.chartType,
-        onChartTypeChanged: widget.onChartTypeChanged,
+        chartType: chartType,
+        onChartTypeChanged: onChartTypeChanged,
         metric: report.entries.isEmpty
             ? null
             : BiMetricToggle(
                 labels: const ['Margen %', 'Ganancia'],
-                selected: _metric,
-                onChanged: (i) => setState(() => _metric = i),
+                selected: metric,
+                onChanged: onMetricChanged,
               ),
       ),
       child: Column(
@@ -548,7 +614,7 @@ class _MarginList extends StatelessWidget {
 // Proyección de ventas
 // ---------------------------------------------------------------------------
 
-class BiProjectionSection extends StatelessWidget {
+class BiProjectionSection extends StatefulWidget {
   final BiProjection projection;
   final BiTimeSeries series;
 
@@ -557,6 +623,23 @@ class BiProjectionSection extends StatelessWidget {
     required this.projection,
     required this.series,
   });
+
+  // Series de la leyenda (y del gráfico): lo real y la tendencia/proyección.
+  static const int realSeries = 0;
+  static const int trendSeries = 1;
+
+  @override
+  State<BiProjectionSection> createState() => _BiProjectionSectionState();
+}
+
+class _BiProjectionSectionState extends State<BiProjectionSection> {
+  Set<int> _hidden = {};
+  // Punto tocado de cada serie: serie -> índice de su punto.
+  Map<int, int> _touched = {};
+  final _tip = GlobalKey<BiTooltipLayerState>();
+
+  BiProjection get projection => widget.projection;
+  BiTimeSeries get series => widget.series;
 
   String get _unit => switch (projection.granularity) {
     BiGranularity.day => 'días',
@@ -569,6 +652,28 @@ class BiProjectionSection extends StatelessWidget {
     BiGranularity.week => 'por semana',
     BiGranularity.month => 'por mes',
   };
+
+  List<int> get _visible => [
+    for (var s = 0; s < 2; s++)
+      if (!_hidden.contains(s)) s,
+  ];
+
+  void _toggle(int s) {
+    _tip.currentState?.hide();
+    setState(() {
+      _hidden = toggleSeries(_hidden, s, 2);
+      _touched = {};
+    });
+  }
+
+  @override
+  void didUpdateWidget(BiProjectionSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.series != widget.series ||
+        oldWidget.projection != widget.projection) {
+      _touched = {};
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -584,16 +689,17 @@ class BiProjectionSection extends StatelessWidget {
               children: [
                 _chart(),
                 const SizedBox(height: AppSpacing.s12),
-                Wrap(
-                  spacing: AppSpacing.s16,
-                  runSpacing: AppSpacing.s4,
-                  children: [
-                    BiLegendDot(
-                      color: chartColorAt(0),
+                BiToggleLegend(
+                  keyPrefix: 'bi-legend-projection',
+                  hidden: _hidden,
+                  onToggle: _toggle,
+                  items: [
+                    BiLegendItem(
+                      color: chartColorAt(BiProjectionSection.realSeries),
                       label: 'Ingresos reales',
                     ),
-                    BiLegendDot(
-                      color: chartColorAt(1),
+                    BiLegendItem(
+                      color: chartColorAt(BiProjectionSection.trendSeries),
                       label: 'Tendencia y proyección (punteada)',
                       dashed: true,
                     ),
@@ -638,6 +744,7 @@ class BiProjectionSection extends StatelessWidget {
     final n = buckets.length;
     final futureCount = projection.projected.length;
     final total = n + futureCount;
+    final visible = _visible;
 
     int indexOf(DateTime start) => buckets.indexWhere((b) => b.start == start);
 
@@ -651,120 +758,151 @@ class BiProjectionSection extends StatelessWidget {
     ];
 
     final maxValue = [
-      ...buckets.map((b) => b.ingresos),
-      ...trendSpots.map((s) => s.y),
+      if (visible.contains(BiProjectionSection.realSeries))
+        ...buckets.map((b) => b.ingresos),
+      if (visible.contains(BiProjectionSection.trendSeries))
+        ...trendSpots.map((s) => s.y),
     ].fold(0.0, math.max);
     final maxY = maxValue <= 0 ? 1.0 : maxValue * 1.15;
 
     DateTime startAt(int i) =>
         i < n ? buckets[i].start : projection.projected[i - n].start;
 
-    return SizedBox(
-      height: 220,
-      child: Padding(
-        padding: const EdgeInsets.only(right: AppSpacing.s8),
-        child: LineChart(
-          LineChartData(
-            minX: 0,
-            maxX: (total - 1).toDouble(),
-            minY: 0,
-            maxY: maxY,
-            borderData: FlBorderData(show: false),
-            gridData: FlGridData(
-              drawVerticalLine: false,
-              getDrawingHorizontalLine: (_) =>
-                  const FlLine(color: AppColors.border, strokeWidth: 1),
-            ),
-            titlesData: FlTitlesData(
-              topTitles: const AxisTitles(),
-              rightTitles: const AxisTitles(),
-              leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
-              bottomTitles: AxisTitles(
-                sideTitles: bucketAxisTitles(
-                  count: total,
-                  labelOf: (i) =>
-                      bucketAxisLabel(startAt(i), projection.granularity),
-                ),
-              ),
-            ),
-            // Marca dónde termina lo real y empieza la estimación.
-            extraLinesData: ExtraLinesData(
-              verticalLines: [
-                VerticalLine(
-                  x: (n - 1).toDouble(),
-                  color: AppColors.textSecondary,
-                  strokeWidth: 1,
-                  dashArray: const [4, 4],
-                  label: VerticalLineLabel(
-                    show: true,
-                    alignment: Alignment.topLeft,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
-                    labelResolver: (_) => 'Hoy',
+    final fullMax = (total - 1).toDouble();
+
+    return BiZoomableTimeChart(
+      maxX: fullMax,
+      count: total,
+      height: 196,
+      tooltipKey: _tip,
+      onTooltipHidden: () {
+        if (_touched.isNotEmpty) setState(() => _touched = {});
+      },
+      labelOf: (i) => bucketAxisLabel(startAt(i), projection.granularity),
+      chartBuilder: (context, minX, maxX) => LineChart(
+        LineChartData(
+          minX: minX,
+          maxX: maxX,
+          minY: 0,
+          maxY: maxY,
+          clipData: biIsZoomed(minX, maxX, fullMax)
+              ? const FlClipData.all()
+              : const FlClipData.none(),
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) =>
+                const FlLine(color: AppColors.border, strokeWidth: 1),
+          ),
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(),
+            rightTitles: const AxisTitles(),
+            bottomTitles: const AxisTitles(),
+            leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
+          ),
+          // Marca dónde termina lo real y empieza la estimación.
+          extraLinesData: ExtraLinesData(
+            verticalLines: [
+              VerticalLine(
+                x: (n - 1).toDouble(),
+                color: AppColors.textSecondary,
+                strokeWidth: 1,
+                dashArray: const [4, 4],
+                label: VerticalLineLabel(
+                  show: true,
+                  alignment: Alignment.topLeft,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
                   ),
-                ),
-              ],
-            ),
-            lineTouchData: LineTouchData(
-              touchTooltipData: LineTouchTooltipData(
-                fitInsideHorizontally: true,
-                getTooltipColor: (_) => AppColors.surface,
-                getTooltipItems: (spots) => [
-                  for (final spot in spots)
-                    LineTooltipItem(
-                      '${bucketDetailLabel(startAt(spot.x.round()), projection.granularity)}\n'
-                      '${spot.barIndex == 0 ? 'Ingresos' : (spot.x.round() >= n ? 'Proyección' : 'Tendencia')}: '
-                      '${formatMoney(spot.y)}',
-                      TextStyle(
-                        color: chartColorAt(spot.barIndex),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            lineBarsData: [
-              LineChartBarData(
-                spots: [
-                  for (var i = 0; i < n; i++)
-                    FlSpot(i.toDouble(), buckets[i].ingresos),
-                ],
-                color: chartColorAt(0),
-                barWidth: 2.5,
-                isCurved: false,
-                dotData: FlDotData(
-                  show: n <= 31,
-                  getDotPainter: (s, p, b, i) => FlDotCirclePainter(
-                    radius: 3,
-                    color: chartColorAt(0),
-                    strokeWidth: 1.5,
-                    strokeColor: AppColors.surface,
-                  ),
-                ),
-              ),
-              LineChartBarData(
-                spots: trendSpots,
-                color: chartColorAt(1),
-                barWidth: 2.5,
-                isCurved: false,
-                dashArray: const [6, 4],
-                // Solo los puntos estimados llevan marca, huecos, para
-                // distinguirlos de lo real.
-                dotData: FlDotData(
-                  checkToShowDot: (spot, barData) => spot.x >= n,
-                  getDotPainter: (s, p, b, i) => FlDotCirclePainter(
-                    radius: 4,
-                    color: AppColors.surface,
-                    strokeWidth: 2,
-                    strokeColor: chartColorAt(1),
-                  ),
+                  labelResolver: (_) => 'Hoy',
                 ),
               ),
             ],
           ),
+          lineTouchData: LineTouchData(
+            handleBuiltInTouches: false,
+            touchSpotThreshold: 24,
+            getTouchedSpotIndicator: biSpotIndicators,
+            touchCallback: (event, response) {
+              if (event is! FlTapUpEvent &&
+                  event is! FlLongPressStart &&
+                  event is! FlLongPressMoveUpdate) {
+                return;
+              }
+              final spots = response?.lineBarSpots;
+              final position = event.localPosition;
+              if (spots == null || spots.isEmpty || position == null) {
+                _tip.currentState?.hide();
+                if (_touched.isNotEmpty) setState(() => _touched = {});
+                return;
+              }
+              final x = spots.first.x.round();
+              setState(() {
+                _touched = {
+                  for (final spot in spots) visible[spot.barIndex]: spot.spotIndex,
+                };
+              });
+              _tip.currentState?.showLocal(
+                position,
+                BiTip(
+                  title: bucketDetailLabel(startAt(x), projection.granularity),
+                  lines: [
+                    for (final spot in spots)
+                      '${visible[spot.barIndex] == BiProjectionSection.realSeries ? 'Ingresos' : (spot.x.round() >= n ? 'Proyección' : 'Tendencia')}: '
+                          '${formatMoney(spot.y)}',
+                  ],
+                ),
+              );
+            },
+          ),
+          lineBarsData: [
+            for (final s in visible)
+              if (s == BiProjectionSection.realSeries)
+                LineChartBarData(
+                  spots: [
+                    for (var i = 0; i < n; i++)
+                      FlSpot(i.toDouble(), buckets[i].ingresos),
+                  ],
+                  color: chartColorAt(0),
+                  barWidth: 2.5,
+                  isCurved: false,
+                  showingIndicators: [
+                    ?_touched[BiProjectionSection.realSeries],
+                  ],
+                  dotData: FlDotData(
+                    show: n <= 31,
+                    getDotPainter: (s, p, b, i) => FlDotCirclePainter(
+                      radius: 3,
+                      color: chartColorAt(0),
+                      strokeWidth: 1.5,
+                      strokeColor: AppColors.surface,
+                    ),
+                  ),
+                )
+              else
+                LineChartBarData(
+                  spots: trendSpots,
+                  color: chartColorAt(1),
+                  barWidth: 2.5,
+                  isCurved: false,
+                  dashArray: const [6, 4],
+                  showingIndicators: [
+                    ?_touched[BiProjectionSection.trendSeries],
+                  ],
+                  // Solo los puntos estimados llevan marca, huecos, para
+                  // distinguirlos de lo real.
+                  dotData: FlDotData(
+                    checkToShowDot: (spot, barData) => spot.x >= n,
+                    getDotPainter: (s, p, b, i) => FlDotCirclePainter(
+                      radius: 4,
+                      color: AppColors.surface,
+                      strokeWidth: 2,
+                      strokeColor: chartColorAt(1),
+                    ),
+                  ),
+                ),
+          ],
         ),
       ),
     );
@@ -1212,7 +1350,7 @@ class BiNoMovementSection extends StatelessWidget {
 
 const List<String> radarAxes = ['Ingresos', 'Margen', 'Unidades', 'Rotación'];
 
-class BiRadarSection extends StatelessWidget {
+class BiRadarSection extends StatefulWidget {
   final BiRadar radar;
   final List<ProductModel> products;
   final ValueChanged<List<int>> onSelectionChanged;
@@ -1225,8 +1363,102 @@ class BiRadarSection extends StatelessWidget {
   });
 
   @override
+  State<BiRadarSection> createState() => _BiRadarSectionState();
+}
+
+class _BiRadarSectionState extends State<BiRadarSection> {
+  // Productos ocultos con la leyenda (posiciones en radar.products).
+  Set<int> _hidden = {};
+  final _tip = GlobalKey<BiTooltipLayerState>();
+
+  BiRadar get radar => widget.radar;
+
+  @override
+  void didUpdateWidget(BiRadarSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final before = [for (final p in oldWidget.radar.products) p.id];
+    final after = [for (final p in radar.products) p.id];
+    if (before.length != after.length ||
+        [for (var i = 0; i < before.length; i++) before[i] == after[i]]
+            .contains(false)) {
+      _hidden = {};
+    }
+  }
+
+  void _toggle(int product) {
+    _tip.currentState?.hide();
+    setState(() {
+      _hidden = toggleSeries(_hidden, product, radar.products.length);
+    });
+  }
+
+  // Radio, en dp, alrededor de un vértice dentro del cual un toque lo elige.
+  static const double _radarTouchRadius = 24;
+
+  // El vértice de producto más cercano al toque. fl_chart no sirve aquí: el
+  // conjunto invisible que fija la escala tiene un vértice en la punta de cada
+  // eje y gana cualquier toque cerca de ella, justo donde está el mejor
+  // producto de Ingresos y de Unidades. Se calcula con la misma geometría de
+  // la librería: centro del área, radio = 80 % de la mitad del lado menor y el
+  // eje 0 hacia arriba, en el sentido de las agujas del reloj. Si dos vértices
+  // coinciden, gana el que se dibuja encima (el último).
+  void _touch(Offset? position, List<int> visible) {
+    final box = _tip.currentContext?.findRenderObject();
+    if (position == null || box is! RenderBox) {
+      _tip.currentState?.hide();
+      return;
+    }
+    final center = box.size.center(Offset.zero);
+    final radius = math.min(box.size.width, box.size.height) / 2 * 0.8;
+    int? bestProduct;
+    var bestAxis = 0;
+    var bestDistance = _radarTouchRadius;
+    for (final index in visible) {
+      final p = radar.products[index];
+      final values = [p.revenueNorm, p.marginNorm, p.unitsNorm, p.rotationNorm];
+      for (var axis = 0; axis < values.length; axis++) {
+        final angle = 2 * math.pi / values.length * axis - math.pi / 2;
+        final vertex =
+            center +
+            Offset(math.cos(angle), math.sin(angle)) * (radius * values[axis]);
+        final distance = (vertex - position).distance;
+        if (distance <= bestDistance) {
+          bestDistance = distance;
+          bestProduct = index;
+          bestAxis = axis;
+        }
+      }
+    }
+    final index = bestProduct;
+    if (index == null) {
+      _tip.currentState?.hide();
+      return;
+    }
+    final product = radar.products[index];
+    _tip.currentState?.showLocal(
+      position,
+      BiTip(
+        title: product.name,
+        color: chartColorAt(index),
+        lines: ['${radarAxes[bestAxis]}: ${_axisValue(product, bestAxis)}'],
+      ),
+    );
+  }
+
+  String _axisValue(BiRadarProduct p, int axis) => switch (axis) {
+    0 => formatMoney(p.revenue),
+    1 => p.marginPct == null ? 'sin costo' : formatPercent(p.marginPct!),
+    2 => '${p.units} uds.',
+    _ => formatPercent(p.rotationNorm * 100),
+  };
+
+  @override
   Widget build(BuildContext context) {
     const indicator = BiIndicator.productRadar;
+    final visible = [
+      for (var i = 0; i < radar.products.length; i++)
+        if (!_hidden.contains(i)) i,
+    ];
     return BiSectionCard(
       title: indicator.title,
       subtitle: radar.autoSelected
@@ -1255,50 +1487,82 @@ class BiRadarSection extends StatelessWidget {
               children: [
                 SizedBox(
                   height: 260,
-                  child: RadarChart(
-                    RadarChartData(
-                      radarShape: RadarShape.polygon,
-                      tickCount: 4,
-                      ticksTextStyle: const TextStyle(
-                        fontSize: 9,
-                        color: Colors.transparent,
-                      ),
-                      tickBorderData: const BorderSide(color: AppColors.border),
-                      gridBorderData: const BorderSide(color: AppColors.border),
-                      radarBorderData: const BorderSide(color: AppColors.border),
-                      titleTextStyle: Theme.of(context).textTheme.labelMedium
-                          ?.copyWith(color: AppColors.textPrimary),
-                      getTitle: (index, angle) =>
-                          RadarChartTitle(text: radarAxes[index % 4]),
-                      dataSets: [
-                        // Fija la escala del radar de 0 a 100 %: sin esto la
-                        // librería escalaría al mayor valor mostrado.
-                        RadarDataSet(
-                          fillColor: Colors.transparent,
-                          borderColor: Colors.transparent,
-                          borderWidth: 0,
-                          entryRadius: 0,
-                          dataEntries: const [
-                            RadarEntry(value: 1),
-                            RadarEntry(value: 1),
-                            RadarEntry(value: 1),
-                            RadarEntry(value: 1),
+                  child: BiTooltipLayer(
+                    key: _tip,
+                    child: BiEntrance(
+                      builder: (context, t) => RadarChart(
+                        RadarChartData(
+                          radarShape: RadarShape.polygon,
+                          tickCount: 4,
+                          ticksTextStyle: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.transparent,
+                          ),
+                          tickBorderData: const BorderSide(
+                            color: AppColors.border,
+                          ),
+                          gridBorderData: const BorderSide(
+                            color: AppColors.border,
+                          ),
+                          radarBorderData: const BorderSide(
+                            color: AppColors.border,
+                          ),
+                          titleTextStyle: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(color: AppColors.textPrimary),
+                          getTitle: (index, angle) =>
+                              RadarChartTitle(text: radarAxes[index % 4]),
+                          radarTouchData: RadarTouchData(
+                            touchSpotThreshold: _radarTouchRadius,
+                            touchCallback: (event, response) {
+                              if (event is! FlTapUpEvent &&
+                                  event is! FlLongPressStart) {
+                                return;
+                              }
+                              _touch(event.localPosition, visible);
+                            },
+                          ),
+                          dataSets: [
+                            // Fija la escala del radar de 0 a 100 %: sin esto
+                            // la librería escalaría al mayor valor mostrado.
+                            RadarDataSet(
+                              fillColor: Colors.transparent,
+                              borderColor: Colors.transparent,
+                              borderWidth: 0,
+                              entryRadius: 0,
+                              dataEntries: const [
+                                RadarEntry(value: 1),
+                                RadarEntry(value: 1),
+                                RadarEntry(value: 1),
+                                RadarEntry(value: 1),
+                              ],
+                            ),
+                            for (final i in visible)
+                              RadarDataSet(
+                                fillColor: chartColorAt(i).withValues(alpha: 0.2),
+                                borderColor: chartColorAt(i),
+                                borderWidth: 2,
+                                entryRadius: 3,
+                                dataEntries: [
+                                  RadarEntry(
+                                    value: radar.products[i].revenueNorm * t,
+                                  ),
+                                  RadarEntry(
+                                    value: radar.products[i].marginNorm * t,
+                                  ),
+                                  RadarEntry(
+                                    value: radar.products[i].unitsNorm * t,
+                                  ),
+                                  RadarEntry(
+                                    value: radar.products[i].rotationNorm * t,
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
-                        for (var i = 0; i < radar.products.length; i++)
-                          RadarDataSet(
-                            fillColor: chartColorAt(i).withValues(alpha: 0.2),
-                            borderColor: chartColorAt(i),
-                            borderWidth: 2,
-                            entryRadius: 3,
-                            dataEntries: [
-                              RadarEntry(value: radar.products[i].revenueNorm),
-                              RadarEntry(value: radar.products[i].marginNorm),
-                              RadarEntry(value: radar.products[i].unitsNorm),
-                              RadarEntry(value: radar.products[i].rotationNorm),
-                            ],
-                          ),
-                      ],
+                        swapAnimationDuration: t < 1
+                            ? Duration.zero
+                            : const Duration(milliseconds: 150),
+                      ),
                     ),
                   ),
                 ),
@@ -1306,7 +1570,12 @@ class BiRadarSection extends StatelessWidget {
                 for (var i = 0; i < radar.products.length; i++)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.s8),
-                    child: _RadarLegendRow(index: i, product: radar.products[i]),
+                    child: _RadarLegendRow(
+                      index: i,
+                      product: radar.products[i],
+                      visible: !_hidden.contains(i),
+                      onTap: () => _toggle(i),
+                    ),
                   ),
                 Text(
                   'Todos los ejes de 0 a 100 %. Ingresos y Unidades se miden '
@@ -1328,53 +1597,80 @@ class BiRadarSection extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _RadarPicker(
-        products: products,
+        products: widget.products,
         initial: [for (final p in radar.products) p.id],
       ),
     );
-    if (result != null) onSelectionChanged(result);
+    if (result != null) widget.onSelectionChanged(result);
   }
-
 }
 
+// Una fila de la leyenda del radar: tocarla oculta o muestra ese producto.
 class _RadarLegendRow extends StatelessWidget {
   final int index;
   final BiRadarProduct product;
+  final bool visible;
+  final VoidCallback onTap;
 
-  const _RadarLegendRow({required this.index, required this.product});
+  const _RadarLegendRow({
+    required this.index,
+    required this.product,
+    required this.visible,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          key: ValueKey('bi-radar-swatch-$index'),
-          margin: const EdgeInsets.only(top: 2),
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: chartColorAt(index),
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(product.name, style: _label(context, bold: true)),
-              Text(
-                'Ingresos ${formatMoney(product.revenue)} · '
-                'Margen ${product.marginPct == null ? 'sin costo' : formatPercent(product.marginPct!)} · '
-                '${product.units} uds. · '
-                'Rotación ${formatPercent(product.rotationNorm * 100)}',
-                style: _small(context),
+    final muted = AppColors.textSecondary.withValues(alpha: 0.7);
+    return Semantics(
+      button: true,
+      toggled: visible,
+      label: product.name,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        key: ValueKey('bi-radar-legend-$index'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              key: ValueKey('bi-radar-swatch-$index'),
+              margin: const EdgeInsets.only(top: 2),
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: visible ? chartColorAt(index) : Colors.transparent,
+                border: visible ? null : Border.all(color: muted, width: 2),
+                borderRadius: BorderRadius.circular(3),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.s8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: _label(context, bold: true, color: visible ? null : muted)
+                        ?.copyWith(
+                          decoration: visible ? null : TextDecoration.lineThrough,
+                        ),
+                  ),
+                  Text(
+                    'Ingresos ${formatMoney(product.revenue)} · '
+                    'Margen ${product.marginPct == null ? 'sin costo' : formatPercent(product.marginPct!)} · '
+                    '${product.units} uds. · '
+                    'Rotación ${formatPercent(product.rotationNorm * 100)}',
+                    style: _small(context, color: visible ? null : muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

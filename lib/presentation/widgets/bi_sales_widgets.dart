@@ -6,6 +6,7 @@ import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
 import 'bi_charts.dart';
+import 'bi_interaction.dart';
 
 // Vistas de los indicadores de ventas adicionales de Business Intelligence:
 // productos comprados juntos, ventas por día de la semana, ticket promedio,
@@ -219,12 +220,18 @@ class BiWeekdaySection extends StatefulWidget {
   final List<BiWeekdayEntry> entries;
   final BiChartType chartType;
   final ValueChanged<BiChartType> onChartTypeChanged;
+  // 0 = ingresos, 1 = número de ventas. La guarda quien usa el widget
+  // (BiConfig.metrics) para que sobreviva a que se reconstruya.
+  final int metric;
+  final ValueChanged<int> onMetricChanged;
 
   const BiWeekdaySection({
     super.key,
     required this.entries,
     required this.chartType,
     required this.onChartTypeChanged,
+    required this.metric,
+    required this.onMetricChanged,
   });
 
   @override
@@ -232,10 +239,22 @@ class BiWeekdaySection extends StatefulWidget {
 }
 
 class _BiWeekdaySectionState extends State<BiWeekdaySection> {
-  // 0 = ingresos, 1 = número de ventas.
-  int _metric = 0;
+  int? _touched;
+  final _tip = GlobalKey<BiTooltipLayerState>();
 
-  bool get _byRevenue => _metric == 0;
+  bool get _byRevenue => widget.metric == 0;
+
+  @override
+  void didUpdateWidget(BiWeekdaySection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Otro tipo de gráfico u otra métrica: el punto tocado y su globo ya no
+    // corresponden.
+    if (oldWidget.chartType != widget.chartType ||
+        oldWidget.metric != widget.metric) {
+      _touched = null;
+      _tip.currentState?.hide(notify: false);
+    }
+  }
 
   double _valueOf(BiWeekdayEntry e) =>
       _byRevenue ? e.ingresos : e.ventas.toDouble();
@@ -265,8 +284,8 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
               onChartTypeChanged: widget.onChartTypeChanged,
               metric: BiMetricToggle(
                 labels: const ['Ingresos', 'Número de ventas'],
-                selected: _metric,
-                onChanged: (i) => setState(() => _metric = i),
+                selected: widget.metric,
+                onChanged: widget.onMetricChanged,
               ),
             )
           : null,
@@ -279,9 +298,20 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
                   height: 200,
                   child: Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.s8),
-                    child: widget.chartType == BiChartType.line
-                        ? _line(entries)
-                        : _bars(entries),
+                    child: BiTooltipLayer(
+                      key: _tip,
+                      onHidden: () {
+                        if (_touched != null) setState(() => _touched = null);
+                      },
+                      // Una clave por tipo de gráfico: al cambiarlo la
+                      // animación de entrada vuelve a correr.
+                      child: BiEntrance(
+                        key: ValueKey(widget.chartType),
+                        builder: (context, t) => widget.chartType == BiChartType.line
+                            ? BiRevealClip(t: t, child: _line(entries))
+                            : _bars(entries, t),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.s12),
@@ -362,7 +392,30 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
     );
   }
 
-  Widget _bars(List<BiWeekdayEntry> entries) {
+  bool _isSelect(FlTouchEvent event) =>
+      event is FlTapUpEvent ||
+      event is FlLongPressStart ||
+      event is FlLongPressMoveUpdate;
+
+  void _touch(FlTouchEvent event, int? index, List<BiWeekdayEntry> entries) {
+    final position = event.localPosition;
+    if (index == null || position == null) {
+      _tip.currentState?.hide();
+      if (_touched != null) setState(() => _touched = null);
+      return;
+    }
+    setState(() => _touched = index);
+    _tip.currentState?.showLocal(
+      position,
+      BiTip(
+        title: entries[index].name,
+        color: chartColorAt(0),
+        lines: [_valueText(entries[index])],
+      ),
+    );
+  }
+
+  Widget _bars(List<BiWeekdayEntry> entries, double t) {
     final maxY = _maxY(entries);
     return BarChart(
       BarChartData(
@@ -373,18 +426,12 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
         gridData: _grid(),
         titlesData: _titles(entries, maxY),
         barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
-            fitInsideHorizontally: true,
-            getTooltipColor: (_) => AppColors.surface,
-            getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-              '${entries[groupIndex].name}\n${_valueText(entries[groupIndex])}',
-              TextStyle(
-                color: chartColorAt(0),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          handleBuiltInTouches: false,
+          touchExtraThreshold: const EdgeInsets.fromLTRB(6, 14, 6, 6),
+          touchCallback: (event, response) {
+            if (!_isSelect(event)) return;
+            _touch(event, response?.spot?.touchedBarGroupIndex, entries);
+          },
         ),
         barGroups: [
           for (var i = 0; i < entries.length; i++)
@@ -392,8 +439,10 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
               x: i,
               barRods: [
                 BarChartRodData(
-                  toY: _valueOf(entries[i]),
-                  color: chartColorAt(0),
+                  toY: _valueOf(entries[i]) * t,
+                  color: _touched == null || _touched == i
+                      ? chartColorAt(0)
+                      : chartColorAt(0).withValues(alpha: 0.4),
                   width: 20,
                   borderRadius: BorderRadius.zero,
                 ),
@@ -401,6 +450,9 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
             ),
         ],
       ),
+      swapAnimationDuration: t < 1
+          ? Duration.zero
+          : const Duration(milliseconds: 150),
     );
   }
 
@@ -416,22 +468,18 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
         gridData: _grid(),
         titlesData: _titles(entries, maxY),
         lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
-            fitInsideHorizontally: true,
-            getTooltipColor: (_) => AppColors.surface,
-            getTooltipItems: (spots) => [
-              for (final spot in spots)
-                LineTooltipItem(
-                  '${entries[spot.spotIndex].name}\n'
-                  '${_valueText(entries[spot.spotIndex])}',
-                  TextStyle(
-                    color: chartColorAt(0),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-            ],
-          ),
+          handleBuiltInTouches: false,
+          touchSpotThreshold: 24,
+          getTouchedSpotIndicator: biSpotIndicators,
+          touchCallback: (event, response) {
+            if (!_isSelect(event)) return;
+            final spots = response?.lineBarSpots;
+            _touch(
+              event,
+              spots == null || spots.isEmpty ? null : spots.first.spotIndex,
+              entries,
+            );
+          },
         ),
         lineBarsData: [
           LineChartBarData(
@@ -442,6 +490,7 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
             color: chartColorAt(0),
             barWidth: 2.5,
             isCurved: false,
+            showingIndicators: _touched == null ? const [] : [_touched!],
             dotData: FlDotData(
               getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
                 radius: 3,
@@ -562,8 +611,10 @@ class BiTicketSection extends StatelessWidget {
 
 // Línea de un valor por intervalo (los mismos intervalos que Evolución en el
 // tiempo). Los intervalos sin valor (null) no llevan punto; una línea punteada
-// marca [average] si se indica.
-class _TrendLine extends StatelessWidget {
+// marca [average] si se indica. Se dibuja sola al aparecer, tocar un punto
+// muestra su detalle y admite pellizco para acercar y arrastre para moverse en
+// el tiempo.
+class _TrendLine extends StatefulWidget {
   final BiTimeSeries series;
   final double? average;
   final double? Function(BiTimeBucket) valueOf;
@@ -579,97 +630,132 @@ class _TrendLine extends StatelessWidget {
   });
 
   @override
+  State<_TrendLine> createState() => _TrendLineState();
+}
+
+class _TrendLineState extends State<_TrendLine> {
+  // Índice (en la lista de puntos) del punto tocado.
+  int? _touched;
+  final _tip = GlobalKey<BiTooltipLayerState>();
+
+  @override
+  void didUpdateWidget(_TrendLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.series != widget.series) _touched = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final series = widget.series;
+    final average = widget.average;
     final buckets = series.buckets;
     final n = buckets.length;
     if (n == 0) return const BiEmptyState();
 
     final spots = <FlSpot>[
       for (var i = 0; i < n; i++)
-        if (valueOf(buckets[i]) != null)
-          FlSpot(i.toDouble(), valueOf(buckets[i])!),
+        if (widget.valueOf(buckets[i]) != null)
+          FlSpot(i.toDouble(), widget.valueOf(buckets[i])!),
     ];
     final maxValue = [...spots.map((s) => s.y), ?average].fold(0.0, math.max);
     final maxY = maxValue <= 0 ? 1.0 : maxValue * 1.15;
     final color = chartColorAt(0);
+    final fullMax = n == 1 ? 1.0 : (n - 1).toDouble();
 
-    return SizedBox(
-      height: 220,
-      child: Padding(
-        padding: const EdgeInsets.only(right: AppSpacing.s8),
-        child: LineChart(
-          LineChartData(
-            minX: 0,
-            maxX: n == 1 ? 1 : (n - 1).toDouble(),
-            minY: 0,
-            maxY: maxY,
-            borderData: FlBorderData(show: false),
-            gridData: FlGridData(
-              drawVerticalLine: false,
-              getDrawingHorizontalLine: (_) =>
-                  const FlLine(color: AppColors.border, strokeWidth: 1),
-            ),
-            titlesData: FlTitlesData(
-              topTitles: const AxisTitles(),
-              rightTitles: const AxisTitles(),
-              leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
-              bottomTitles: AxisTitles(
-                sideTitles: bucketAxisTitles(
-                  count: n,
-                  labelOf: (i) =>
-                      bucketAxisLabel(buckets[i].start, series.granularity),
-                ),
-              ),
-            ),
-            extraLinesData: average == null
-                ? null
-                : ExtraLinesData(
-                    horizontalLines: [
-                      HorizontalLine(
-                        y: average!,
-                        color: chartColorAt(1),
-                        strokeWidth: 1.5,
-                        dashArray: const [6, 4],
-                      ),
-                    ],
-                  ),
-            lineTouchData: LineTouchData(
-              touchTooltipData: LineTouchTooltipData(
-                fitInsideHorizontally: true,
-                getTooltipColor: (_) => AppColors.surface,
-                getTooltipItems: (touched) => [
-                  for (final spot in touched)
-                    LineTooltipItem(
-                      '${bucketDetailLabel(buckets[spot.x.round()].start, series.granularity)}\n'
-                      '$valueName: ${formatMoney(spot.y)}\n'
-                      '${extraTooltip(buckets[spot.x.round()])}',
-                      TextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            lineBarsData: [
-              LineChartBarData(
-                spots: spots,
-                color: color,
-                barWidth: 2.5,
-                isCurved: false,
-                dotData: FlDotData(
-                  show: spots.length <= 31,
-                  getDotPainter: (s, p, b, i) => FlDotCirclePainter(
-                    radius: 3,
-                    color: color,
-                    strokeWidth: 1.5,
-                    strokeColor: AppColors.surface,
-                  ),
-                ),
-              ),
-            ],
+    return BiZoomableTimeChart(
+      maxX: fullMax,
+      count: n,
+      height: 196,
+      tooltipKey: _tip,
+      onTooltipHidden: () {
+        if (_touched != null) setState(() => _touched = null);
+      },
+      labelOf: (i) => bucketAxisLabel(buckets[i].start, series.granularity),
+      chartBuilder: (context, minX, maxX) => LineChart(
+        LineChartData(
+          minX: minX,
+          maxX: maxX,
+          minY: 0,
+          maxY: maxY,
+          clipData: biIsZoomed(minX, maxX, fullMax)
+              ? const FlClipData.all()
+              : const FlClipData.none(),
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) =>
+                const FlLine(color: AppColors.border, strokeWidth: 1),
           ),
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(),
+            rightTitles: const AxisTitles(),
+            bottomTitles: const AxisTitles(),
+            leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
+          ),
+          extraLinesData: average == null
+              ? null
+              : ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: average,
+                      color: chartColorAt(1),
+                      strokeWidth: 1.5,
+                      dashArray: const [6, 4],
+                    ),
+                  ],
+                ),
+          lineTouchData: LineTouchData(
+            handleBuiltInTouches: false,
+            touchSpotThreshold: 24,
+            getTouchedSpotIndicator: biSpotIndicators,
+            touchCallback: (event, response) {
+              if (event is! FlTapUpEvent &&
+                  event is! FlLongPressStart &&
+                  event is! FlLongPressMoveUpdate) {
+                return;
+              }
+              final touched = response?.lineBarSpots;
+              final position = event.localPosition;
+              if (touched == null || touched.isEmpty || position == null) {
+                _tip.currentState?.hide();
+                if (_touched != null) setState(() => _touched = null);
+                return;
+              }
+              final spot = touched.first;
+              final bucket = buckets[spot.x.round()];
+              setState(() => _touched = spot.spotIndex);
+              final extra = widget.extraTooltip(bucket);
+              _tip.currentState?.showLocal(
+                position,
+                BiTip(
+                  title: bucketDetailLabel(bucket.start, series.granularity),
+                  color: color,
+                  lines: [
+                    '${widget.valueName}: ${formatMoney(spot.y)}',
+                    if (extra.isNotEmpty) extra,
+                  ],
+                ),
+              );
+            },
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              color: color,
+              barWidth: 2.5,
+              isCurved: false,
+              showingIndicators: _touched == null ? const [] : [_touched!],
+              dotData: FlDotData(
+                show: spots.length <= 31,
+                getDotPainter: (s, p, b, i) => FlDotCirclePainter(
+                  radius: 3,
+                  color: color,
+                  strokeWidth: 1.5,
+                  strokeColor: AppColors.surface,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

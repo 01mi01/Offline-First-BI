@@ -23,11 +23,17 @@ class BiEntry {
   // Unidad de la cantidad, si tiene sentido mostrarla (materiales).
   final String? unit;
 
+  // Id del producto, evento o material que representa (null en las categorías,
+  // que se identifican por su nombre, y en los indicadores sin detalle): es la
+  // clave del detalle que se abre al tocar la barra.
+  final int? refId;
+
   const BiEntry({
     required this.label,
     required this.amount,
     required this.quantity,
     this.unit,
+    this.refId,
   });
 }
 
@@ -466,6 +472,142 @@ class BiRadar {
   final bool autoSelected;
 
   const BiRadar({required this.products, required this.autoSelected});
+}
+
+// ---------------------------------------------------------------------------
+// Detalle de una barra (lo que se abre al tocarla)
+// ---------------------------------------------------------------------------
+
+// Importe y cantidad de un intervalo (día, semana o mes) en el detalle de un
+// producto o de un material; [count] son las ventas o compras del intervalo.
+class BiDrillBucket {
+  final DateTime start;
+  final double amount;
+  final double quantity;
+  final int count;
+
+  const BiDrillBucket({
+    required this.start,
+    required this.amount,
+    required this.quantity,
+    required this.count,
+  });
+}
+
+// Un producto: sus ingresos y unidades vendidas a lo largo del periodo, con los
+// mismos intervalos que Evolución en el tiempo.
+class BiProductDetail {
+  final String name;
+  final BiGranularity granularity;
+  final List<BiDrillBucket> buckets;
+  final double revenue;
+  final double units;
+  final int salesCount;
+
+  const BiProductDetail({
+    required this.name,
+    required this.granularity,
+    required this.buckets,
+    required this.revenue,
+    required this.units,
+    required this.salesCount,
+  });
+
+  bool get isEmpty => salesCount == 0;
+}
+
+// Una categoría: sus productos de mayor a menor ingreso ([BiEntry.refId] es el
+// id del producto).
+class BiCategoryDetail {
+  final String name;
+  final double revenue;
+  final double units;
+  final List<BiEntry> products;
+
+  const BiCategoryDetail({
+    required this.name,
+    required this.revenue,
+    required this.units,
+    required this.products,
+  });
+
+  bool get isEmpty => products.isEmpty;
+}
+
+// Una venta vinculada a un evento.
+class BiEventSaleLine {
+  final DateTime date;
+  final String clientName;
+  final double amount;
+
+  const BiEventSaleLine({
+    required this.date,
+    required this.clientName,
+    required this.amount,
+  });
+}
+
+// Una compra vinculada a un evento (gasto general o de materiales).
+class BiEventExpenseLine {
+  final DateTime date;
+  final String description;
+  final bool isMaterial;
+  final double amount;
+
+  const BiEventExpenseLine({
+    required this.date,
+    required this.description,
+    required this.isMaterial,
+    required this.amount,
+  });
+}
+
+// Un evento: sus ventas y sus gastos vinculados, resumidos (las mismas cifras
+// que Rentabilidad por evento).
+class BiEventDetail {
+  final String name;
+  final List<BiEventSaleLine> sales;
+  final List<BiEventExpenseLine> expenses;
+
+  const BiEventDetail({
+    required this.name,
+    required this.sales,
+    required this.expenses,
+  });
+
+  double get income => sales.fold(0.0, (s, l) => s + l.amount);
+  double get totalExpenses => expenses.fold(0.0, (s, l) => s + l.amount);
+  double get materialExpenses => expenses
+      .where((e) => e.isMaterial)
+      .fold(0.0, (s, l) => s + l.amount);
+  double get generalExpenses => totalExpenses - materialExpenses;
+  double get profit => income - totalExpenses;
+
+  bool get isEmpty => sales.isEmpty && expenses.isEmpty;
+}
+
+// Un material: lo que se gastó y la cantidad comprada a lo largo del periodo,
+// con los mismos intervalos que Evolución en el tiempo.
+class BiMaterialDetail {
+  final String name;
+  final String? unit;
+  final BiGranularity granularity;
+  final List<BiDrillBucket> buckets;
+  final double spend;
+  final double quantity;
+  final int purchaseCount;
+
+  const BiMaterialDetail({
+    required this.name,
+    required this.unit,
+    required this.granularity,
+    required this.buckets,
+    required this.spend,
+    required this.quantity,
+    required this.purchaseCount,
+  });
+
+  bool get isEmpty => purchaseCount == 0;
 }
 
 // Todos los indicadores de la pantalla para un conjunto de parámetros.
