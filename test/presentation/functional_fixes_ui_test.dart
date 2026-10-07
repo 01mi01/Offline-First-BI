@@ -618,7 +618,11 @@ void main() {
         await tester.tap(find.text('Crear nuevo material'));
         await tester.pumpAndSettle();
         await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Papel para stickers');
-        await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'metro', 'metro');
+        // La unidad es un desplegable corto, no un buscador.
+        await tester.tap(find.widgetWithText(DropdownButtonFormField<int>, 'Unidad'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('metro').last);
+        await tester.pumpAndSettle();
         await tester.enterText(find.widgetWithText(TextFormField, 'Stock'), '5');
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Precio por unidad'),

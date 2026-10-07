@@ -40,8 +40,14 @@ class PurchasesListBody extends ConsumerWidget {
     final suppliers = ref.watch(supplierProvider).suppliers;
     final kind = ref.watch(purchaseKindFilterProvider);
     final dates = ref.watch(purchaseDateFilterProvider);
+    final timeFilter = ref.watch(purchaseTimeFilterProvider);
     final visible = state.purchases
-        .where((p) => kind.includes(p) && dates.matches(p.date))
+        .where(
+          (p) =>
+              kind.includes(p) &&
+              dates.matches(p.date) &&
+              timeFilter.includes(p.date),
+        )
         .toList();
 
     return Scaffold(
@@ -94,6 +100,25 @@ class PurchasesListBody extends ConsumerWidget {
                         ],
                         onSelected: (value) => ref
                             .read(purchaseKindFilterProvider.notifier)
+                            .state = value,
+                      ),
+                      // Ocultar o no las compras con fecha futura.
+                      FilterMenuChip<RecordTimeFilter>(
+                        icon: Icons.event_available_outlined,
+                        label: timeFilter == RecordTimeFilter.current
+                            ? 'Compras actuales'
+                            : 'Todas',
+                        active: timeFilter != RecordTimeFilter.current,
+                        selected: timeFilter,
+                        options: const [
+                          FilterOption(
+                            RecordTimeFilter.current,
+                            'Compras actuales',
+                          ),
+                          FilterOption(RecordTimeFilter.all, 'Todas'),
+                        ],
+                        onSelected: (value) => ref
+                            .read(purchaseTimeFilterProvider.notifier)
                             .state = value,
                       ),
                     ],

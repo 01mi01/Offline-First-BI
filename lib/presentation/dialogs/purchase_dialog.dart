@@ -294,8 +294,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     }
 
     // Con el teclado abierto cada píxel cuenta: los márgenes se reducen para
-    // que el formulario que se desplaza tenga más alto. El título, el selector
-    // y los botones siguen fijos.
+    // que el formulario que se desplaza tenga más alto. El título y el
+    // selector siguen fijos.
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     final gapAfterTitle = keyboardOpen ? AppSpacing.s12 : AppSpacing.s24;
     final gapAfterSelector = keyboardOpen ? AppSpacing.s8 : AppSpacing.s16;
@@ -303,7 +303,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     // Altura fija (94 % de la pantalla): al cambiar entre "Materiales" y "Gasto
     // general" el contenido cambia de alto, pero la hoja no, así que el título y
     // el selector no se mueven. El formulario se desplaza dentro; los botones
-    // quedan siempre a la vista.
+    // van al final del contenido.
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.94,
       child: Padding(
@@ -389,116 +389,69 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Selector de proveedor
-                      Row(
-                        children: [
-                          Expanded(
-                            // Búsqueda por nombre: escala a listas largas.
-                            child: SearchablePickerField<int>(
-                              label: 'Proveedor',
-                              searchHint: 'Buscar proveedor',
-                              value: supplierValue,
-                              options: [
-                                const PickerOption<int>(
-                                  null,
-                                  DefaultRecords.supplier,
-                                ),
-                                for (final s in suppliers)
-                                  PickerOption<int>(s.id, s.name),
-                              ],
-                              onChanged: (val) => setState(() {
-                                _selectedSupplierId = val;
-                                _error = null;
-                              }),
-                            ),
+                      // Búsqueda por nombre: escala a listas largas. El botón va
+                      // en la fila del campo: los resultados se abren debajo.
+                      SearchablePickerField<int>(
+                        label: 'Proveedor',
+                        searchHint: 'Buscar proveedor',
+                        value: supplierValue,
+                        options: [
+                          const PickerOption<int>(
+                            null,
+                            DefaultRecords.supplier,
                           ),
-                          const SizedBox(width: AppSpacing.s8),
-                          GestureDetector(
-                            onTap: _showAddSupplierSheet,
-                            child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.s12),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.add_business_outlined,
-                                color: AppColors.primary,
-                                size: 22,
-                              ),
-                            ),
-                          ),
+                          for (final s in suppliers)
+                            PickerOption<int>(s.id, s.name),
                         ],
+                        onChanged: (val) => setState(() {
+                          _selectedSupplierId = val;
+                          _error = null;
+                        }),
+                        trailing: GestureDetector(
+                          onTap: _showAddSupplierSheet,
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSpacing.s12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.add_business_outlined,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.s20),
 
-                      // Selector de ubicación
-                      DropdownButtonFormField<int>(
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                      // Selector de ubicación (búsqueda en línea, como el de producto)
+                      SearchablePickerField<int>(
+                        label: 'Ubicación',
+                        searchHint: 'Buscar ubicación',
                         value: _selectedLocationId,
-                        decoration: const InputDecoration(
-                          labelText: 'Ubicación',
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('Sin ubicación'),
-                          ),
-                          ...ref
-                              .watch(locationProvider)
-                              .locations
-                              .where((l) => l.isActive)
-                              .map(
-                                (l) => DropdownMenuItem(
-                                  value: l.id,
-                                  child: Text('${l.city}, ${l.country}'),
-                                ),
-                              )
-                              .toList(),
+                        options: [
+                          const PickerOption<int>(null, 'Sin ubicación'),
+                          for (final l in ref.watch(locationProvider).locations)
+                            if (l.isActive || l.id == _selectedLocationId)
+                              PickerOption<int>(l.id, '${l.city}, ${l.country}'),
                         ],
-                        onChanged: (val) =>
-                            setState(() => _selectedLocationId = val),
+                        onChanged: (val) => setState(() => _selectedLocationId = val),
                       ),
                       const SizedBox(height: 20),
 
-                      // Selector de evento
-                      DropdownButtonFormField<int>(
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        // Solo una opción existente puede ser el valor: mientras los eventos
-                        // cargan (o si el evento ya no está disponible) el campo queda
-                        // en "Sin evento" sin romper el selector.
-                        value:
-                            ref
-                                .watch(eventProvider)
-                                .events
-                                .any(
-                                  (e) =>
-                                      e.id == _selectedEventId &&
-                                      (e.isActive || e.id == _selectedEventId),
-                                )
-                            ? _selectedEventId
-                            : null,
-                        decoration: const InputDecoration(labelText: 'Evento'),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('Sin evento'),
-                          ),
-                          ...ref
-                              .watch(eventProvider)
-                              .events
-                              .where(
-                                (e) => e.isActive || e.id == _selectedEventId,
-                              )
-                              .map(
-                                (e) => DropdownMenuItem(
-                                  value: e.id,
-                                  child: Text(e.name),
-                                ),
-                              )
-                              .toList(),
+                      // Selector de evento (búsqueda en línea, como el de producto)
+                      SearchablePickerField<int>(
+                        label: 'Evento',
+                        searchHint: 'Buscar evento',
+                        value: _selectedEventId,
+                        options: [
+                          const PickerOption<int>(null, 'Sin evento'),
+                          for (final e in ref.watch(eventProvider).events)
+                            if (e.isActive || e.id == _selectedEventId)
+                              PickerOption<int>(e.id, e.name),
                         ],
-                        onChanged: (val) =>
-                            setState(() => _selectedEventId = val),
+                        onChanged: (val) => setState(() => _selectedEventId = val),
                       ),
                       const SizedBox(height: AppSpacing.s16),
 
@@ -800,100 +753,99 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         ),
                         maxLines: 2,
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                      const SizedBox(height: AppSpacing.s16),
 
-              // Error (fijo, junto a los botones: siempre visible)
-              if (_error != null) ...[
-                const SizedBox(height: AppSpacing.s12),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.s12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 16,
-                      ),
-                      const SizedBox(width: AppSpacing.s8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: Theme.of(context).textTheme.displaySmall
-                              ?.copyWith(color: AppColors.error),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: AppSpacing.s16),
-
-              // Botones cancelar y registrar (fijos)
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        alignment: Alignment.center,
-                        // Menos relleno lateral: "Registrar compra" cabe en una
-                        // sola línea dentro de medio ancho.
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s8,
-                        ),
-                      ),
-                      onPressed: _isLoading ? null : _save,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: AppSpacing.s20,
-                              width: AppSpacing.s20,
-                              child: CircularProgressIndicator(
-                                color: AppColors.surface,
-                                strokeWidth: 2,
+                      // Error al guardar (junto a los botones, al final)
+                      if (_error != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.s12),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppColors.error,
+                                size: 16,
                               ),
-                            )
-                          : FittedBox(
-                              // Si aun así no cupiera (fuente grande), se
-                              // reduce en vez de partirse en dos líneas.
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                isEditing ? 'Guardar' : 'Registrar compra',
-                                maxLines: 1,
-                                style: Theme.of(context).textTheme.headlineLarge
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                                textAlign: TextAlign.center,
+                              const SizedBox(width: AppSpacing.s8),
+                              Expanded(
+                                child: Text(
+                                  _error!,
+                                  style: Theme.of(context).textTheme.displaySmall
+                                      ?.copyWith(color: AppColors.error),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.s12),
+                      ],
+
+                      // Botones cancelar y registrar (al final del contenido)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                side: const BorderSide(color: AppColors.border),
+                              ),
+                              child: const Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                    ),
+                          ),
+                          const SizedBox(width: AppSpacing.s12),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                alignment: Alignment.center,
+                                // Menos relleno lateral: "Registrar compra" cabe en una
+                                // sola línea dentro de medio ancho.
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.s8,
+                                ),
+                              ),
+                              onPressed: _isLoading ? null : _save,
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: AppSpacing.s20,
+                                      width: AppSpacing.s20,
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.surface,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : FittedBox(
+                                      // Si aun así no cupiera (fuente grande), se
+                                      // reduce en vez de partirse en dos líneas.
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        isEditing ? 'Guardar' : 'Registrar compra',
+                                        maxLines: 1,
+                                        style: Theme.of(context).textTheme.headlineLarge
+                                            ?.copyWith(fontWeight: FontWeight.w600),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
           ),

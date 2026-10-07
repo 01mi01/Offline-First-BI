@@ -104,12 +104,29 @@ class DateRangeFilter {
   int get hashCode => Object.hash(from, to, preset);
 }
 
+// Filtro de las listas de Ventas y Compras para ocultar los registros con fecha
+// futura: "actuales" (hasta hoy inclusive, por omisión) o "todas". Solo cambia
+// lo que muestra la lista; se combina con los demás filtros.
+enum RecordTimeFilter {
+  current,
+  all;
+
+  bool includes(DateTime date, {DateTime? now}) =>
+      this == RecordTimeFilter.all || !isFutureDated(date, now: now);
+}
+
 // Estado del filtro de cada pantalla. Viven mientras la pantalla está abierta.
 final saleDateFilterProvider = StateProvider.autoDispose<DateRangeFilter>(
   (ref) => const DateRangeFilter(),
 );
 final purchaseDateFilterProvider = StateProvider.autoDispose<DateRangeFilter>(
   (ref) => const DateRangeFilter(),
+);
+final saleTimeFilterProvider = StateProvider.autoDispose<RecordTimeFilter>(
+  (ref) => RecordTimeFilter.current,
+);
+final purchaseTimeFilterProvider = StateProvider.autoDispose<RecordTimeFilter>(
+  (ref) => RecordTimeFilter.current,
 );
 final eventDateFilterProvider = StateProvider.autoDispose<DateRangeFilter>(
   (ref) => const DateRangeFilter(),

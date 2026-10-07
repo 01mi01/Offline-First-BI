@@ -250,8 +250,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
             ),
             const SizedBox(height: AppSpacing.s24),
 
-            // El formulario se desplaza bajo el título; los botones quedan
-            // siempre a la vista.
+            // El formulario se desplaza bajo el título; los botones van al
+            // final del contenido.
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(top: AppSpacing.s4),
@@ -433,46 +433,46 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                           ],
                         ),
                       ),
+                    const SizedBox(height: AppSpacing.s24),
+
+                    // Botones cancelar y guardar (al final del contenido)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                            child: const Text(
+                              'Cancelar',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.s12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _save,
+                            child: Text(
+                              isEditing ? 'Guardar' : 'Crear',
+                              style: Theme.of(context).textTheme.headlineLarge
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s16),
-
-            // Botones cancelar y guardar (fijos)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _save,
-                    child: Text(
-                      isEditing ? 'Guardar' : 'Crear',
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),

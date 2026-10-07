@@ -15,14 +15,15 @@ import 'date_range_filter_bar.dart';
 import 'focus_utils.dart';
 import 'searchable_picker.dart';
 
-class ReportFiltersWidget extends ConsumerWidget {
+class ReportFiltersWidget extends ConsumerStatefulWidget {
   final ReportFilters filters;
   final ValueChanged<ReportFilters> onChanged;
   final int activeTab;
 
   // Modo Business Intelligence: un solo panel para ventas y compras a la vez.
-  // Agrega los atajos de fecha, muestra los filtros de ambos lados (menos
-  // cliente y proveedor) y llama "Tipo de operación" al tipo de compra.
+  // Muestra los filtros de ambos lados (menos cliente y proveedor) y llama
+  // "Tipo de operación" al tipo de compra. Los atajos de fecha se muestran
+  // siempre.
   final bool combined;
 
   const ReportFiltersWidget({
@@ -32,6 +33,41 @@ class ReportFiltersWidget extends ConsumerWidget {
     required this.activeTab,
     this.combined = false,
   });
+
+  @override
+  ConsumerState<ReportFiltersWidget> createState() =>
+      _ReportFiltersWidgetState();
+}
+
+// Datos del filtro con búsqueda que está abierto: el buscador aparece en línea,
+// justo debajo de los chips.
+class _SearchSpec {
+  final String title;
+  final String searchHint;
+  final String allLabel;
+  final int? selected;
+  final List<({int id, String name})> entries;
+  final ReportFilters Function(int id) apply;
+  final ReportFilters Function() clear;
+
+  const _SearchSpec({
+    required this.title,
+    required this.searchHint,
+    required this.allLabel,
+    required this.selected,
+    required this.entries,
+    required this.apply,
+    required this.clear,
+  });
+}
+
+class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
+  _SearchSpec? _search;
+
+  ReportFilters get filters => widget.filters;
+  ValueChanged<ReportFilters> get onChanged => widget.onChanged;
+  int get activeTab => widget.activeTab;
+  bool get combined => widget.combined;
 
   bool get _showSales => combined || activeTab == 0;
   bool get _showPurchases => combined || activeTab == 1;
@@ -81,10 +117,10 @@ class ReportFiltersWidget extends ConsumerWidget {
     onChanged(next);
   }
 
-  // Categoría, Producto, Cliente y Evento se eligen con el buscador (la misma
-  // hoja que en los formularios): son listas que pueden ser largas y una lista
+  // Categoría, Producto, Cliente y Evento se eligen con el buscador en línea (el
+  // mismo que en los formularios): son listas que pueden ser largas y una lista
   // fija no cabe en pantalla. [allLabel] es la opción que quita el filtro.
-  Future<void> _pickWithSearch({
+  void _pickWithSearch({
     required BuildContext context,
     required String title,
     required String searchHint,
@@ -93,19 +129,45 @@ class ReportFiltersWidget extends ConsumerWidget {
     required List<({int id, String name})> entries,
     required ReportFilters Function(int id) apply,
     required ReportFilters Function() clear,
-  }) async {
-    final choice = await showSearchablePicker<int>(
-      context,
-      title: 'Filtrar por $title',
-      searchHint: searchHint,
-      selected: selected,
-      options: [
-        PickerOption<int>(null, allLabel),
-        for (final e in entries) PickerOption<int>(e.id, e.name),
-      ],
+  }) {
+    dismissKeyboard();
+    setState(() {
+      _search = _SearchSpec(
+        title: title,
+        searchHint: searchHint,
+        allLabel: allLabel,
+        selected: selected,
+        entries: entries,
+        apply: apply,
+        clear: clear,
+      );
+    });
+  }
+
+  Widget _buildInlineSearch(_SearchSpec spec) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.s12),
+      child: SearchablePickerField<int>(
+        key: ValueKey('filter-search-${spec.title}'),
+        label: 'Filtrar por ${spec.title}',
+        searchHint: spec.searchHint,
+        value: spec.selected,
+        autofocus: true,
+        options: [
+          PickerOption<int>(null, spec.allLabel),
+          for (final e in spec.entries) PickerOption<int>(e.id, e.name),
+        ],
+        onChanged: (id) {
+          setState(() => _search = null);
+          onChanged(id == null ? spec.clear() : spec.apply(id));
+        },
+        onDismissed: () {
+          if (mounted && _search?.title == spec.title) {
+            setState(() => _search = null);
+          }
+        },
+      ),
     );
-    if (choice == null || !context.mounted) return;
-    onChanged(choice.value == null ? clear() : apply(choice.value!));
   }
 
   void _showDropdownSheet<T>(
@@ -188,7 +250,7 @@ class ReportFiltersWidget extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final categories = ref.watch(categoryProvider).categories;
     final products = ref.watch(productProvider).products;
     final events = ref.watch(eventProvider).events;
@@ -232,14 +294,12 @@ class ReportFiltersWidget extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.s12),
 
-          // Atajos de fecha (solo en Business Intelligence)
-          if (combined) ...[
-            DatePresetChips(
-              selected: _selectedPreset,
-              onSelected: _selectPreset,
-            ),
-            const SizedBox(height: AppSpacing.s8),
-          ],
+          // Atajos de fecha (Reportes y Business Intelligence)
+          DatePresetChips(
+            selected: _selectedPreset,
+            onSelected: _selectPreset,
+          ),
+          const SizedBox(height: AppSpacing.s8),
 
           // Fechas
           Row(
@@ -495,26 +555,27 @@ class ReportFiltersWidget extends ConsumerWidget {
                       ),
                     )
                     .toList(),
-                onTap: () => _showDropdownSheet(
-                  context,
-                  'Ubicación',
-                  filters.locationId,
-                  locations
-                      .where((l) => l.isActive)
-                      .map(
-                        (l) => DropdownMenuItem(
-                          value: l.id,
-                          child: Text('${l.city}, ${l.country}'),
-                        ),
-                      )
-                      .toList(),
-                  (val) => onChanged(filters.copyWith(locationId: val)),
-                  () => onChanged(filters.copyWith(clearLocation: true)),
+                onTap: () => _pickWithSearch(
+                  context: context,
+                  title: 'Ubicación',
+                  searchHint: 'Buscar ubicación',
+                  allLabel: 'Todas las ubicaciones',
+                  selected: filters.locationId,
+                  entries: [
+                    for (final l in locations)
+                      if (l.isActive)
+                        (id: l.id, name: '${l.city}, ${l.country}'),
+                  ],
+                  apply: (id) => filters.copyWith(locationId: id),
+                  clear: () => filters.copyWith(clearLocation: true),
                 ),
                 onClear: () => onChanged(filters.copyWith(clearLocation: true)),
               ),
             ],
           ),
+
+          // Buscador en línea del filtro abierto (Cliente, Categoría, ...).
+          if (_search != null) _buildInlineSearch(_search!),
         ],
       ),
     );

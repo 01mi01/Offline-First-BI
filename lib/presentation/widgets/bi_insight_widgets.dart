@@ -1732,41 +1732,42 @@ class _RadarPickerState extends State<_RadarPicker> {
                               }
                             }),
                     ),
+                  // Al final del contenido que se desplaza, no fijos.
+                  const SizedBox(height: AppSpacing.s12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context, <int>[]),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                          ),
+                          // Una sola línea: en pantallas angostas se reduce un poco.
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('Los más vendidos', maxLines: 1, softWrap: false),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s12),
+                      Expanded(
+                        child: ElevatedButton(
+                          key: const ValueKey('bi-radar-done'),
+                          onPressed: _selected.length >= radarMinProducts
+                              ? () => Navigator.pop(context, _selected)
+                              : null,
+                          child: const Text('Listo'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.s12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, <int>[]),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                    ),
-                    // Una sola línea: en pantallas angostas se reduce un poco.
-                    child: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Los más vendidos', maxLines: 1, softWrap: false),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: ElevatedButton(
-                    key: const ValueKey('bi-radar-done'),
-                    onPressed: _selected.length >= radarMinProducts
-                        ? () => Navigator.pop(context, _selected)
-                        : null,
-                    child: const Text('Listo'),
-                  ),
-                ),
-              ],
             ),
           ],
         ),

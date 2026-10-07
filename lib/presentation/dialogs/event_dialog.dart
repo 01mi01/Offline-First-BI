@@ -8,6 +8,7 @@ import 'location_dialog.dart';
 import '../../config/date_formatters.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
+import '../widgets/searchable_picker.dart';
 import '../widgets/transaction_date_field.dart';
 
 class EventDialog extends ConsumerStatefulWidget {
@@ -197,47 +198,35 @@ class _EventDialogState extends ConsumerState<EventDialog> {
               const SizedBox(height: AppSpacing.s16),
 
               // Ubicación con opción de crear nueva
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      value: _selectedLocationId,
-                      decoration: const InputDecoration(labelText: 'Ubicación'),
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Sin ubicación'),
-                        ),
-                        ...locations.map(
-                          (l) => DropdownMenuItem(
-                            value: l.id,
-                            child: Text('${l.city}, ${l.country}'),
-                          ),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        setState(() => _selectedLocationId = val);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s8),
-                  GestureDetector(
-                    onTap: _showAddLocationSheet,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.s12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.add_location_outlined,
-                        color: AppColors.primary,
-                        size: 22,
-                      ),
-                    ),
-                  ),
+              // Búsqueda en línea, como la de producto. El botón va en la fila
+              // del campo: los resultados se abren debajo.
+              SearchablePickerField<int>(
+                label: 'Ubicación',
+                searchHint: 'Buscar ubicación',
+                value: _selectedLocationId,
+                options: [
+                  const PickerOption<int>(null, 'Sin ubicación'),
+                  for (final l in locations)
+                    PickerOption<int>(l.id, '${l.city}, ${l.country}'),
                 ],
+                onChanged: (val) {
+                  setState(() => _selectedLocationId = val);
+                },
+                trailing: GestureDetector(
+                  onTap: _showAddLocationSheet,
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.s12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.add_location_outlined,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: AppSpacing.s16),
 

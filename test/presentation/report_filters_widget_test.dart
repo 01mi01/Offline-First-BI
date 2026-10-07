@@ -167,7 +167,7 @@ void main() {
 
       await pumpHarness(tester, activeTab: 0);
 
-      expect(find.byType(Wrap), findsOneWidget);
+      expect(find.byType(Wrap), findsWidgets);
       final firstTop = tester.getTopLeft(find.text('Cliente')).dy;
       final lastTop = tester.getTopLeft(find.text('Ubicación')).dy;
       expect(lastTop, greaterThan(firstTop), reason: 'debe haber más de una fila');

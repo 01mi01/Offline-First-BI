@@ -190,7 +190,7 @@ void main() {
       expect(button.contains(tester.getRect(label).bottomRight), isTrue);
     });
 
-    testWidgets('5. with the keyboard open the scrollable area is roomier, title and buttons stay pinned', (
+    testWidgets('5. with the keyboard open the scrollable area is roomier, the title stays pinned and the buttons are reached by scrolling', (
       tester,
     ) async {
       await openPurchase(tester);
@@ -206,11 +206,16 @@ void main() {
       final height = tester.getSize(scroll.first).height;
       // Margen razonable de desplazamiento con el teclado abierto en 412x915.
       expect(height, greaterThan(280));
-      // El título no se mueve por abrir el teclado y los botones siguen a la vista.
+      // El título no se mueve por abrir el teclado; los botones van al final del
+      // contenido que se desplaza y, al llegar a ellos, quedan sobre el teclado.
       expect(tester.getTopLeft(find.text('Nueva compra')).dx, titleBefore.dx);
-      final buttons = tester.getRect(find.widgetWithText(ElevatedButton, 'Registrar compra'));
+      final submit = find.widgetWithText(ElevatedButton, 'Registrar compra');
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
+      final buttons = tester.getRect(submit);
       expect(buttons.bottom, lessThanOrEqualTo(915 - 350));
-      expect(buttons.top, greaterThan(tester.getRect(scroll.first).bottom));
+      expect(buttons.top, greaterThanOrEqualTo(tester.getRect(scroll.first).top));
+      expect(buttons.bottom, lessThanOrEqualTo(tester.getRect(scroll.first).bottom));
     });
   });
 

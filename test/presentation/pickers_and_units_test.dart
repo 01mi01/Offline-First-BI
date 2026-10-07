@@ -164,8 +164,20 @@ void main() {
       await tester.pumpAndSettle();
       // 110..119 y 011: todas contienen "cliente 11"
       expect(find.text('Cliente 110'), findsOneWidget);
-      expect(find.text('Cliente 119'), findsOneWidget);
       expect(find.text('Cliente 012'), findsNothing);
+      // La lista de resultados se desplaza: el resto está más abajo.
+      await tester.scrollUntilVisible(
+        find.text('Cliente 119'),
+        50,
+        scrollable: find.descendant(
+          of: find.descendant(
+            of: find.byType(SearchablePickerField<int>),
+            matching: find.byType(ListView),
+          ),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(find.text('Cliente 119'), findsOneWidget);
     });
 
     testWidgets('is accent-insensitive and shows "Sin resultados" when nothing matches', (
@@ -183,6 +195,48 @@ void main() {
       await tester.enterText(find.byType(TextField), 'zzz');
       await tester.pumpAndSettle();
       expect(find.text('Sin resultados'), findsOneWidget);
+    });
+
+    testWidgets('inside a scrolling form the results end up above the keyboard', (
+      tester,
+    ) async {
+      _phone(tester, size: const Size(360, 640));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: lightTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Flex(
+                direction: Axis.vertical,
+                children: [
+                  const SizedBox(height: 520),
+                  SearchablePickerField<int>(
+                    label: 'Cliente',
+                    searchHint: 'Buscar cliente',
+                    value: null,
+                    options: options,
+                    onChanged: (_) {},
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      // Teclado de 300 px.
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'cliente 04');
+      await tester.pumpAndSettle();
+
+      final result = tester.getRect(find.text('Cliente 040'));
+      expect(result.bottom, lessThanOrEqualTo(640 - 300));
+      expect(result.top, greaterThanOrEqualTo(0));
     });
 
     testWidgets('picking a filtered option selects it; the default (null) option is selectable too', (
@@ -358,14 +412,36 @@ void main() {
       expect(find.text('Cantidad (metro)'), findsOneWidget);
     });
 
-    testWidgets('Eventos and Ubicaciones keep their plain dropdowns', (
+    testWidgets('the "add" icon stays on the row of the search field while typing', (
+      tester,
+    ) async {
+      await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Michael Brown'));
+      await _openSheet(tester, db, const SaleDialog());
+
+      final picker = find.byType(SearchablePickerField<int>).first;
+      final field = find.descendant(of: picker, matching: find.byType(TextField));
+      final add = find.byIcon(Icons.person_add_outlined);
+      final before = tester.getCenter(add).dy;
+      expect((tester.getCenter(field).dy - before).abs(), lessThan(1));
+
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      await tester.enterText(field, 'mic');
+      await tester.pumpAndSettle();
+      // Con los resultados abiertos debajo, el icono no se mueve y sigue
+      // alineado con el campo (no con campo + lista).
+      expect(find.text('Michael Brown'), findsOneWidget);
+      expect(tester.getCenter(add).dy, before);
+      expect((tester.getCenter(field).dy - tester.getCenter(add).dy).abs(), lessThan(1));
+    });
+
+    testWidgets('Cliente, Ubicación and Evento are all inline search fields', (
       tester,
     ) async {
       await _openSheet(tester, db, const SaleDialog());
 
-      // Cliente es el único selector con búsqueda en la parte de arriba.
-      expect(find.byType(SearchablePickerField<int>), findsOneWidget);
-      expect(find.byType(DropdownButtonFormField<int>), findsNWidgets(2));
+      expect(find.byType(SearchablePickerField<int>), findsNWidgets(3));
+      expect(find.byType(DropdownButtonFormField<int>), findsNothing);
     });
 
     testWidgets('a material must still be picked before adding a purchase line', (

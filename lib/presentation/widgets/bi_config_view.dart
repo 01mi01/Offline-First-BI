@@ -32,110 +32,115 @@ class BiConfigView extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          child: ListView(
+          // Se construye completo (no perezoso): el botón del final siempre
+          // existe aunque aún no se haya llegado a él al desplazar.
+          child: SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: AppSpacing.s16),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  AppSpacing.s16,
-                  AppSpacing.s16,
-                  AppSpacing.s12,
-                ),
-                child: Text(
-                  'Elige el periodo y los indicadores que quieres ver. '
-                  'Puedes cambiar esta configuración cuando quieras.',
-                  style: textTheme.labelMedium?.copyWith(
-                    color: AppColors.textSecondary,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s16,
+                    AppSpacing.s16,
+                    AppSpacing.s16,
+                    AppSpacing.s12,
+                  ),
+                  child: Text(
+                    'Elige el periodo y los indicadores que quieres ver. '
+                    'Puedes cambiar esta configuración cuando quieras.',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
-              ),
-              ReportFiltersWidget(
-                filters: config.filters,
-                onChanged: (f) => onChanged(config.copyWith(filters: f)),
-                activeTab: 0,
-                combined: true,
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  AppSpacing.s20,
-                  AppSpacing.s16,
-                  AppSpacing.s4,
+                ReportFiltersWidget(
+                  filters: config.filters,
+                  onChanged: (f) => onChanged(config.copyWith(filters: f)),
+                  activeTab: 0,
+                  combined: true,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Indicadores',
-                        style: textTheme.displayMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s16,
+                    AppSpacing.s20,
+                    AppSpacing.s16,
+                    AppSpacing.s4,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Indicadores',
+                          style: textTheme.displayMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
-                    ),
-                    TextButton(
-                      key: const ValueKey('bi-select-all'),
-                      onPressed: () => onChanged(
-                        config.copyWith(indicators: {...BiIndicator.values}),
+                      TextButton(
+                        key: const ValueKey('bi-select-all'),
+                        onPressed: () => onChanged(
+                          config.copyWith(indicators: {...BiIndicator.values}),
+                        ),
+                        child: const Text('Todos'),
                       ),
-                      child: const Text('Todos'),
-                    ),
-                    TextButton(
-                      key: const ValueKey('bi-select-none'),
-                      onPressed: () =>
-                          onChanged(config.copyWith(indicators: <BiIndicator>{})),
-                      child: const Text('Ninguno'),
-                    ),
-                  ],
+                      TextButton(
+                        key: const ValueKey('bi-select-none'),
+                        onPressed: () =>
+                            onChanged(config.copyWith(indicators: <BiIndicator>{})),
+                        child: const Text('Ninguno'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              for (final group in BiGroup.values) ...[
+                for (final group in BiGroup.values) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s16,
+                      AppSpacing.s12,
+                      AppSpacing.s16,
+                      AppSpacing.s4,
+                    ),
+                    child: Text(
+                      group.label,
+                      style: textTheme.labelMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  for (final indicator in BiIndicator.values.where(
+                    (i) => i.group == group,
+                  ))
+                    _IndicatorTile(
+                      indicator: indicator,
+                      selected: config.indicators.contains(indicator),
+                      onChanged: (v) => _toggle(indicator, v),
+                    ),
+                ],
+                // Al final del contenido que se desplaza, no fijo en pantalla.
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.s16,
                     AppSpacing.s12,
                     AppSpacing.s16,
-                    AppSpacing.s4,
+                    AppSpacing.s12,
                   ),
-                  child: Text(
-                    group.label,
-                    style: textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
+                  child: SafeArea(
+                    top: false,
+                    child: ElevatedButton(
+                      key: const ValueKey('bi-config-confirm'),
+                      onPressed: config.indicators.isEmpty ? null : onConfirm,
+                      child: Text(
+                        config.indicators.isEmpty
+                            ? 'Elige al menos un indicador'
+                            : 'Ver indicadores (${config.indicators.length})',
+                      ),
                     ),
                   ),
                 ),
-                for (final indicator in BiIndicator.values.where(
-                  (i) => i.group == group,
-                ))
-                  _IndicatorTile(
-                    indicator: indicator,
-                    selected: config.indicators.contains(indicator),
-                    onChanged: (v) => _toggle(indicator, v),
-                  ),
               ],
-            ],
-          ),
-        ),
-        Container(
-          color: AppColors.surface,
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s16,
-            AppSpacing.s12,
-            AppSpacing.s16,
-            AppSpacing.s12,
-          ),
-          child: SafeArea(
-            top: false,
-            child: ElevatedButton(
-              key: const ValueKey('bi-config-confirm'),
-              onPressed: config.indicators.isEmpty ? null : onConfirm,
-              child: Text(
-                config.indicators.isEmpty
-                    ? 'Elige al menos un indicador'
-                    : 'Ver indicadores (${config.indicators.length})',
-              ),
             ),
           ),
         ),

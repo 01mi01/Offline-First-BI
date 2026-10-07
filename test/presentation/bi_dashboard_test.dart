@@ -23,6 +23,8 @@ void main() {
   DateTime day(int offset, [int hour = 12]) => h.day(offset, hour);
 
   Future<void> confirmConfig(WidgetTester tester) async {
+    // El botón va al final del contenido que se desplaza.
+    await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.pumpAndSettle();
   }
@@ -543,8 +545,13 @@ void main() {
       final title = tester.getTopLeft(find.text('Elige de 2 a 4 productos'));
       expect(title.dy, greaterThanOrEqualTo(40));
 
-      // El botón cabe en una sola línea.
+      // El botón (al final de la lista que se desplaza) cabe en una sola línea.
       final label = find.text('Los más vendidos');
+      await tester.scrollUntilVisible(
+        label,
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
       expect(label, findsOneWidget);
       expect(tester.getSize(label).height, lessThan(30));
       expect(tester.takeException(), isNull);

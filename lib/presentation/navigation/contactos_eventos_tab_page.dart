@@ -80,7 +80,7 @@ String _labelFor(ContactosCard card) {
     case ContactosCard.proveedores:
       return 'Proveedores';
     case ContactosCard.eventos:
-      return 'Eventos';
+      return 'Eventos y Ubicaciones';
   }
 }
 

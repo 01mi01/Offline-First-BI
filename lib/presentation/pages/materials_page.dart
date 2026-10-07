@@ -207,27 +207,6 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
     );
   }
 
-  // Cancela un registro de uso (no lo borra): devuelve la cantidad al stock
-  // del material y deja el registro en el historial marcado como cancelado.
-  Future<void> _confirmCancel(ProductMaterialModel entry) async {
-    final confirmed = await confirmCancellation(
-      context,
-      title: '¿Cancelar registro de uso?',
-      message:
-          'Se devolverá ${formatNumber(entry.quantityUsed)} '
-          '${unitLabel(entry.materialUnitName, entry.quantityUsed)} de '
-          '"${entry.materialName}" al stock.',
-      confirmLabel: 'Cancelar registro',
-    );
-    if (!confirmed) return;
-    final error = await ref.read(materialProvider.notifier).cancelUsage(entry.id);
-    if (!mounted) return;
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
-    }
-    if (_selectedProductId != null) _loadUsageLog(_selectedProductId!);
-  }
-
   void _showEditSheet(ProductMaterialModel entry) {
     showModalBottomSheet(
       context: context,
@@ -391,15 +370,6 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                             tooltip: 'Editar registro',
                             onPressed: () => _showEditSheet(entry),
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.cancel_outlined,
-                              color: AppColors.error,
-                              size: 20,
-                            ),
-                            tooltip: 'Cancelar registro',
-                            onPressed: () => _confirmCancel(entry),
-                          ),
                         ],
                       ],
                     ),
@@ -534,163 +504,165 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         top: AppSpacing.s24,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Registrar el uso de un material',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s24),
-
-            // Selector de material con stock visible
-            // Buscar y elegir por nombre, igual que el producto: escala con
-            // la cantidad de materiales y no lista nada hasta escribir.
-            SearchablePickerField<int>(
-              label: 'Material',
-              searchHint: 'Buscar material',
-              value: _selectedMaterialId,
-              options: [
-                for (final m in materials) PickerOption<int>(m.id, m.name),
-              ],
-              onChanged: (val) => setState(() {
-                _selectedMaterialId = val;
-                _error = null;
-              }),
-            ),
-            // Muestra el stock disponible del material seleccionado
-            if (selectedMaterial != null) ...[
-              const SizedBox(height: AppSpacing.s6),
-              Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.s4),
-                child: Text(
-                  'Stock disponible: ${formatNumber(selectedMaterial.stock)}${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Registrar el uso de un material',
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
               ),
-            ],
-            const SizedBox(height: AppSpacing.s16),
+              const SizedBox(height: AppSpacing.s24),
 
-            // Cantidad: para unidades tipo envase (contenedor, paquete, rollo, tira) se
-            // ofrecen fracciones simples en vez de pedir un decimal exacto;
-            // para unidades "por pieza" (unidad genérica) se exige un entero.
-            if (selectedUnit != null &&
-                isFractionFriendlyUnitType(selectedUnit.type))
-              FractionQuantityPicker(
-                unit: selectedUnit.name,
-                value: _fractionQuantity,
-                onChanged: (v) => setState(() {
-                  _fractionQuantity = v;
+              // Selector de material con stock visible
+              // Buscar y elegir por nombre, igual que el producto: escala con
+              // la cantidad de materiales y no lista nada hasta escribir.
+              SearchablePickerField<int>(
+                label: 'Material',
+                searchHint: 'Buscar material',
+                value: _selectedMaterialId,
+                options: [
+                  for (final m in materials) PickerOption<int>(m.id, m.name),
+                ],
+                onChanged: (val) => setState(() {
+                  _selectedMaterialId = val;
                   _error = null;
                 }),
-                label: 'Cantidad utilizada',
-              )
-            else if (selectedUnit != null &&
-                isDiscreteUnit(selectedUnit.type, selectedUnit.name))
-              WholeNumberQuantityField(
-                controller: _quantityController,
-                labelText: 'Cantidad utilizada (${selectedUnit.name})',
-              )
-            else
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _quantityController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: selectedUnit != null
-                      ? 'Cantidad utilizada (${selectedUnit.name})'
-                      : 'Cantidad utilizada',
-                  hintText: '0',
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Campo requerido';
-                  final qty = double.tryParse(v);
-                  if (qty == null || qty <= 0) return 'Cantidad inválida';
-                  return null;
-                },
               ),
-            const SizedBox(height: AppSpacing.s12),
-
-            // Error del servidor
-            if (_error != null)
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.s12),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: AppColors.error,
-                      size: 16,
+              // Muestra el stock disponible del material seleccionado
+              if (selectedMaterial != null) ...[
+                const SizedBox(height: AppSpacing.s6),
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.s4),
+                  child: Text(
+                    'Stock disponible: ${formatNumber(selectedMaterial.stock)}${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-                    const SizedBox(width: AppSpacing.s8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.displaySmall?.copyWith(
-                          color: AppColors.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.s16),
+
+              // Cantidad: para unidades tipo envase (contenedor, paquete, rollo, tira) se
+              // ofrecen fracciones simples en vez de pedir un decimal exacto;
+              // para unidades "por pieza" (unidad genérica) se exige un entero.
+              if (selectedUnit != null &&
+                  isFractionFriendlyUnitType(selectedUnit.type))
+                FractionQuantityPicker(
+                  unit: selectedUnit.name,
+                  value: _fractionQuantity,
+                  onChanged: (v) => setState(() {
+                    _fractionQuantity = v;
+                    _error = null;
+                  }),
+                  label: 'Cantidad utilizada',
+                )
+              else if (selectedUnit != null &&
+                  isDiscreteUnit(selectedUnit.type, selectedUnit.name))
+                WholeNumberQuantityField(
+                  controller: _quantityController,
+                  labelText: 'Cantidad utilizada (${selectedUnit.name})',
+                )
+              else
+                TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _quantityController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: selectedUnit != null
+                        ? 'Cantidad utilizada (${selectedUnit.name})'
+                        : 'Cantidad utilizada',
+                    hintText: '0',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Campo requerido';
+                    final qty = double.tryParse(v);
+                    if (qty == null || qty <= 0) return 'Cantidad inválida';
+                    return null;
+                  },
+                ),
+              const SizedBox(height: AppSpacing.s12),
+
+              // Error del servidor
+              if (_error != null)
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.s12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: 16,
+                      ),
+                      const SizedBox(width: AppSpacing.s8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displaySmall?.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: AppSpacing.s24),
+
+              // Botones cancelar y registrar
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      child: const Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _register,
+                      child: Text(
+                        'Registrar',
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-
-            const SizedBox(height: AppSpacing.s24),
-
-            // Botones cancelar y registrar
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _register,
-                    child: Text(
-                      'Registrar',
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -745,6 +717,31 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
     super.dispose();
   }
 
+  // Cancela el registro de uso (no lo borra): devuelve la cantidad al stock
+  // del material y deja el registro en el historial marcado como cancelado.
+  // Solo se ofrece dentro de este formulario de edición.
+  Future<void> _cancelUsage() async {
+    final entry = widget.entry;
+    final confirmed = await confirmCancellation(
+      context,
+      title: '¿Cancelar registro de uso?',
+      message:
+          'Se devolverá ${formatNumber(entry.quantityUsed)} '
+          '${unitLabel(entry.materialUnitName, entry.quantityUsed)} de '
+          '"${entry.materialName}" al stock.',
+      confirmLabel: 'Cancelar registro',
+    );
+    if (!confirmed || !mounted) return;
+    final error = await ref.read(materialProvider.notifier).cancelUsage(entry.id);
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    widget.onEdited();
+    Navigator.pop(context);
+  }
+
   Future<void> _save() async {
     if (!_usesFractions && !_formKey.currentState!.validate()) return;
 
@@ -793,153 +790,176 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
         top: AppSpacing.s24,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Editar registro de uso',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s8),
-            // Muestra el material que se está editando
-            Text(
-              widget.entry.materialName,
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.s24),
-
-            // Campo de cantidad: fracciones simples para unidades tipo
-            // envase, número decimal para el resto.
-            if (_usesFractions) ...[
-              FractionQuantityPicker(
-                unit: widget.entry.materialUnitName,
-                value: _fractionQuantity,
-                onChanged: (v) {
-                  setState(() {
-                    _fractionQuantity = v;
-                    _error = null;
-                  });
-                },
-                label: 'Nueva cantidad',
-              ),
-              const SizedBox(height: AppSpacing.s6),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                'Editar registro de uso',
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s8),
+              // Muestra el material que se está editando
+              Text(
+                widget.entry.materialName,
                 style: Theme.of(
                   context,
-                ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+                ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
               ),
-            ] else if (_isDiscrete)
-              WholeNumberQuantityField(
-                controller: _quantityController,
-                labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
-                helperText:
-                    'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
-                extraValidator: (qty) => qty > availableStock
-                    ? 'Máximo: ${formatNumber(availableStock)}'
-                    : null,
-              )
-            else
-              TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _quantityController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+              const SizedBox(height: AppSpacing.s24),
+
+              // Campo de cantidad: fracciones simples para unidades tipo
+              // envase, número decimal para el resto.
+              if (_usesFractions) ...[
+                FractionQuantityPicker(
+                  unit: widget.entry.materialUnitName,
+                  value: _fractionQuantity,
+                  onChanged: (v) {
+                    setState(() {
+                      _fractionQuantity = v;
+                      _error = null;
+                    });
+                  },
+                  label: 'Nueva cantidad',
                 ),
-                decoration: InputDecoration(
+                const SizedBox(height: AppSpacing.s6),
+                Text(
+                  'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+                ),
+              ] else if (_isDiscrete)
+                WholeNumberQuantityField(
+                  controller: _quantityController,
                   labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
-                  hintText: '0',
                   helperText:
                       'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                  extraValidator: (qty) => qty > availableStock
+                      ? 'Máximo: ${formatNumber(availableStock)}'
+                      : null,
+                )
+              else
+                TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _quantityController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
+                    hintText: '0',
+                    helperText:
+                        'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Campo requerido';
+                    final qty = double.tryParse(v);
+                    if (qty == null || qty <= 0) return 'Cantidad inválida';
+                    if (qty > availableStock) {
+                      return 'Máximo: ${formatNumber(availableStock)}';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Campo requerido';
-                  final qty = double.tryParse(v);
-                  if (qty == null || qty <= 0) return 'Cantidad inválida';
-                  if (qty > availableStock) {
-                    return 'Máximo: ${formatNumber(availableStock)}';
-                  }
-                  return null;
-                },
-              ),
-            const SizedBox(height: AppSpacing.s12),
+              const SizedBox(height: AppSpacing.s12),
 
-            // Error del servidor
-            if (_error != null)
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.s12),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
+              // Error del servidor
+              if (_error != null)
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.s12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: 16,
+                      ),
+                      const SizedBox(width: AppSpacing.s8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displaySmall?.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: AppColors.error,
-                      size: 16,
-                    ),
-                    const SizedBox(width: AppSpacing.s8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.displaySmall?.copyWith(
-                          color: AppColors.error,
+
+              const SizedBox(height: AppSpacing.s24),
+
+              // Botones cancelar y guardar
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      child: const Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _save,
+                      child: Text(
+                        'Guardar',
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
-            const SizedBox(height: AppSpacing.s24),
-
-            // Botones cancelar y guardar
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+              // Cancelar el registro: solo aquí, al final del formulario.
+              const SizedBox(height: AppSpacing.s12),
+              TextButton.icon(
+                onPressed: _cancelUsage,
+                icon: const Icon(
+                  Icons.cancel_outlined,
+                  color: AppColors.error,
+                  size: 20,
+                ),
+                label: const Text(
+                  'Cancelar registro',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _save,
-                    child: Text(
-                      'Guardar',
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

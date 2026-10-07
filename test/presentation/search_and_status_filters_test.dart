@@ -145,7 +145,8 @@ void main() {
       expect(find.text('Papel para stickers'), findsOneWidget);
       // La pestaña ya no tiene buscador de materiales.
       expect(find.widgetWithText(TextField, 'Buscar material'), findsNothing);
-      expect(find.byType(TextField), findsNothing);
+      // Solo queda el buscador en línea de Producto.
+      expect(find.byType(TextField), findsOneWidget);
     });
 
     testWidgets('Registro de uso: the product is picked by searching too', (
@@ -201,13 +202,19 @@ void main() {
       expect(find.text('Base metálica grande para pines'), findsNothing);
       expect(find.text('Papel para stickers'), findsNothing);
 
-      await tester.enterText(find.byType(TextField).last, 'papel');
+      await tester.enterText(find.descendant(
+          of: find.byType(SearchablePickerField<int>).last,
+          matching: find.byType(TextField),
+        ), 'papel');
       await tester.pumpAndSettle();
       expect(find.text('Papel para stickers'), findsOneWidget);
       expect(find.text('Base metálica grande para pines'), findsNothing);
 
       // Los inactivos nunca se ofrecen.
-      await tester.enterText(find.byType(TextField).last, 'tela');
+      await tester.enterText(find.descendant(
+          of: find.byType(SearchablePickerField<int>).last,
+          matching: find.byType(TextField),
+        ), 'tela');
       await tester.pumpAndSettle();
       expect(find.text('Tela para estuches'), findsNothing);
       expect(find.text('Sin resultados'), findsOneWidget);
@@ -324,7 +331,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Michael Brown'), findsNothing);
       expect(find.text('Escribe para buscar'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'mic');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(SearchablePickerField<int>).first,
+          matching: find.byType(TextField),
+        ),
+        'mic',
+      );
       await tester.pumpAndSettle();
       expect(find.text('Michael Brown'), findsOneWidget);
     });
@@ -337,7 +350,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Riverside Supply Co.'), findsNothing);
       expect(find.text('Escribe para buscar'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'river');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(SearchablePickerField<int>).first,
+          matching: find.byType(TextField),
+        ),
+        'river',
+      );
       await tester.pumpAndSettle();
       expect(find.text('Riverside Supply Co.'), findsOneWidget);
       await tester.tap(find.text('Riverside Supply Co.').last);
@@ -349,7 +368,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Tela negra'), findsNothing);
       expect(find.text('Escribe para buscar'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'tel');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(SearchablePickerField<int>).last,
+          matching: find.byType(TextField),
+        ),
+        'tel',
+      );
       await tester.pumpAndSettle();
       expect(find.text('Tela negra'), findsOneWidget);
     });

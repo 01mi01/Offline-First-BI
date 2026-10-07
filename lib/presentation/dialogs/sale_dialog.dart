@@ -14,6 +14,7 @@ import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../theme/app_theme.dart';
 import 'client_dialog.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
 import '../../models/default_records.dart';
 
@@ -233,6 +234,29 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     }
   }
 
+  // Cancela la venta (no la borra): devuelve el stock y la deja en el historial
+  // marcada como cancelada. Solo se ofrece dentro de este formulario de edición.
+  Future<void> _cancelSale() async {
+    final confirmed = await confirmCancellation(
+      context,
+      title: '¿Cancelar venta?',
+      message:
+          'Se devolverá al inventario lo vendido. La venta seguirá en la '
+          'lista, marcada como cancelada, y ya no se podrá editar.',
+      confirmLabel: 'Cancelar venta',
+    );
+    if (!confirmed || !mounted) return;
+    final error = await ref
+        .read(saleProvider.notifier)
+        .cancelSale(widget.sale!.id);
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.sale != null;
@@ -285,7 +309,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
             ),
             const SizedBox(height: AppSpacing.s24),
 
-            // El formulario se desplaza; los botones quedan siempre a la vista.
+            // El formulario se desplaza; los botones van al final del contenido.
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(top: AppSpacing.s4),
@@ -294,115 +318,66 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Selector de cliente con opción de crear nuevo
-                    Row(
-                      children: [
-                        Expanded(
-                          // Búsqueda por nombre: escala a listas largas.
-                          child: SearchablePickerField<int>(
-                            label: 'Cliente',
-                            searchHint: 'Buscar cliente',
-                            value: clientValue,
-                            options: [
-                              const PickerOption<int>(
-                                null,
-                                DefaultRecords.client,
-                              ),
-                              for (final c in clients)
-                                PickerOption<int>(c.id, c.name),
-                            ],
-                            onChanged: (val) => setState(() {
-                              _selectedClientId = val;
-                              _error = null;
-                            }),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.s8),
-                        // Botón para agregar nuevo cliente
-                        GestureDetector(
-                          onTap: _showAddClientSheet,
-                          child: Container(
-                            padding: const EdgeInsets.all(AppSpacing.s12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.person_add_outlined,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                        ),
+                    // Búsqueda por nombre: escala a listas largas. El botón va en
+                    // la fila del campo: los resultados se abren debajo.
+                    SearchablePickerField<int>(
+                      label: 'Cliente',
+                      searchHint: 'Buscar cliente',
+                      value: clientValue,
+                      options: [
+                        const PickerOption<int>(null, DefaultRecords.client),
+                        for (final c in clients) PickerOption<int>(c.id, c.name),
                       ],
+                      onChanged: (val) => setState(() {
+                        _selectedClientId = val;
+                        _error = null;
+                      }),
+                      // Botón para agregar nuevo cliente
+                      trailing: GestureDetector(
+                        onTap: _showAddClientSheet,
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.s12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.person_add_outlined,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.s20),
 
-                    // Selector de ubicación
-                    DropdownButtonFormField<int>(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                    // Selector de ubicación (búsqueda en línea, como el de producto)
+                    SearchablePickerField<int>(
+                      label: 'Ubicación',
+                      searchHint: 'Buscar ubicación',
                       value: _selectedLocationId,
-                      decoration: const InputDecoration(labelText: 'Ubicación'),
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Sin ubicación'),
-                        ),
-                        ...ref
-                            .watch(locationProvider)
-                            .locations
-                            .where((l) => l.isActive)
-                            .map(
-                              (l) => DropdownMenuItem(
-                                value: l.id,
-                                child: Text('${l.city}, ${l.country}'),
-                              ),
-                            )
-                            .toList(),
+                      options: [
+                        const PickerOption<int>(null, 'Sin ubicación'),
+                        for (final l in ref.watch(locationProvider).locations)
+                          if (l.isActive || l.id == _selectedLocationId)
+                            PickerOption<int>(l.id, '${l.city}, ${l.country}'),
                       ],
-                      onChanged: (val) =>
-                          setState(() => _selectedLocationId = val),
+                      onChanged: (val) => setState(() => _selectedLocationId = val),
                     ),
                     const SizedBox(height: AppSpacing.s16),
 
-                    // Selector de evento
-                    DropdownButtonFormField<int>(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      // Solo una opción existente puede ser el valor: mientras los eventos
-                      // cargan (o si el evento ya no está disponible) el campo queda
-                      // en "Sin evento" sin romper el selector.
-                      value:
-                          ref
-                              .watch(eventProvider)
-                              .events
-                              .any(
-                                (e) =>
-                                    e.id == _selectedEventId &&
-                                    (e.isActive || e.id == _selectedEventId),
-                              )
-                          ? _selectedEventId
-                          : null,
-                      decoration: const InputDecoration(labelText: 'Evento'),
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Sin evento'),
-                        ),
-                        ...ref
-                            .watch(eventProvider)
-                            .events
-                            .where(
-                              (e) => e.isActive || e.id == _selectedEventId,
-                            )
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e.id,
-                                child: Text(e.name),
-                              ),
-                            )
-                            .toList(),
+                    // Selector de evento (búsqueda en línea, como el de producto)
+                    SearchablePickerField<int>(
+                      label: 'Evento',
+                      searchHint: 'Buscar evento',
+                      value: _selectedEventId,
+                      options: [
+                        const PickerOption<int>(null, 'Sin evento'),
+                        for (final e in ref.watch(eventProvider).events)
+                          if (e.isActive || e.id == _selectedEventId)
+                            PickerOption<int>(e.id, e.name),
                       ],
-                      onChanged: (val) =>
-                          setState(() => _selectedEventId = val),
+                      onChanged: (val) => setState(() => _selectedEventId = val),
                     ),
                     const SizedBox(height: AppSpacing.s16),
 
@@ -771,86 +746,111 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                    const SizedBox(height: AppSpacing.s16),
 
-            // Error (fijo, junto a los botones: siempre visible)
-            if (_error != null) ...[
-              const SizedBox(height: AppSpacing.s12),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.s12),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: AppColors.error,
-                      size: 16,
-                    ),
-                    const SizedBox(width: AppSpacing.s8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: Theme.of(context).textTheme.displaySmall
-                            ?.copyWith(color: AppColors.error),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: AppSpacing.s16),
-
-            // Botones (fijos)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _save,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: AppSpacing.s20,
-                            width: AppSpacing.s20,
-                            child: CircularProgressIndicator(
-                              color: AppColors.surface,
-                              strokeWidth: 2,
+                    // Error al guardar (junto a los botones, al final)
+                    if (_error != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.s12),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: AppColors.error,
+                              size: 16,
                             ),
-                          )
-                        : Text(
-                            isEditing ? 'Guardar' : 'Registrar venta',
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                            textAlign: TextAlign.center,
+                            const SizedBox(width: AppSpacing.s8),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: Theme.of(context).textTheme.displaySmall
+                                    ?.copyWith(color: AppColors.error),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s12),
+                    ],
+
+                    // Botones cancelar y registrar (al final del contenido)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                            child: const Text(
+                              'Cancelar',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                  ),
+                        ),
+                        const SizedBox(width: AppSpacing.s12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _save,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: AppSpacing.s20,
+                                    width: AppSpacing.s20,
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.surface,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    isEditing ? 'Guardar' : 'Registrar venta',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineLarge
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                    textAlign: TextAlign.center,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Cancelar la venta: solo al editar una existente, al final
+                    // del formulario.
+                    if (isEditing && !widget.sale!.isCanceled) ...[
+                      const SizedBox(height: AppSpacing.s12),
+                      TextButton.icon(
+                        onPressed: _isLoading ? null : _cancelSale,
+                        icon: const Icon(
+                          Icons.cancel_outlined,
+                          color: AppColors.error,
+                          size: 20,
+                        ),
+                        label: const Text(
+                          'Cancelar venta',
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
           ],
         ),

@@ -73,7 +73,11 @@ void main() {
     await tester.pumpAndSettle();
     // Una segunda llamada en el mismo test ya encuentra el panel abierto.
     final confirm = find.byKey(const ValueKey('bi-config-confirm'));
-    if (confirm.evaluate().isNotEmpty) await tester.tap(confirm);
+    if (confirm.evaluate().isNotEmpty) {
+      // El botón va al final del contenido que se desplaza.
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+    }
     if (settle) {
       await tester.pumpAndSettle();
     } else {

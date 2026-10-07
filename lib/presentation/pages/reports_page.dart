@@ -80,59 +80,76 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
       filteredPurchasesProvider(_purchaseFilters),
     );
 
-    return Column(
-      children: [
-        // Tabs Ventas/Compras, embebidos en el contenido (sin AppBar propia)
-        Material(
-          color: AppColors.background,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: Theme.of(
-              context,
-            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
-            tabs: const [
-              Tab(text: 'Ventas'),
-              Tab(text: 'Compras'),
-            ],
-          ),
-        ),
-
-        // Panel de filtros
-        ReportFiltersWidget(
-          filters: _activeFilters,
-          onChanged: (f) => setState(() {
-            if (_currentTab == 0) {
-              _salesFilters = f;
-            } else {
-              _purchaseFilters = f;
-            }
-          }),
-          activeTab: _currentTab,
-        ),
-
-        // Tabs de contenido
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              Container(
-                key: ValueKey(_salesFilters.hashCode),
-                color: AppColors.background,
-                child: _SalesTab(rows: saleRows),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          children: [
+            // Tabs Ventas/Compras, embebidos en el contenido (sin AppBar propia)
+            Material(
+              color: AppColors.background,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
+                indicatorColor: AppColors.primary,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelStyle: Theme.of(
+                  context,
+                ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
+                tabs: const [
+                  Tab(text: 'Ventas'),
+                  Tab(text: 'Compras'),
+                ],
               ),
-              Container(
-                key: ValueKey(_purchaseFilters.hashCode + 1),
-                color: AppColors.background,
-                child: _PurchasesTab(purchases: filteredPurchases),
+            ),
+
+            // Panel de filtros. Con el buscador en línea abierto y el teclado
+            // arriba puede no caber: se limita a la mitad del alto disponible y se
+            // desplaza dentro (sin recortar el resto, que sigue debajo).
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: constraints.maxHeight * 0.5,
               ),
-            ],
-          ),
-        ),
-      ],
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                children: [
+                  ReportFiltersWidget(
+                    filters: _activeFilters,
+                    onChanged: (f) => setState(() {
+                      if (_currentTab == 0) {
+                        _salesFilters = f;
+                      } else {
+                        _purchaseFilters = f;
+                      }
+                    }),
+                    activeTab: _currentTab,
+                  ),
+                ],
+              ),
+            ),
+
+            // Tabs de contenido
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  Container(
+                    key: ValueKey(_salesFilters.hashCode),
+                    color: AppColors.background,
+                    child: _SalesTab(rows: saleRows),
+                  ),
+                  Container(
+                    key: ValueKey(_purchaseFilters.hashCode + 1),
+                    color: AppColors.background,
+                    child: _PurchasesTab(purchases: filteredPurchases),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

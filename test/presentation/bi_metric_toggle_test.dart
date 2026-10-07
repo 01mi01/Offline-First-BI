@@ -49,6 +49,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // El botón va al final del contenido que se desplaza.
+    await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.pumpAndSettle();
   }
@@ -252,6 +254,8 @@ void main() {
         expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
 
         // ...y al empezar un panel nuevo, todo vuelve a la opción por omisión.
+        // El botón va al final del contenido que se desplaza.
+        await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.pumpAndSettle();
         expect(config().metrics, isEmpty);
@@ -279,6 +283,8 @@ void main() {
         );
         await tester.tap(find.byKey(const ValueKey('bi-configure')));
         await tester.pumpAndSettle();
+        // El botón va al final del contenido que se desplaza.
+        await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.pumpAndSettle();
 

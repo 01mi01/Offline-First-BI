@@ -433,9 +433,9 @@ void main() {
     });
   });
 
-  group('Ubicación sigue siendo una lista simple', () {
+  group('Ubicación se busca en línea, igual que Evento', () {
     testWidgets(
-      'opens the plain sheet (no search box) and a long list scrolls without overflow',
+      'opens the inline search (no sheet), narrows a long list and selects',
       (tester) async {
         ReportFilters? last;
         await pump(tester, combined: false, onChanged: (f) => last = f);
@@ -443,22 +443,19 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Filtrar por Ubicación'), findsOneWidget);
-        expect(find.byType(TextField), findsNothing);
-        expect(find.text('Escribe para buscar'), findsNothing);
-        expect(find.text('Zona 0, Bolivia'), findsOneWidget); // ya listada
-        expect(tester.takeException(), isNull); // 20 ubicaciones en 640 px
+        expect(find.byType(BottomSheet), findsNothing);
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.text('Buscar ubicación'), findsOneWidget);
+        expect(find.text('Escribe para buscar'), findsOneWidget);
+        expect(find.text('Zona 0, Bolivia'), findsNothing); // sin escribir
+        expect(tester.takeException(), isNull);
 
-        await tester.scrollUntilVisible(
-          find.text('Zona 19, Bolivia'),
-          200,
-          scrollable: find.descendant(
-            of: find.byType(BottomSheet),
-            matching: find.byType(Scrollable),
-          ),
-        );
+        await tester.enterText(find.byType(TextField), 'zona 19');
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Zona 19, Bolivia'));
         await tester.pumpAndSettle();
         expect(last!.locationId, isNotNull);
+        expect(find.byType(BottomSheet), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );

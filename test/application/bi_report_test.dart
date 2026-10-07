@@ -331,6 +331,8 @@ void main() {
       await tester.pumpAndSettle();
       // Primero se muestra la configuración; al confirmarla, el panel.
       if (confirm) {
+        // El botón va al final del contenido que se desplaza.
+        await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.pumpAndSettle();
       }
@@ -435,6 +437,8 @@ void main() {
       // Con "Hoy" solo cuenta la venta de hoy.
       await tester.tap(find.text('Hoy'));
       await tester.pumpAndSettle();
+      // El botón va al final del contenido que se desplaza.
+      await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.pumpAndSettle();
       expect(find.text('Bs. 100.00'), findsWidgets);
@@ -447,6 +451,8 @@ void main() {
       expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
       await tester.tap(find.text('Hoy'));
       await tester.pumpAndSettle();
+      // El botón va al final del contenido que se desplaza.
+      await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.pumpAndSettle();
       expect(find.text('Bs. 600.00'), findsWidgets);

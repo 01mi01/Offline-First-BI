@@ -158,17 +158,23 @@ void main() {
         await tester.tap(find.byType(SearchablePickerField<int>).first);
         await tester.pumpAndSettle();
 
-        // Una vez en el campo (valor elegido) y una vez en la hoja abierta;
-        // no hay una tercera fila "Sin nombre" duplicada. Los clientes reales
-        // no se listan hasta escribir.
-        expect(find.text('Sin nombre'), findsNWidgets(2));
+        // Al enfocar el campo (que se vacía para buscar) los resultados ofrecen
+        // "Sin nombre" una sola vez; los clientes reales no se listan hasta
+        // escribir.
+        expect(find.text('Sin nombre'), findsOneWidget);
         expect(find.text('Michael Brown'), findsNothing);
         expect(find.text('Escribe para buscar'), findsOneWidget);
 
-        await tester.enterText(find.byType(TextField).last, 'mic');
+        await tester.enterText(
+          find.descendant(
+            of: find.byType(SearchablePickerField<int>).first,
+            matching: find.byType(TextField),
+          ),
+          'mic',
+        );
         await tester.pumpAndSettle();
         expect(find.text('Michael Brown'), findsOneWidget);
-        expect(find.text('Sin nombre'), findsOneWidget); // ya solo el del campo
+        expect(find.text('Sin nombre'), findsNothing);
       },
     );
 
@@ -284,14 +290,20 @@ void main() {
         isActive: false,
       );
 
-      // Ventas: selector de evento (segundo desplegable: tras la ubicación).
+      // Ventas: buscador de evento (tercero: tras cliente y ubicación).
       await openSheet(tester, const SaleDialog());
-      final saleEventField = find.byType(DropdownButtonFormField<int>).at(1);
-      await tester.ensureVisible(saleEventField);
-      await tester.tap(saleEventField);
+      final field = find.byType(SearchablePickerField<int>).at(2);
+      await tester.ensureVisible(field);
+      await tester.tap(find.descendant(of: field, matching: find.byType(TextField)));
       await tester.pumpAndSettle();
-      expect(find.text('Feria de Arte'), findsOneWidget);
-      expect(find.text('Exposición de Arte'), findsNothing);
+      await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'feria');
+      await tester.pumpAndSettle();
+      // Solo el evento activo se ofrece.
+      expect(find.descendant(of: field, matching: find.text('Feria de Arte')), findsOneWidget);
+      await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'exposicion');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: field, matching: find.text('Exposición de Arte')), findsNothing);
+      expect(find.text('Sin resultados'), findsOneWidget);
     });
 
     testWidgets('purchases: the event picker also hides the inactive event', (
@@ -308,13 +320,19 @@ void main() {
       );
 
       await openSheet(tester, const PurchaseDialog());
-      // Ubicación, evento (el proveedor ahora es un selector con búsqueda)
-      final purchaseEventField = find.byType(DropdownButtonFormField<int>).at(1);
-      await tester.ensureVisible(purchaseEventField);
-      await tester.tap(purchaseEventField);
+      // Proveedor, ubicación, evento (todos con búsqueda en línea)
+      final field = find.byType(SearchablePickerField<int>).at(2);
+      await tester.ensureVisible(field);
+      await tester.tap(find.descendant(of: field, matching: find.byType(TextField)));
       await tester.pumpAndSettle();
-      expect(find.text('Feria de Arte'), findsOneWidget);
-      expect(find.text('Exposición de Arte'), findsNothing);
+      await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'feria');
+      await tester.pumpAndSettle();
+      // Solo el evento activo se ofrece.
+      expect(find.descendant(of: field, matching: find.text('Feria de Arte')), findsOneWidget);
+      await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'exposicion');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: field, matching: find.text('Exposición de Arte')), findsNothing);
+      expect(find.text('Sin resultados'), findsOneWidget);
     });
 
     testWidgets(
@@ -347,7 +365,7 @@ void main() {
 
         await openSheet(tester, SaleDialog(sale: sale));
 
-        final eventField = find.byType(DropdownButtonFormField<int>).at(1);
+        final eventField = find.byType(SearchablePickerField<int>).at(2);
         expect(find.descendant(of: eventField, matching: find.text('Exposición de Arte')), findsOneWidget);
       },
     );

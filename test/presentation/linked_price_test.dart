@@ -184,13 +184,8 @@ void main() {
     );
   }
 
-  Future<void> tapInfo(WidgetTester tester) async {
-    await tester.tap(find.byIcon(Icons.info_outline));
-    await tester.pumpAndSettle();
-  }
-
   group('Nuevo material', () {
-    testWidgets('contenedor: both fields are always visible, with the info icon', (
+    testWidgets('contenedor: both fields are always visible, with no info icon', (
       tester,
     ) async {
       await openSheet(tester, const MaterialDialog());
@@ -202,15 +197,7 @@ void main() {
       await type(tester, 'Stock', '0');
       expect(find.widgetWithText(TextFormField, 'Total pagado (Bs.)'), findsOneWidget);
 
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
-      await tapInfo(tester);
-      expect(
-        find.text(
-          'Puedes ingresar el precio por unidad o el total pagado, el otro se '
-          'calculará automáticamente.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.byIcon(Icons.info_outline), findsNothing);
     });
 
     testWidgets('Bs. 35 paid for 0.5 shows 70 per unit and stores it', (tester) async {
@@ -332,25 +319,14 @@ void main() {
       expect(m.stock, 3.5);
     });
 
-    testWidgets('one info icon for every unit type; medida adds its clarification', (
+    testWidgets('no info icon next to "Precio por unidad" for any unit type', (
       tester,
     ) async {
       await openSheet(tester, const MaterialDialog());
       for (final unit in ['contenedor', 'litro', 'otro']) {
         await chooseUnit(tester, unit);
-        expect(find.byIcon(Icons.info_outline), findsOneWidget, reason: unit);
+        expect(find.byIcon(Icons.info_outline), findsNothing, reason: unit);
       }
-      await chooseUnit(tester, 'otro');
-      await tapInfo(tester);
-      expect(find.text(priceInfoMessage), findsOneWidget);
-      expect(find.textContaining('unidad completa de medida'), findsNothing);
-      await tester.tap(find.text('Entendido'));
-      await tester.pumpAndSettle();
-
-      await chooseUnit(tester, 'litro');
-      await tapInfo(tester);
-      expect(find.textContaining(priceInfoMessage), findsOneWidget);
-      expect(find.textContaining(measureUnitInfoMessage), findsOneWidget);
     });
 
     testWidgets('otro is linked as well', (tester) async {
@@ -391,9 +367,7 @@ void main() {
       expect(textOf(tester, 'Precio por unidad'), '70');
       expect(textOf(tester, 'Total pagado (Bs.)'), '70');
       expect(textOf(tester, 'Cantidad (contenedor)'), '1');
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
-      await tapInfo(tester);
-      expect(find.text(priceInfoMessage), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsNothing);
     });
 
     testWidgets('Bs. 35 for 0.5 corrects the price to 70; stock is untouched', (
@@ -449,11 +423,7 @@ void main() {
       expect(textOf(tester, 'Precio por unidad'), '10');
       expect(textOf(tester, 'Total pagado (Bs.)'), '10');
       expect(textOf(tester, 'Cantidad (litro)'), '1');
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
-      await tapInfo(tester);
-      expect(find.textContaining(measureUnitInfoMessage), findsOneWidget);
-      await tester.tap(find.text('Entendido'));
-      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.info_outline), findsNothing);
 
       await type(tester, 'Cantidad (litro)', '0.5');
       expect(textOf(tester, 'Total pagado (Bs.)'), '5'); // manda el precio
@@ -508,7 +478,7 @@ void main() {
       await tester.tap(find.text('La mitad'));
       await tester.pumpAndSettle();
       expect(textOf(tester, 'Total pagado (Bs.)'), '40');
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsNothing);
     });
 
     testWidgets('half a container for Bs. 35 gives 70 per unit and stores it', (
@@ -585,7 +555,7 @@ void main() {
       expect(textOf(tester, 'Precio por unidad (Bs.)'), '4');
       expect(textOf(tester, 'Total pagado (Bs.)'), '');
       expect(find.byType(FractionQuantityPicker), findsNothing);
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsNothing);
 
       await type(tester, 'Cantidad (metro)', '3');
       expect(textOf(tester, 'Total pagado (Bs.)'), '12'); // manda el precio

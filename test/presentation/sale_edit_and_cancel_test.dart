@@ -173,7 +173,23 @@ void main() {
     );
   });
 
-  group('canceling a sale from the list', () {
+  group('canceling a sale from its edit form', () {
+    testWidgets('the list has no cancel icon, and registering a new sale offers no cancel option', (
+      tester,
+    ) async {
+      useTallScreen(tester);
+      await seedSaleOfTwo();
+      await tester.pumpWidget(app(const SalesPage()));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Nueva venta'), findsOneWidget);
+      expect(find.text('Cancelar venta'), findsNothing);
+    });
+
     testWidgets(
       'confirming returns the stock, and the sale stays listed as "Cancelada" '
       'with no edit/cancel actions',
@@ -188,10 +204,16 @@ void main() {
         expect(find.text('Cancelada'), findsNothing);
         expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.cancel_outlined));
+        // La opción de cancelar vive al final del formulario "Editar venta".
+        await tester.tap(find.byIcon(Icons.edit_outlined));
+        await tester.pumpAndSettle();
+        expect(find.text('Editar venta'), findsOneWidget);
+        await tester.ensureVisible(find.text('Cancelar venta'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancelar venta'));
         await tester.pumpAndSettle();
         expect(find.text('¿Cancelar venta?'), findsOneWidget);
-        await tester.tap(find.text('Cancelar venta'));
+        await tester.tap(find.text('Cancelar venta').last);
         await tester.pumpAndSettle();
 
         expect(await productStock(), 5); // lo vendido volvió al inventario
@@ -215,19 +237,28 @@ void main() {
       await tester.pumpWidget(app(const SalesPage()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.cancel_outlined));
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Cancelar venta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar venta'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Volver'));
       await tester.pumpAndSettle();
 
       expect(await productStock(), 3);
+      expect((await SaleRepository(db).getAll()).single.isCanceled, isFalse);
+      // El formulario sigue abierto: se cierra con su propio "Cancelar".
+      expect(find.text('Editar venta'), findsOneWidget);
+      await tester.tap(find.text('Cancelar').first);
+      await tester.pumpAndSettle();
       expect(find.text('Cancelada'), findsNothing);
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
       expect((await SaleRepository(db).getAll()).single.isCanceled, isFalse);
     });
   });
 
-  group('canceling a material usage record from the usage tab', () {
+  group('canceling a material usage record from its edit form', () {
     testWidgets(
       'confirming returns the material stock and keeps the record listed as '
       '"Cancelado" with no actions',
@@ -258,11 +289,17 @@ void main() {
 
         expect(find.text('Papel para stickers'), findsOneWidget);
         expect(find.text('Cancelado'), findsNothing);
+        // Ya no hay ícono de cancelar en la lista: solo el de editar.
+        expect(find.byIcon(Icons.cancel_outlined), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.cancel_outlined));
+        await tester.tap(find.byIcon(Icons.edit_outlined));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Cancelar registro'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancelar registro'));
         await tester.pumpAndSettle();
         expect(find.text('¿Cancelar registro de uso?'), findsOneWidget);
-        await tester.tap(find.text('Cancelar registro'));
+        await tester.tap(find.text('Cancelar registro').last);
         await tester.pumpAndSettle();
 
         expect(await materialStock(), 10); // los 4 metros volvieron

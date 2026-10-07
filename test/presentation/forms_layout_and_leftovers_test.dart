@@ -177,13 +177,11 @@ void main() {
 
       final titleBefore = tester.getTopLeft(find.text('Nueva compra'));
       final selectorBefore = tester.getRect(selector);
-      final buttonBefore = tester.getRect(find.text('Registrar compra'));
 
       await tester.tap(option('Gasto general'));
       await tester.pumpAndSettle();
       expect(tester.getTopLeft(find.text('Nueva compra')), titleBefore);
       expect(tester.getRect(selector), selectorBefore);
-      expect(tester.getRect(find.text('Registrar compra')), buttonBefore);
 
       await tester.tap(option('Materiales'));
       await tester.pumpAndSettle();
@@ -192,7 +190,7 @@ void main() {
   });
 
   group('botones siempre alcanzables con varios ítems', () {
-    testWidgets('Compras: con 3 materiales el botón sigue a la vista', (
+    testWidgets('Compras: con 3 materiales el botón se alcanza al desplazar', (
       tester,
     ) async {
       final unit = await (db.select(
@@ -222,8 +220,11 @@ void main() {
 
       // El total ya sumó los tres ítems...
       expect(find.text('24'), findsWidgets);
-      // ...y el botón de registrar sigue completamente visible, sin desplazar.
+      // ...y los botones, al final del contenido que se desplaza, se alcanzan
+      // desplazando.
       final submit = find.widgetWithText(ElevatedButton, 'Registrar compra');
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
       expect(fullyOnScreen(tester, submit, phone), isTrue);
       expect(
         fullyOnScreen(tester, find.widgetWithText(OutlinedButton, 'Cancelar'), phone),
@@ -238,6 +239,8 @@ void main() {
     ) async {
       await openSheet(tester, const PurchaseDialog(), phone);
 
+      await tester.ensureVisible(find.text('Registrar compra'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Registrar compra'));
       await tester.pumpAndSettle();
 
@@ -247,7 +250,7 @@ void main() {
       );
     });
 
-    testWidgets('Ventas: con 3 productos en el carrito el botón sigue a la vista', (
+    testWidgets('Ventas: con 3 productos en el carrito el botón se alcanza al desplazar', (
       tester,
     ) async {
       for (final name in ['Estuches', 'Pines grandes', 'Stickers']) {
@@ -278,8 +281,16 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      // Los botones van al final del contenido que se desplaza: se llega a
+      // ellos desplazando, y el título sigue fijo.
       final submit = find.widgetWithText(ElevatedButton, 'Registrar venta');
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
       expect(fullyOnScreen(tester, submit, phone), isTrue);
+      expect(
+        fullyOnScreen(tester, find.widgetWithText(OutlinedButton, 'Cancelar'), phone),
+        isTrue,
+      );
       expect(fullyOnScreen(tester, find.text('Nueva venta'), phone), isTrue);
     });
   });

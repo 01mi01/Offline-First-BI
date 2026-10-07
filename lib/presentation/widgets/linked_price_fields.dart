@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../application/material_pricing.dart';
 import '../../theme/app_theme.dart';
-import 'info_hint.dart';
 
 // Precio de un material, para TODOS los tipos de unidad (contenedor, medida y
 // otros): dos campos siempre visibles y enlazados, "Precio por unidad" y
@@ -138,16 +137,7 @@ class LinkedPriceFields extends StatelessWidget {
           controller: controller.price,
           keyboardType: TextInputType.number,
           inputFormatters: [_decimalFormatter],
-          decoration: InputDecoration(
-            labelText: priceLabel,
-            hintText: '0',
-            suffixIcon: InfoHintButton(
-              title: priceInfoTitle,
-              message: extraInfo == null
-                  ? priceInfoMessage
-                  : '$priceInfoMessage\n\n$extraInfo',
-            ),
-          ),
+          decoration: InputDecoration(labelText: priceLabel, hintText: '0'),
           onChanged: (_) {
             controller.priceTyped();
             onChanged();

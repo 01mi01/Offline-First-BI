@@ -9,19 +9,21 @@ Future<void> searchProducts(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
 }
 
-// Abre un [SearchablePickerField], escribe [query] y toca la opción [option].
+// Escribe en un [SearchablePickerField] (el buscador en línea) y toca la
+// opción [option] de los resultados que aparecen debajo.
 Future<void> pickFromSearch(
   WidgetTester tester,
   Finder picker,
   String query,
   String option,
 ) async {
+  final field = find.descendant(of: picker, matching: find.byType(TextField));
   await tester.ensureVisible(picker);
-  await tester.tap(picker);
+  await tester.tap(field);
   await tester.pumpAndSettle();
-  // La hoja de búsqueda es la ruta de más arriba: su campo es el último.
-  await tester.enterText(find.byType(TextField).last, query);
+  await tester.enterText(field, query);
   await tester.pumpAndSettle();
-  await tester.tap(find.text(option).last);
+  // Los resultados van debajo del campo: la opción es la última coincidencia.
+  await tester.tap(find.descendant(of: picker, matching: find.text(option)).last);
   await tester.pumpAndSettle();
 }

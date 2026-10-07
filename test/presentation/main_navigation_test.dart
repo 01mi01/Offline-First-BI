@@ -194,7 +194,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.text('Eventos'), findsOneWidget);
+      expect(find.text('Eventos y Ubicaciones'), findsOneWidget);
       expect(find.text('Clientes'), findsNothing);
       expect(find.text('Proveedores'), findsNothing);
     });
@@ -207,7 +207,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Eventos'));
+      await tester.tap(find.text('Eventos y Ubicaciones'));
       await tester.pumpAndSettle();
 
       expect(find.byType(EventsPage), findsOneWidget);
@@ -224,7 +224,7 @@ void main() {
 
       expect(find.text('Proveedores'), findsOneWidget);
       expect(find.text('Clientes'), findsNothing);
-      expect(find.text('Eventos'), findsNothing);
+      expect(find.text('Eventos y Ubicaciones'), findsNothing);
     });
 
     testWidgets('clientes alone shows only its own card, not Proveedores',

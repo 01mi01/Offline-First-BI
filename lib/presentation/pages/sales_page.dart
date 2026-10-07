@@ -10,7 +10,7 @@ import '../../models/sale_item_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/sale_dialog.dart';
 import '../widgets/app_bar_widget.dart';
-import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/catalog_filter_bar.dart';
 import '../widgets/date_range_filter_bar.dart';
 import '../widgets/status_badge.dart';
 import '../../config/date_formatters.dart';
@@ -39,7 +39,10 @@ class SalesListBody extends ConsumerWidget {
     final state = ref.watch(saleProvider);
     final clients = ref.watch(clientProvider).clients;
     final dates = ref.watch(saleDateFilterProvider);
-    final visible = state.sales.where((s) => dates.matches(s.date)).toList();
+    final timeFilter = ref.watch(saleTimeFilterProvider);
+    final visible = state.sales
+        .where((s) => dates.matches(s.date) && timeFilter.includes(s.date))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -69,6 +72,32 @@ class SalesListBody extends ConsumerWidget {
                   onChanged: (value) =>
                       ref.read(saleDateFilterProvider.notifier).state = value,
                 ),
+                // Ocultar o no las ventas con fecha futura.
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.s8),
+                  child: FilterChipRow(
+                    chips: [
+                      FilterMenuChip<RecordTimeFilter>(
+                        icon: Icons.event_available_outlined,
+                        label: timeFilter == RecordTimeFilter.current
+                            ? 'Ventas actuales'
+                            : 'Todas',
+                        active: timeFilter != RecordTimeFilter.current,
+                        selected: timeFilter,
+                        options: const [
+                          FilterOption(
+                            RecordTimeFilter.current,
+                            'Ventas actuales',
+                          ),
+                          FilterOption(RecordTimeFilter.all, 'Todas'),
+                        ],
+                        onSelected: (value) =>
+                            ref.read(saleTimeFilterProvider.notifier).state =
+                                value,
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.s8),
                 Expanded(
                   child: visible.isEmpty
@@ -90,7 +119,6 @@ class SalesListBody extends ConsumerWidget {
                               sale: sale,
                               clientName: client?.name ?? 'Sin nombre',
                               onEdit: () => _showDialog(context, sale),
-                              onCancel: () => _confirmCancel(context, ref, sale),
                               onTap: () => _showReceipt(context, ref, sale,
                                   client?.name ?? 'Sin nombre'),
                             );
@@ -115,28 +143,6 @@ class SalesListBody extends ConsumerWidget {
     );
   }
 
-  // Cancela una venta (no la borra): devuelve el stock y la deja en el
-  // historial marcada como cancelada.
-  Future<void> _confirmCancel(
-    BuildContext context,
-    WidgetRef ref,
-    SaleModel sale,
-  ) async {
-    final confirmed = await confirmCancellation(
-      context,
-      title: '¿Cancelar venta?',
-      message:
-          'Se devolverá al inventario lo vendido. La venta seguirá en la '
-          'lista, marcada como cancelada, y ya no se podrá editar.',
-      confirmLabel: 'Cancelar venta',
-    );
-    if (!confirmed) return;
-    final error = await ref.read(saleProvider.notifier).cancelSale(sale.id);
-    if (error != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
-    }
-  }
-
   void _showReceipt(BuildContext context, WidgetRef ref, SaleModel sale,
       String clientName) {
     showDialog(
@@ -153,14 +159,12 @@ class _SaleCard extends StatelessWidget {
   final SaleModel sale;
   final String clientName;
   final VoidCallback onEdit;
-  final VoidCallback onCancel;
   final VoidCallback onTap;
 
   const _SaleCard({
     required this.sale,
     required this.clientName,
     required this.onEdit,
-    required this.onCancel,
     required this.onTap,
   });
 
@@ -255,19 +259,14 @@ class _SaleCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Una venta cancelada es solo historial: sin editar ni cancelar.
+            // Una venta cancelada es solo historial: sin editar. Cancelar se hace
+            // desde el formulario de edición.
             if (!sale.isCanceled) ...[
               IconButton(
                 icon: const Icon(Icons.edit_outlined,
                     color: AppColors.primary, size: 20),
                 tooltip: 'Editar venta',
                 onPressed: onEdit,
-              ),
-              IconButton(
-                icon: const Icon(Icons.cancel_outlined,
-                    color: AppColors.error, size: 20),
-                tooltip: 'Cancelar venta',
-                onPressed: onCancel,
               ),
             ],
           ],

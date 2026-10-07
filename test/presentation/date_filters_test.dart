@@ -424,6 +424,30 @@ void main() {
       );
     }
 
+    testWidgets('the same period presets as Business Intelligence fill Desde / Hasta', (
+      tester,
+    ) async {
+      await pumpReport(tester);
+      for (final label in ['Hoy', 'Esta semana', 'Este mes', 'Este año']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      await tester.tap(find.text('Hoy'));
+      await tester.pumpAndSettle();
+      expect(emitted.last.startDate, today);
+      expect(emitted.last.endDate, today);
+
+      await tester.tap(find.text('Este año'));
+      await tester.pumpAndSettle();
+      expect(emitted.last.startDate, DateTime(now.year));
+      expect(emitted.last.endDate, today); // nunca más allá de hoy
+
+      // Volver a tocarlo quita el rango.
+      await tester.tap(find.text('Este año'));
+      await tester.pumpAndSettle();
+      expect(emitted.last.startDate, isNull);
+      expect(emitted.last.endDate, isNull);
+    });
+
     testWidgets('Hasta before Desde is rejected', (tester) async {
       await pumpReport(tester, initial: ReportFilters(startDate: today));
       await tester.tap(find.text('Fecha de fin'));
@@ -544,7 +568,93 @@ void main() {
     });
   });
 
-  testWidgets('Compras: the single Tipo chip sits on the right', (tester) async {
+  group('Ocultar registros con fecha futura', () {
+    Future<void> sale(String client, DateTime date) async {
+      final id = await db.into(db.clients).insert(ClientsCompanion.insert(name: client));
+      await db.into(db.sales).insert(
+        SalesCompanion.insert(
+          clientId: Value(id),
+          totalAmount: 10,
+          finalAmount: 10,
+          date: date,
+        ),
+      );
+    }
+
+    Future<void> purchase(String description, DateTime date) =>
+        db.into(db.purchases).insert(
+          PurchasesCompanion.insert(
+            isMaterial: const Value(false),
+            description: Value(description),
+            totalAmount: 5,
+            date: date,
+          ),
+        );
+
+    Future<void> choose(WidgetTester tester, String from, String to) async {
+      await tester.tap(find.text(from));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(to).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Ventas: "Ventas actuales" (default) hides future sales; "Todas" shows them', (
+      tester,
+    ) async {
+      await sale('Hoy Cliente', now);
+      await sale('Futuro Cliente', tomorrow);
+      await pump(tester, const SalesListBody());
+      expect(find.text('Ventas actuales'), findsOneWidget);
+      expect(find.text('Hoy Cliente'), findsOneWidget); // hoy ya cuenta
+      expect(find.text('Futuro Cliente'), findsNothing);
+
+      await choose(tester, 'Ventas actuales', 'Todas');
+      expect(find.text('Hoy Cliente'), findsOneWidget);
+      expect(find.text('Futuro Cliente'), findsOneWidget);
+    });
+
+    testWidgets('Ventas: it combines with the date range filter', (tester) async {
+      await sale('Hoy Cliente', now);
+      await sale('Futuro Cliente', tomorrow);
+      await sale('Antiguo Cliente', longAgo);
+      await pump(tester, const SalesListBody());
+      containerOf(tester, SalesListBody)
+          .read(saleDateFilterProvider.notifier)
+          .state = DateRangeFilter(from: longAgo, to: longAgo);
+      await tester.pumpAndSettle();
+      expect(find.text('Antiguo Cliente'), findsOneWidget);
+      expect(find.text('Hoy Cliente'), findsNothing);
+
+      // "Todas" no quita el rango: solo deja de ocultar lo futuro.
+      await choose(tester, 'Ventas actuales', 'Todas');
+      expect(find.text('Antiguo Cliente'), findsOneWidget);
+      expect(find.text('Futuro Cliente'), findsNothing);
+    });
+
+    testWidgets('Compras: "Compras actuales" (default) hides future purchases; "Todas" shows them', (
+      tester,
+    ) async {
+      await purchase('Compra de hoy', now);
+      await purchase('Compra futura', tomorrow);
+      await pump(tester, const PurchasesListBody());
+      expect(find.text('Compras actuales'), findsOneWidget);
+      expect(find.text('Compra de hoy'), findsOneWidget);
+      expect(find.text('Compra futura'), findsNothing);
+
+      await choose(tester, 'Compras actuales', 'Todas');
+      expect(find.text('Compra de hoy'), findsOneWidget);
+      expect(find.text('Compra futura'), findsOneWidget);
+    });
+
+    test('RecordTimeFilter.current includes today and the past, not tomorrow', () {
+      expect(RecordTimeFilter.current.includes(now), isTrue);
+      expect(RecordTimeFilter.current.includes(longAgo), isTrue);
+      expect(RecordTimeFilter.current.includes(tomorrow), isFalse);
+      expect(RecordTimeFilter.all.includes(tomorrow), isTrue);
+    });
+  });
+
+  testWidgets('Compras: the Tipo chip and the "Compras actuales" chip sit on the right, on one row', (tester) async {
     await db.into(db.purchases).insert(
       PurchasesCompanion.insert(
         isMaterial: const Value(false),
@@ -554,10 +664,14 @@ void main() {
       ),
     );
     await pump(tester, const PurchasesListBody());
-    final chip = tester.getRect(find.text('Tipo').first);
+    final tipo = tester.getRect(find.text('Tipo').first);
+    final actuales = tester.getRect(find.text('Compras actuales').first);
     final screen = tester.view.physicalSize.width / tester.view.devicePixelRatio;
-    // Pegado al margen derecho (16), no centrado.
-    expect(chip.right, greaterThan(screen * 0.8));
-    expect(chip.left, greaterThan(screen / 2));
+    // Pegados al margen derecho (16), no centrados, en la misma fila y con el
+    // filtro nuevo a la derecha de "Tipo".
+    expect(actuales.right, greaterThan(screen * 0.8));
+    expect(tipo.left, greaterThan(screen * 0.15));
+    expect(actuales.left, greaterThan(tipo.right));
+    expect((actuales.center.dy - tipo.center.dy).abs(), lessThan(4));
   });
 }
