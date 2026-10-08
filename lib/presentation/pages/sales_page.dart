@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
+import '../../application/location_options.dart';
 import '../../application/sale_provider.dart';
 import '../../application/client_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
+import '../../models/location_model.dart';
 import '../../models/sale_model.dart';
 import '../../models/sale_item_model.dart';
 import '../../theme/app_theme.dart';
@@ -66,15 +68,10 @@ class SalesListBody extends ConsumerWidget {
             )
           : Column(
               children: [
-                // Filtro por fechas: atajos y rango Desde/Hasta.
-                DateRangeFilterBar(
-                  value: dates,
-                  onChanged: (value) =>
-                      ref.read(saleDateFilterProvider.notifier).state = value,
-                ),
-                // Ocultar o no las ventas con fecha futura.
+                // Arriba del todo, a la derecha: ocultar o no las ventas con
+                // fecha futura.
                 Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.s8),
+                  padding: const EdgeInsets.only(top: AppSpacing.s12),
                   child: FilterChipRow(
                     chips: [
                       FilterMenuChip<RecordTimeFilter>(
@@ -97,6 +94,12 @@ class SalesListBody extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ),
+                // Debajo: atajos de fecha y rango Desde/Hasta.
+                DateRangeFilterBar(
+                  value: dates,
+                  onChanged: (value) =>
+                      ref.read(saleDateFilterProvider.notifier).state = value,
                 ),
                 const SizedBox(height: AppSpacing.s8),
                 Expanded(
@@ -408,13 +411,13 @@ class _SaleReceiptDialogState
                         const SizedBox(height: AppSpacing.s8),
                         _ReceiptRow(
                           label: 'Ubicación',
-                          value: ref
-                                  .watch(locationProvider)
-                                  .locations
-                                  .where((l) => l.id == widget.sale.locationId)
-                                  .firstOrNull
-                                  ?.city ??
-                              '',
+                          value: _locationText(
+                            ref
+                                .watch(locationProvider)
+                                .locations
+                                .where((l) => l.id == widget.sale.locationId)
+                                .firstOrNull,
+                          ),
                         ),
                       ],
                       if (widget.sale.eventId != null) ...[
@@ -587,3 +590,6 @@ class _ReceiptRow extends StatelessWidget {
     );
   }
 }
+
+// Ubicación mostrada en el detalle: "Ciudad, País" y su zona.
+String _locationText(LocationModel? l) => l == null ? '' : locationLabelWithZone(l);

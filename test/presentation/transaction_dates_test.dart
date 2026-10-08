@@ -12,6 +12,7 @@ import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
 import 'package:offline_first_bi/presentation/widgets/transaction_date_field.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'package:offline_first_bi/config/app_clock.dart';
 
 // La fecha de una venta, compra o evento al crearlo NO tiene límite: se puede
 // registrar algo pasado (se anota tarde) o futuro (se deja preparado). Solo los
@@ -39,7 +40,7 @@ Future<void> _typeDate(WidgetTester tester, DateTime date) async {
 
 void main() {
   late AppDatabase db;
-  final now = DateTime.now();
+  final now = appNow();
   final today = DateTime(now.year, now.month, now.day);
   final past = DateTime(now.year - 1, 3, 5);
   final future = DateTime(now.year + 1, 2, 20);

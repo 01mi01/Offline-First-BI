@@ -202,7 +202,7 @@ void main() {
         // En pastel, por unidades: la leyenda da las unidades y su porcentaje
         // (Anillo 4 de 8 = 50.0 %).
         expect(
-          inSection(i, find.textContaining('4 uds.  (50.0%)')),
+          inSection(i, find.textContaining('4 uds.  (50.00%)')),
           findsOneWidget,
         );
         await tapType(tester, i, 'bar');

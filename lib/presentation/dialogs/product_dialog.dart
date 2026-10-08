@@ -8,6 +8,7 @@ import '../../application/product_provider.dart';
 import '../../application/category_provider.dart';
 import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
+import '../../config/rounding.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../../models/default_records.dart';
@@ -70,9 +71,9 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     _isActive = widget.product?.isActive ?? true;
   }
 
-  // Muestra los precios sin ".0" sobrante ("50" en vez de "50.0").
+  // Los importes se muestran siempre con dos decimales ("50.00").
   static String _formatPrice(double? value) =>
-      value == null ? '' : formatNumber(value);
+      value == null ? '' : fixed2(value);
 
   @override
   void dispose() {

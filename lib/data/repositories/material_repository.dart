@@ -1,9 +1,12 @@
 import 'package:drift/drift.dart';
+import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
 import '../../models/material_model.dart';
 import '../../models/product_material_model.dart';
 import '../../models/unit_model.dart';
 import 'purchase_repository.dart';
+import 'stock_rounding.dart';
+import '../../config/app_clock.dart';
 
 class MaterialRepository {
   final AppDatabase database;
@@ -58,7 +61,11 @@ class MaterialRepository {
     required double pricePerUnit,
     bool isActive = true,
   }) async {
-    final now = DateTime.now();
+    final now = appNow();
+    // Lo que se guarda va redondeado: precio a centavos y stock según el tipo
+    // de su unidad (dos decimales, o fracciones sin ruido).
+    stock = await roundForUnit(database, unitId, stock);
+    pricePerUnit = round2(pricePerUnit);
     // Al editar, la unidad solo puede cambiar a otra del mismo tipo (ver
     // selectableUnitsFor): la interfaz ya solo ofrece esas, y esto lo garantiza
     // también al guardar.
@@ -100,7 +107,7 @@ class MaterialRepository {
           supplierId: null, // "Sin proveedor"
           isMaterial: true,
           description: null,
-          totalAmount: stock * pricePerUnit,
+          totalAmount: round2(stock * pricePerUnit),
           date: now,
           locationId: null,
           eventId: null,
@@ -229,6 +236,12 @@ class MaterialRepository {
     )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
     if (material == null) return 'Material no encontrado';
+    quantityUsed = await roundForUnit(database, material.unitId, quantityUsed);
+    final available = await roundForUnit(
+      database,
+      material.unitId,
+      material.stock,
+    );
 
     final existing = await (database.select(database.productMaterials)..where(
           (pm) =>
@@ -240,10 +253,10 @@ class MaterialRepository {
     if (existing != null && existing.isCanceled) {
       // El par producto+material es único: volver a registrar el uso de un
       // registro cancelado reactiva esa misma fila.
-      if (quantityUsed > material.stock) {
-        return 'Stock insuficiente. Disponible: ${_fmt(material.stock)}';
+      if (quantityUsed > available) {
+        return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
       }
-      final now = DateTime.now();
+      final now = appNow();
       await database.transaction(() async {
         await (database.update(
           database.productMaterials,
@@ -259,7 +272,13 @@ class MaterialRepository {
           database.materials,
         )..where((m) => m.id.equals(materialId))).write(
           MaterialsCompanion(
-            stock: Value(material.stock - quantityUsed),
+            stock: Value(
+              await roundForUnit(
+                database,
+                material.unitId,
+                material.stock - quantityUsed,
+              ),
+            ),
             updatedAt: Value(now),
           ),
         );
@@ -280,8 +299,8 @@ class MaterialRepository {
       );
     }
 
-    if (quantityUsed > material.stock) {
-      return 'Stock insuficiente. Disponible: ${_fmt(material.stock)}';
+    if (quantityUsed > available) {
+      return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
     }
 
     await database
@@ -299,8 +318,14 @@ class MaterialRepository {
       database.materials,
     )..where((m) => m.id.equals(materialId))).write(
       MaterialsCompanion(
-        stock: Value(material.stock - quantityUsed),
-        updatedAt: Value(DateTime.now()),
+        stock: Value(
+          await roundForUnit(
+            database,
+            material.unitId,
+            material.stock - quantityUsed,
+          ),
+        ),
+        updatedAt: Value(appNow()),
       ),
     );
 
@@ -327,12 +352,22 @@ class MaterialRepository {
 
     if (material == null) return 'Material no encontrado';
 
+    newQuantity = await roundForUnit(database, material.unitId, newQuantity);
     final oldQuantity = record.quantityUsed;
-    final difference = newQuantity - oldQuantity;
+    final difference = await roundForUnit(
+      database,
+      material.unitId,
+      newQuantity - oldQuantity,
+    );
+    final available = await roundForUnit(
+      database,
+      material.unitId,
+      material.stock,
+    );
 
     // Si aumenta la cantidad, verificar que haya stock suficiente
-    if (difference > 0 && difference > material.stock) {
-      return 'Stock insuficiente. Disponible: ${_fmt(material.stock)}';
+    if (difference > 0 && difference > available) {
+      return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
     }
 
     // Actualiza el registro
@@ -340,7 +375,7 @@ class MaterialRepository {
           ..where((pm) => pm.id.equals(recordId)))
         .write(ProductMaterialsCompanion(
       quantityUsed: Value(newQuantity),
-      updatedAt: Value(DateTime.now()),
+      updatedAt: Value(appNow()),
     ));
 
     // Ajusta el stock según la diferencia
@@ -348,8 +383,14 @@ class MaterialRepository {
       database.materials,
     )..where((m) => m.id.equals(record.materialId))).write(
       MaterialsCompanion(
-        stock: Value(material.stock - difference),
-        updatedAt: Value(DateTime.now()),
+        stock: Value(
+          await roundForUnit(
+            database,
+            material.unitId,
+            material.stock - difference,
+          ),
+        ),
+        updatedAt: Value(appNow()),
       ),
     );
 
@@ -375,12 +416,18 @@ class MaterialRepository {
 
       if (material == null) return 'Material no encontrado';
 
-      final now = DateTime.now();
+      final now = appNow();
       await (database.update(
         database.materials,
       )..where((m) => m.id.equals(record.materialId))).write(
         MaterialsCompanion(
-          stock: Value(material.stock + record.quantityUsed),
+          stock: Value(
+            await roundForUnit(
+              database,
+              material.unitId,
+              material.stock + record.quantityUsed,
+            ),
+          ),
           updatedAt: Value(now),
         ),
       );
@@ -397,9 +444,16 @@ class MaterialRepository {
     });
   }
 
-  // Formatea número eliminando decimales innecesarios
-  String _fmt(double value) {
-    if (value == value.truncateToDouble()) return value.toInt().toString();
-    return value.toString();
+  // Stock de un material tal como se muestra en los mensajes: según su unidad
+  // (dos decimales para medidas; fracciones sin ruido).
+  Future<String> _fmt(Material material) async {
+    final unit = await (database.select(
+      database.units,
+    )..where((u) => u.id.equals(material.unitId))).getSingleOrNull();
+    return formatMaterialQuantity(
+      material.stock,
+      unitType: unit?.type ?? 'medida',
+      unitName: unit?.name ?? '',
+    );
   }
 }

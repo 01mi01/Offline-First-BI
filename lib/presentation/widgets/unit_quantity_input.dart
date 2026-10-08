@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
 
 // Clasificación del comportamiento de entrada de cantidad según el tipo de
@@ -18,7 +19,7 @@ bool isFractionFriendlyUnitType(String type) => type == unitTypeContenedor;
 // tiene sentido "2.5 unidades", a diferencia de metro/litro/kg/gramo que sí
 // son cantidades continuas reales. Lista chica y explícita a propósito: es
 // la única excepción conocida dentro de "medida".
-const Set<String> _wholeNumberMedidaUnitNames = {'unidad'};
+const Set<String> _wholeNumberMedidaUnitNames = wholeNumberUnitNames;
 
 // Al comprar o consumir materiales en unidades "por pieza" (contenedores, o
 // la unidad genérica "unidad") las cantidades son números enteros: no tiene
@@ -186,7 +187,7 @@ class FractionQuantityPicker extends StatelessWidget {
         if (value > 0) ...[
           const SizedBox(height: AppSpacing.s6),
           Text(
-            'Total: ${formatNumber(value)} ${unitLabel(unit, value)}',
+            'Total: ${formatNumber(cleanFloat(value))} ${unitLabel(unit, value)}',
             key: const ValueKey('container-total'),
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: AppColors.primary,

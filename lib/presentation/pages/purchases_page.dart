@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
+import '../../application/location_options.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
+import '../../models/location_model.dart';
 import '../../models/purchase_kind.dart';
 import '../../models/purchase_model.dart';
 import '../../models/purchase_item_model.dart';
@@ -13,7 +15,9 @@ import '../dialogs/purchase_dialog.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/date_range_filter_bar.dart';
+import '../widgets/status_badge.dart';
 import '../../config/date_formatters.dart';
+import '../../config/rounding.dart';
 
 class PurchasesPage extends ConsumerWidget {
   const PurchasesPage({super.key});
@@ -72,16 +76,11 @@ class PurchasesListBody extends ConsumerWidget {
             )
           : Column(
               children: [
-                // Filtro por fechas: atajos y rango Desde/Hasta.
-                DateRangeFilterBar(
-                  value: dates,
-                  onChanged: (value) => ref
-                      .read(purchaseDateFilterProvider.notifier)
-                      .state = value,
-                ),
-                // Filtro por tipo: solo materiales, solo gastos o ambos.
+                // Arriba del todo, a la derecha: filtro por tipo (solo
+                // materiales, solo gastos o ambos) y ocultar o no las compras
+                // con fecha futura.
                 Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.s8),
+                  padding: const EdgeInsets.only(top: AppSpacing.s12),
                   child: FilterChipRow(
                     chips: [
                       FilterMenuChip<PurchaseKind>(
@@ -123,6 +122,13 @@ class PurchasesListBody extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ),
+                // Debajo: atajos de fecha y rango Desde/Hasta.
+                DateRangeFilterBar(
+                  value: dates,
+                  onChanged: (value) => ref
+                      .read(purchaseDateFilterProvider.notifier)
+                      .state = value,
                 ),
                 const SizedBox(height: AppSpacing.s8),
                 Expanded(
@@ -228,7 +234,9 @@ class _PurchaseCard extends StatelessWidget {
                           style: Theme.of(context).textTheme.headlineLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                                color: purchase.isCanceled
+                                    ? AppColors.textSecondary
+                                    : AppColors.textPrimary,
                               ),
                         ),
                       ),
@@ -257,6 +265,10 @@ class _PurchaseCard extends StatelessWidget {
                               ),
                         ),
                       ),
+                      if (purchase.isCanceled) ...[
+                        const SizedBox(width: AppSpacing.s8),
+                        const StatusBadge.canceled(),
+                      ],
                     ],
                   ),
                   const SizedBox(height: AppSpacing.s4),
@@ -288,20 +300,28 @@ class _PurchaseCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.displayMedium
                         ?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: purchase.isCanceled
+                              ? AppColors.textSecondary
+                              : AppColors.primary,
+                          decoration: purchase.isCanceled
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                   ),
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.edit_outlined,
-                color: AppColors.primary,
-                size: 20,
+            // Una compra cancelada es solo historial: sin editar. Cancelar se
+            // hace desde el formulario de edición.
+            if (!purchase.isCanceled)
+              IconButton(
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                onPressed: onEdit,
               ),
-              onPressed: onEdit,
-            ),
           ],
         ),
       ),
@@ -437,16 +457,13 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                         const SizedBox(height: AppSpacing.s8),
                         _DetailRow(
                           label: 'Ubicación',
-                          value:
-                              ref
-                                  .watch(locationProvider)
-                                  .locations
-                                  .where(
-                                    (l) => l.id == widget.purchase.locationId,
-                                  )
-                                  .firstOrNull
-                                  ?.city ??
-                              '',
+                          value: _locationText(
+                            ref
+                                .watch(locationProvider)
+                                .locations
+                                .where((l) => l.id == widget.purchase.locationId)
+                                .firstOrNull,
+                          ),
                         ),
                       ],
                       if (widget.purchase.eventId != null) ...[
@@ -522,7 +539,7 @@ class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
                                             ),
                                           ),
                                           Text(
-                                            '${formatNumber(item.quantity)} × Bs. ${item.unitPrice.toStringAsFixed(2)}',
+                                            '${formatMaterialQuantity(item.quantity, unitType: item.unitType, unitName: item.unitName)} × Bs. ${item.unitPrice.toStringAsFixed(2)}',
                                             style: Theme.of(context).textTheme
                                                 .labelMedium?.copyWith(
                                                   color: AppColors
@@ -612,3 +629,6 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
+
+// Ubicación mostrada en el detalle: "Ciudad, País" y su zona.
+String _locationText(LocationModel? l) => l == null ? '' : locationLabelWithZone(l);

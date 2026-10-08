@@ -10,7 +10,10 @@ import '../models/report_models.dart';
 import '../models/sale_item_model.dart';
 import '../models/sale_model.dart';
 import '../models/supplier_model.dart';
+import '../config/rounding.dart';
 import 'date_range_filter.dart';
+import 'location_options.dart';
+import '../config/app_clock.dart';
 
 // Filtrado, agregación y enriquecimiento de datos para el módulo de reportes
 class ReportService {
@@ -48,7 +51,7 @@ class ReportService {
   // reporte sin fecha de fin. Se usa SIEMPRE la fecha del registro, nunca la de
   // un evento al que esté vinculado.
   bool isInReportRange(DateTime date, ReportFilters filters, {DateTime? now}) {
-    final today = dateOnly(now ?? DateTime.now());
+    final today = dateOnly(now ?? appNow());
     if (filters.startDate != null &&
         date.isBefore(dateOnly(filters.startDate!))) {
       return false;
@@ -72,8 +75,11 @@ class ReportService {
     required List<ProductModel> products,
     required Map<int, List<SaleItemModel>> saleItemsMap,
     required ReportFilters filters,
+    // Ubicaciones existentes: hacen falta para filtrar por país y ciudad.
+    List<LocationModel> locations = const [],
     DateTime? now,
   }) {
+    final locationById = {for (final l in locations) l.id: l};
     final categoryByProduct = {for (final p in products) p.id: p.categoryId};
     final lineFilters = _hasLineFilters(filters);
 
@@ -85,6 +91,13 @@ class ReportService {
         return false;
       }
       if (filters.locationId != null && s.locationId != filters.locationId) {
+        return false;
+      }
+      if (!locationMatches(
+        locationById[s.locationId],
+        country: filters.country,
+        city: filters.city,
+      )) {
         return false;
       }
       if (filters.eventId != null && s.eventId != filters.eventId) {
@@ -120,18 +133,30 @@ class ReportService {
     for (final sale in sales) {
       final items = saleItemsMap[sale.id];
       if (items == null || items.isEmpty) continue;
+      // Prorrateo del descuento a centavos: cada línea recibe su parte
+      // redondeada y la última lo que falta, para que las partes de TODAS las
+      // líneas sumen exactamente el descuento de la venta.
+      final shares = <double>[];
+      var assigned = 0.0;
+      for (var i = 0; i < items.length; i++) {
+        final share = i == items.length - 1
+            ? round2(sale.discount - assigned)
+            : (sale.totalAmount > 0
+                  ? round2(sale.discount * items[i].subtotal / sale.totalAmount)
+                  : 0.0);
+        assigned += share;
+        shares.add(share);
+      }
       result[sale.id] = [
-        for (final item in items)
-          if (_lineMatches(item, categoryByProduct, filters))
+        for (var i = 0; i < items.length; i++)
+          if (_lineMatches(items[i], categoryByProduct, filters))
             SaleLineReport(
-              item: item,
-              categoryId: categoryByProduct[item.productId],
+              item: items[i],
+              categoryId: categoryByProduct[items[i].productId],
               categoryName:
-                  categoryNames[categoryByProduct[item.productId]] ??
+                  categoryNames[categoryByProduct[items[i].productId]] ??
                   'Sin categoría',
-              discountShare: sale.totalAmount > 0
-                  ? sale.discount * item.subtotal / sale.totalAmount
-                  : 0,
+              discountShare: sale.totalAmount > 0 ? shares[i] : 0,
             ),
       ];
     }
@@ -142,15 +167,27 @@ class ReportService {
   List<PurchaseModel> filterPurchases({
     required List<PurchaseModel> purchases,
     required ReportFilters filters,
+    // Ubicaciones existentes: hacen falta para filtrar por país y ciudad.
+    List<LocationModel> locations = const [],
     DateTime? now,
   }) {
+    final locationById = {for (final l in locations) l.id: l};
     return purchases.where((p) {
+      // Una compra cancelada ya no es un gasto: su stock se restó.
+      if (p.isCanceled) return false;
       if (!filters.purchaseKind.includes(p)) return false;
       if (!isInReportRange(p.date, filters, now: now)) return false;
       if (filters.supplierId != null && p.supplierId != filters.supplierId) {
         return false;
       }
       if (filters.locationId != null && p.locationId != filters.locationId) {
+        return false;
+      }
+      if (!locationMatches(
+        locationById[p.locationId],
+        country: filters.country,
+        city: filters.city,
+      )) {
         return false;
       }
       if (filters.eventId != null && p.eventId != filters.eventId) {
@@ -166,8 +203,8 @@ class ReportService {
   SalesSummary summarizeSaleRows(List<SaleReportRow> rows) {
     return SalesSummary(
       count: rows.length,
-      totalAmount: rows.fold(0.0, (sum, r) => sum + r.netAmount),
-      totalDiscount: rows.fold(0.0, (sum, r) => sum + r.discountAmount),
+      totalAmount: round2(rows.fold(0.0, (sum, r) => sum + r.netAmount)),
+      totalDiscount: round2(rows.fold(0.0, (sum, r) => sum + r.discountAmount)),
     );
   }
 
@@ -175,7 +212,7 @@ class ReportService {
   PurchasesSummary summarizePurchases(List<PurchaseModel> purchases) {
     return PurchasesSummary(
       count: purchases.length,
-      totalAmount: purchases.fold(0.0, (sum, p) => sum + p.totalAmount),
+      totalAmount: round2(purchases.fold(0.0, (sum, p) => sum + p.totalAmount)),
       materialCount: purchases.where((p) => p.isMaterial).length,
     );
   }
@@ -200,7 +237,7 @@ class ReportService {
         sale: s,
         clientName: client?.name ?? 'Sin nombre',
         locationName: location != null
-            ? '${location.city}, ${location.country}'
+            ? locationLabelWithZone(location)
             : null,
         eventName: event?.name,
         lines: linesBySale?[s.id],
@@ -230,7 +267,7 @@ class ReportService {
         purchase: p,
         supplierName: supplier?.name ?? 'Sin proveedor',
         locationName: location != null
-            ? '${location.city}, ${location.country}'
+            ? locationLabelWithZone(location)
             : null,
         eventName: event?.name,
         items: itemsByPurchase?[p.id] ?? const [],

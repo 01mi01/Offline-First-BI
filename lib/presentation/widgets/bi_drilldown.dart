@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/bi_provider.dart';
 import '../../config/date_formatters.dart';
+import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
@@ -459,7 +460,7 @@ class _DrillSheet extends ConsumerWidget {
   List<Widget> _materialBody(BiMaterialDetail d) {
     if (d.isEmpty) return const [BiEmptyState()];
     String quantityText(double v) =>
-        '${formatQuantity(v)}${d.unit == null ? '' : ' ${d.unit}'}';
+        '${formatMaterialQuantity(v, unitType: d.unitType, unitName: d.unit ?? '')}${d.unit == null ? '' : ' ${d.unit}'}';
     return [
       Row(
         children: [

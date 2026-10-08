@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/bi_provider.dart';
+import 'package:offline_first_bi/application/bi_service.dart';
 import 'package:offline_first_bi/application/unit_provider.dart';
 import 'package:offline_first_bi/config/date_formatters.dart';
 import 'package:offline_first_bi/models/bi_config.dart';
@@ -20,6 +21,13 @@ import '../support/bi_harness.dart';
 // tocar, animación de entrada, zoom y arrastre en las líneas, detalle de las
 // barras de los rankings y leyenda que oculta series. Los valores esperados
 // están calculados a mano.
+// Un día (a mediodía) dentro del periodo anterior equivalente a [start]-[end],
+// según las mismas reglas que usa Business Intelligence.
+DateTime _previousPeriodDay(DateTime start, DateTime end) {
+  final previous = BiService().previousPeriod(start, end).end;
+  return DateTime(previous.year, previous.month, previous.day, 12);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -286,7 +294,7 @@ void main() {
 
         await tester.tapAt(at(30));
         await tester.pump();
-        expect(tipTexts(tester), ['Anillo', 'Bs. 195.00', '50.6%']);
+        expect(tipTexts(tester), ['Anillo', 'Bs. 195.00', '50.65%']);
         // La rebanada tocada se resalta.
         var radii = tester
             .widget<PieChart>(pie)
@@ -297,11 +305,11 @@ void main() {
 
         await tester.tapAt(at(240));
         await tester.pump();
-        expect(tipTexts(tester), ['Cuadro', 'Bs. 120.00', '31.2%']);
+        expect(tipTexts(tester), ['Cuadro', 'Bs. 120.00', '31.17%']);
 
         await tester.tapAt(at(330));
         await tester.pump();
-        expect(tipTexts(tester), ['Collar', 'Bs. 70.00', '18.2%']);
+        expect(tipTexts(tester), ['Collar', 'Bs. 70.00', '18.18%']);
         radii = tester.widget<PieChart>(pie).data.sections.map((e) => e.radius);
         expect(radii, [50, 50, 56]);
 
@@ -334,7 +342,7 @@ void main() {
       final center = tester.getCenter(find.byType(PieChart));
       await tester.tapAt(center + Offset.fromDirection(30 * math.pi / 180, 65));
       await tester.pump();
-      expect(tipTexts(tester), ['Anillo', '4 uds.', '50.0%']);
+      expect(tipTexts(tester), ['Anillo', '4 uds.', '50.00%']);
     });
 
     testWidgets(
@@ -535,7 +543,7 @@ void main() {
         expect(tipTexts(tester, BiIndicator.discountImpact), [
           formatDate(day(-1)),
           'Descuentos: Bs. 20.00',
-          '12.5% de las ventas brutas',
+          '12.50% de las ventas brutas',
         ]);
       },
     );
@@ -545,8 +553,12 @@ void main() {
     ) async {
       final p = await h.newProduct('Tote bag', stock: 1000);
       await h.sell(day(-1), p, 3, 100); // periodo actual: 300
-      await h.sell(day(-8), p, 1, 100); // periodo anterior: 100
-      await h.spend(day(-9), 40);
+      // El periodo anterior equivalente depende de la fecha (si el rango
+      // empieza el día 1 del mes, "anterior" es el mismo tramo del mes
+      // anterior): se toma del propio cálculo en vez de suponer "7 días antes".
+      final previousDay = _previousPeriodDay(day(-6), day(0));
+      await h.sell(previousDay, p, 1, 100); // periodo anterior: 100
+      await h.spend(previousDay, 40);
       await h.refresh();
       await pumpDashboard(
         tester,
@@ -612,15 +624,15 @@ void main() {
         expect(tipTexts(tester), ['Estuches', 'Unidades: 4 uds.']);
         await tapVertex(3, 0.4);
         // Rotación: 4 / (4 + 6 de stock, ya sin lo vendido) = 40 %.
-        expect(tipTexts(tester), ['Estuches', 'Rotación: 40.0%']);
+        expect(tipTexts(tester), ['Estuches', 'Rotación: 40.00%']);
         await tapVertex(2, 0.25);
         expect(tipTexts(tester), ['Libro', 'Unidades: 1 uds.']);
         await tapVertex(3, 0.1);
-        expect(tipTexts(tester), ['Libro', 'Rotación: 10.0%']);
+        expect(tipTexts(tester), ['Libro', 'Rotación: 10.00%']);
         // Dos productos con el mismo vértice (margen 80 %): el que se dibuja
         // encima, que es el último.
         await tapVertex(1, 0.8);
-        expect(tipTexts(tester), ['Libro', 'Margen: 80.0%']);
+        expect(tipTexts(tester), ['Libro', 'Margen: 80.00%']);
 
         // Una punta sin ningún producto no abre globo y cierra el anterior.
         await tapVertex(3, 1);
@@ -1612,11 +1624,11 @@ void main() {
       // 195 / 265 = 73.6 %, 70 / 265 = 26.4 %.
       expect(
         rowText(tester, 'bi-drill-product-0'),
-        '1 | Anillo | Bs. 195.00 | 4 uds. · 73.6% de la categoría',
+        '1 | Anillo | Bs. 195.00 | 4 uds. · 73.58% de la categoría',
       );
       expect(
         rowText(tester, 'bi-drill-product-1'),
-        '2 | Collar | Bs. 70.00 | 1 uds. · 26.4% de la categoría',
+        '2 | Collar | Bs. 70.00 | 1 uds. · 26.42% de la categoría',
       );
       expect(find.byKey(const ValueKey('bi-drill-product-2')), findsNothing);
 
@@ -1631,7 +1643,7 @@ void main() {
       expect(stat(tester, 'revenue').data, 'Bs. 120.00');
       expect(
         rowText(tester, 'bi-drill-product-0'),
-        '1 | Cuadro | Bs. 120.00 | 3 uds. · 100.0% de la categoría',
+        '1 | Cuadro | Bs. 120.00 | 3 uds. · 100.00% de la categoría',
       );
     });
 
@@ -2071,7 +2083,7 @@ void main() {
       (tester) async {
         final p = await h.newProduct('Tote bag', stock: 1000);
         await h.sell(day(-1), p, 3, 100);
-        await h.sell(day(-8), p, 1, 100);
+        await h.sell(_previousPeriodDay(day(-6), day(0)), p, 1, 100);
         await h.refresh();
         await pumpDashboard(
           tester,

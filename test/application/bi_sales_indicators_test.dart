@@ -6,6 +6,7 @@ import 'package:offline_first_bi/models/bi_models.dart';
 import 'package:offline_first_bi/models/purchase_kind.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import '../support/bi_harness.dart';
+import 'package:offline_first_bi/config/rounding.dart';
 
 // Los seis indicadores de ventas adicionales de Business Intelligence (productos
 // comprados juntos, ventas por día de la semana, ticket promedio, rentabilidad
@@ -384,7 +385,7 @@ void main() {
       final t = h.report().ticket;
       expect(t.salesCount, 9);
       expect(t.total, 660);
-      expect(t.average, closeTo(660 / 9, 1e-9)); // 73.33...
+      expect(t.average, closeTo(round2(660 / 9), 1e-9)); // 73.33...
     });
 
     test('respects the period filter', () async {
@@ -465,7 +466,7 @@ void main() {
         final d = h.report().discounts;
         expect(d.totalDiscount, 25); // 10 + 15
         expect(d.grossSales, 685);
-        expect(d.pct, closeTo(25 / 685 * 100, 1e-9)); // 3.6496...
+        expect(d.pct, closeTo(round2(25 / 685 * 100), 1e-9)); // 3.6496...
         expect(d.salesCount, 9);
         expect(d.discountedSales, 2);
         // Bruto − descuentos = ingresos del resumen.
@@ -483,7 +484,7 @@ void main() {
           .discounts;
       expect(d.grossSales, 435);
       expect(d.totalDiscount, 10);
-      expect(d.pct, closeTo(10 / 435 * 100, 1e-9));
+      expect(d.pct, closeTo(round2(10 / 435 * 100), 1e-9));
       expect(d.discountedSales, 1);
     });
 
@@ -774,13 +775,13 @@ void main() {
         expect(t.revenue, closeTo(290, 1e-9));
         expect(t.cost, 120);
         expect(t.profit, closeTo(170, 1e-9));
-        expect(t.ratio, closeTo(170 / 120, 1e-9));
+        expect(t.ratio, closeTo(round2(170 / 120), 1e-9));
 
         final s = r.entries[1];
         expect(s.units, 10);
         expect(s.revenue, closeTo(117.6, 1e-9));
         expect(s.cost, 50);
-        expect(s.ratio, closeTo(67.6 / 50, 1e-9)); // 1.352
+        expect(s.ratio, closeTo(round2(67.6 / 50), 1e-9)); // 1.352
 
         final p = r.entries[2];
         expect(p.units, 5);
@@ -852,7 +853,7 @@ void main() {
         );
         // Costo 80 × 3 = 240; ganancia 290 − 240 = 50; retorno 50 ÷ 240.
         expect(t.cost, 240);
-        expect(t.ratio, closeTo(50 / 240, 1e-9));
+        expect(t.ratio, closeTo(round2(50 / 240), 1e-9));
       },
     );
 

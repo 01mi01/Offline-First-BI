@@ -11,6 +11,10 @@ class ReportFilters {
   final int? clientId;
   final int? supplierId;
   final String? priceType;
+  // País y ciudad de la ubicación vinculada al registro. Con alguno elegido,
+  // los registros sin ubicación quedan fuera.
+  final String? country;
+  final String? city;
   // Solo compras: materiales, gastos o ambos.
   final PurchaseKind purchaseKind;
 
@@ -24,6 +28,8 @@ class ReportFilters {
     this.clientId,
     this.supplierId,
     this.priceType,
+    this.country,
+    this.city,
     this.purchaseKind = PurchaseKind.all,
   });
 
@@ -40,6 +46,8 @@ class ReportFilters {
       locationId != null ||
       clientId != null ||
       supplierId != null ||
+      country != null ||
+      city != null ||
       priceType != null;
 
   ReportFilters copyWith({
@@ -52,6 +60,8 @@ class ReportFilters {
     int? clientId,
     int? supplierId,
     String? priceType,
+    String? country,
+    String? city,
     PurchaseKind? purchaseKind,
     bool clearStartDate = false,
     bool clearEndDate = false,
@@ -62,6 +72,8 @@ class ReportFilters {
     bool clearClient = false,
     bool clearSupplier = false,
     bool clearPriceType = false,
+    bool clearCountry = false,
+    bool clearCity = false,
   }) {
     return ReportFilters(
       startDate: clearStartDate ? null : startDate ?? this.startDate,
@@ -73,6 +85,8 @@ class ReportFilters {
       clientId: clearClient ? null : clientId ?? this.clientId,
       supplierId: clearSupplier ? null : supplierId ?? this.supplierId,
       priceType: clearPriceType ? null : priceType ?? this.priceType,
+      country: clearCountry ? null : country ?? this.country,
+      city: clearCity ? null : city ?? this.city,
       purchaseKind: purchaseKind ?? this.purchaseKind,
     );
   }
@@ -91,6 +105,8 @@ class ReportFilters {
           clientId == other.clientId &&
           supplierId == other.supplierId &&
           priceType == other.priceType &&
+          country == other.country &&
+          city == other.city &&
           purchaseKind == other.purchaseKind;
 
   @override
@@ -104,6 +120,8 @@ class ReportFilters {
     clientId,
     supplierId,
     priceType,
+    country,
+    city,
     purchaseKind,
   );
 }

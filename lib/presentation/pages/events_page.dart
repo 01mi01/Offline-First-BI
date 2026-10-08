@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
 import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
+import '../../application/location_options.dart';
+import '../../application/search_filter.dart';
 import '../../application/status_filter.dart';
 import '../../models/event_model.dart';
 import '../../models/location_model.dart';
@@ -47,26 +49,6 @@ class EventsPage extends ConsumerWidget {
   }
 }
 
-// Fila superior con el filtro de estado, alineado a la derecha.
-class _StatusFilterRow extends StatelessWidget {
-  final Widget child;
-
-  const _StatusFilterRow({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s16,
-        AppSpacing.s12,
-        AppSpacing.s16,
-        AppSpacing.s8,
-      ),
-      child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [child]),
-    );
-  }
-}
-
 // Tab de eventos
 class _EventsTab extends ConsumerWidget {
   const _EventsTab();
@@ -77,13 +59,17 @@ class _EventsTab extends ConsumerWidget {
     final locations = ref.watch(locationProvider).locations;
     final status = ref.watch(eventStatusFilterProvider);
     final dates = ref.watch(eventDateFilterProvider);
+    final query = ref.watch(eventListQueryProvider);
     // Un evento de varios días entra si alguno de sus días cae en el rango.
-    final visible = state.events
-        .where(
-          (e) =>
-              status.matches(e.isActive) && dates.overlaps(e.startDate, e.endDate),
-        )
-        .toList();
+    // Búsqueda por nombre (sin distinguir tildes).
+    final visible = filterByQuery<EventModel>(
+      state.events.where(
+        (e) =>
+            status.matches(e.isActive) && dates.overlaps(e.startDate, e.endDate),
+      ),
+      query,
+      (e) => e.name,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -98,17 +84,26 @@ class _EventsTab extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Filtro por fechas: atajos y rango Desde/Hasta.
-          DateRangeFilterBar(
-            value: dates,
-            onChanged: (value) =>
-                ref.read(eventDateFilterProvider.notifier).state = value,
-          ),
-          _StatusFilterRow(
-            child: StatusFilterChip(
-              value: status,
+          // El filtro de estado arriba del todo, a la derecha; debajo, el
+          // filtro por fechas (atajos y rango Desde/Hasta) y el buscador.
+          CatalogListHeader(
+            chips: [
+              StatusFilterChip(
+                value: status,
+                onChanged: (value) =>
+                    ref.read(eventStatusFilterProvider.notifier).state = value,
+              ),
+            ],
+            between: DateRangeFilterBar(
+              value: dates,
               onChanged: (value) =>
-                  ref.read(eventStatusFilterProvider.notifier).state = value,
+                  ref.read(eventDateFilterProvider.notifier).state = value,
+            ),
+            search: CatalogSearchField(
+              initialText: query,
+              hintText: 'Buscar evento',
+              onChanged: (value) =>
+                  ref.read(eventListQueryProvider.notifier).state = value,
             ),
           ),
           Expanded(
@@ -171,9 +166,22 @@ class _LocationsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(locationProvider);
     final status = ref.watch(locationStatusFilterProvider);
-    final visible = state.locations
-        .where((l) => status.matches(l.isActive))
-        .toList();
+    final country = ref.watch(locationCountryFilterProvider);
+    final city = ref.watch(locationCityFilterProvider);
+    final query = ref.watch(locationListQueryProvider);
+    // Búsqueda por ciudad y país (sin distinguir tildes), estado, país y
+    // ciudad: todos los filtros se aplican juntos.
+    final visible = filterByQuery<LocationModel>(
+      state.locations.where(
+        (l) =>
+            status.matches(l.isActive) &&
+            locationMatches(l, country: country, city: city),
+      ),
+      query,
+      locationSearchText,
+    );
+    final countries = countryOptions(state.locations);
+    final cities = cityOptions(state.locations, country: country);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -188,12 +196,53 @@ class _LocationsTab extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          _StatusFilterRow(
-            child: StatusFilterChip(
-              feminine: true,
-              value: status,
+          CatalogListHeader(
+            chips: [
+              StatusFilterChip(
+                feminine: true,
+                value: status,
+                onChanged: (value) =>
+                    ref.read(locationStatusFilterProvider.notifier).state =
+                        value,
+              ),
+              FilterMenuChip<String?>(
+                label: country ?? 'Todos los países',
+                maxLabelWidth: 130,
+                active: country != null,
+                selected: country,
+                options: [
+                  const FilterOption<String?>(null, 'Todos los países'),
+                  for (final c in countries) FilterOption<String?>(c, c),
+                ],
+                onSelected: (value) {
+                  ref.read(locationCountryFilterProvider.notifier).state =
+                      value;
+                  // La ciudad elegida deja de valer si no es de ese país.
+                  if (city != null &&
+                      !cityOptions(state.locations, country: value)
+                          .contains(city)) {
+                    ref.read(locationCityFilterProvider.notifier).state = null;
+                  }
+                },
+              ),
+              FilterMenuChip<String?>(
+                label: city ?? 'Todas las ciudades',
+                maxLabelWidth: 130,
+                active: city != null,
+                selected: city,
+                options: [
+                  const FilterOption<String?>(null, 'Todas las ciudades'),
+                  for (final c in cities) FilterOption<String?>(c, c),
+                ],
+                onSelected: (value) =>
+                    ref.read(locationCityFilterProvider.notifier).state = value,
+              ),
+            ],
+            search: CatalogSearchField(
+              initialText: query,
+              hintText: 'Buscar ubicación',
               onChanged: (value) =>
-                  ref.read(locationStatusFilterProvider.notifier).state = value,
+                  ref.read(locationListQueryProvider.notifier).state = value,
             ),
           ),
           Expanded(
@@ -347,7 +396,7 @@ class _EventCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '${location!.city}, ${location!.country}',
+                              locationLabelWithZone(location!),
                               style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -428,7 +477,7 @@ class _EventCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '${location!.city}, ${location!.country}',
+                        locationLabelWithZone(location!),
                         style: Theme.of(context).textTheme.labelSmall
                             ?.copyWith(
                               fontWeight: FontWeight.w600,

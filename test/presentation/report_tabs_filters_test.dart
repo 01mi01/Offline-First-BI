@@ -7,6 +7,7 @@ import 'package:offline_first_bi/config/date_formatters.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'package:offline_first_bi/config/app_clock.dart';
 
 // Reportes: las pestañas Ventas y Compras llevan cada una sus propios filtros.
 void main() {
@@ -50,7 +51,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  final today = formatDate(DateTime.now());
+  final today = formatDate(appNow());
 
   testWidgets(
     'a date set on the Ventas tab does not carry over to Compras, and it is '

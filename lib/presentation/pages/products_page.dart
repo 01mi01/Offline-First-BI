@@ -4,6 +4,7 @@ import 'package:offline_first_bi/models/product_model.dart';
 import 'dart:io';
 import '../../application/product_provider.dart';
 import '../../application/product_catalog_filter.dart';
+import '../../application/status_filter.dart';
 import '../../application/category_provider.dart';
 import '../../application/material_provider.dart';
 import '../../theme/app_theme.dart';
@@ -46,85 +47,63 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       ),
       body: Column(
         children: [
-          // Fila superior, alineada a la derecha: el filtro de precio (solo en la
-          // vista de lista; el catálogo refleja lo elegido sin repetir el
-          // control) y, a su derecha, el toggle lista/catálogo.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s16,
-              AppSpacing.s12,
-              AppSpacing.s16,
-              AppSpacing.s8,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (!_isGrid) ...[
-                  FilterMenuChip<PriceDisplay>(
-                    icon: Icons.sell_outlined,
-                    label: switch (priceDisplay) {
-                      PriceDisplay.both => 'Ambos',
-                      PriceDisplay.a => 'Precio A',
-                      PriceDisplay.b => 'Precio B',
-                      PriceDisplay.none => 'Sin precio',
-                    },
-                    // Resaltado cuando se eligió algo distinto del valor por
-                    // defecto ("Ambos").
-                    active: filter.priceDisplay != PriceDisplay.both,
-                    selected: priceDisplay,
-                    options: const [
-                      FilterOption(PriceDisplay.both, 'Ambos'),
-                      FilterOption(PriceDisplay.a, 'Precio A'),
-                      FilterOption(PriceDisplay.b, 'Precio B'),
-                      FilterOption(PriceDisplay.none, 'Sin precio'),
-                    ],
-                    onSelected: (value) => setFilter.update(
-                      (f) => f.copyWith(priceDisplay: value),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
+          // Filtros arriba, alineados a la derecha (pasan a otra línea si no
+          // caben): precio, categoría y estado. Debajo, el buscador a todo el
+          // ancho junto al toggle lista/catálogo. Igual en ambas vistas.
+          CatalogListHeader(
+            chips: [
+              FilterMenuChip<PriceDisplay>(
+                icon: Icons.sell_outlined,
+                label: switch (priceDisplay) {
+                  PriceDisplay.both => 'Ambos',
+                  PriceDisplay.a => 'Precio A',
+                  PriceDisplay.b => 'Precio B',
+                  PriceDisplay.none => 'Sin precio',
+                },
+                // Resaltado cuando se eligió algo distinto del valor por
+                // defecto ("Ambos").
+                active: filter.priceDisplay != PriceDisplay.both,
+                selected: priceDisplay,
+                options: const [
+                  FilterOption(PriceDisplay.both, 'Ambos'),
+                  FilterOption(PriceDisplay.a, 'Precio A'),
+                  FilterOption(PriceDisplay.b, 'Precio B'),
+                  FilterOption(PriceDisplay.none, 'Sin precio'),
                 ],
-                _ViewToggle(
-                  isGrid: _isGrid,
-                  onToggle: (val) => setState(() => _isGrid = val),
+                onSelected: (value) =>
+                    setFilter.update((f) => f.copyWith(priceDisplay: value)),
+              ),
+              FilterMenuChip<int?>(
+                icon: Icons.category_outlined,
+                maxLabelWidth: 110,
+                label: selectedCategory?.name ?? 'Categoría',
+                active: filter.categoryId != null,
+                selected: filter.categoryId,
+                options: [
+                  const FilterOption<int?>(null, 'Todas las categorías'),
+                  for (final c in categories) FilterOption<int?>(c.id, c.name),
+                ],
+                onSelected: (id) => setFilter.update(
+                  (f) => id == null
+                      ? f.copyWith(clearCategory: true)
+                      : f.copyWith(categoryId: id),
                 ),
-              ],
+              ),
+              StatusFilterChip(
+                value: filter.status,
+                onChanged: (value) =>
+                    setFilter.update((f) => f.copyWith(status: value)),
+              ),
+            ],
+            search: CatalogSearchField(
+              initialText: filter.query,
+              hintText: 'Buscar producto',
+              onChanged: (value) =>
+                  setFilter.update((f) => f.copyWith(query: value)),
             ),
-          ),
-          // Fila de abajo: el buscador (nombre o descripción) comparte el ancho
-          // con el filtro de categoría.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: CatalogSearchField(
-                    initialText: filter.query,
-                    hintText: 'Buscar producto',
-                    onChanged: (value) => setFilter.update(
-                      (f) => f.copyWith(query: value),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s8),
-                FilterMenuChip<int?>(
-                  icon: Icons.category_outlined,
-                  maxLabelWidth: 110,
-                  label: selectedCategory?.name ?? 'Categoría',
-                  active: filter.categoryId != null,
-                  selected: filter.categoryId,
-                  options: [
-                    const FilterOption<int?>(null, 'Todas las categorías'),
-                    for (final c in categories)
-                      FilterOption<int?>(c.id, c.name),
-                  ],
-                  onSelected: (id) => setFilter.update(
-                    (f) => id == null
-                        ? f.copyWith(clearCategory: true)
-                        : f.copyWith(categoryId: id),
-                  ),
-                ),
-              ],
+            trailing: _ViewToggle(
+              isGrid: _isGrid,
+              onToggle: (val) => setState(() => _isGrid = val),
             ),
           ),
           const SizedBox(height: AppSpacing.s8),
@@ -146,7 +125,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     ),
                   )
                 : _isGrid
-                ? _GridView(products: visible, priceDisplay: priceDisplay)
+                ? _GridView(
+                    products: visible,
+                    priceDisplay: priceDisplay,
+                    showInactive: filter.status == StatusFilter.inactive,
+                  )
                 : _ListViewWidget(
                     products: visible,
                     priceDisplay: priceDisplay,
@@ -283,12 +266,21 @@ class _GridView extends StatelessWidget {
   final List<ProductModel> products;
   // Qué precio muestran las tarjetas (y el detalle) de todo el catálogo.
   final PriceDisplay priceDisplay;
+  // El catálogo muestra solo productos activos, salvo que el filtro de estado
+  // pida los inactivos: entonces los refleja.
+  final bool showInactive;
 
-  const _GridView({required this.products, required this.priceDisplay});
+  const _GridView({
+    required this.products,
+    required this.priceDisplay,
+    this.showInactive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final active = products.where((p) => p.isActive).toList();
+    final active = showInactive
+        ? products
+        : products.where((p) => p.isActive).toList();
 
     return GridView.builder(
       padding: AppSpacing.listWithFab,

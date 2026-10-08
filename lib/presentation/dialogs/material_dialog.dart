@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
 import '../../application/unit_provider.dart';
+import '../../config/rounding.dart';
 import '../../models/material_model.dart';
 import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
@@ -50,12 +51,12 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     );
     _stockController = TextEditingController(
       text: widget.material?.stock != null
-          ? formatNumber(widget.material!.stock)
+          ? _stockText(widget.material!)
           : '',
     );
     _priceController = TextEditingController(
       text: widget.material?.pricePerUnit != null
-          ? formatNumber(widget.material!.pricePerUnit)
+          ? fixed2(widget.material!.pricePerUnit)
           : '',
     );
     _container = LinkedPriceController(price: _priceController);
@@ -77,6 +78,21 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     _container.dispose();
     _quantityController.dispose();
     super.dispose();
+  }
+
+  // Stock tal como se muestra: dos decimales en medidas, fracciones exactas
+  // en unidades por fracciones, enteros en piezas.
+  String _stockText(MaterialModel material) {
+    final unit = ref
+        .read(unitProvider)
+        .units
+        .where((u) => u.id == material.unitId)
+        .firstOrNull;
+    return formatMaterialQuantity(
+      material.stock,
+      unitType: unit?.type ?? 'medida',
+      unitName: unit?.name ?? '',
+    );
   }
 
   UnitModel? _unitById(List<UnitModel> units) =>

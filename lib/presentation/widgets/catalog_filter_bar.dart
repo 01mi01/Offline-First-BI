@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../application/status_filter.dart';
 import '../../theme/app_theme.dart';
+import 'focus_utils.dart';
 
 // Piezas reutilizables para buscar y filtrar las vistas de lista y de catálogo
 // (Productos, Categorías).
@@ -46,6 +49,9 @@ class _CatalogSearchFieldState extends State<CatalogSearchField> {
         widget.onChanged(value);
       },
       textInputAction: TextInputAction.search,
+      // Sin margen extra: si el campo ya está a la vista, escribir no lo
+      // desplaza (ver RevealOnFocus).
+      scrollPadding: EdgeInsets.zero,
       decoration: InputDecoration(
         hintText: widget.hintText,
         isDense: true,
@@ -184,6 +190,119 @@ class FilterChipRow extends StatelessWidget {
           children: chips,
         ),
       ),
+    );
+  }
+}
+
+// Envuelve un buscador con resultados debajo (p. ej. el de productos dentro del
+// formulario de venta): al enfocarlo, lleva el buscador al borde de arriba del
+// área que se desplaza, para que lo escrito quede por encima del teclado y los
+// resultados se vean debajo. Solo actúa al enfocar y cuando el teclado termina
+// de abrirse; escribir no vuelve a mover la pantalla.
+class RevealOnFocus extends StatefulWidget {
+  final Widget child;
+
+  const RevealOnFocus({super.key, required this.child});
+
+  @override
+  State<RevealOnFocus> createState() => _RevealOnFocusState();
+}
+
+class _RevealOnFocusState extends State<RevealOnFocus>
+    with WidgetsBindingObserver {
+  bool _focused = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() => _reveal();
+
+  // Se espera un instante para que el propio campo de texto (que también se
+  // desplaza para mostrar el cursor) termine primero y no se pisen.
+  void _reveal() {
+    if (!_focused) return;
+    _timer?.cancel();
+    _timer = Timer(const Duration(milliseconds: 120), () {
+      if (!mounted || !_focused) return;
+      revealFieldAtTop(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      canRequestFocus: false,
+      skipTraversal: true,
+      onFocusChange: (hasFocus) {
+        _focused = hasFocus;
+        _reveal();
+      },
+      child: widget.child,
+    );
+  }
+}
+
+// Cabecera común de las listas: los filtros arriba, alineados a la derecha
+// (pasan a otra línea si no caben), y debajo el buscador a todo el ancho con,
+// si hay, un botón a su derecha (p. ej. el toggle lista/catálogo). Productos,
+// Categorías, Clientes, Proveedores, Eventos y Ubicaciones la comparten, así
+// que filtros, buscador y botones quedan en las mismas posiciones.
+class CatalogListHeader extends StatelessWidget {
+  final List<Widget> chips;
+  final Widget search;
+  final Widget? trailing;
+  // Se muestra entre los filtros y el buscador (p. ej. el filtro por fechas).
+  final Widget? between;
+
+  const CatalogListHeader({
+    super.key,
+    required this.chips,
+    required this.search,
+    this.trailing,
+    this.between,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (chips.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.s12),
+            child: FilterChipRow(chips: chips),
+          ),
+        ?between,
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            chips.isEmpty && between == null ? AppSpacing.s12 : AppSpacing.s8,
+            AppSpacing.s16,
+            AppSpacing.s8,
+          ),
+          child: Row(
+            children: [
+              Expanded(child: search),
+              if (trailing != null) ...[
+                const SizedBox(width: AppSpacing.s8),
+                trailing!,
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

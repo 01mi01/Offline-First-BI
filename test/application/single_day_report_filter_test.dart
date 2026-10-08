@@ -31,17 +31,17 @@ void main() {
     createdAt: date,
   );
 
-  final day = DateTime(2026, 9, 10);
+  final day = DateTime(2020, 9, 10);
   final sales = [
-    sale(1, DateTime(2026, 9, 9, 23, 59)),
-    sale(2, DateTime(2026, 9, 10, 0, 0)),
-    sale(3, DateTime(2026, 9, 10, 18, 30)),
-    sale(4, DateTime(2026, 9, 11, 0, 0)),
+    sale(1, DateTime(2020, 9, 9, 23, 59)),
+    sale(2, DateTime(2020, 9, 10, 0, 0)),
+    sale(3, DateTime(2020, 9, 10, 18, 30)),
+    sale(4, DateTime(2020, 9, 11, 0, 0)),
   ];
   final purchases = [
-    purchase(1, DateTime(2026, 9, 9, 23, 59)),
-    purchase(2, DateTime(2026, 9, 10, 9, 15)),
-    purchase(3, DateTime(2026, 9, 11, 0, 0)),
+    purchase(1, DateTime(2020, 9, 9, 23, 59)),
+    purchase(2, DateTime(2020, 9, 10, 9, 15)),
+    purchase(3, DateTime(2020, 9, 11, 0, 0)),
   ];
 
   List<int> salesFor(ReportFilters f) => service
@@ -62,7 +62,7 @@ void main() {
 
   test('with Hasta set the range is unchanged', () {
     expect(
-      salesFor(ReportFilters(startDate: day, endDate: DateTime(2026, 9, 11))),
+      salesFor(ReportFilters(startDate: day, endDate: DateTime(2020, 9, 11))),
       [2, 3, 4],
     );
     expect(
@@ -77,8 +77,8 @@ void main() {
 
   test('effectiveEndDate falls back to Desde', () {
     expect(ReportFilters(startDate: day).effectiveEndDate, day);
-    expect(ReportFilters(startDate: day, endDate: DateTime(2026, 9, 12)).effectiveEndDate,
-        DateTime(2026, 9, 12));
+    expect(ReportFilters(startDate: day, endDate: DateTime(2020, 9, 12)).effectiveEndDate,
+        DateTime(2020, 9, 12));
     expect(const ReportFilters().effectiveEndDate, isNull);
   });
 }

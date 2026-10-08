@@ -3,6 +3,7 @@ import '../../application/date_range_filter.dart';
 import '../../config/date_formatters.dart';
 import '../../theme/app_theme.dart';
 import 'focus_utils.dart';
+import '../../config/app_clock.dart';
 
 // Selector de fecha de los filtros y reportes: hoy es la última fecha que se
 // puede elegir. No se usa para la fecha de una venta, compra o evento.
@@ -12,7 +13,7 @@ Future<DateTime?> pickFilterDate(
   DateTime? now,
 }) {
   dismissKeyboard();
-  final today = dateOnly(now ?? DateTime.now());
+  final today = dateOnly(now ?? appNow());
   var start = dateOnly(initial ?? today);
   if (start.isAfter(today)) start = today;
   if (start.isBefore(filterFirstDate)) start = filterFirstDate;

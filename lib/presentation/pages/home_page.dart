@@ -15,6 +15,8 @@ import '../pages/inventario_page.dart';
 import '../pages/reports_page.dart';
 import '../../config/date_formatters.dart';
 import '../widgets/profile_button.dart';
+import '../../config/app_clock.dart';
+import '../../config/rounding.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -25,7 +27,7 @@ class HomePage extends ConsumerWidget {
     // Las ventas canceladas no cuentan como ingreso ni como "últimas ventas".
     // Una venta con fecha futura solo está "preparada": todavía no ocurrió, así
     // que tampoco cuenta. Se usa la fecha propia de cada venta.
-    final now = DateTime.now();
+    final now = appNow();
     final sales = ref
         .watch(saleProvider)
         .sales
@@ -38,12 +40,16 @@ class HomePage extends ConsumerWidget {
     // Métricas rápidas: Ingresos y Gastos son los del MES ACTUAL (del día 1 a
     // hoy), según la fecha de cada registro; lo anterior vive en Reportes.
     final month = DateRangeFilter.forPreset(DatePreset.month, now: now);
-    final totalIngresos = sales
-        .where((s) => month.matches(s.date))
-        .fold(0.0, (sum, s) => sum + s.finalAmount);
-    final totalGastos = purchases
-        .where((p) => month.matches(p.date))
-        .fold(0.0, (sum, p) => sum + p.totalAmount);
+    final totalIngresos = round2(
+      sales
+          .where((s) => month.matches(s.date))
+          .fold(0.0, (sum, s) => sum + s.finalAmount),
+    );
+    final totalGastos = round2(
+      purchases
+          .where((p) => !p.isCanceled && month.matches(p.date))
+          .fold(0.0, (sum, p) => sum + p.totalAmount),
+    );
     final productosActivos = products.where((p) => p.isActive).length;
     final stockBajo = products
         .where((p) => p.isActive && p.stock <= lowStockThreshold)

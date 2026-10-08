@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import '../../config/app_config.dart';
 import '../../models/default_records.dart';
+import '../../config/app_clock.dart';
 
 part 'app_database.g.dart';
 
@@ -249,6 +250,10 @@ class Purchases extends Table {
   RealColumn get totalAmount => real()();
   DateTimeColumn get date => dateTime()();
   TextColumn get notes => text().nullable()();
+  // Una compra cancelada se conserva como historial: el stock de sus
+  // materiales ya se restó y no cuenta como gasto ni se puede seguir editando.
+  BoolColumn get isCanceled => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get canceledAt => dateTime().nullable()();
   BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
   TextColumn get supabaseId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -337,7 +342,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
@@ -428,8 +433,8 @@ class AppDatabase extends _$AppDatabase {
             ClientsCompanion.insert(
               name: 'Sin nombre',
               isActive: const Value(true),
-              createdAt: Value(DateTime.now()),
-              updatedAt: Value(DateTime.now()),
+              createdAt: Value(appNow()),
+              updatedAt: Value(appNow()),
             ),
           );
         }
@@ -442,8 +447,8 @@ class AppDatabase extends _$AppDatabase {
           await into(suppliers).insert(
             SuppliersCompanion.insert(
               name: 'Sin nombre',
-              createdAt: Value(DateTime.now()),
-              updatedAt: Value(DateTime.now()),
+              createdAt: Value(appNow()),
+              updatedAt: Value(appNow()),
             ),
           );
         }
@@ -693,15 +698,15 @@ class AppDatabase extends _$AppDatabase {
                 .write(
                   SuppliersCompanion(
                     name: Value(defaultSupplierName),
-                    updatedAt: Value(DateTime.now()),
+                    updatedAt: Value(appNow()),
                   ),
                 );
           } else {
             await into(suppliers).insert(
               SuppliersCompanion.insert(
                 name: defaultSupplierName,
-                createdAt: Value(DateTime.now()),
-                updatedAt: Value(DateTime.now()),
+                createdAt: Value(appNow()),
+                updatedAt: Value(appNow()),
               ),
             );
           }
@@ -719,7 +724,7 @@ class AppDatabase extends _$AppDatabase {
           await (update(roles)..where((r) => r.name.equals('usuario'))).write(
             RolesCompanion(
               name: const Value('empleado'),
-              updatedAt: Value(DateTime.now()),
+              updatedAt: Value(appNow()),
             ),
           );
         }
@@ -800,6 +805,12 @@ class AppDatabase extends _$AppDatabase {
               .write(MaterialsCompanion(unitId: Value(replacementId)));
           await (delete(units)..where((u) => u.id.equals(retiredId))).go();
         }
+      }
+      if (from < 17) {
+        // Cancelación de compras (en vez de borrarlas): se conservan como
+        // historial con su estado, igual que las ventas.
+        await m.addColumn(purchases, purchases.isCanceled);
+        await m.addColumn(purchases, purchases.canceledAt);
       }
     },
   );
@@ -889,16 +900,16 @@ class AppDatabase extends _$AppDatabase {
     await into(clients).insert(
       ClientsCompanion.insert(
         name: DefaultRecords.client,
-        createdAt: Value(DateTime.now()),
-        updatedAt: Value(DateTime.now()),
+        createdAt: Value(appNow()),
+        updatedAt: Value(appNow()),
       ),
     );
     // Proveedor por defecto para compras sin proveedor elegido
     await into(suppliers).insert(
       SuppliersCompanion.insert(
         name: defaultSupplierName,
-        createdAt: Value(DateTime.now()),
-        updatedAt: Value(DateTime.now()),
+        createdAt: Value(appNow()),
+        updatedAt: Value(appNow()),
       ),
     );
   }

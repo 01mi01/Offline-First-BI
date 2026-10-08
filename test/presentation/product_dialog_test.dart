@@ -212,7 +212,7 @@ void main() {
   );
 
   testWidgets(
-    'editing shows whole-number prices without a trailing ".0" and lets the '
+    'editing shows whole-number prices with two decimals and lets the '
     'two prices change independently',
     (tester) async {
       await ProductRepository(db).save(
@@ -229,9 +229,9 @@ void main() {
       TextFormField field(String label) => tester.widget<TextFormField>(
         find.widgetWithText(TextFormField, label),
       );
-      expect(field('Precio A').controller!.text, '50');
-      expect(field('Precio B').controller!.text, '35.5');
-      expect(field('Costo de producción').controller!.text, '20');
+      expect(field('Precio A').controller!.text, '50.00');
+      expect(field('Precio B').controller!.text, '35.50');
+      expect(field('Costo de producción').controller!.text, '20.00');
 
       // Solo cambia B: A se conserva.
       await _type(tester, 'Precio B', '30');

@@ -19,6 +19,7 @@ import 'package:offline_first_bi/models/product_model.dart';
 import 'package:offline_first_bi/models/purchase_kind.dart';
 import 'package:offline_first_bi/models/purchase_model.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
+import 'package:offline_first_bi/config/app_clock.dart';
 
 ProductModel _product(
   int id,
@@ -143,7 +144,7 @@ void main() {
           totalAmount: 20,
           discount: -5,
           finalAmount: 25,
-          date: DateTime.now(),
+          date: appNow(),
           items: items(),
         ),
         throwsArgumentError,
@@ -167,7 +168,7 @@ void main() {
         totalAmount: 20,
         discount: -5,
         finalAmount: 25,
-        date: DateTime.now(),
+        date: appNow(),
         items: items(),
       );
       expect(error, SaleRepository.negativeDiscountMessage);
@@ -219,7 +220,7 @@ void main() {
             totalAmount: 20,
             discount: discount,
             finalAmount: 20,
-            date: DateTime.now(),
+            date: appNow(),
             items: items(),
           ),
           throwsArgumentError,
@@ -232,7 +233,7 @@ void main() {
         totalAmount: 20,
         discount: 0,
         finalAmount: 20,
-        date: DateTime.now(),
+        date: appNow(),
         items: items(),
       );
       final sales = await repo.getAll();

@@ -4,6 +4,7 @@ import '../../application/purchase_provider.dart';
 import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
 import '../../config/date_formatters.dart';
+import '../../config/rounding.dart';
 
 class ReportPurchaseCard extends ConsumerStatefulWidget {
   final PurchaseModel purchase;
@@ -158,7 +159,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      '${item.materialName} × ${formatNumber(item.quantity)}',
+                                      '${item.materialName} × ${formatMaterialQuantity(item.quantity, unitType: item.unitType, unitName: item.unitName)}',
                                       style: Theme.of(context).textTheme
                                           .labelMedium?.copyWith(
                                             color: AppColors.textSecondary,

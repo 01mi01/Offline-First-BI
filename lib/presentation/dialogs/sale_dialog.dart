@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
+import '../../application/location_options.dart';
 import '../../application/search_filter.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/searchable_picker.dart';
@@ -17,6 +18,8 @@ import 'client_dialog.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
 import '../../models/default_records.dart';
+import '../../config/app_clock.dart';
+import '../../config/rounding.dart';
 
 class SaleDialog extends ConsumerStatefulWidget {
   final SaleModel? sale;
@@ -49,7 +52,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   String? _error;
   // Fecha de la venta: hoy por defecto, pero se puede registrar una pasada o
   // futura. Si no se toca, una venta nueva toma el momento de guardarla.
-  late DateTime _date = widget.sale?.date ?? DateTime.now();
+  late DateTime _date = widget.sale?.date ?? appNow();
   bool _dateChanged = false;
 
   @override
@@ -58,7 +61,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     if (widget.sale != null) {
       _selectedClientId = widget.sale!.clientId;
       _discountController.text = widget.sale!.discount > 0
-          ? formatNumber(widget.sale!.discount)
+          ? fixed2(widget.sale!.discount)
           : '';
       _notesController.text = widget.sale!.notes ?? '';
       _loadExistingItems();
@@ -113,7 +116,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         .calculateSubtotal(products, _cartItems, priceTypes: _cartPriceTypes);
   }
 
-  double get _discount => double.tryParse(_discountController.text.trim()) ?? 0;
+  // Lo que se escribe con más de dos decimales se redondea a centavos.
+  double get _discount =>
+      round2(double.tryParse(_discountController.text.trim()) ?? 0);
 
   double get _total =>
       ref.read(saleRepositoryProvider).calculateTotal(_subtotal, _discount);
@@ -199,7 +204,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
             totalAmount: _subtotal,
             discount: discount,
             finalAmount: _total,
-            date: _dateChanged ? _date : DateTime.now(),
+            date: _dateChanged ? _date : appNow(),
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -360,7 +365,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         const PickerOption<int>(null, 'Sin ubicación'),
                         for (final l in ref.watch(locationProvider).locations)
                           if (l.isActive || l.id == _selectedLocationId)
-                            PickerOption<int>(l.id, '${l.city}, ${l.country}'),
+                            PickerOption<int>(
+                              l.id,
+                              locationLabel(l),
+                              subtitle: locationZone(l),
+                              selectedLabel: locationLabelWithZone(l),
+                            ),
                       ],
                       onChanged: (val) => setState(() => _selectedLocationId = val),
                     ),
@@ -402,97 +412,109 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     ),
                     const SizedBox(height: AppSpacing.s8),
                     // Buscador de productos por nombre.
-                    CatalogSearchField(
-                      initialText: _productQuery,
-                      hintText: 'Buscar producto',
-                      onChanged: (value) =>
-                          setState(() => _productQuery = value),
-                    ),
-                    const SizedBox(height: AppSpacing.s8),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: visibleProducts.isEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.all(AppSpacing.s16),
-                              child: Center(
-                                child: Text(
-                                  searchingProducts
-                                      ? 'Sin resultados'
-                                      : 'Escribe para buscar un producto',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
+                    // Buscador + resultados: al enfocar el buscador se lleva arriba
+                    // del área que se desplaza, para ver lo escrito y los
+                    // resultados por encima del teclado.
+                    RevealOnFocus(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          CatalogSearchField(
+                            initialText: _productQuery,
+                            hintText: 'Buscar producto',
+                            onChanged: (value) =>
+                                setState(() => _productQuery = value),
+                          ),
+                          const SizedBox(height: AppSpacing.s8),
+                          // Alto fijo: al escribir, la lista no cambia de tamaño y
+                          // el buscador de arriba no se mueve.
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: visibleProducts.isEmpty
+                                ? Padding(
+                                    padding: const EdgeInsets.all(AppSpacing.s16),
+                                    child: Center(
+                                      child: Text(
+                                        searchingProducts
+                                            ? 'Sin resultados'
+                                            : 'Escribe para buscar un producto',
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : ListView.builder(
+                              padding: const EdgeInsets.all(AppSpacing.s8),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: visibleProducts.length,
+                              itemBuilder: (context, index) {
+                                final p = visibleProducts[index];
+                                final inCart = _cartItems.containsKey(p.id);
+                                return ListTile(
+                                  dense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.s12,
                                   ),
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                        padding: const EdgeInsets.all(AppSpacing.s8),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: visibleProducts.length,
-                        itemBuilder: (context, index) {
-                          final p = visibleProducts[index];
-                          final inCart = _cartItems.containsKey(p.id);
-                          return ListTile(
-                            dense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.s12,
-                            ),
-                            title: Text(
-                              p.name,
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.textPrimary,
+                                  title: Text(
+                                    p.name,
+                                    style: Theme.of(context).textTheme.labelLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.textPrimary,
+                                        ),
                                   ),
-                            ),
-                            subtitle: Text(
-                              'A: Bs. ${p.priceA.toStringAsFixed(2)}  •  B: Bs. ${p.priceB.toStringAsFixed(2)}  •  Stock: ${_availableStock(p)}',
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
-                            trailing: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _error = null;
-                                  if (inCart) {
-                                    _cartItems.remove(p.id);
-                                    _cartPriceTypes.remove(p.id);
-                                  } else {
-                                    _cartItems[p.id] = 1;
-                                    _cartPriceTypes[p.id] = 'A';
-                                  }
-                                });
+                                  subtitle: Text(
+                                    'A: Bs. ${p.priceA.toStringAsFixed(2)}  •  B: Bs. ${p.priceB.toStringAsFixed(2)}  •  Stock: ${_availableStock(p)}',
+                                    style: Theme.of(context).textTheme.labelMedium
+                                        ?.copyWith(color: AppColors.textSecondary),
+                                  ),
+                                  trailing: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _error = null;
+                                        if (inCart) {
+                                          _cartItems.remove(p.id);
+                                          _cartPriceTypes.remove(p.id);
+                                        } else {
+                                          _cartItems[p.id] = 1;
+                                          _cartPriceTypes[p.id] = 'A';
+                                        }
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(AppSpacing.s4),
+                                      decoration: BoxDecoration(
+                                        color: inCart
+                                            ? AppColors.primary.withOpacity(0.1)
+                                            : AppColors.background,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: inCart
+                                              ? AppColors.primary
+                                              : AppColors.border,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        inCart ? Icons.check : Icons.add,
+                                        size: 18,
+                                        color: inCart
+                                            ? AppColors.primary
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                );
                               },
-                              child: Container(
-                                padding: const EdgeInsets.all(AppSpacing.s4),
-                                decoration: BoxDecoration(
-                                  color: inCart
-                                      ? AppColors.primary.withOpacity(0.1)
-                                      : AppColors.background,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: inCart
-                                        ? AppColors.primary
-                                        : AppColors.border,
-                                  ),
-                                ),
-                                child: Icon(
-                                  inCart ? Icons.check : Icons.add,
-                                  size: 18,
-                                  color: inCart
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s16),
@@ -545,7 +567,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                               ),
                                         ),
                                         Text(
-                                          'Bs. ${((_cartPriceTypes[entry.key] == 'B' ? product.priceB : product.priceA) * entry.value).toStringAsFixed(2)}',
+                                          'Bs. ${fixed2((_cartPriceTypes[entry.key] == 'B' ? product.priceB : product.priceA) * entry.value)}',
                                           style: Theme.of(context)
                                               .textTheme
                                               .labelMedium

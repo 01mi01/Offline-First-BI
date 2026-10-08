@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
+import '../../application/location_options.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/material_provider.dart';
 import '../../application/unit_provider.dart';
@@ -14,10 +15,13 @@ import '../widgets/linked_price_fields.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
+import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/transaction_date_field.dart';
 import '../../models/default_records.dart';
+import '../../config/app_clock.dart';
+import '../../config/rounding.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
   final PurchaseModel? purchase;
@@ -48,7 +52,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   bool _totalOverridden = false;
   // Fecha de la compra: hoy por defecto, pero se puede registrar una pasada o
   // futura. Si no se toca, una compra nueva toma el momento de guardarla.
-  late DateTime _date = widget.purchase?.date ?? DateTime.now();
+  late DateTime _date = widget.purchase?.date ?? appNow();
   bool _dateChanged = false;
 
   @override
@@ -63,7 +67,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       _selectedEventId = widget.purchase?.eventId;
       _descriptionController.text = widget.purchase!.description ?? '';
       _totalController.text = widget.purchase!.totalAmount > 0
-          ? formatNumber(widget.purchase!.totalAmount)
+          ? fixed2(widget.purchase!.totalAmount)
           : '';
       _notesController.text = widget.purchase!.notes ?? '';
       _loadExistingItems();
@@ -115,7 +119,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     final total = ref
         .read(purchaseRepositoryProvider)
         .calculateMaterialsTotal(_materialItems);
-    _totalController.text = formatNumber(total);
+    _totalController.text = fixed2(total);
   }
 
   // Formato del campo de total: solo dígitos y un punto decimal, sin ceros a la
@@ -132,8 +136,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   // "2 metros", "1 paquete": cantidad con el nombre de su unidad concordado
   // (igual que en las tarjetas de producto y el registro de uso).
-  String _quantityWithUnit(double quantity, String? unitName) {
-    final number = formatNumber(quantity);
+  String _quantityWithUnit(double quantity, UnitModel? unit) {
+    // Dos decimales en medidas; fracciones exactas en unidades por fracciones.
+    final number = formatMaterialQuantity(
+      quantity,
+      unitType: unit?.type ?? 'medida',
+      unitName: unit?.name ?? '',
+    );
+    final unitName = unit?.name;
     if (unitName == null || unitName.isEmpty) return number;
     return '$number ${unitLabel(unitName, quantity)}';
   }
@@ -197,7 +207,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       return;
     }
 
-    var total = double.tryParse(_totalController.text.trim()) ?? 0;
+    // Lo que se escribe con más de dos decimales se redondea a centavos.
+    var total = round2(double.tryParse(_totalController.text.trim()) ?? 0);
     // Un total manual que se dejó vacío vuelve al calculado de los ítems.
     if (_isMaterial && _totalController.text.trim().isEmpty) {
       total = ref
@@ -227,7 +238,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ? null
                 : _descriptionController.text.trim(),
             totalAmount: total,
-            date: _dateChanged ? _date : DateTime.now(),
+            date: _dateChanged ? _date : appNow(),
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -264,6 +275,34 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     }
   }
 
+  // Cancela la compra (no la borra): resta del stock lo comprado y la deja en el
+  // historial marcada como cancelada. Solo se ofrece dentro de este formulario
+  // de edición. Si algún material ya se usó, la cancelación se bloquea y no
+  // cambia nada (el mensaje se muestra en el formulario).
+  Future<void> _cancelPurchase() async {
+    final confirmed = await confirmCancellation(
+      context,
+      title: '¿Cancelar compra?',
+      message: widget.purchase!.isMaterial
+          ? 'Se restará del stock de los materiales lo comprado. La compra '
+                'seguirá en la lista, marcada como cancelada, y ya no se '
+                'podrá editar.'
+          : 'La compra seguirá en la lista, marcada como cancelada, y ya no '
+                'se podrá editar.',
+      confirmLabel: 'Cancelar compra',
+    );
+    if (!confirmed || !mounted) return;
+    final error = await ref
+        .read(purchaseProvider.notifier)
+        .cancelPurchase(widget.purchase!.id);
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.purchase != null;
@@ -285,12 +324,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     // Material por unidad: nombre de la unidad de cada material de la lista.
     final allMaterials = ref.watch(materialProvider).materials;
     final allUnits = ref.watch(unitProvider).units;
-    String? unitNameOf(Object? materialId) {
+    UnitModel? unitOf(Object? materialId) {
       final material = allMaterials
           .where((m) => m.id == materialId)
           .firstOrNull;
       if (material == null) return null;
-      return allUnits.where((u) => u.id == material.unitId).firstOrNull?.name;
+      return allUnits.where((u) => u.id == material.unitId).firstOrNull;
     }
 
     // Con el teclado abierto cada píxel cuenta: los márgenes se reducen para
@@ -434,7 +473,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           const PickerOption<int>(null, 'Sin ubicación'),
                           for (final l in ref.watch(locationProvider).locations)
                             if (l.isActive || l.id == _selectedLocationId)
-                              PickerOption<int>(l.id, '${l.city}, ${l.country}'),
+                              PickerOption<int>(
+                              l.id,
+                              locationLabel(l),
+                              subtitle: locationZone(l),
+                              selectedLabel: locationLabelWithZone(l),
+                            ),
                         ],
                         onChanged: (val) => setState(() => _selectedLocationId = val),
                       ),
@@ -594,9 +638,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                               child: Text(
                                                 _quantityWithUnit(
                                                   item['quantity'] as double,
-                                                  unitNameOf(
-                                                    item['materialId'],
-                                                  ),
+                                                  unitOf(item['materialId']),
                                                 ),
                                                 style: Theme.of(context)
                                                     .textTheme
@@ -644,7 +686,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                               width: AppSpacing.s8,
                                             ),
                                             Text(
-                                              'Bs. ${((item['quantity'] as double) * (item['unitPrice'] as double)).toStringAsFixed(2)}',
+                                              'Bs. ${fixed2((item['quantity'] as double) * (item['unitPrice'] as double))}',
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .labelMedium
@@ -843,6 +885,30 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           ),
                         ],
                       ),
+
+                      // Cancelar la compra: solo al editar una existente, al
+                      // final del formulario.
+                      if (isEditing && !widget.purchase!.isCanceled) ...[
+                        const SizedBox(height: AppSpacing.s12),
+                        TextButton.icon(
+                          onPressed: _isLoading ? null : _cancelPurchase,
+                          icon: const Icon(
+                            Icons.cancel_outlined,
+                            color: AppColors.error,
+                            size: 20,
+                          ),
+                          label: const Text(
+                            'Cancelar compra',
+                            style: TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1196,7 +1262,13 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                           return;
                         }
                         if (!valid) return;
-                        final quantity = _currentQuantity;
+                        // Lo escrito con más decimales de los permitidos se
+                        // redondea al agregar (dos en medidas; fracciones sin
+                        // ruido).
+                        final quantity = roundQuantity(
+                          _currentQuantity,
+                          unitType: _unitOf(_selectedMaterialId)?.type ?? 'medida',
+                        );
                         // Manda el último campo escrito (precio por unidad o
                         // total pagado).
                         final unitPrice = _container.resolvedPrice ?? 0;

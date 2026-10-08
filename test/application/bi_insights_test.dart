@@ -4,6 +4,7 @@ import 'package:offline_first_bi/models/bi_models.dart';
 import 'package:offline_first_bi/models/purchase_kind.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import '../support/bi_harness.dart';
+import 'package:offline_first_bi/config/rounding.dart';
 
 // Indicadores avanzados de Business Intelligence (margen, proyección, evento
 // vs. días regulares, costo de materiales, sin movimiento,
@@ -54,11 +55,11 @@ void main() {
       final b = margins.entries[1];
       expect(b.revenue, 1800);
       expect(b.profit, 400);
-      expect(b.marginPct, closeTo(22.2222, 1e-3));
+      expect(b.marginPct, closeTo(round2(22.2222), 1e-9));
 
       final t = margins.entries[2];
       expect(t.profit, 25);
-      expect(t.marginPct, closeTo(11.1111, 1e-3));
+      expect(t.marginPct, closeTo(round2(11.1111), 1e-9));
 
       // Por ingresos, Libro iría primero: el margen cuenta otra historia.
       final byRevenue = h.report().salesByProduct.first;
@@ -217,13 +218,13 @@ void main() {
       expect(c.eventSales, 3);
       expect(c.regularRevenue, 430);
       expect(c.regularSales, 5);
-      expect(c.eventPerDay, closeTo(700 / 3, 1e-9));
-      expect(c.regularPerDay, closeTo(430 / 7, 1e-9));
-      expect(c.eventPerSale, closeTo(700 / 3, 1e-9));
+      expect(c.eventPerDay, closeTo(round2(700 / 3), 1e-9));
+      expect(c.regularPerDay, closeTo(round2(430 / 7), 1e-9));
+      expect(c.eventPerSale, closeTo(round2(700 / 3), 1e-9));
       expect(c.regularPerSale, closeTo(86, 1e-9));
       expect(
         c.perDayDifferencePct,
-        closeTo((700 / 3 - 430 / 7) / (430 / 7) * 100, 1e-9),
+        closeTo(round2((700 / 3 - 430 / 7) / (430 / 7) * 100), 1e-9),
       );
     });
 
@@ -455,7 +456,7 @@ void main() {
       expect(c.previous.balance, 300);
       expect(BiPeriodComparison.changePct(c.current.ingresos, c.previous.ingresos), closeTo(50, 1e-9));
       expect(BiPeriodComparison.changePct(c.current.gastos, c.previous.gastos), closeTo(100, 1e-9));
-      expect(BiPeriodComparison.changePct(c.current.balance, c.previous.balance), closeTo(33.3333, 1e-3));
+      expect(BiPeriodComparison.changePct(c.current.balance, c.previous.balance), closeTo(round2(33.3333), 1e-9));
     });
 
     test('canceled and future-dated records are excluded from both periods', () async {

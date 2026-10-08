@@ -14,6 +14,7 @@ import 'package:offline_first_bi/models/sale_model.dart';
 import '../support/pdf_text.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
+import 'package:offline_first_bi/config/app_clock.dart';
 
 // Verifica que ReportExportRepository (PDF y Excel, ventas y compras) genere
 // archivos reales y que su contenido refleje los datos YA FILTRADOS que se le
@@ -582,11 +583,11 @@ void main() {
         expect(pdf.runs, contains(header));
       }
       expect(pdf.text, contains('Tela beige'));
-      expect(pdf.runs, contains('2')); // cantidad entera sin decimales
+      expect(pdf.runs, contains('2.00')); // cantidad decimal a dos decimales
       expect(pdf.text, contains('Bs. 3.50'));
       expect(pdf.text, contains('Bs. 7.00'));
       expect(pdf.text, contains('Resina parte A'));
-      expect(pdf.runs, contains('2.5'));
+      expect(pdf.runs, contains('2.50'));
       expect(pdf.text, contains('Bs. 2.00'));
       expect(pdf.text, contains('Bs. 5.00'));
     });
@@ -640,6 +641,85 @@ void main() {
       expect(_cellNum(resinaA[5]!.value), 5);
     });
 
+    test('Excel: numeric cells hold the rounded value and show two decimals', () async {
+      final noisy = PurchaseReportRow(
+        purchase: PurchaseModel(
+          id: 3,
+          isMaterial: true,
+          totalAmount: 57.599999999999994,
+          date: DateTime(2024, 3, 5),
+          createdAt: DateTime(2024, 3, 5),
+        ),
+        supplierName: 'Riverside Supply Co.',
+        items: [
+          PurchaseItemModel(
+            id: 5,
+            purchaseId: 3,
+            materialId: 1,
+            materialName: 'Tela negra',
+            quantity: 72.6 - 15,
+            unitPrice: 13.333333,
+            subtotal: 57.599999999999994,
+            unitType: 'medida',
+            unitName: 'metro',
+          ),
+        ],
+      );
+      await repository.exportPurchasesExcel(title: 'Compras', rows: [noisy]);
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      final excel = xl.Excel.decodeBytes(bytes);
+
+      final summary = excel.tables['Reporte']!.rows[1];
+      final total = summary.map((c) => c!.value).whereType<xl.DoubleCellValue>().single;
+      expect(total.value, 57.6);
+
+      final line = excel.tables['Detalle']!.rows[1];
+      expect(_cellNum(line[3]!.value), 57.6);
+      expect(_cellNum(line[4]!.value), 13.33);
+      expect(_cellNum(line[5]!.value), 57.6);
+      for (final i in [3, 4, 5]) {
+        expect(
+          line[i]!.cellStyle?.numberFormat,
+          xl.NumFormat.standard_2,
+          reason: 'column $i',
+        );
+      }
+    });
+
+    test('Excel: a fraction-unit quantity keeps its general format, money keeps two decimals', () async {
+      final row = PurchaseReportRow(
+        purchase: PurchaseModel(
+          id: 4,
+          isMaterial: true,
+          totalAmount: 186,
+          date: DateTime(2024, 3, 5),
+          createdAt: DateTime(2024, 3, 5),
+        ),
+        supplierName: 'Monroe Studio',
+        items: [
+          PurchaseItemModel(
+            id: 6,
+            purchaseId: 4,
+            materialId: 1,
+            materialName: 'Papel holográfico para stickers',
+            quantity: 1 / 3,
+            unitPrice: 31,
+            subtotal: 186,
+            unitType: 'contenedor',
+            unitName: 'paquete',
+          ),
+        ],
+      );
+      await repository.exportPurchasesExcel(title: 'Compras', rows: [row]);
+      final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
+      final line = xl.Excel.decodeBytes(bytes).tables['Detalle']!.rows[1];
+
+      expect(_cellNum(line[3]!.value), closeTo(1 / 3, 1e-6));
+      expect(line[3]!.cellStyle?.numberFormat, isNot(xl.NumFormat.standard_2));
+      expect(line[4]!.cellStyle?.numberFormat, xl.NumFormat.standard_2);
+      expect(line[5]!.cellStyle?.numberFormat, xl.NumFormat.standard_2);
+    });
+
     test('Excel: without any material lines there is no "Detalle" sheet', () async {
       await repository.exportPurchasesExcel(title: 'Solo gastos', rows: [generalExpense()]);
       final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
@@ -649,7 +729,7 @@ void main() {
 
   group('export file names are readable and date-based', () {
     String lastSharedName() => File(fakeShare.shareCalls.last.single.path).uri.pathSegments.last;
-    final today = formatDateForFileName(DateTime.now());
+    final today = formatDateForFileName(appNow());
 
     test('sales PDF: Reporte_de_Ventas_<yyyy-MM-dd>.pdf (no epoch timestamp)', () async {
       await repository.exportSalesPdf(
@@ -698,7 +778,7 @@ void main() {
         await File(fakeShare.shareCalls.last.single.path).readAsBytes(),
       ).text;
       expect(text, contains('01/01/2024'));
-      expect(text, contains('Generado el ${formatDate(DateTime.now())}'));
+      expect(text, contains('Generado el ${formatDate(appNow())}'));
 
       await repository.exportPurchasesPdf(
         title: 'Reporte de Compras',

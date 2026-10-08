@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product_model.dart';
+import 'status_filter.dart';
 
 // Qué precio(s) muestran las tarjetas de Productos (lista y catálogo).
 // El orden de las opciones es el del menú: Ambos, Precio A, Precio B, Sin precio.
 enum PriceDisplay { both, a, b, none }
 
-// Búsqueda, categoría y precio mostrado de Productos. El filtro de precio se
+// Búsqueda, categoría, estado y precio mostrado de Productos. El filtro de precio se
 // controla desde la vista de lista; el catálogo solo lo refleja.
 class ProductCatalogFilter {
   final String query;
@@ -13,11 +14,14 @@ class ProductCatalogFilter {
   final int? categoryId;
   // Por defecto "Ambos", en la lista y en el catálogo.
   final PriceDisplay priceDisplay;
+  // Activos, inactivos o todos (por defecto, todos).
+  final StatusFilter status;
 
   const ProductCatalogFilter({
     this.query = '',
     this.categoryId,
     this.priceDisplay = PriceDisplay.both,
+    this.status = StatusFilter.all,
   });
 
   ProductCatalogFilter copyWith({
@@ -25,15 +29,20 @@ class ProductCatalogFilter {
     int? categoryId,
     bool clearCategory = false,
     PriceDisplay? priceDisplay,
+    StatusFilter? status,
   }) {
     return ProductCatalogFilter(
       query: query ?? this.query,
       categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
       priceDisplay: priceDisplay ?? this.priceDisplay,
+      status: status ?? this.status,
     );
   }
 
-  bool get isFiltering => query.trim().isNotEmpty || categoryId != null;
+  bool get isFiltering =>
+      query.trim().isNotEmpty ||
+      categoryId != null ||
+      status != StatusFilter.all;
 
   // Productos que cumplen la búsqueda (nombre o descripción) y la categoría,
   // en el orden en que llegan (alfabético por nombre desde el repositorio).
@@ -41,6 +50,7 @@ class ProductCatalogFilter {
     final q = query.trim().toLowerCase();
     return products.where((p) {
       if (categoryId != null && p.categoryId != categoryId) return false;
+      if (!status.matches(p.isActive)) return false;
       if (q.isEmpty) return true;
       return p.name.toLowerCase().contains(q) ||
           (p.description ?? '').toLowerCase().contains(q);

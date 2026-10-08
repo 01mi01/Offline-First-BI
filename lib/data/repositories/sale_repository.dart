@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart';
+import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
 import '../../models/default_records.dart';
 import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../models/sale_item_model.dart';
+import '../../config/app_clock.dart';
 
 class SaleRepository {
   final AppDatabase database;
@@ -24,15 +26,16 @@ class SaleRepository {
       if (product != null) {
         final priceType = priceTypes[entry.key] ?? 'A';
         final unitPrice = priceType == 'B' ? product.priceB : product.priceA;
-        total += unitPrice * entry.value;
+        // Cada línea y la suma van a dos decimales (centavos).
+        total += round2(unitPrice * entry.value);
       }
     }
-    return total;
+    return round2(total);
   }
 
   // Calcula el total final aplicando el descuento
   double calculateTotal(double subtotal, double discount) {
-    return (subtotal - discount).clamp(0, double.infinity);
+    return round2((subtotal - discount).clamp(0, double.infinity).toDouble());
   }
 
   static const String negativeDiscountMessage =
@@ -80,7 +83,7 @@ class SaleRepository {
       database.clients,
     )..where((c) => c.name.equals(DefaultRecords.client))).getSingleOrNull();
     if (existing != null) return existing.id;
-    final now = DateTime.now();
+    final now = appNow();
     return database.into(database.clients).insert(
       ClientsCompanion.insert(
         name: DefaultRecords.client,
@@ -160,6 +163,10 @@ class SaleRepository {
     if (discount < 0 || discount.isNaN) {
       throw ArgumentError(negativeDiscountMessage);
     }
+    // Todo importe se guarda a dos decimales (centavos).
+    totalAmount = round2(totalAmount);
+    discount = round2(discount);
+    finalAmount = round2(finalAmount);
     await database.transaction(() async {
       final resolvedClientId = clientId ?? await _defaultClientId();
       // Inserta la venta
@@ -182,7 +189,7 @@ class SaleRepository {
       for (final item in items) {
         final productId = item['productId'] as int;
         final quantity = item['quantity'] as int;
-        final unitPrice = item['unitPrice'] as double;
+        final unitPrice = round2(item['unitPrice'] as double);
         final priceType = item['priceType'] as String? ?? 'A';
 
         await database
@@ -194,7 +201,7 @@ class SaleRepository {
                 quantity: quantity,
                 unitPrice: unitPrice,
                 priceType: Value(priceType),
-                subtotal: quantity * unitPrice,
+                subtotal: round2(quantity * unitPrice),
               ),
             );
 
@@ -210,7 +217,7 @@ class SaleRepository {
           )..where((p) => p.id.equals(productId))).write(
             ProductsCompanion(
               stock: Value(newStock < 0 ? 0 : newStock),
-              updatedAt: Value(DateTime.now()),
+              updatedAt: Value(appNow()),
             ),
           );
         }
@@ -243,12 +250,12 @@ class SaleRepository {
         )..where((p) => p.id.equals(item.productId))).write(
           ProductsCompanion(
             stock: Value(product.stock + item.quantity),
-            updatedAt: Value(DateTime.now()),
+            updatedAt: Value(appNow()),
           ),
         );
       }
 
-      final now = DateTime.now();
+      final now = appNow();
       await (database.update(
         database.sales,
       )..where((s) => s.id.equals(saleId))).write(
@@ -277,6 +284,10 @@ class SaleRepository {
     required List<Map<String, dynamic>> newItems,
   }) async {
     if (discount < 0 || discount.isNaN) return negativeDiscountMessage;
+    // Todo importe se guarda a dos decimales (centavos).
+    totalAmount = round2(totalAmount);
+    discount = round2(discount);
+    finalAmount = round2(finalAmount);
     return database.transaction(() async {
       final current = await (database.select(
         database.sales,
@@ -302,7 +313,7 @@ class SaleRepository {
           )..where((p) => p.id.equals(oldItem.productId))).write(
             ProductsCompanion(
               stock: Value(product.stock + oldItem.quantity),
-              updatedAt: Value(DateTime.now()),
+              updatedAt: Value(appNow()),
             ),
           );
         }
@@ -327,7 +338,7 @@ class SaleRepository {
           finalAmount: Value(finalAmount),
           date: Value(date),
           notes: Value(notes),
-          updatedAt: Value(DateTime.now()),
+          updatedAt: Value(appNow()),
         ),
       );
 
@@ -335,7 +346,7 @@ class SaleRepository {
       for (final item in newItems) {
         final productId = item['productId'] as int;
         final quantity = item['quantity'] as int;
-        final unitPrice = item['unitPrice'] as double;
+        final unitPrice = round2(item['unitPrice'] as double);
         final priceType = item['priceType'] as String? ?? 'A';
 
         await database
@@ -347,7 +358,7 @@ class SaleRepository {
                 quantity: quantity,
                 unitPrice: unitPrice,
                 priceType: Value(priceType),
-                subtotal: quantity * unitPrice,
+                subtotal: round2(quantity * unitPrice),
               ),
             );
 
@@ -362,7 +373,7 @@ class SaleRepository {
           )..where((p) => p.id.equals(productId))).write(
             ProductsCompanion(
               stock: Value(newStock < 0 ? 0 : newStock),
-              updatedAt: Value(DateTime.now()),
+              updatedAt: Value(appNow()),
             ),
           );
         }

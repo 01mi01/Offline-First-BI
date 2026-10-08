@@ -17,7 +17,9 @@ import 'application/purchase_provider.dart';
 import 'application/sale_provider.dart';
 import 'application/supplier_provider.dart';
 import 'application/unit_provider.dart';
+import 'config/rounding.dart';
 import 'main.dart' show MyApp;
+import 'config/app_clock.dart';
 
 // (nombre, información de contacto)
 const seedClients = <(String, String)>[
@@ -58,20 +60,21 @@ const seedSuppliers = <(String, String)>[
   ),
 ];
 
-// (ciudad - zona, país)
-const seedLocations = <(String, String)>[
-  ('La Paz - Calacoto', 'Bolivia'), // 0
-  ('La Paz - San Miguel', 'Bolivia'), // 1
-  ('La Paz - Achumani', 'Bolivia'), // 2
-  ('La Paz - Los Pinos', 'Bolivia'), // 3
-  ('La Paz - Irpavi', 'Bolivia'), // 4
-  ('La Paz - Bolognia', 'Bolivia'), // 5
-  ('Santa Cruz - Equipetrol', 'Bolivia'), // 6
-  ('Santa Cruz - Las Palmas', 'Bolivia'), // 7
-  ('Santa Cruz - Urubó', 'Bolivia'), // 8
-  ('Santa Cruz - Sirari', 'Bolivia'), // 9
-  ('Cochabamba - Campo Ferial FEXCO', 'Bolivia'), // 10
-  ('Lima - Miraflores', 'Perú'), // 11
+// (ciudad, zona, país). La zona va a la descripción de la ubicación; la ciudad
+// queda sola, así el filtro "Ciudad" lista cada ciudad una vez.
+const seedLocations = <(String, String, String)>[
+  ('La Paz', 'Calacoto', 'Bolivia'), // 0
+  ('La Paz', 'San Miguel', 'Bolivia'), // 1
+  ('La Paz', 'Achumani', 'Bolivia'), // 2
+  ('La Paz', 'Los Pinos', 'Bolivia'), // 3
+  ('La Paz', 'Irpavi', 'Bolivia'), // 4
+  ('La Paz', 'Bolognia', 'Bolivia'), // 5
+  ('Santa Cruz', 'Equipetrol', 'Bolivia'), // 6
+  ('Santa Cruz', 'Las Palmas', 'Bolivia'), // 7
+  ('Santa Cruz', 'Urubó', 'Bolivia'), // 8
+  ('Santa Cruz', 'Sirari', 'Bolivia'), // 9
+  ('Cochabamba', 'Campo Ferial FEXCO', 'Bolivia'), // 10
+  ('Lima', 'Miraflores', 'Perú'), // 11
 ];
 
 class SeedCategory {
@@ -155,7 +158,8 @@ const seedCanceledUsage = (7, 8);
 
 const seedInactiveClient = 'Robert Clark';
 const seedInactiveSupplier = 'Northgate Trading';
-const seedInactiveLocation = 'Santa Cruz - Sirari';
+// (ciudad, zona) de la ubicación que se deja desactivada.
+const seedInactiveLocation = ('Santa Cruz', 'Sirari');
 const seedInactiveMaterial = 'Base metálica pequeña para pines';
 const seedInactiveCategory = 'Libros';
 const seedInactiveProduct = 'Stickers holográficos';
@@ -678,7 +682,7 @@ DateTime _at(DateTime today, int dayOffset) =>
 // Carga los datos de ejemplo. Devuelve false (sin tocar nada) si ya hay
 // productos; lanza si algo falla.
 Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
-  final today = now ?? DateTime.now();
+  final today = now ?? appNow();
   DateTime at(int d) => _at(today, d);
 
   await c.read(productProvider.notifier).load();
@@ -711,8 +715,10 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
         .save(name: name, contactInfo: contact);
     if (error != null) throw StateError('proveedor: $error');
   }
-  for (final (name, country) in seedLocations) {
-    await c.read(locationProvider.notifier).save(city: name, country: country);
+  for (final (city, zone, country) in seedLocations) {
+    await c
+        .read(locationProvider.notifier)
+        .save(city: city, country: country, description: zone);
   }
   final clientId = [
     for (final (name, _) in seedClients)
@@ -723,8 +729,12 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
       c.read(supplierProvider).suppliers.firstWhere((x) => x.name == name).id,
   ];
   final locationId = [
-    for (final (name, _) in seedLocations)
-      c.read(locationProvider).locations.firstWhere((x) => x.city == name).id,
+    for (final (city, zone, _) in seedLocations)
+      c
+          .read(locationProvider)
+          .locations
+          .firstWhere((x) => x.city == city && x.description == zone)
+          .id,
   ];
 
   // Productos: el stock inicial deja justo "remaining" tras las ventas.
@@ -824,9 +834,9 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
           clientId: s.client == null ? null : clientId[s.client!],
           locationId: s.location == null ? null : locationId[s.location!],
           eventId: s.event == null ? null : eventId[s.event!],
-          totalAmount: gross,
-          discount: s.discount,
-          finalAmount: gross - s.discount,
+          totalAmount: round2(gross),
+          discount: round2(s.discount),
+          finalAmount: round2(gross - s.discount),
           date: at(s.day),
           items: [
             for (final l in s.lines)
@@ -905,13 +915,18 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
   final location = c
       .read(locationProvider)
       .locations
-      .firstWhere((x) => x.city == seedInactiveLocation);
+      .firstWhere(
+        (x) =>
+            x.city == seedInactiveLocation.$1 &&
+            x.description == seedInactiveLocation.$2,
+      );
   await c
       .read(locationProvider.notifier)
       .save(
         id: location.id,
         city: location.city,
         country: location.country,
+        description: location.description,
         isActive: false,
       );
   final material = c

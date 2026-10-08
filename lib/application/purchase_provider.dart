@@ -106,7 +106,7 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     required List<Map<String, dynamic>> newItems,
   }) async {
     try {
-      await repository.editPurchase(
+      final error = await repository.editPurchase(
         purchaseId: purchaseId,
         supplierId: supplierId,
         locationId: locationId,
@@ -120,7 +120,21 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
       );
       await load();
       ref.invalidate(materialRepositoryProvider);
-      return null;
+      return error;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  // Cancela una compra: resta del stock lo comprado y la deja marcada como
+  // cancelada. Devuelve un mensaje de error (p. ej. si algún material ya se
+  // usó), o null si salió bien.
+  Future<String?> cancelPurchase(int purchaseId) async {
+    try {
+      final error = await repository.cancelPurchase(purchaseId);
+      await load();
+      ref.invalidate(materialRepositoryProvider);
+      return error;
     } catch (e) {
       return e.toString();
     }

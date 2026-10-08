@@ -1,3 +1,4 @@
+import '../config/rounding.dart';
 import 'purchase_item_model.dart';
 import 'sale_item_model.dart';
 import 'sale_model.dart';
@@ -51,7 +52,7 @@ class SaleLineReport {
   double get subtotal => item.subtotal;
 
   // Monto neto de la línea: su subtotal menos su parte del descuento.
-  double get netAmount => item.subtotal - discountShare;
+  double get netAmount => round2(item.subtotal - discountShare);
 }
 
 // Venta enriquecida con los nombres de sus entidades relacionadas.
@@ -75,16 +76,17 @@ class SaleReportRow {
     this.lines,
   });
 
-  double get subtotalAmount =>
-      lines?.fold<double>(0, (sum, l) => sum + l.subtotal) ?? sale.totalAmount;
+  double get subtotalAmount => round2(
+    lines?.fold<double>(0, (sum, l) => sum + l.subtotal) ?? sale.totalAmount,
+  );
 
-  double get discountAmount =>
-      lines?.fold<double>(0, (sum, l) => sum + l.discountShare) ??
-      sale.discount;
+  double get discountAmount => round2(
+    lines?.fold<double>(0, (sum, l) => sum + l.discountShare) ?? sale.discount,
+  );
 
-  double get netAmount =>
-      lines?.fold<double>(0, (sum, l) => sum + l.netAmount) ??
-      sale.finalAmount;
+  double get netAmount => round2(
+    lines?.fold<double>(0, (sum, l) => sum + l.netAmount) ?? sale.finalAmount,
+  );
 }
 
 // Compra enriquecida con los nombres de sus entidades relacionadas.

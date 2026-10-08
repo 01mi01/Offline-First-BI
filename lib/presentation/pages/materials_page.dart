@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
+import '../../config/rounding.dart';
 import '../../application/product_provider.dart';
 import '../../application/search_filter.dart';
 import '../../application/status_filter.dart';
@@ -139,6 +140,10 @@ class MaterialsListTab extends ConsumerWidget {
                             .where((u) => u.id == m.unitId)
                             .firstOrNull
                             ?.name,
+                        unitType: units
+                            .where((u) => u.id == m.unitId)
+                            .firstOrNull
+                            ?.type,
                         onEdit: () => _showDialog(context, m),
                       );
                     },
@@ -341,7 +346,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                                 spacing: AppSpacing.s16,
                                 children: [
                                   for (final piece in [
-                                    'Cantidad: ${formatNumber(entry.quantityUsed)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
+                                    'Cantidad: ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
                                     'Bs. ${entry.pricePerUnit.toStringAsFixed(2)} / ${entry.materialUnitName}',
                                   ])
                                     Text(
@@ -444,18 +449,26 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
     }
     if (!usesFractions && !_formKey.currentState!.validate()) return;
 
-    final quantity = usesFractions
-        ? _fractionQuantity
-        : double.tryParse(_quantityController.text.trim()) ?? 0;
+    // Lo escrito con más decimales de los permitidos se redondea (dos en
+    // medidas; fracciones sin ruido).
+    final quantity = roundQuantity(
+      usesFractions
+          ? _fractionQuantity
+          : double.tryParse(_quantityController.text.trim()) ?? 0,
+      unitType: unit?.type ?? 'medida',
+    );
 
     if (quantity <= 0) {
       setState(() => _error = 'Selecciona una cantidad');
       return;
     }
-    if (material != null && quantity > material.stock) {
+    // Se compara el stock ya redondeado: el ruido no bloquea ni deja pasar.
+    if (material != null &&
+        quantity >
+            roundQuantity(material.stock, unitType: unit?.type ?? 'medida')) {
       setState(
         () => _error =
-            'Cantidad máxima disponible: ${formatNumber(material.stock)}',
+            'Cantidad máxima disponible: ${_qty(material.stock, unit?.type, unit?.name)}',
       );
       return;
     }
@@ -541,7 +554,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                 Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.s4),
                   child: Text(
-                    'Stock disponible: ${formatNumber(selectedMaterial.stock)}${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
+                    'Stock disponible: ${_qty(selectedMaterial.stock, selectedUnit?.type, selectedUnit?.name)}${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
                     style: Theme.of(
                       context,
                     ).textTheme.labelMedium?.copyWith(
@@ -699,7 +712,11 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
     super.initState();
     // Precarga la cantidad actual formateada
     _quantityController = TextEditingController(
-      text: formatNumber(widget.entry.quantityUsed),
+      text: _qty(
+        widget.entry.quantityUsed,
+        widget.entry.materialUnitType,
+        widget.entry.materialUnitName,
+      ),
     );
     _fractionQuantity = widget.entry.quantityUsed;
     _quantityController.addListener(_clearError);
@@ -726,7 +743,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
       context,
       title: '¿Cancelar registro de uso?',
       message:
-          'Se devolverá ${formatNumber(entry.quantityUsed)} '
+          'Se devolverá ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} '
           '${unitLabel(entry.materialUnitName, entry.quantityUsed)} de '
           '"${entry.materialName}" al stock.',
       confirmLabel: 'Cancelar registro',
@@ -781,7 +798,15 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
         .firstOrNull;
 
     // Stock disponible = stock actual + cantidad original del registro
-    final availableStock = (material?.stock ?? 0) + widget.entry.quantityUsed;
+    final availableStock = roundQuantity(
+      (material?.stock ?? 0) + widget.entry.quantityUsed,
+      unitType: widget.entry.materialUnitType,
+    );
+    final availableText = _qty(
+      availableStock,
+      widget.entry.materialUnitType,
+      widget.entry.materialUnitName,
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -830,7 +855,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                 ),
                 const SizedBox(height: AppSpacing.s6),
                 Text(
-                  'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                  'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
                   style: Theme.of(
                     context,
                   ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
@@ -840,9 +865,9 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                   controller: _quantityController,
                   labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
                   helperText:
-                      'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                      'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
                   extraValidator: (qty) => qty > availableStock
-                      ? 'Máximo: ${formatNumber(availableStock)}'
+                      ? 'Máximo: $availableText'
                       : null,
                 )
               else
@@ -856,14 +881,14 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                     labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
                     hintText: '0',
                     helperText:
-                        'Máximo disponible: ${formatNumber(availableStock)} ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                        'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
                   ),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Campo requerido';
                     final qty = double.tryParse(v);
                     if (qty == null || qty <= 0) return 'Cantidad inválida';
                     if (qty > availableStock) {
-                      return 'Máximo: ${formatNumber(availableStock)}';
+                      return 'Máximo: $availableText';
                     }
                     return null;
                   },
@@ -970,11 +995,13 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
 class _MaterialCard extends StatelessWidget {
   final MaterialModel material;
   final String? unitName;
+  final String? unitType;
   final VoidCallback onEdit;
 
   const _MaterialCard({
     required this.material,
     required this.unitName,
+    required this.unitType,
     required this.onEdit,
   });
 
@@ -1018,7 +1045,7 @@ class _MaterialCard extends StatelessWidget {
                   runSpacing: AppSpacing.s2,
                   children: [
                     Text(
-                      'Stock: ${formatNumber(material.stock)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}',
+                      'Stock: ${_qty(material.stock, unitType, unitName)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}',
                       style: Theme.of(context).textTheme.displaySmall
                           ?.copyWith(
                             color: AppColors.primary,
@@ -1057,3 +1084,11 @@ inactiveLabel: 'Inactivo',
     );
   }
 }
+
+// Cantidad de un material según su unidad: dos decimales en medidas, fracciones
+// exactas en unidades por fracciones y enteros en piezas (ver formatQuantity).
+String _qty(double value, String? unitType, String? unitName) => formatMaterialQuantity(
+  value,
+  unitType: unitType ?? 'medida',
+  unitName: unitName ?? '',
+);

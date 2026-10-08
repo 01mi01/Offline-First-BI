@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../db/app_database.dart';
+import '../../config/app_clock.dart';
 
 // Almacenamiento permanente de las imágenes de productos y categorías.
 //
@@ -49,7 +50,7 @@ class ImageStorage {
     final dir = await imagesDirectory();
     final extension = p.extension(sourcePath);
     final name =
-        '${DateTime.now().microsecondsSinceEpoch}_${_random.nextInt(1 << 32)}'
+        '${appNow().microsecondsSinceEpoch}_${_random.nextInt(1 << 32)}'
         '$extension';
     final copy = await File(sourcePath).copy(p.join(dir.path, name));
     return copy.path;

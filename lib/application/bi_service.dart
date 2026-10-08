@@ -1,3 +1,4 @@
+import '../config/rounding.dart';
 import '../models/bi_config.dart';
 import '../models/bi_models.dart';
 import '../models/category_model.dart';
@@ -13,6 +14,7 @@ import '../models/sale_item_model.dart';
 import '../models/sale_model.dart';
 import '../models/unit_model.dart';
 import 'date_range_filter.dart';
+import '../config/app_clock.dart';
 
 // Agregación de los indicadores de Business Intelligence.
 //
@@ -64,7 +66,7 @@ class BiService {
       for (final id in amounts.keys)
         BiEntry(
           label: names[id] ?? fallbackNames[id] ?? 'Producto',
-          amount: amounts[id]!,
+          amount: round2(amounts[id]!),
           quantity: quantities[id]!,
           refId: id,
         ),
@@ -86,7 +88,7 @@ class BiService {
       for (final name in amounts.keys)
         BiEntry(
           label: name,
-          amount: amounts[name]!,
+          amount: round2(amounts[name]!),
           quantity: quantities[name]!,
         ),
     ]);
@@ -102,6 +104,7 @@ class BiService {
   }) {
     final materialById = {for (final m in materials) m.id: m};
     final unitNames = {for (final u in units) u.id: u.name};
+    final unitTypes = {for (final u in units) u.id: u.type};
     final amounts = <int, double>{};
     final quantities = <int, double>{};
     final fallbackNames = <int, String>{};
@@ -119,9 +122,15 @@ class BiService {
       for (final id in amounts.keys)
         BiEntry(
           label: materialById[id]?.name ?? fallbackNames[id] ?? 'Material',
-          amount: amounts[id]!,
-          quantity: quantities[id]!,
+          amount: round2(amounts[id]!),
+          // Cantidad según el tipo de unidad: dos decimales, o fracciones
+          // exactas (solo sin ruido) en las unidades por fracciones.
+          quantity: roundQuantity(
+            quantities[id]!,
+            unitType: unitTypes[materialById[id]?.unitId] ?? 'medida',
+          ),
           unit: unitNames[materialById[id]?.unitId],
+          unitType: unitTypes[materialById[id]?.unitId],
           refId: id,
         ),
     ]);
@@ -144,7 +153,7 @@ class BiService {
         if (amounts.containsKey(type))
           BiEntry(
             label: 'Precio $type',
-            amount: amounts[type]!,
+            amount: round2(amounts[type]!),
             quantity: quantities[type]!,
           ),
     ];
@@ -168,7 +177,7 @@ class BiService {
       for (final id in amounts.keys)
         BiEntry(
           label: names[id]!,
-          amount: amounts[id]!,
+          amount: round2(amounts[id]!),
           quantity: counts[id]!,
           refId: id,
         ),
@@ -221,7 +230,7 @@ class BiService {
       return const BiTimeSeries(granularity: BiGranularity.day, buckets: []);
     }
 
-    final today = dateOnly(now ?? DateTime.now());
+    final today = dateOnly(now ?? appNow());
     var first = dates.reduce((a, b) => a.isBefore(b) ? a : b);
     if (filters.startDate != null) first = dateOnly(filters.startDate!);
     var last = today;
@@ -257,11 +266,11 @@ class BiService {
       buckets.add(
         BiTimeBucket(
           start: cursor,
-          ingresos: ingresos[cursor] ?? 0,
-          gastos: gastos[cursor] ?? 0,
+          ingresos: round2(ingresos[cursor] ?? 0),
+          gastos: round2(gastos[cursor] ?? 0),
           ventas: ventas[cursor] ?? 0,
-          bruto: bruto[cursor] ?? 0,
-          descuentos: descuentos[cursor] ?? 0,
+          bruto: round2(bruto[cursor] ?? 0),
+          descuentos: round2(descuentos[cursor] ?? 0),
         ),
       );
       cursor = _nextBucket(cursor, granularity);
@@ -332,8 +341,8 @@ class BiService {
       entries.add(
         BiMarginEntry(
           name: product?.name ?? stat.name,
-          revenue: stat.revenue,
-          cost: unitCost * stat.units,
+          revenue: round2(stat.revenue),
+          cost: round2(unitCost * stat.units),
           units: stat.units,
         ),
       );
@@ -426,7 +435,7 @@ class BiService {
       for (var i = 0; i < 7; i++)
         BiWeekdayEntry(
           weekday: DateTime.monday + i,
-          ingresos: ingresos[i],
+          ingresos: round2(ingresos[i]),
           ventas: ventas[i],
         ),
     ];
@@ -436,15 +445,15 @@ class BiService {
   BiTicketReport ticket({required List<SaleReportRow> rows}) {
     return BiTicketReport(
       salesCount: rows.length,
-      total: rows.fold(0.0, (sum, r) => sum + r.netAmount),
+      total: round2(rows.fold(0.0, (sum, r) => sum + r.netAmount)),
     );
   }
 
   // Descuentos dados frente a las ventas brutas (antes de descontar).
   BiDiscountReport discountImpact({required List<SaleReportRow> rows}) {
     return BiDiscountReport(
-      totalDiscount: rows.fold(0.0, (sum, r) => sum + r.discountAmount),
-      grossSales: rows.fold(0.0, (sum, r) => sum + r.subtotalAmount),
+      totalDiscount: round2(rows.fold(0.0, (sum, r) => sum + r.discountAmount)),
+      grossSales: round2(rows.fold(0.0, (sum, r) => sum + r.subtotalAmount)),
       salesCount: rows.length,
       discountedSales: rows.where((r) => r.discountAmount > 0).length,
     );
@@ -484,8 +493,8 @@ class BiService {
       for (final id in {...income.keys, ...expenses.keys})
         BiEventProfitEntry(
           name: names[id] ?? fallbackNames[id] ?? 'Evento',
-          income: income[id] ?? 0,
-          expenses: expenses[id] ?? 0,
+          income: round2(income[id] ?? 0),
+          expenses: round2(expenses[id] ?? 0),
           salesCount: salesCount[id] ?? 0,
           purchaseCount: purchaseCount[id] ?? 0,
         ),
@@ -520,8 +529,8 @@ class BiService {
       entries.add(
         BiReturnEntry(
           name: product?.name ?? stat.name,
-          revenue: stat.revenue,
-          cost: unitCost * stat.units,
+          revenue: round2(stat.revenue),
+          cost: round2(unitCost * stat.units),
           units: stat.units,
         ),
       );
@@ -544,7 +553,7 @@ class BiService {
   }) {
     final dates = recordDates.map(dateOnly).toList();
     if (dates.isEmpty) return null;
-    final today = dateOnly(now ?? DateTime.now());
+    final today = dateOnly(now ?? appNow());
     var first = dates.reduce((a, b) => a.isBefore(b) ? a : b);
     if (filters.startDate != null) first = dateOnly(filters.startDate!);
     var last = today;
@@ -565,7 +574,7 @@ class BiService {
     required ReportFilters filters,
     DateTime? now,
   }) {
-    final today = dateOnly(now ?? DateTime.now());
+    final today = dateOnly(now ?? appNow());
     if (series.isEmpty) {
       return const BiProjection.unavailable('No hay ventas en el periodo.');
     }
@@ -616,7 +625,8 @@ class BiService {
     final denominator = n * sumXX - sumX * sumX;
     final slope = denominator == 0 ? 0.0 : (n * sumXY - sumX * sumY) / denominator;
     final intercept = (sumY - slope * sumX) / n;
-    double at(num x) => (intercept + slope * x).clamp(0, double.infinity);
+    double at(num x) =>
+        round2((intercept + slope * x).clamp(0, double.infinity).toDouble());
 
     final fitted = [
       for (var i = 0; i < used; i++)
@@ -637,7 +647,7 @@ class BiService {
       granularity: g,
       fitted: fitted,
       projected: projected,
-      slope: slope,
+      slope: round2(slope),
     );
   }
 
@@ -687,8 +697,8 @@ class BiService {
     return BiEventComparison(
       eventDays: eventDays.length,
       regularDays: totalDays - eventDays.length,
-      eventRevenue: eventRevenue,
-      regularRevenue: regularRevenue,
+      eventRevenue: round2(eventRevenue),
+      regularRevenue: round2(regularRevenue),
       eventSales: eventSales,
       regularSales: regularSales,
     );
@@ -700,9 +710,11 @@ class BiService {
     required double revenue,
   }) {
     return BiMaterialCost(
-      materialSpend: purchases
-          .where((p) => p.isMaterial)
-          .fold(0.0, (sum, p) => sum + p.totalAmount),
+      materialSpend: round2(
+        purchases
+            .where((p) => p.isMaterial)
+            .fold(0.0, (sum, p) => sum + p.totalAmount),
+      ),
       revenue: revenue,
     );
   }
@@ -718,7 +730,7 @@ class BiService {
     required int windowDays,
     DateTime? now,
   }) {
-    final today = dateOnly(now ?? DateTime.now());
+    final today = dateOnly(now ?? appNow());
     final cutoff = DateTime(today.year, today.month, today.day - (windowDays - 1));
 
     final lastSale = <int, DateTime>{};
@@ -835,12 +847,12 @@ class BiService {
     for (final id in ids) {
       final product = byId[id]!;
       final stat = stats[id];
-      final revenue = stat?.revenue ?? 0;
+      final revenue = round2(stat?.revenue ?? 0);
       final units = stat?.units ?? 0;
       final unitCost = product.productionCost;
       final marginPct = unitCost == null || revenue <= 0
           ? (unitCost == null ? null : 0.0)
-          : (revenue - unitCost * units) / revenue * 100;
+          : round2((revenue - round2(unitCost * units)) / revenue * 100);
       final available = units + product.stock;
       result.add(
         BiRadarProduct(
@@ -874,14 +886,15 @@ class BiService {
     BiTimeSeries series,
     Map<DateTime, double> amounts,
     Map<DateTime, double> quantities,
-    Map<DateTime, int> counts,
-  ) {
+    Map<DateTime, int> counts, {
+    String unitType = 'medida',
+  }) {
     return [
       for (final b in series.buckets)
         BiDrillBucket(
           start: b.start,
-          amount: amounts[b.start] ?? 0,
-          quantity: quantities[b.start] ?? 0,
+          amount: round2(amounts[b.start] ?? 0),
+          quantity: roundQuantity(quantities[b.start] ?? 0, unitType: unitType),
           count: counts[b.start] ?? 0,
         ),
     ];
@@ -924,7 +937,7 @@ class BiService {
       name: name ?? fallbackName ?? 'Producto',
       granularity: g,
       buckets: _drillBuckets(series, amounts, quantities, counts),
-      revenue: revenue,
+      revenue: round2(revenue),
       units: units,
       salesCount: salesCount,
     );
@@ -953,14 +966,14 @@ class BiService {
       for (final id in amounts.keys)
         BiEntry(
           label: names[id] ?? fallbackNames[id] ?? 'Producto',
-          amount: amounts[id]!,
+          amount: round2(amounts[id]!),
           quantity: quantities[id]!,
           refId: id,
         ),
     ]);
     return BiCategoryDetail(
       name: categoryName,
-      revenue: ranked.fold(0.0, (s, e) => s + e.amount),
+      revenue: round2(ranked.fold(0.0, (s, e) => s + e.amount)),
       units: ranked.fold(0.0, (s, e) => s + e.quantity),
       products: ranked,
     );
@@ -1057,13 +1070,22 @@ class BiService {
     }
     final material = {for (final m in materials) m.id: m}[materialId];
     final unitName = {for (final u in units) u.id: u.name}[material?.unitId];
+    final unitType =
+        {for (final u in units) u.id: u.type}[material?.unitId] ?? 'medida';
     return BiMaterialDetail(
       name: material?.name ?? fallbackName ?? 'Material',
       unit: unitName,
+      unitType: unitType,
       granularity: g,
-      buckets: _drillBuckets(series, amounts, quantities, counts),
-      spend: spend,
-      quantity: quantity,
+      buckets: _drillBuckets(
+        series,
+        amounts,
+        quantities,
+        counts,
+        unitType: unitType,
+      ),
+      spend: round2(spend),
+      quantity: roundQuantity(quantity, unitType: unitType),
       purchaseCount: purchaseCount,
     );
   }

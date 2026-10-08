@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/event_provider.dart';
+import '../../application/location_options.dart';
 import '../../application/location_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/app_theme.dart';
@@ -10,6 +11,7 @@ import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/transaction_date_field.dart';
+import '../../config/app_clock.dart';
 
 class EventDialog extends ConsumerStatefulWidget {
   final EventModel? event;
@@ -52,7 +54,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     dismissKeyboard();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _startDate ?? DateTime.now(),
+      initialDate: _startDate ?? appNow(),
       firstDate: transactionFirstDate,
       lastDate: transactionLastDate,
       builder: (ctx, child) => Theme(
@@ -75,7 +77,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     dismissKeyboard();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _endDate ?? _startDate ?? DateTime.now(),
+      initialDate: _endDate ?? _startDate ?? appNow(),
       firstDate: _startDate ?? transactionFirstDate,
       lastDate: transactionLastDate,
       builder: (ctx, child) => Theme(
@@ -207,7 +209,12 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                 options: [
                   const PickerOption<int>(null, 'Sin ubicación'),
                   for (final l in locations)
-                    PickerOption<int>(l.id, '${l.city}, ${l.country}'),
+                    PickerOption<int>(
+                              l.id,
+                              locationLabel(l),
+                              subtitle: locationZone(l),
+                              selectedLabel: locationLabelWithZone(l),
+                            ),
                 ],
                 onChanged: (val) {
                   setState(() => _selectedLocationId = val);

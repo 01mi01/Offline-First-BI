@@ -50,8 +50,13 @@ final purchaseItemsMapProvider =
 final filteredPurchasesProvider = Provider.autoDispose
     .family<List<PurchaseModel>, ReportFilters>((ref, filters) {
   final purchases = ref.watch(purchaseProvider).purchases;
+  final locations = ref.watch(locationProvider).locations;
   final service = ref.watch(reportServiceProvider);
-  return service.filterPurchases(purchases: purchases, filters: filters);
+  return service.filterPurchases(
+    purchases: purchases,
+    filters: filters,
+    locations: locations,
+  );
 });
 
 final purchasesSummaryProvider = Provider.autoDispose
@@ -78,6 +83,7 @@ final saleReportRowsProvider = Provider.autoDispose
     products: products,
     saleItemsMap: saleItemsMap,
     filters: filters,
+    locations: locations,
   );
   return service.buildSaleRows(
     sales: filtered,

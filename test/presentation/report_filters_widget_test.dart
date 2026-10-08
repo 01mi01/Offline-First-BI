@@ -105,11 +105,14 @@ void main() {
       await pumpHarness(tester, activeTab: 0);
 
       expect(find.text('Cliente'), findsOneWidget);
-      expect(find.text('Categoría'), findsOneWidget);
+      // Categoría es un desplegable con todas las categorías.
+      expect(find.text('Todas las categorías'), findsOneWidget);
       expect(find.text('Producto'), findsOneWidget);
       expect(find.text('Tipo de precio'), findsOneWidget);
       expect(find.text('Evento'), findsOneWidget);
       expect(find.text('Ubicación'), findsOneWidget);
+      expect(find.text('Todos los países'), findsOneWidget);
+      expect(find.text('Todas las ciudades'), findsOneWidget);
       expect(find.text('Proveedor'), findsNothing);
     });
 
@@ -119,8 +122,10 @@ void main() {
       expect(find.text('Proveedor'), findsOneWidget);
       expect(find.text('Evento'), findsOneWidget);
       expect(find.text('Ubicación'), findsOneWidget);
+      expect(find.text('Todos los países'), findsOneWidget);
+      expect(find.text('Todas las ciudades'), findsOneWidget);
       expect(find.text('Cliente'), findsNothing);
-      expect(find.text('Categoría'), findsNothing);
+      expect(find.text('Todas las categorías'), findsNothing);
       expect(find.text('Producto'), findsNothing);
       expect(find.text('Tipo de precio'), findsNothing);
     });
@@ -140,11 +145,13 @@ void main() {
 
         for (final label in [
           'Cliente',
-          'Categoría',
+          'Todas las categorías',
           'Producto',
           'Tipo de precio',
           'Evento',
           'Ubicación',
+          'Todos los países',
+          'Todas las ciudades',
         ]) {
           final rect = tester.getRect(find.text(label));
           expect(rect.left, greaterThanOrEqualTo(0), reason: '$label left');

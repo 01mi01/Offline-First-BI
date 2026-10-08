@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../config/date_formatters.dart';
+import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
@@ -13,13 +14,13 @@ import 'bi_interaction.dart';
 // la sexta serie): aquí no hay colores sueltos ni paleta por defecto de la
 // librería.
 
-String formatMoney(double value) => 'Bs. ${value.toStringAsFixed(2)}';
+// Importes y porcentajes siempre con dos decimales, redondeados half up.
+String formatMoney(double value) => 'Bs. ${fixed2(value)}';
 
-String formatPercent(double value) => '${value.toStringAsFixed(1)}%';
+String formatPercent(double value) => '${fixed2(value)}%';
 
-// Cantidad sin ceros sobrantes (12, 2.5, 0.75).
-String formatQuantity(double value) =>
-    formatNumber(double.parse(value.toStringAsFixed(2)));
+// Cantidad de unidades vendidas (enteras) sin ceros sobrantes (12, 2.5, 0.75).
+String formatQuantity(double value) => formatNumber(round2(value));
 
 // Monto abreviado para los ejes (1.2k).
 String _compactMoney(double value) {
@@ -939,7 +940,7 @@ class _BiPieChartState extends State<BiPieChart> {
     final quantityText = widget.quantityText;
 
     String percentOf(BiEntry e) =>
-        total > 0 ? formatPercent(valueOf(e) / total * 100) : '0.0%';
+        total > 0 ? formatPercent(valueOf(e) / total * 100) : '0.00%';
     String valueText(BiEntry e) =>
         byQuantity ? quantityText(e) : formatMoney(e.amount);
 
@@ -1035,11 +1036,16 @@ class _BiPieChartState extends State<BiPieChart> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s8),
-                Text(
-                  '${valueText(shown[i])}  (${percentOf(shown[i])})',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '${valueText(shown[i])}  (${percentOf(shown[i])})',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],

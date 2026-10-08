@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
+import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
 import '../../models/default_records.dart';
 import '../../models/product_model.dart';
+import '../../config/app_clock.dart';
 
 class ProductRepository {
   final AppDatabase database;
@@ -60,7 +62,7 @@ class ProductRepository {
   }) async {
     // Solo hace falta un precio: el otro se iguala (ver resolveProductPrices).
     final prices = resolveProductPrices(priceA, priceB);
-    final now = DateTime.now();
+    final now = appNow();
     await database.into(database.products).insertOnConflictUpdate(
           ProductsCompanion(
             id: id != null ? Value(id) : const Value.absent(),
@@ -68,9 +70,12 @@ class ProductRepository {
             name: Value(name),
             description: Value(description),
             image: Value(image),
-            priceA: Value(prices.priceA),
-            priceB: Value(prices.priceB),
-            productionCost: Value(productionCost),
+            // Precios y costo a centavos (dos decimales).
+            priceA: Value(round2(prices.priceA)),
+            priceB: Value(round2(prices.priceB)),
+            productionCost: Value(
+              productionCost == null ? null : round2(productionCost),
+            ),
             stock: Value(stock),
             isActive: Value(isActive),
             createdAt: Value(now),
@@ -95,7 +100,7 @@ class ProductRepository {
     await (database.update(database.products)..where((p) => p.id.equals(id)))
         .write(ProductsCompanion(
       stock: Value(newStock),
-      updatedAt: Value(DateTime.now()),
+      updatedAt: Value(appNow()),
     ));
   }
 }

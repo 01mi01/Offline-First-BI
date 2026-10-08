@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/client_model.dart';
 import '../../models/default_records.dart';
+import '../../config/app_clock.dart';
 
 class ClientRepository {
   final AppDatabase database;
@@ -64,7 +65,7 @@ class ClientRepository {
     if (existing != null && existing.id != id) {
       throw Exception('Ya existe un cliente con ese nombre');
     }
-    final now = DateTime.now();
+    final now = appNow();
     return await database
         .into(database.clients)
         .insertOnConflictUpdate(

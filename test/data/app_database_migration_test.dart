@@ -14,15 +14,16 @@ import '../generated_migrations/schema_v13.dart' as v13;
 import '../generated_migrations/schema_v14.dart' as v14;
 import '../generated_migrations/schema_v15.dart' as v15;
 import '../generated_migrations/schema_v16.dart' as v16;
+import '../generated_migrations/schema_v17.dart' as v17;
 
 // Verifica la migración real (onUpgrade) contra snapshots de esquema
-// generados por Drift (drift_schemas/drift_schema_v{8,9,10,11,12,13,14,15,16}.json vía
+// generados por Drift (drift_schemas/drift_schema_v{8,...,17}.json vía
 // `dart run drift_dev schema generate`). A diferencia del resto de la suite
 // (que solo abre bases de datos en blanco vía onCreate), esto ejecuta el SQL
 // de migración de verdad sobre datos con la forma exacta de cada versión.
 //
 // migrateAndValidate siempre migra hasta el schemaVersion actual de
-// AppDatabase (ahora 16), sin importar en qué versión "lógica" se centre
+// AppDatabase (ahora 17), sin importar en qué versión "lógica" se centre
 // cada test — por eso los tests con datos de v8 también apuntan a 10.
 void main() {
   late SchemaVerifier verifier;
@@ -32,14 +33,14 @@ void main() {
   });
 
   test(
-    'migrating a v8 database all the way to the live schema (v16) produces '
+    'migrating a v8 database all the way to the live schema (v17) produces '
     'exactly the expected schema',
     () async {
       final connection = await verifier.startAt(8);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 16);
+      await verifier.migrateAndValidate(db, 17);
     },
   );
 
@@ -70,10 +71,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final productWithCategory = await (checkDb.select(
@@ -134,10 +135,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final allRows = await checkDb.select(checkDb.productMaterials).get();
@@ -159,7 +160,7 @@ void main() {
       // debe ser rechazada por la base de datos.
       await expectLater(
         checkDb.into(checkDb.productMaterials).insert(
-          v16.ProductMaterialsCompanion.insert(
+          v17.ProductMaterialsCompanion.insert(
             productId: 1,
             materialId: 1,
             quantityUsed: 1,
@@ -187,10 +188,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final session = await (checkDb.select(
@@ -209,7 +210,7 @@ void main() {
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 16);
+      await verifier.migrateAndValidate(db, 17);
     },
   );
 
@@ -219,7 +220,7 @@ void main() {
       final connection = await verifier.startAt(9);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
-      await verifier.migrateAndValidate(db, 16);
+      await verifier.migrateAndValidate(db, 17);
 
       final rows = await db.select(db.units).get();
       final byName = {for (final u in rows) u.name: u.type};
@@ -271,10 +272,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final botellaUnit = await (checkDb.select(
@@ -322,10 +323,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final suppliers = await checkDb.select(checkDb.suppliers).get();
@@ -349,10 +350,10 @@ void main() {
       addTearDown(schema.close);
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -379,10 +380,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -420,10 +421,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final roles = await checkDb.select(checkDb.roles).get();
@@ -454,10 +455,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.roles).get())
@@ -495,10 +496,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final sale = await (checkDb.select(
@@ -535,10 +536,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final usage = await checkDb.select(checkDb.productMaterials).getSingle();
@@ -563,10 +564,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final event = await (checkDb.select(
@@ -613,10 +614,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final categories = {
@@ -654,10 +655,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final rows = await checkDb.select(checkDb.units).get();
@@ -749,10 +750,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final units = await checkDb.select(checkDb.units).get();
@@ -820,10 +821,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 16);
+      await verifier.migrateAndValidate(dbForMigration, 17);
       await dbForMigration.close();
 
-      final checkDb = v16.DatabaseAtV16(schema.newConnection());
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
       addTearDown(checkDb.close);
 
       final usage = await (checkDb.select(
@@ -839,6 +840,35 @@ void main() {
       )..where((u) => u.id.equals(material.unitId))).getSingle();
       expect(unit.name, 'contenedor');
       expect(unit.type, 'contenedor');
+    },
+  );
+
+  // --- v16 -> v17: cancelación de compras ---
+  test(
+    'Purchases: v16 -> v17 adds is_canceled (false) and canceled_at (null) '
+    'without losing data',
+    () async {
+      final schema = await verifier.schemaAt(16);
+      addTearDown(schema.close);
+
+      final oldDb = v16.DatabaseAtV16(schema.newConnection());
+      await oldDb.customStatement(
+        'INSERT INTO purchases (is_material, description, total_amount, date) '
+        "VALUES (0, 'Pasaje', 20.0, 1700000000)",
+      );
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 17);
+      await dbForMigration.close();
+
+      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      addTearDown(checkDb.close);
+      final row = await checkDb.select(checkDb.purchases).getSingle();
+      expect(row.description, 'Pasaje');
+      expect(row.totalAmount, 20.0);
+      expect(row.isCanceled, 0); // booleano: 0 = false
+      expect(row.canceledAt, isNull);
     },
   );
 

@@ -150,119 +150,58 @@ void main() {
   for (final combined in [false, true]) {
     final where = combined ? 'Business Intelligence' : 'Reportes';
 
-    group('$where: filtro de categoría con buscador', () {
-      testWidgets('opens a search sheet, not a fixed list, with no overflow', (
+    group('$where: filtro de categoría como desplegable', () {
+      testWidgets('lists every category (no search box) and the default is "Todas las categorías"', (
         tester,
       ) async {
         await pump(tester, combined: combined, onChanged: (_) {});
-        await tester.tap(find.text('Categoría'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Filtrar por Categoría'), findsOneWidget);
-        expect(find.byType(TextField), findsOneWidget);
-        expect(find.text('Buscar categoría'), findsOneWidget);
-        expect(find.byKey(const ValueKey('picker-type-to-search')), findsOneWidget);
-        // Las categorías no se listan hasta buscar (ya no hay nada que desborde).
-        expect(find.text('Pines'), findsNothing);
-        expect(tester.takeException(), isNull);
-      });
-
-      testWidgets('typing filters, tapping selects, and the chip shows the name', (
-        tester,
-      ) async {
-        ReportFilters? last;
-        await pump(tester, combined: combined, onChanged: (f) => last = f);
-        await tester.tap(find.text('Categoría'));
-        await tester.pumpAndSettle();
-
-        await tester.enterText(find.byType(TextField), 'bol');
-        await tester.pumpAndSettle();
-        expect(find.text('Bolsas'), findsOneWidget);
-        expect(find.text('Pines'), findsNothing);
-
-        await tester.tap(find.text('Bolsas'));
-        await tester.pumpAndSettle();
-        expect(last!.categoryId, categoryIds['Bolsas']);
-        // La hoja se cerró y el chip muestra la categoría elegida.
-        expect(find.text('Filtrar por Categoría'), findsNothing);
-        expect(find.text('Bolsas'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
-
-      testWidgets('search ignores accents and case, and says when nothing matches', (
-        tester,
-      ) async {
-        await pump(tester, combined: combined, onChanged: (_) {});
-        await tester.tap(find.text('Categoría'));
-        await tester.pumpAndSettle();
-
-        await tester.enterText(find.byType(TextField), 'PAPELERIA');
-        await tester.pumpAndSettle();
-        expect(find.text('Papelería'), findsOneWidget);
-
-        await tester.enterText(find.byType(TextField), 'zzz');
-        await tester.pumpAndSettle();
-        expect(find.text('Sin resultados'), findsOneWidget);
-      });
-
-      testWidgets('"Sin categoría" is a normal, searchable category', (tester) async {
-        ReportFilters? last;
-        await pump(tester, combined: combined, onChanged: (f) => last = f);
-        await tester.tap(find.text('Categoría'));
-        await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextField), 'sin cat');
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Sin categoría'));
-        await tester.pumpAndSettle();
-        expect(last!.categoryId, categoryIds['Sin categoría']);
-      });
-
-      testWidgets('"Todas las categorías" and the chip X both clear the filter', (
-        tester,
-      ) async {
-        ReportFilters? last;
-        await pump(tester, combined: combined, onChanged: (f) => last = f);
-
-        Future<void> choose(String query, String name) async {
-          await tester.tap(find.text('Categoría'));
-          await tester.pumpAndSettle();
-          await tester.enterText(find.byType(TextField), query);
-          await tester.pumpAndSettle();
-          await tester.tap(find.text(name));
-          await tester.pumpAndSettle();
-        }
-
-        await choose('pin', 'Pines');
-        expect(last!.categoryId, categoryIds['Pines']);
-
-        // Volver a abrir: la elegida aparece marcada y "Todas" la quita.
-        await tester.tap(find.text('Pines'));
-        await tester.pumpAndSettle();
         expect(find.text('Todas las categorías'), findsOneWidget);
         await tester.tap(find.text('Todas las categorías'));
         await tester.pumpAndSettle();
-        expect(last!.categoryId, isNull);
-        expect(find.text('Categoría'), findsOneWidget);
 
-        // La X del chip también la quita, como antes.
-        await choose('mini', 'Miniaturas');
-        expect(last!.categoryId, categoryIds['Miniaturas']);
-        await tester.tap(find.byIcon(Icons.close));
-        await tester.pumpAndSettle();
-        expect(last!.categoryId, isNull);
+        expect(find.text('Filtrar por Categoría'), findsOneWidget);
+        expect(find.byType(TextField), findsNothing);
+        for (final name in categoryNames) {
+          expect(find.text(name), findsOneWidget, reason: name);
+        }
+        expect(tester.takeException(), isNull);
       });
 
-      testWidgets('dismissing the sheet without choosing changes nothing', (
+      testWidgets('picking one filters, the chip shows its name, and the chip X clears it', (
         tester,
       ) async {
         ReportFilters? last;
         await pump(tester, combined: combined, onChanged: (f) => last = f);
-        await tester.tap(find.text('Categoría'));
+        await tester.tap(find.text('Todas las categorías'));
         await tester.pumpAndSettle();
-        await tester.tapAt(const Offset(180, 20)); // fuera de la hoja
+        await tester.tap(find.text('Pines'));
         await tester.pumpAndSettle();
-        expect(last, isNull);
+
+        expect(last!.categoryId, categoryIds['Pines']);
         expect(find.text('Filtrar por Categoría'), findsNothing);
+        expect(find.text('Pines'), findsOneWidget); // el chip
+        expect(find.text('Todas las categorías'), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+        expect(last!.categoryId, isNull);
+        expect(find.text('Todas las categorías'), findsOneWidget);
+      });
+
+      testWidgets('"Limpiar" in the list also goes back to all categories', (
+        tester,
+      ) async {
+        ReportFilters? last;
+        await pump(tester, combined: combined, onChanged: (f) => last = f);
+        await tester.tap(find.text('Todas las categorías'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Bolsas'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Bolsas'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Limpiar'));
+        await tester.pumpAndSettle();
+        expect(last!.categoryId, isNull);
       });
     });
   }
@@ -361,6 +300,8 @@ void main() {
               await tester.pumpAndSettle();
               await tester.enterText(find.byType(TextField), spec.query);
               await tester.pumpAndSettle();
+              await tester.ensureVisible(find.text(spec.result));
+              await tester.pumpAndSettle();
               await tester.tap(find.text(spec.result));
               await tester.pumpAndSettle();
             }
@@ -370,12 +311,17 @@ void main() {
             await tester.enterText(find.byType(TextField), 'zzzz');
             await tester.pumpAndSettle();
             expect(find.text('Sin resultados'), findsOneWidget);
-            await tester.tapAt(const Offset(180, 20));
+            // Salir del buscador sin elegir lo cierra (equivale a tocar fuera).
+            FocusManager.instance.primaryFocus?.unfocus();
             await tester.pumpAndSettle();
+            expect(find.text('Sin resultados'), findsNothing);
 
             await choose();
             expect(spec.read(last!), isNotNull);
             await tester.tap(find.text(spec.result));
+            await tester.pumpAndSettle();
+            // En una pantalla chica el panel se desplaza hasta mostrar la lista.
+            await tester.ensureVisible(find.text(spec.all));
             await tester.pumpAndSettle();
             await tester.tap(find.text(spec.all));
             await tester.pumpAndSettle();
@@ -411,9 +357,7 @@ void main() {
       ReportFilters? last;
       await pump(tester, combined: false, onChanged: (f) => last = f);
 
-      await tester.tap(find.text('Categoría'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'libros');
+      await tester.tap(find.text('Todas las categorías'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Libros'));
       await tester.pumpAndSettle();
@@ -432,6 +376,52 @@ void main() {
       expect(last!.productId, isNotNull);
     });
   });
+
+  for (final combined in [false, true]) {
+    final where = combined ? 'Business Intelligence' : 'Reportes';
+    group('$where: filtros País y Ciudad', () {
+      testWidgets('are dropdowns with their defaults; the cities narrow to the chosen country', (
+        tester,
+      ) async {
+        await db.into(db.locations).insert(
+          LocationsCompanion.insert(city: 'Lima', country: 'Perú'),
+        );
+        ReportFilters? last;
+        await pump(tester, combined: combined, onChanged: (f) => last = f);
+        expect(find.text('Todos los países'), findsOneWidget);
+        expect(find.text('Todas las ciudades'), findsOneWidget);
+
+        // País: salen de las ubicaciones existentes.
+        await tester.tap(find.text('Todos los países'));
+        await tester.pumpAndSettle();
+        expect(find.text('Filtrar por País'), findsOneWidget);
+        expect(find.text('Bolivia'), findsOneWidget);
+        expect(find.text('Perú'), findsOneWidget);
+        await tester.tap(find.text('Perú'));
+        await tester.pumpAndSettle();
+        expect(last!.country, 'Perú');
+
+        // Ciudad: solo las del país elegido.
+        await tester.tap(find.text('Todas las ciudades'));
+        await tester.pumpAndSettle();
+        expect(find.text('Filtrar por Ciudad'), findsOneWidget);
+        expect(find.text('Lima'), findsOneWidget);
+        expect(find.text('Zona 0'), findsNothing);
+        await tester.tap(find.text('Lima'));
+        await tester.pumpAndSettle();
+        expect(last!.city, 'Lima');
+
+        // Cambiar el país quita la ciudad que ya no le pertenece.
+        await tester.tap(find.text('Perú'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Bolivia'));
+        await tester.pumpAndSettle();
+        expect(last!.country, 'Bolivia');
+        expect(last!.city, isNull);
+        expect(find.text('Todas las ciudades'), findsOneWidget);
+      });
+    });
+  }
 
   group('Ubicación se busca en línea, igual que Evento', () {
     testWidgets(

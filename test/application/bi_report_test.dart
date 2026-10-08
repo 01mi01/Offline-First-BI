@@ -422,12 +422,14 @@ void main() {
         expect(find.text(preset), findsOneWidget);
       }
       for (final chip in [
-        'Categoría',
+        'Todas las categorías',
         'Producto',
         'Tipo de precio',
         'Tipo de operación',
         'Evento',
         'Ubicación',
+        'Todos los países',
+        'Todas las ciudades',
       ]) {
         expect(find.text(chip), findsOneWidget, reason: chip);
       }

@@ -12,6 +12,7 @@ import 'product_provider.dart';
 import 'report_provider.dart';
 import 'sale_provider.dart';
 import 'unit_provider.dart';
+import '../config/app_clock.dart';
 
 final biServiceProvider = Provider<BiService>((ref) => BiService());
 
@@ -134,7 +135,7 @@ BiPeriodComparison _periodComparison(
   }
   // Con solo "Desde" se filtra ese único día; un periodo en curso se mide
   // hasta hoy como mucho.
-  final today = dateOnly(DateTime.now());
+  final today = dateOnly(appNow());
   var last = dateOnly(end ?? start);
   if (last.isAfter(today)) last = today;
   final previous = bi.previousPeriod(start, last);

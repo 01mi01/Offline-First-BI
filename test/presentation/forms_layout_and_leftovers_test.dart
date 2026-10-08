@@ -219,7 +219,7 @@ void main() {
       }
 
       // El total ya sumó los tres ítems...
-      expect(find.text('24'), findsWidgets);
+      expect(find.text('24.00'), findsWidgets);
       // ...y los botones, al final del contenido que se desplaza, se alcanzan
       // desplazando.
       final submit = find.widgetWithText(ElevatedButton, 'Registrar compra');

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/event_model.dart';
+import '../../config/app_clock.dart';
 
 class EventRepository {
   final AppDatabase database;
@@ -41,7 +42,7 @@ class EventRepository {
     String? notes,
     bool isActive = true,
   }) async {
-    final now = DateTime.now();
+    final now = appNow();
     await database.into(database.events).insertOnConflictUpdate(
           EventsCompanion(
             id: id != null ? Value(id) : const Value.absent(),

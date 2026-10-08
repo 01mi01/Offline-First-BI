@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../application/search_filter.dart';
 import '../../theme/app_theme.dart';
+import 'focus_utils.dart';
 
 // Opción de un [SearchablePickerField]. [value] puede ser null para la opción
 // predeterminada ("Sin nombre", "Sin proveedor"...).
@@ -8,8 +11,10 @@ class PickerOption<T> {
   final T? value;
   final String label;
   final String? subtitle;
+  // Texto que muestra el campo ya elegida la opción (por defecto, [label]).
+  final String? selectedLabel;
 
-  const PickerOption(this.value, this.label, {this.subtitle});
+  const PickerOption(this.value, this.label, {this.subtitle, this.selectedLabel});
 }
 
 // Selector de un registro existente con búsqueda en línea, igual que el
@@ -59,10 +64,11 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
     with WidgetsBindingObserver {
   final _controller = TextEditingController();
   final _focus = FocusNode();
+  Timer? _revealTimer;
 
   String get _selectedLabel {
     for (final option in widget.options) {
-      if (option.value == widget.value) return option.label;
+      if (option.value == widget.value) return option.selectedLabel ?? option.label;
     }
     return '';
   }
@@ -89,6 +95,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
 
   @override
   void dispose() {
+    _revealTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _focus.removeListener(_onFocusChange);
     _focus.dispose();
@@ -114,17 +121,17 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
     }
   }
 
-  // Desplaza el formulario lo justo para que el campo y sus resultados no
-  // queden tapados por el teclado.
+  // Deja el campo con sus resultados debajo a la vista, por encima del teclado.
+  // Solo se hace al enfocar y cuando el teclado termina de abrirse o cambia de
+  // alto; escribir o que cambie la lista de resultados no vuelve a mover la
+  // pantalla (el campo está por encima de los resultados, así que su posición
+  // no cambia). Se espera un instante para que el propio campo de texto (que
+  // también se desplaza para mostrar el cursor) termine primero y no se pisen.
   void _reveal() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _revealTimer?.cancel();
+    _revealTimer = Timer(const Duration(milliseconds: 120), () {
       if (!mounted || !_focus.hasFocus) return;
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-      );
+      revealFieldAtTop(context);
     });
   }
 
@@ -141,7 +148,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
   }
 
   void _choose(PickerOption<T> option) {
-    _controller.text = option.label;
+    _controller.text = option.selectedLabel ?? option.label;
     widget.onChanged(option.value);
     _focus.unfocus();
   }
@@ -152,13 +159,20 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
     final query = _controller.text;
     final hasQuery = focused && query.trim().isNotEmpty;
     final visible = hasQuery
-        ? filterByQuery<PickerOption<T>>(widget.options, query, (o) => o.label)
+        ? filterByQuery<PickerOption<T>>(
+            widget.options,
+            query,
+            (o) => '${o.label} ${o.subtitle ?? ''}',
+          )
         : widget.options.where((o) => o.value == null).toList();
 
     // Con el teclado abierto queda poco alto: la lista se acorta para no
-    // desbordar pantallas chicas.
+    // desbordar pantallas chicas. El alto del teclado se lee de la vista (un
+    // Scaffold se lo quita al MediaQuery de su contenido).
     final media = MediaQuery.of(context);
-    final maxResultsHeight = ((media.size.height - media.viewInsets.bottom) *
+    final view = View.of(context);
+    final keyboardHeight = view.viewInsets.bottom / view.devicePixelRatio;
+    final maxResultsHeight = ((media.size.height - keyboardHeight) *
             0.3)
         .clamp(120.0, 200.0);
 
@@ -174,11 +188,10 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             // de la lista no cuentan como "fuera").
             onTapOutside: (_) => _focus.unfocus(),
             textInputAction: TextInputAction.search,
-            onChanged: (_) {
-              setState(() {});
-              // La lista de resultados cambia de alto al escribir.
-              _reveal();
-            },
+            // Sin margen extra: si el campo ya está a la vista, escribir no lo
+            // desplaza (la pantalla solo se mueve al enfocar).
+            scrollPadding: EdgeInsets.zero,
+            onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               labelText: widget.label,
               hintText: widget.searchHint,
@@ -205,8 +218,11 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
           )),
           if (focused) ...[
             const SizedBox(height: AppSpacing.s8),
+            // Alto fijo: la lista de resultados no cambia de tamaño mientras se
+            // escribe, así que lo que hay encima (el campo) no se mueve cuando
+            // los resultados aparecen, aumentan o disminuyen.
             Container(
-              constraints: BoxConstraints(maxHeight: maxResultsHeight),
+              height: maxResultsHeight,
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(16),
@@ -214,7 +230,6 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
               ),
               child: ListView(
                 padding: const EdgeInsets.all(AppSpacing.s8),
-                shrinkWrap: true,
                 children: [
                   for (final option in visible) _buildTile(context, option),
                   if (!hasQuery)

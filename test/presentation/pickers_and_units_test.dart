@@ -237,6 +237,10 @@ void main() {
       final result = tester.getRect(find.text('Cliente 040'));
       expect(result.bottom, lessThanOrEqualTo(640 - 300));
       expect(result.top, greaterThanOrEqualTo(0));
+      // Lo escrito (el campo) también queda a la vista, encima de los resultados.
+      final field = tester.getRect(find.byType(TextField));
+      expect(field.top, greaterThanOrEqualTo(0));
+      expect(field.bottom, lessThanOrEqualTo(result.top));
     });
 
     testWidgets('picking a filtered option selects it; the default (null) option is selectable too', (
@@ -421,12 +425,19 @@ void main() {
       final picker = find.byType(SearchablePickerField<int>).first;
       final field = find.descendant(of: picker, matching: find.byType(TextField));
       final add = find.byIcon(Icons.person_add_outlined);
-      final before = tester.getCenter(add).dy;
-      expect((tester.getCenter(field).dy - before).abs(), lessThan(1));
+      expect(
+        (tester.getCenter(field).dy - tester.getCenter(add).dy).abs(),
+        lessThan(1),
+      );
 
       await tester.tap(field);
+      // Tras enfocar el campo la pantalla se acomoda una vez (el buscador
+      // espera un instante antes de llevarse a la vista).
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
+      final before = tester.getCenter(add).dy;
       await tester.enterText(field, 'mic');
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       // Con los resultados abiertos debajo, el icono no se mueve y sigue
       // alineado con el campo (no con campo + lista).

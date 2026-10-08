@@ -2,6 +2,7 @@ import '../../data/db/app_database.dart';
 import '../../models/category_model.dart';
 import '../../models/default_records.dart';
 import 'package:drift/drift.dart';
+import '../../config/app_clock.dart';
 
 class CategoryRepository {
   final AppDatabase database;
@@ -63,7 +64,7 @@ class CategoryRepository {
     bool isActive = true,
   }) async {
     await _ensureNotProtected(id: id, newName: name);
-    final now = DateTime.now();
+    final now = appNow();
     await database
         .into(database.categories)
         .insertOnConflictUpdate(
@@ -97,7 +98,7 @@ class CategoryRepository {
     )..where((c) => c.id.equals(id))).write(
       CategoriesCompanion(
         isActive: const Value(false),
-        updatedAt: Value(DateTime.now()),
+        updatedAt: Value(appNow()),
       ),
     );
   }

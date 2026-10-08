@@ -327,6 +327,10 @@ void main() {
       await searchProducts(tester, 'tote');
       expect(find.text('Tote bag negra'), findsOneWidget);
 
+      // Al enfocar el buscador de productos el formulario se desplazó: se
+      // vuelve al selector de cliente de arriba.
+      await tester.ensureVisible(find.byType(SearchablePickerField<int>).first);
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
       expect(find.text('Michael Brown'), findsNothing);

@@ -7,6 +7,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:excel/excel.dart' as xl;
 import '../../models/report_models.dart';
 import '../../config/date_formatters.dart';
+import '../../config/app_clock.dart';
+import '../../config/rounding.dart';
 
 // Genera y comparte reportes de ventas y compras en PDF y Excel
 class ReportExportRepository {
@@ -14,11 +16,40 @@ class ReportExportRepository {
 
   String _fmtShort(DateTime date) => formatDate(date);
 
-  String _bs(double amount) => 'Bs. ${amount.toStringAsFixed(2)}';
+  // Importes siempre con dos decimales ("Bs. 70.00"), redondeados half up.
+  String _bs(double amount) => 'Bs. ${fixed2(amount)}';
 
-  // Cantidad sin ceros sobrantes: 2 -> "2", 0.5 -> "0.5".
-  String _qty(double value) =>
-      value == value.truncateToDouble() ? value.toInt().toString() : '$value';
+  // Cantidad de un material según su unidad: dos decimales en medidas,
+  // fracciones exactas en envases y enteros en piezas.
+  String _qty(double value, String unitType, String unitName) =>
+      formatMaterialQuantity(value, unitType: unitType, unitName: unitName);
+
+  // Celdas numéricas de Excel: el valor guardado va redondeado a dos decimales
+  // y la celda se muestra con dos decimales ("70.00"). Las de [plainColumns]
+  // (cantidades por fracciones) llevan el formato general.
+  void _appendRow(
+    xl.Sheet sheet,
+    List<xl.CellValue?> cells, {
+    Set<int> plainColumns = const {},
+  }) {
+    sheet.appendRow(cells);
+    final row = sheet.maxRows - 1;
+    for (var col = 0; col < cells.length; col++) {
+      if (cells[col] is! xl.DoubleCellValue) continue;
+      // El paquete excel da "0.00" a todo decimal sin estilo; las cantidades
+      // por fracciones piden el formato general de forma explícita.
+      sheet
+              .cell(
+                xl.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row),
+              )
+              .cellStyle =
+          xl.CellStyle(
+            numberFormat: plainColumns.contains(col)
+                ? xl.NumFormat.standard_0
+                : xl.NumFormat.standard_2,
+          );
+    }
+  }
 
   // Fuente empaquetada para todo el texto de los PDF. La fuente por defecto
   // del paquete pdf (Helvetica) no soporta Unicode, así que las tildes y la ñ
@@ -52,7 +83,7 @@ class ReportExportRepository {
           ),
           pw.SizedBox(height: 4),
           pw.Text(
-            'Generado el ${_fmt(DateTime.now())}',
+            'Generado el ${_fmt(appNow())}',
             style: const pw.TextStyle(fontSize: 10),
           ),
           pw.SizedBox(height: 16),
@@ -167,13 +198,13 @@ class ReportExportRepository {
           ),
           pw.SizedBox(height: 4),
           pw.Text(
-            'Generado el ${_fmt(DateTime.now())}',
+            'Generado el ${_fmt(appNow())}',
             style: const pw.TextStyle(fontSize: 10),
           ),
           pw.SizedBox(height: 16),
           _pdfSummary([
             'Total compras: ${summary.count}',
-            'Gasto: Bs. ${summary.totalAmount.toStringAsFixed(2)}',
+            'Gasto: ${_bs(summary.totalAmount)}',
           ]),
           pw.SizedBox(height: 16),
           pw.Table(
@@ -199,7 +230,7 @@ class ReportExportRepository {
                   r.supplierName,
                   r.purchase.isMaterial ? 'Material' : 'Gasto',
                   r.purchase.description ?? '-',
-                  'Bs. ${r.purchase.totalAmount.toStringAsFixed(2)}',
+                  _bs(r.purchase.totalAmount),
                 ]),
               ),
             ],
@@ -236,7 +267,7 @@ class ReportExportRepository {
                       _fmtShort(r.purchase.date),
                       r.supplierName,
                       item.materialName,
-                      _qty(item.quantity),
+                      _qty(item.quantity, item.unitType, item.unitName),
                       _bs(item.unitPrice),
                       _bs(item.subtotal),
                     ]),
@@ -271,14 +302,14 @@ class ReportExportRepository {
       xl.TextCellValue('Notas'),
     ]);
     for (final r in rows) {
-      sheet.appendRow([
+      _appendRow(sheet, [
         xl.TextCellValue(_fmtShort(r.sale.date)),
         xl.TextCellValue(r.clientName),
         xl.TextCellValue(r.locationName ?? '-'),
         xl.TextCellValue(r.eventName ?? '-'),
-        xl.DoubleCellValue(r.subtotalAmount),
-        xl.DoubleCellValue(r.discountAmount),
-        xl.DoubleCellValue(r.netAmount),
+        xl.DoubleCellValue(round2(r.subtotalAmount)),
+        xl.DoubleCellValue(round2(r.discountAmount)),
+        xl.DoubleCellValue(round2(r.netAmount)),
         xl.TextCellValue(r.sale.notes ?? ''),
       ]);
     }
@@ -302,15 +333,15 @@ class ReportExportRepository {
       ]);
       for (final r in rows) {
         for (final line in r.lines ?? const <SaleLineReport>[]) {
-          detail.appendRow([
+          _appendRow(detail, [
             xl.TextCellValue(_fmtShort(r.sale.date)),
             xl.TextCellValue(r.clientName),
             xl.TextCellValue(line.item.productName),
             xl.TextCellValue(line.categoryName),
             xl.TextCellValue(line.item.priceType),
             xl.IntCellValue(line.item.quantity),
-            xl.DoubleCellValue(line.item.unitPrice),
-            xl.DoubleCellValue(line.subtotal),
+            xl.DoubleCellValue(round2(line.item.unitPrice)),
+            xl.DoubleCellValue(round2(line.subtotal)),
           ]);
         }
       }
@@ -342,14 +373,14 @@ class ReportExportRepository {
       xl.TextCellValue('Notas'),
     ]);
     for (final r in rows) {
-      sheet.appendRow([
+      _appendRow(sheet, [
         xl.TextCellValue(_fmtShort(r.purchase.date)),
         xl.TextCellValue(r.supplierName),
         xl.TextCellValue(r.purchase.isMaterial ? 'Material' : 'Gasto'),
         xl.TextCellValue(r.purchase.description ?? '-'),
         xl.TextCellValue(r.locationName ?? '-'),
         xl.TextCellValue(r.eventName ?? '-'),
-        xl.DoubleCellValue(r.purchase.totalAmount),
+        xl.DoubleCellValue(round2(r.purchase.totalAmount)),
         xl.TextCellValue(r.purchase.notes ?? ''),
       ]);
     }
@@ -367,14 +398,21 @@ class ReportExportRepository {
       ]);
       for (final r in rows) {
         for (final item in r.items) {
-          detail.appendRow([
-            xl.TextCellValue(_fmtShort(r.purchase.date)),
-            xl.TextCellValue(r.supplierName),
-            xl.TextCellValue(item.materialName),
-            xl.DoubleCellValue(item.quantity),
-            xl.DoubleCellValue(item.unitPrice),
-            xl.DoubleCellValue(item.subtotal),
-          ]);
+          _appendRow(
+            detail,
+            [
+              xl.TextCellValue(_fmtShort(r.purchase.date)),
+              xl.TextCellValue(r.supplierName),
+              xl.TextCellValue(item.materialName),
+              xl.DoubleCellValue(
+                roundQuantity(item.quantity, unitType: item.unitType),
+              ),
+              xl.DoubleCellValue(round2(item.unitPrice)),
+              xl.DoubleCellValue(round2(item.subtotal)),
+            ],
+            // Cantidades por fracciones (envases): sin forzar dos decimales.
+            plainColumns: item.unitType == fractionUnitType ? {3} : const {},
+          );
         }
       }
     }
@@ -392,7 +430,7 @@ class ReportExportRepository {
   ) async {
     final dir = await getTemporaryDirectory();
     final file = File(
-      '${dir.path}/${title.replaceAll(' ', '_')}_${formatDateForFileName(DateTime.now())}.$extension',
+      '${dir.path}/${title.replaceAll(' ', '_')}_${formatDateForFileName(appNow())}.$extension',
     );
     await file.writeAsBytes(bytes);
     return file;

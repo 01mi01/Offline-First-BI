@@ -24,6 +24,7 @@ import 'package:offline_first_bi/theme/app_theme.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
 import '../support/pdf_text.dart';
+import 'package:offline_first_bi/config/app_clock.dart';
 
 // Auditoría de fechas: cada venta, compra o monto ligado a un evento se cuenta
 // en el periodo de SU PROPIA fecha (la de la venta/compra), en Inicio,
@@ -54,7 +55,7 @@ class _FakeShare extends SharePlatform {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final now = DateTime.now();
+  final now = appNow();
   DateTime at(DateTime day, [int hour = 12]) =>
       DateTime(day.year, day.month, day.day, hour);
   final today = at(now);
@@ -523,7 +524,7 @@ void main() {
       var mat = await db.select(db.materials).getSingle();
       expect(mat.pricePerUnit, 10);
       expect(mat.stock, 4); // el stock sí se suma
-      await buyMaterial(matId, DateTime.now().add(const Duration(minutes: 1)), 12);
+      await buyMaterial(matId, today.add(const Duration(minutes: 1)), 12);
       mat = await db.select(db.materials).getSingle();
       expect(mat.pricePerUnit, 12); // una compra más reciente sí actualiza
     });

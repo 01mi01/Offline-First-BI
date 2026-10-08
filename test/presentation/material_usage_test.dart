@@ -114,7 +114,7 @@ void main() {
     await tester.pump();
 
     expect(tester.widget<TextFormField>(field).controller!.text, '1.5');
-    expect(find.text('Stock disponible: 10 metros'), findsOneWidget);
+    expect(find.text('Stock disponible: 10.00 metros'), findsOneWidget);
   });
 
   testWidgets('contenedor: fraction picker, no free-text decimal field', (
@@ -193,7 +193,7 @@ void main() {
 
     expect(find.text('Stock: 5 contenedores'), findsOneWidget);
     expect(find.text('Stock: 30 unidades'), findsOneWidget);
-    expect(find.text('Stock: 10 metros'), findsOneWidget);
+    expect(find.text('Stock: 10.00 metros'), findsOneWidget);
     expect(find.text('Bs. 2.00 / contenedor'), findsOneWidget);
     expect(find.text('Bs. 2.00 / metro'), findsOneWidget);
     // Ya no se muestra el genérico "/u".

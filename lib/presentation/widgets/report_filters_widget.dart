@@ -12,6 +12,7 @@ import '../../theme/app_theme.dart';
 import '../../application/date_range_filter.dart';
 import '../../config/date_formatters.dart';
 import 'date_range_filter_bar.dart';
+import '../../application/location_options.dart';
 import 'focus_utils.dart';
 import 'searchable_picker.dart';
 
@@ -47,6 +48,10 @@ class _SearchSpec {
   final String allLabel;
   final int? selected;
   final List<({int id, String name})> entries;
+  // Línea secundaria opcional de cada opción (la zona de una ubicación).
+  final Map<int, String> subtitles;
+  // Texto del campo ya elegida la opción (por defecto, el nombre).
+  final Map<int, String> selectedNames;
   final ReportFilters Function(int id) apply;
   final ReportFilters Function() clear;
 
@@ -56,6 +61,8 @@ class _SearchSpec {
     required this.allLabel,
     required this.selected,
     required this.entries,
+    this.subtitles = const {},
+    this.selectedNames = const {},
     required this.apply,
     required this.clear,
   });
@@ -127,6 +134,8 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
     required String allLabel,
     required int? selected,
     required List<({int id, String name})> entries,
+    Map<int, String> subtitles = const {},
+    Map<int, String> selectedNames = const {},
     required ReportFilters Function(int id) apply,
     required ReportFilters Function() clear,
   }) {
@@ -138,6 +147,8 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
         allLabel: allLabel,
         selected: selected,
         entries: entries,
+        subtitles: subtitles,
+        selectedNames: selectedNames,
         apply: apply,
         clear: clear,
       );
@@ -155,7 +166,13 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
         autofocus: true,
         options: [
           PickerOption<int>(null, spec.allLabel),
-          for (final e in spec.entries) PickerOption<int>(e.id, e.name),
+          for (final e in spec.entries)
+            PickerOption<int>(
+              e.id,
+              e.name,
+              subtitle: spec.subtitles[e.id],
+              selectedLabel: spec.selectedNames[e.id],
+            ),
         ],
         onChanged: (id) {
           setState(() => _search = null);
@@ -257,6 +274,19 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
     final locations = ref.watch(locationProvider).locations;
     final clients = ref.watch(clientProvider).clients;
     final suppliers = ref.watch(supplierProvider).suppliers;
+    final allLocations = locations;
+    final categoryItems = [
+      for (final c in categories)
+        DropdownMenuItem(value: c.id, child: Text(c.name)),
+    ];
+    final countryItems = [
+      for (final c in countryOptions(allLocations))
+        DropdownMenuItem(value: c, child: Text(c)),
+    ];
+    final cityItems = [
+      for (final c in cityOptions(allLocations, country: filters.country))
+        DropdownMenuItem(value: c, child: Text(c)),
+    ];
 
     return Container(
       color: AppColors.surface,
@@ -365,26 +395,18 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
               ],
               // Categoría y producto - solo en ventas
               if (_showSales) ...[
+                // Lista corta y cerrada: un desplegable con todas las categorías.
                 _DropChip(
-                  label: 'Categoría',
+                  label: 'Todas las categorías',
                   value: filters.categoryId,
-                  items: categories
-                      .map(
-                        (c) =>
-                            DropdownMenuItem(value: c.id, child: Text(c.name)),
-                      )
-                      .toList(),
-                  onTap: () => _pickWithSearch(
-                    context: context,
-                    title: 'Categoría',
-                    searchHint: 'Buscar categoría',
-                    allLabel: 'Todas las categorías',
-                    selected: filters.categoryId,
-                    entries: [
-                      for (final c in categories) (id: c.id, name: c.name),
-                    ],
-                    apply: (id) => filters.copyWith(categoryId: id),
-                    clear: () => filters.copyWith(clearCategory: true),
+                  items: categoryItems,
+                  onTap: () => _showDropdownSheet(
+                    context,
+                    'Categoría',
+                    filters.categoryId,
+                    categoryItems,
+                    (val) => onChanged(filters.copyWith(categoryId: val)),
+                    () => onChanged(filters.copyWith(clearCategory: true)),
                   ),
                   onClear: () =>
                       onChanged(filters.copyWith(clearCategory: true)),
@@ -500,20 +522,18 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
                           ),
                         )
                         .toList(),
-                    onTap: () => _showDropdownSheet(
-                      context,
-                      'Proveedor',
-                      filters.supplierId,
-                      suppliers
-                          .map(
-                            (s) => DropdownMenuItem(
-                              value: s.id,
-                              child: Text(s.name),
-                            ),
-                          )
-                          .toList(),
-                      (val) => onChanged(filters.copyWith(supplierId: val)),
-                      () => onChanged(filters.copyWith(clearSupplier: true)),
+                    // Búsqueda en línea, como Cliente y Producto.
+                    onTap: () => _pickWithSearch(
+                      context: context,
+                      title: 'Proveedor',
+                      searchHint: 'Buscar proveedor',
+                      allLabel: 'Todos los proveedores',
+                      selected: filters.supplierId,
+                      entries: [
+                        for (final s in suppliers) (id: s.id, name: s.name),
+                      ],
+                      apply: (id) => filters.copyWith(supplierId: id),
+                      clear: () => filters.copyWith(clearSupplier: true),
                     ),
                     onClear: () =>
                         onChanged(filters.copyWith(clearSupplier: true)),
@@ -551,7 +571,7 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
                     .map(
                       (l) => DropdownMenuItem(
                         value: l.id,
-                        child: Text('${l.city}, ${l.country}'),
+                        child: Text(locationLabelWithZone(l)),
                       ),
                     )
                     .toList(),
@@ -564,12 +584,61 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
                   entries: [
                     for (final l in locations)
                       if (l.isActive)
-                        (id: l.id, name: '${l.city}, ${l.country}'),
+                        (id: l.id, name: locationLabel(l)),
                   ],
+                  subtitles: {
+                    for (final l in locations)
+                      if (locationZone(l) != null) l.id: locationZone(l)!,
+                  },
+                  selectedNames: {
+                    for (final l in locations) l.id: locationLabelWithZone(l),
+                  },
                   apply: (id) => filters.copyWith(locationId: id),
                   clear: () => filters.copyWith(clearLocation: true),
                 ),
                 onClear: () => onChanged(filters.copyWith(clearLocation: true)),
+              ),
+
+              // País y ciudad de la ubicación vinculada (ambos tabs). Las
+              // ciudades se acotan al país elegido.
+              _DropChip<String>(
+                label: 'Todos los países',
+                value: filters.country,
+                items: countryItems,
+                onTap: () => _showDropdownSheet<String>(
+                  context,
+                  'País',
+                  filters.country,
+                  countryItems,
+                  (val) => onChanged(
+                    filters.copyWith(
+                      country: val,
+                      // La ciudad elegida deja de valer si no es de ese país.
+                      clearCity:
+                          filters.city != null &&
+                          !cityOptions(
+                            allLocations,
+                            country: val,
+                          ).contains(filters.city),
+                    ),
+                  ),
+                  () => onChanged(filters.copyWith(clearCountry: true)),
+                ),
+                onClear: () => onChanged(filters.copyWith(clearCountry: true)),
+              ),
+              _DropChip<String>(
+                label: 'Todas las ciudades',
+                value: filters.city,
+                items: cityItems,
+                onTap: () => _showDropdownSheet<String>(
+                  context,
+                  'Ciudad',
+                  filters.city,
+                  cityItems,
+                  (val) => onChanged(filters.copyWith(city: val)),
+                  () => onChanged(filters.copyWith(clearCity: true)),
+                ),
+                onClear: () => onChanged(filters.copyWith(clearCity: true)),
               ),
             ],
           ),
@@ -629,11 +698,15 @@ class _DropChip<T> extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _getLabel(),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: active ? AppColors.primary : AppColors.textSecondary,
-                fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+            Flexible(
+              child: Text(
+                _getLabel(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: active ? AppColors.primary : AppColors.textSecondary,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.s4),

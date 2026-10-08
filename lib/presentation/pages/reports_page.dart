@@ -108,7 +108,15 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
             // desplaza dentro (sin recortar el resto, que sigue debajo).
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: constraints.maxHeight * 0.5,
+                // Con el buscador en línea abierto (teclado arriba) el panel usa
+            // todo el alto disponible bajo las pestañas: el campo queda arriba
+            // y los resultados debajo, sin que lo escrito se salga de vista.
+            maxHeight: View.of(context).viewInsets.bottom > 0
+                ? (constraints.maxHeight - kTextTabBarHeight).clamp(
+                    0.0,
+                    double.infinity,
+                  )
+                : constraints.maxHeight * 0.5,
               ),
               child: ListView(
                 shrinkWrap: true,

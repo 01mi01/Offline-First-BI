@@ -180,7 +180,7 @@ void main() {
 
       expect(find.byType(FractionQuantityPicker), findsNothing);
       expect(find.byType(WholeNumberQuantityField), findsNothing);
-      expect(find.text('Stock disponible: 3 metros'), findsOneWidget);
+      expect(find.text('Stock disponible: 3.00 metros'), findsOneWidget);
 
       final field = find.widgetWithText(TextFormField, '0');
       await tester.enterText(field, '1.5');
@@ -193,7 +193,7 @@ void main() {
       await openUsage(tester, 'Papel para stickers');
 
       expect(find.byType(FractionQuantityPicker), findsNothing);
-      expect(find.text('Stock disponible: 40 centímetros'), findsOneWidget);
+      expect(find.text('Stock disponible: 40.00 centímetros'), findsOneWidget);
     });
   });
 }

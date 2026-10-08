@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/location_model.dart';
+import '../../config/app_clock.dart';
 
 class LocationRepository {
   final AppDatabase database;
@@ -44,7 +45,7 @@ class LocationRepository {
     String? description,
     bool isActive = true,
   }) async {
-    final now = DateTime.now();
+    final now = appNow();
     await database.into(database.locations).insertOnConflictUpdate(
           LocationsCompanion(
             id: id != null ? Value(id) : const Value.absent(),

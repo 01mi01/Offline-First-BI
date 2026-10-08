@@ -160,7 +160,7 @@ void main() {
       await openPurchase(tester);
 
       await addLine(tester, 'Tela negra', '2');
-      expect(find.text('2 metros'), findsOneWidget);
+      expect(find.text('2.00 metros'), findsOneWidget);
 
       await addLine(tester, 'Base metálica grande para pines', '1');
       expect(find.text('1 unidad'), findsOneWidget);

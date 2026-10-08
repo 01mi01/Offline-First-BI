@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../config/app_clock.dart';
 
 // Filtro por rango de fechas de las listas (Ventas, Compras, Eventos): atajos
 // (Hoy, Esta semana, Este mes, Este año) o un rango Desde/Hasta a medida.
@@ -17,13 +18,13 @@ DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 // ¿La fecha de un registro es posterior a hoy? Se compara por día: algo
 // fechado hoy a cualquier hora ya cuenta como ocurrido.
 bool isFutureDated(DateTime date, {DateTime? now}) =>
-    dateOnly(date).isAfter(dateOnly(now ?? DateTime.now()));
+    dateOnly(date).isAfter(dateOnly(now ?? appNow()));
 
 // Valida un rango Desde/Hasta. Devuelve el mensaje del primer problema o null
 // si es válido: ninguna fecha puede ser posterior a hoy y Hasta no puede ser
 // anterior a Desde (el mismo día en ambas sí es válido).
 String? validateDateRange({DateTime? from, DateTime? to, DateTime? now}) {
-  final today = dateOnly(now ?? DateTime.now());
+  final today = dateOnly(now ?? appNow());
   if (from != null && dateOnly(from).isAfter(today)) return futureDateMessage;
   if (to != null && dateOnly(to).isAfter(today)) return futureDateMessage;
   if (from != null && to != null && dateOnly(to).isBefore(dateOnly(from))) {
@@ -53,7 +54,7 @@ class DateRangeFilter {
   // Rango de un atajo hasta hoy: como ninguna fecha de filtro puede ser
   // posterior a hoy, "Esta semana" va del lunes a hoy, y así los demás.
   factory DateRangeFilter.forPreset(DatePreset preset, {DateTime? now}) {
-    final today = dateOnly(now ?? DateTime.now());
+    final today = dateOnly(now ?? appNow());
     final from = switch (preset) {
       DatePreset.today => today,
       DatePreset.week => DateTime(

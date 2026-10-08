@@ -7,6 +7,9 @@ class PurchaseItemModel {
   final double quantity;
   final double unitPrice;
   final double subtotal;
+  // Unidad del material (para mostrar la cantidad con el formato que le toca).
+  final String unitName;
+  final String unitType;
 
   PurchaseItemModel({
     required this.id,
@@ -16,5 +19,7 @@ class PurchaseItemModel {
     required this.quantity,
     required this.unitPrice,
     required this.subtotal,
+    this.unitName = '',
+    this.unitType = 'medida',
   });
 }

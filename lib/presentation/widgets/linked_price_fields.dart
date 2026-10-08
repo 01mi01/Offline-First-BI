@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../application/material_pricing.dart';
+import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
 
 // Precio de un material, para TODOS los tipos de unidad (contenedor, medida y
@@ -21,9 +22,10 @@ const String measureUnitInfoMessage =
 
 enum PriceSource { perUnit, total }
 
-// Redondeo a centavos para mostrar el campo calculado (13.333... -> 13.33).
-// El precio guardado no pasa por este redondeo cuando manda el total.
-String _display(double value) => formatNumber((value * 100).round() / 100);
+// El campo calculado se muestra a centavos con dos decimales (13.333... ->
+// "13.33", 70 -> "70.00"). Lo que la persona escribió es la fuente: ese valor
+// nunca se toca; el campo calculado es solo una vista de él.
+String _display(double value) => fixed2(value);
 
 class LinkedPriceController {
   final TextEditingController price;
@@ -46,12 +48,13 @@ class LinkedPriceController {
   }
 
   // Precio por unidad entera que se guardaría, o null si falta algo.
-  double? get resolvedPrice => source == PriceSource.perUnit
-      ? _parse(price)
-      : pricePerWholeUnit(
-          totalPaid: _parse(total) ?? 0,
-          quantity: quantity,
-        );
+  // Siempre a centavos (dos decimales) al devolverlo para guardarlo.
+  double? get resolvedPrice {
+    final raw = source == PriceSource.perUnit
+        ? _parse(price)
+        : pricePerWholeUnit(totalPaid: _parse(total) ?? 0, quantity: quantity);
+    return raw == null ? null : round2(raw);
+  }
 
   void _syncTotal() {
     final p = _parse(price);
@@ -94,7 +97,7 @@ class LinkedPriceController {
   // el total para la cantidad actual.
   void setPrice(double? value) {
     source = PriceSource.perUnit;
-    price.text = value == null ? '' : formatNumber(value);
+    price.text = value == null ? '' : fixed2(value);
     _syncTotal();
   }
 

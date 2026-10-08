@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
+import '../../application/search_filter.dart';
+import '../../application/status_filter.dart';
+import '../widgets/catalog_filter_bar.dart';
 import '../../models/client_model.dart';
 import '../../models/default_records.dart';
 import '../../theme/app_theme.dart';
@@ -32,6 +35,14 @@ class ClientsListBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(clientProvider);
+    final status = ref.watch(clientStatusFilterProvider);
+    final query = ref.watch(clientListQueryProvider);
+    // Búsqueda por nombre (sin distinguir tildes) y filtro por estado.
+    final visible = filterByQuery<ClientModel>(
+      state.clients.where((r) => status.matches(r.isActive)),
+      query,
+      (r) => r.name,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -44,31 +55,59 @@ class ClientsListBody extends ConsumerWidget {
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.clients.isEmpty
-          ? Center(
-              child: Text(
-                'No se registraron clientes',
-                style: TextStyle(color: AppColors.textSecondary),
+      body: Column(
+        children: [
+          CatalogListHeader(
+            chips: [
+              StatusFilterChip(
+                value: status,
+                onChanged: (value) =>
+                    ref.read(clientStatusFilterProvider.notifier).state = value,
               ),
-            )
-          : ListView.builder(
-              padding: AppSpacing.listWithFab,
-              itemCount: state.clients.length,
-              itemBuilder: (context, index) {
-                final c = state.clients[index];
-                return ContactCard(
-                  name: c.name,
-                  contactInfo: c.contactInfo,
-                  isActive: c.isActive,
-                  protectedMessage: c.isDefault
-                      ? DefaultRecords.protectedClientMessage
-                      : null,
-                  onEdit: () => _showDialog(context, c),
-                );
-              },
+            ],
+            search: CatalogSearchField(
+              initialText: query,
+              hintText: 'Buscar cliente',
+              onChanged: (value) =>
+                  ref.read(clientListQueryProvider.notifier).state = value,
             ),
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.clients.isEmpty
+                ? Center(
+                    child: Text(
+                      'No se registraron clientes',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : visible.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin resultados',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: AppSpacing.listWithFab,
+                    itemCount: visible.length,
+                    itemBuilder: (context, index) {
+                      final c = visible[index];
+                      return ContactCard(
+                        name: c.name,
+                        contactInfo: c.contactInfo,
+                        isActive: c.isActive,
+                        protectedMessage: c.isDefault
+                            ? DefaultRecords.protectedClientMessage
+                            : null,
+                        onEdit: () => _showDialog(context, c),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

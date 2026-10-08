@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/default_records.dart';
 import '../../models/supplier_model.dart';
+import '../../config/app_clock.dart';
 
 class SupplierRepository {
   final AppDatabase database;
@@ -64,7 +65,7 @@ class SupplierRepository {
     if (existing != null && existing.id != id) {
       throw Exception('Ya existe un proveedor con ese nombre');
     }
-    final now = DateTime.now();
+    final now = appNow();
     return await database
         .into(database.suppliers)
         .insertOnConflictUpdate(

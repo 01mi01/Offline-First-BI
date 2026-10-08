@@ -18,6 +18,7 @@ import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/models/bi_config.dart';
 import 'package:offline_first_bi/models/bi_models.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
+import 'package:offline_first_bi/config/app_clock.dart';
 
 // Base Drift real en memoria + providers reales de Riverpod, con ayudantes para
 // sembrar ventas, compras, eventos y usos de material por la capa de
@@ -25,7 +26,7 @@ import 'package:offline_first_bi/models/report_filters.dart';
 class BiHarness {
   late AppDatabase db;
   late ProviderContainer container;
-  final DateTime now = DateTime.now();
+  final DateTime now = appNow();
 
   // Un día relativo a hoy (0 = hoy, -3 = hace 3 días, 5 = dentro de 5 días).
   DateTime day(int offset, [int hour = 12]) =>

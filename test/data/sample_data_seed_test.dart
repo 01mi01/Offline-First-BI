@@ -9,7 +9,9 @@ import 'package:offline_first_bi/application/purchase_provider.dart';
 import 'package:offline_first_bi/application/sale_provider.dart';
 import 'package:offline_first_bi/application/supplier_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart' show SaleItem;
+import 'package:offline_first_bi/config/rounding.dart';
 import 'package:offline_first_bi/models/bi_models.dart';
+import 'package:offline_first_bi/models/location_model.dart';
 import 'package:offline_first_bi/models/default_records.dart';
 import 'package:offline_first_bi/models/purchase_model.dart';
 import 'package:offline_first_bi/models/sale_model.dart';
@@ -94,6 +96,9 @@ void main() {
 
   DateTime day(int offset) => h.day(offset, 0);
 
+  // "Ciudad - Zona": the plain city plus the zone kept in the description.
+  String zoneLabel(LocationModel l) => '${l.city} - ${l.description}';
+
   test(
     'creates exactly the approved clients, suppliers, locations, materials and products',
     () async {
@@ -108,11 +113,18 @@ void main() {
         DefaultRecords.supplier,
       });
       expect(
-        c.read(locationProvider).locations.map((x) => x.city).toList()..sort(),
+        c.read(locationProvider).locations.map(zoneLabel).toList()..sort(),
         [...locations]..sort(),
       );
+      // The Ciudad filter lists each plain city once; the zone lives in the
+      // description.
+      expect(
+        c.read(locationProvider).locations.map((x) => x.city).toSet(),
+        {'La Paz', 'Santa Cruz', 'Cochabamba', 'Lima'},
+      );
       final countries = {
-        for (final x in c.read(locationProvider).locations) x.city: x.country,
+        for (final x in c.read(locationProvider).locations)
+          zoneLabel(x): x.country,
       };
       expect(countries['Lima - Miraflores'], 'Perú');
       expect(
@@ -277,7 +289,7 @@ void main() {
         'Feria de Lima',
       });
       final cities = {
-        for (final l in c.read(locationProvider).locations) l.id: l.city,
+        for (final l in c.read(locationProvider).locations) l.id: zoneLabel(l),
       };
       String cityOf(String event) => cities[events[event]!.locationId]!;
       expect(cityOf('Feria de Lima'), 'Lima - Miraflores');
@@ -436,8 +448,11 @@ void main() {
         c.read(materialProvider).materials.every((x) => x.description == null),
         isTrue,
       );
+      // Locations keep their zone in the description (seed cleanup).
       expect(
-        c.read(locationProvider).locations.every((x) => x.description == null),
+        c.read(locationProvider).locations.every(
+          (x) => x.description != null && x.description!.isNotEmpty,
+        ),
         isTrue,
       );
       expect(c.read(saleProvider).sales.every((x) => x.notes == null), isTrue);
@@ -478,7 +493,7 @@ void main() {
           .read(locationProvider)
           .locations
           .where((x) => !x.isActive)
-          .map((x) => x.city);
+          .map(zoneLabel);
       expect(inactiveLocations, ['Santa Cruz - Sirari']);
       final inactiveMaterials = c
           .read(materialProvider)
@@ -770,7 +785,7 @@ void main() {
       final net = d.sales.fold(0.0, (t, s) => t + s.finalAmount);
       final t = h.report().ticket;
       expect(t.salesCount, d.sales.length);
-      expect(t.average, closeTo(net / d.sales.length, 1e-6));
+      expect(t.average, closeTo(round2(net / d.sales.length), 1e-9));
     });
 
     test('events with linked sales and linked expenses: both a profit and a loss', () async {
@@ -839,8 +854,8 @@ void main() {
         final id = byId.values.firstWhere((p) => p.name == e.name).id;
         final cost = byId[id]!.productionCost! * units[id]!;
         expect(e.units, units[id]);
-        expect(e.cost, closeTo(cost, 1e-6), reason: e.name);
-        expect(e.ratio, closeTo((revenue[id]! - cost) / cost, 1e-9), reason: e.name);
+        expect(e.cost, closeTo(round2(cost), 1e-9), reason: e.name);
+        expect(e.ratio, closeTo((revenue[id]! - cost) / cost, 0.011), reason: e.name);
       }
       // Sorted from the best return to the worst.
       for (var i = 1; i < r.entries.length; i++) {

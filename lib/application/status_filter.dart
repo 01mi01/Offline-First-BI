@@ -24,5 +24,24 @@ final locationStatusFilterProvider = StateProvider.autoDispose<StatusFilter>(
   (ref) => StatusFilter.all,
 );
 
+final clientStatusFilterProvider = StateProvider.autoDispose<StatusFilter>(
+  (ref) => StatusFilter.all,
+);
+final supplierStatusFilterProvider = StateProvider.autoDispose<StatusFilter>(
+  (ref) => StatusFilter.all,
+);
+
+// Filtros "País" y "Ciudad" de Ubicaciones (null = todos).
+final locationCountryFilterProvider =
+    StateProvider.autoDispose<String?>((ref) => null);
+final locationCityFilterProvider =
+    StateProvider.autoDispose<String?>((ref) => null);
+
+// Texto de los buscadores de Clientes, Proveedores, Eventos y Ubicaciones.
+final clientListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+final supplierListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+final eventListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+final locationListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+
 // Texto del buscador de la pestaña "Materiales".
 final materialListQueryProvider = StateProvider.autoDispose<String>((ref) => '');

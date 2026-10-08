@@ -2,6 +2,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../../data/db/app_database.dart';
 import '../../models/user_model.dart';
+import '../../config/app_clock.dart';
 
 class AuthRepository {
   final AppDatabase database;
@@ -61,7 +62,7 @@ class AuthRepository {
             SesionLocalCompanion.insert(
               userId: user.id,
               username: user.username,
-              createdAt: DateTime.now(),
+              createdAt: appNow(),
             ),
           );
 

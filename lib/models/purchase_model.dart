@@ -11,6 +11,11 @@ class PurchaseModel {
   final String? notes;
   final DateTime createdAt;
 
+  // Una compra cancelada se conserva como historial (el stock de sus materiales
+  // ya se restó) y no cuenta como gasto.
+  final bool isCanceled;
+  final DateTime? canceledAt;
+
   PurchaseModel({
     required this.id,
     this.supplierId,
@@ -22,5 +27,7 @@ class PurchaseModel {
     required this.date,
     this.notes,
     required this.createdAt,
+    this.isCanceled = false,
+    this.canceledAt,
   });
 }

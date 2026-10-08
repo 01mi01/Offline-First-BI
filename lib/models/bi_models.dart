@@ -1,3 +1,4 @@
+import '../config/rounding.dart';
 import 'product_model.dart';
 
 // Modelos de los indicadores del módulo de Business Intelligence.
@@ -9,7 +10,7 @@ class BiSummary {
 
   const BiSummary({required this.ingresos, required this.gastos});
 
-  double get balance => ingresos - gastos;
+  double get balance => round2(ingresos - gastos);
 }
 
 // Una barra de un ranking (producto, categoría, material, evento...).
@@ -20,8 +21,11 @@ class BiEntry {
   final double amount;
   final double quantity;
 
-  // Unidad de la cantidad, si tiene sentido mostrarla (materiales).
+  // Unidad de la cantidad, si tiene sentido mostrarla (materiales), y el tipo
+  // de esa unidad (decide cómo se muestra la cantidad: dos decimales en
+  // medidas, fracciones exactas en envases).
   final String? unit;
+  final String? unitType;
 
   // Id del producto, evento o material que representa (null en las categorías,
   // que se identifican por su nombre, y en los indicadores sin detalle): es la
@@ -33,6 +37,7 @@ class BiEntry {
     required this.amount,
     required this.quantity,
     this.unit,
+    this.unitType,
     this.refId,
   });
 }
@@ -71,10 +76,11 @@ class BiTimeBucket {
   });
 
   // Ticket promedio del intervalo; null si no hubo ventas.
-  double? get ticket => ventas > 0 ? ingresos / ventas : null;
+  double? get ticket => ventas > 0 ? round2(ingresos / ventas) : null;
 
   // Descuentos como % de las ventas brutas del intervalo; null sin ventas.
-  double? get descuentoPct => bruto > 0 ? descuentos / bruto * 100 : null;
+  double? get descuentoPct =>
+      bruto > 0 ? round2(descuentos / bruto * 100) : null;
 }
 
 class BiTimeSeries {
@@ -111,10 +117,10 @@ class BiMarginEntry {
     required this.units,
   });
 
-  double get profit => revenue - cost;
+  double get profit => round2(revenue - cost);
 
   // Ganancia como porcentaje del ingreso (0 si no hubo ingreso).
-  double get marginPct => revenue > 0 ? profit / revenue * 100 : 0;
+  double get marginPct => revenue > 0 ? round2(profit / revenue * 100) : 0;
 }
 
 class BiMarginReport {
@@ -216,7 +222,7 @@ class BiTicketReport {
 
   const BiTicketReport({required this.salesCount, required this.total});
 
-  double? get average => salesCount > 0 ? total / salesCount : null;
+  double? get average => salesCount > 0 ? round2(total / salesCount) : null;
 }
 
 // Descuentos dados en el periodo frente a las ventas brutas.
@@ -233,7 +239,8 @@ class BiDiscountReport {
     required this.discountedSales,
   });
 
-  double? get pct => grossSales > 0 ? totalDiscount / grossSales * 100 : null;
+  double? get pct =>
+      grossSales > 0 ? round2(totalDiscount / grossSales * 100) : null;
 }
 
 // Resultado de un evento: ingresos de sus ventas menos todas sus compras.
@@ -252,7 +259,7 @@ class BiEventProfitEntry {
     required this.purchaseCount,
   });
 
-  double get profit => income - expenses;
+  double get profit => round2(income - expenses);
 }
 
 // Retorno sobre el costo de producción de un producto vendido: ganancia
@@ -271,10 +278,10 @@ class BiReturnEntry {
     required this.units,
   });
 
-  double get profit => revenue - cost;
+  double get profit => round2(revenue - cost);
 
   // Ganancia por cada Bs. 1 de costo (el costo siempre es mayor que 0).
-  double get ratio => profit / cost;
+  double get ratio => round2(profit / cost);
 }
 
 class BiReturnReport {
@@ -327,7 +334,8 @@ class BiProjection {
 
   bool get isAvailable => unavailableReason == null;
 
-  double get projectedTotal => projected.fold(0.0, (s, p) => s + p.value);
+  double get projectedTotal =>
+      round2(projected.fold(0.0, (s, p) => s + p.value));
 }
 
 // Ventas de los días con evento frente a los días sin evento.
@@ -357,19 +365,23 @@ class BiEventComparison {
     regularSales: 0,
   );
 
-  double? get eventPerDay => eventDays > 0 ? eventRevenue / eventDays : null;
+  double? get eventPerDay =>
+      eventDays > 0 ? round2(eventRevenue / eventDays) : null;
   double? get regularPerDay =>
-      regularDays > 0 ? regularRevenue / regularDays : null;
-  double? get eventPerSale => eventSales > 0 ? eventRevenue / eventSales : null;
+      regularDays > 0 ? round2(regularRevenue / regularDays) : null;
+  double? get eventPerSale =>
+      eventSales > 0 ? round2(eventRevenue / eventSales) : null;
   double? get regularPerSale =>
-      regularSales > 0 ? regularRevenue / regularSales : null;
+      regularSales > 0 ? round2(regularRevenue / regularSales) : null;
 
   // Cuánto más (o menos) se vende por día en evento, en porcentaje.
   double? get perDayDifferencePct {
-    final e = eventPerDay;
-    final r = regularPerDay;
-    if (e == null || r == null || r == 0) return null;
-    return (e - r) / r * 100;
+    // Con los promedios SIN redondear (el redondeo es del resultado final).
+    if (eventDays <= 0 || regularDays <= 0) return null;
+    final e = eventRevenue / eventDays;
+    final r = regularRevenue / regularDays;
+    if (r == 0) return null;
+    return round2((e - r) / r * 100);
   }
 }
 
@@ -381,7 +393,8 @@ class BiMaterialCost {
   const BiMaterialCost({required this.materialSpend, required this.revenue});
 
   // Parte del ingreso que se fue en materiales (en %), si hubo ingresos.
-  double? get ratioPct => revenue > 0 ? materialSpend / revenue * 100 : null;
+  double? get ratioPct =>
+      revenue > 0 ? round2(materialSpend / revenue * 100) : null;
 }
 
 // Producto activo sin ventas en la ventana reciente.
@@ -432,7 +445,7 @@ class BiPeriodComparison {
   // valor absoluto, para que "mejor" siempre sea positivo.
   static double? changePct(double current, double previous) {
     if (previous == 0) return null;
-    return (current - previous) / previous.abs() * 100;
+    return round2((current - previous) / previous.abs() * 100);
   }
 }
 
@@ -575,13 +588,14 @@ class BiEventDetail {
     required this.expenses,
   });
 
-  double get income => sales.fold(0.0, (s, l) => s + l.amount);
-  double get totalExpenses => expenses.fold(0.0, (s, l) => s + l.amount);
-  double get materialExpenses => expenses
-      .where((e) => e.isMaterial)
-      .fold(0.0, (s, l) => s + l.amount);
-  double get generalExpenses => totalExpenses - materialExpenses;
-  double get profit => income - totalExpenses;
+  double get income => round2(sales.fold(0.0, (s, l) => s + l.amount));
+  double get totalExpenses =>
+      round2(expenses.fold(0.0, (s, l) => s + l.amount));
+  double get materialExpenses => round2(
+    expenses.where((e) => e.isMaterial).fold(0.0, (s, l) => s + l.amount),
+  );
+  double get generalExpenses => round2(totalExpenses - materialExpenses);
+  double get profit => round2(income - totalExpenses);
 
   bool get isEmpty => sales.isEmpty && expenses.isEmpty;
 }
@@ -591,6 +605,7 @@ class BiEventDetail {
 class BiMaterialDetail {
   final String name;
   final String? unit;
+  final String unitType;
   final BiGranularity granularity;
   final List<BiDrillBucket> buckets;
   final double spend;
@@ -600,6 +615,7 @@ class BiMaterialDetail {
   const BiMaterialDetail({
     required this.name,
     required this.unit,
+    this.unitType = 'medida',
     required this.granularity,
     required this.buckets,
     required this.spend,

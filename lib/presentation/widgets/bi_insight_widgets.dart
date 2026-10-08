@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../config/date_formatters.dart';
+import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../models/product_model.dart';
@@ -1173,7 +1174,7 @@ class BiMaterialCostSection extends StatelessWidget {
                   ? 'Sin ingresos en el periodo: no se puede calcular la '
                         'proporción.'
                   : 'Por cada Bs. 1 vendido se gastaron '
-                        'Bs. ${(ratio / 100).toStringAsFixed(2)} en materiales.',
+                        'Bs. ${fixed2(ratio / 100)} en materiales.',
               style: _label(context, bold: true),
             ),
             const SizedBox(height: AppSpacing.s2),

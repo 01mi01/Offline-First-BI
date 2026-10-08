@@ -111,7 +111,7 @@ void main() {
 
       // De regreso en el diálogo principal: el total se calculó automáticamente
       // (3 * 4.0 = 12), sin que el diálogo haga el cálculo por su cuenta.
-      expect(find.text('12'), findsOneWidget);
+      expect(find.text('12.00'), findsOneWidget);
 
       // Registra la compra
       await tester.ensureVisible(find.text('Registrar compra'));

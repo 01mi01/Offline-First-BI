@@ -14,6 +14,7 @@ import 'package:offline_first_bi/presentation/pages/sales_page.dart';
 import 'package:offline_first_bi/presentation/widgets/date_range_filter_bar.dart';
 import 'package:offline_first_bi/presentation/widgets/report_filters_widget.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'package:offline_first_bi/config/app_clock.dart';
 
 // Filtros por fecha de Ventas, Compras y Eventos (atajos + Desde/Hasta) y la
 // validación de rangos (Hasta no antes que Desde, hoy como fecha máxima) en
@@ -44,7 +45,7 @@ Future<void> _typeDate(WidgetTester tester, DateTime date) async {
 
 void main() {
   late AppDatabase db;
-  final now = DateTime.now();
+  final now = appNow();
   final today = DateTime(now.year, now.month, now.day);
   final yesterday = DateTime(now.year, now.month, now.day - 1);
   final tomorrow = DateTime(now.year, now.month, now.day + 1);
@@ -435,6 +436,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(emitted.last.startDate, today);
       expect(emitted.last.endDate, today);
+
+      // El 1 de enero "Hoy" y "Este año" son el mismo rango: tocar el segundo
+      // ya activo lo quitaría, así que ese día solo se comprueba "Hoy".
+      if (today == DateTime(now.year)) return;
 
       await tester.tap(find.text('Este año'));
       await tester.pumpAndSettle();

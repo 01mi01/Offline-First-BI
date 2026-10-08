@@ -41,60 +41,37 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       ),
       body: Column(
         children: [
-          // Fila superior, alineada a la derecha: el toggle lista/catálogo.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s16,
-              AppSpacing.s12,
-              AppSpacing.s16,
-              AppSpacing.s8,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _ViewToggle(
-                  isGrid: _isGrid,
-                  onToggle: (val) => setState(() => _isGrid = val),
-                ),
-              ],
-            ),
-          ),
-          // Fila de abajo: el buscador (por nombre) comparte el ancho con el
-          // filtro de estado. El filtro de estado se controla solo desde la
-          // lista; el catálogo refleja lo elegido sin repetir el control.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: CatalogSearchField(
-                    initialText: filter.query,
-                    hintText: 'Buscar categoría',
-                    onChanged: (value) => setFilter.update(
-                      (f) => f.copyWith(query: value),
-                    ),
-                  ),
-                ),
-                if (!_isGrid) ...[
-                  const SizedBox(width: AppSpacing.s8),
-                  FilterMenuChip<CategoryStatusFilter>(
-                    label: switch (filter.status) {
-                      CategoryStatusFilter.all => 'Todas',
-                      CategoryStatusFilter.active => 'Activas',
-                      CategoryStatusFilter.inactive => 'Inactivas',
-                    },
-                    active: filter.status != CategoryStatusFilter.all,
-                    selected: filter.status,
-                    options: const [
-                      FilterOption(CategoryStatusFilter.all, 'Todas'),
-                      FilterOption(CategoryStatusFilter.active, 'Activas'),
-                      FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
-                    ],
-                    onSelected: (value) =>
-                        setFilter.update((f) => f.copyWith(status: value)),
-                  ),
+          // Igual que Productos: el filtro de estado arriba, alineado a la
+          // derecha; debajo, el buscador a todo el ancho junto al toggle
+          // lista/catálogo. Igual en ambas vistas.
+          CatalogListHeader(
+            chips: [
+              FilterMenuChip<CategoryStatusFilter>(
+                label: switch (filter.status) {
+                  CategoryStatusFilter.all => 'Todas',
+                  CategoryStatusFilter.active => 'Activas',
+                  CategoryStatusFilter.inactive => 'Inactivas',
+                },
+                active: filter.status != CategoryStatusFilter.all,
+                selected: filter.status,
+                options: const [
+                  FilterOption(CategoryStatusFilter.all, 'Todas'),
+                  FilterOption(CategoryStatusFilter.active, 'Activas'),
+                  FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
                 ],
-              ],
+                onSelected: (value) =>
+                    setFilter.update((f) => f.copyWith(status: value)),
+              ),
+            ],
+            search: CatalogSearchField(
+              initialText: filter.query,
+              hintText: 'Buscar categoría',
+              onChanged: (value) =>
+                  setFilter.update((f) => f.copyWith(query: value)),
+            ),
+            trailing: _ViewToggle(
+              isGrid: _isGrid,
+              onToggle: (val) => setState(() => _isGrid = val),
             ),
           ),
           const SizedBox(height: AppSpacing.s8),

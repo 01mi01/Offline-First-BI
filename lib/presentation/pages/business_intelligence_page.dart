@@ -6,6 +6,7 @@ import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
 import '../../application/sale_provider.dart';
 import '../../config/date_formatters.dart';
+import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/purchase_kind.dart';
 import '../../models/report_filters.dart';
@@ -267,7 +268,7 @@ class _BusinessIntelligencePageState
             ),
             amountLabel: 'Gasto',
             quantityText: (e) =>
-                '${formatQuantity(e.quantity)}${e.unit == null ? '' : ' ${e.unit}'}',
+                '${formatMaterialQuantity(e.quantity, unitType: e.unitType ?? 'medida', unitName: e.unit ?? '')}${e.unit == null ? '' : ' ${e.unit}'}',
           );
         case BiIndicator.materialCostRatio:
           return BiMaterialCostSection(

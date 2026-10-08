@@ -290,7 +290,7 @@ void main() {
     ) async {
       await _openSheet(tester, db, const PurchaseDialog());
       await addTela(tester);
-      expect(find.text('12'), findsOneWidget); // 3 x 4 calculado
+      expect(find.text('12.00'), findsOneWidget); // 3 x 4 calculado
 
       await tester.ensureVisible(totalField);
       await tester.enterText(totalField, '50');
@@ -340,7 +340,7 @@ void main() {
       await tester.tap(find.byTooltip('Usar el total calculado'));
       await tester.pumpAndSettle();
 
-      expect(tester.widget<TextFormField>(totalField).controller!.text, '12');
+      expect(tester.widget<TextFormField>(totalField).controller!.text, '12.00');
       expect(find.byTooltip('Usar el total calculado'), findsNothing);
     });
   });
@@ -392,26 +392,51 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('layout: price filter left of the toggle (top row), search and category share the row below', (
+    // Posiciones de los controles de arriba (centros) en la vista actual.
+    Map<String, Offset> topControls(WidgetTester tester) => {
+      'price': tester.getCenter(find.byIcon(Icons.sell_outlined)),
+      'category': tester.getCenter(find.byIcon(Icons.category_outlined)),
+      'status': tester.getCenter(find.text('Todos')),
+      'search': tester.getCenter(find.byType(TextField)),
+      'list': tester.getCenter(find.byIcon(Icons.list)),
+      'grid': tester.getCenter(find.byIcon(Icons.grid_view_rounded)),
+    };
+
+    testWidgets('layout: the three filters on top aligned right, search below filling the width next to the toggle', (
       tester,
     ) async {
       await openList(tester);
+      final c = topControls(tester);
 
-      final price = tester.getCenter(find.byIcon(Icons.sell_outlined));
-      final listToggle = tester.getCenter(find.byIcon(Icons.list));
-      final gridToggle = tester.getCenter(find.byIcon(Icons.grid_view_rounded));
-      final search = tester.getCenter(find.byType(TextField));
-      final category = tester.getCenter(find.byIcon(Icons.category_outlined));
+      // Arriba: precio, categoría y estado, en ese orden y pegados a la
+      // derecha. Si no caben en una línea (412 de ancho), el último pasa a la
+      // siguiente, también a la derecha.
+      expect(c['price']!.dy, closeTo(c['category']!.dy, 4));
+      expect(c['price']!.dx, lessThan(c['category']!.dx));
+      expect(c['status']!.dy, greaterThanOrEqualTo(c['category']!.dy));
+      expect(c['status']!.dx, greaterThan(300));
+      // Debajo: el buscador y, a su derecha, el toggle lista/catálogo.
+      expect(c['search']!.dy, greaterThan(c['status']!.dy + 20));
+      expect(c['search']!.dy, closeTo(c['list']!.dy, 4));
+      expect(c['search']!.dx, lessThan(c['list']!.dx));
+      expect(c['grid']!.dx, greaterThan(c['list']!.dx));
+      expect(c['grid']!.dx, greaterThan(350));
+      // El buscador ocupa el ancho disponible (hasta el toggle).
+      final searchRect = tester.getRect(find.byType(TextField));
+      expect(searchRect.width, greaterThan(250));
+    });
 
-      // Fila superior: el precio, luego el toggle, pegado a la derecha.
-      expect(price.dy, closeTo(listToggle.dy, 4));
-      expect(price.dx, lessThan(listToggle.dx));
-      expect(gridToggle.dx, greaterThan(listToggle.dx));
-      expect(gridToggle.dx, greaterThan(350)); // alineado a la derecha (ancho 412)
-      // Fila de abajo: buscador y categoría en la misma línea, bajo la primera.
-      expect(search.dy, closeTo(category.dy, 4));
-      expect(search.dy, greaterThan(price.dy + 20));
-      expect(search.dx, lessThan(category.dx));
+    testWidgets('filters, search and buttons are in exactly the same place in the catalogue view', (
+      tester,
+    ) async {
+      await openList(tester);
+      final inList = topControls(tester);
+
+      await toGrid(tester);
+      final inGrid = topControls(tester);
+      for (final key in inList.keys) {
+        expect(inGrid[key], inList[key], reason: key);
+      }
     });
 
     testWidgets('the name and price sorters are gone', (tester) async {
@@ -427,14 +452,14 @@ void main() {
       );
     });
 
-    testWidgets('the price control exists only in the list view; the catalogue has none', (
+    testWidgets('the price control is in both views, in the same place', (
       tester,
     ) async {
       await openList(tester);
       expect(find.byIcon(Icons.sell_outlined), findsOneWidget);
 
       await toGrid(tester);
-      expect(find.byIcon(Icons.sell_outlined), findsNothing);
+      expect(find.byIcon(Icons.sell_outlined), findsOneWidget);
       expect(find.byIcon(Icons.swap_vert), findsNothing);
     });
 
@@ -641,7 +666,7 @@ void main() {
         // ...así que la línea de esta compra NO trae el 5 de relleno.
         expect(find.text('Papel para stickers'), findsWidgets); // ya seleccionada
         expect(quantityText(tester, 'Cantidad (metro)'), isEmpty);
-        expect(quantityText(tester, 'Precio por unidad (Bs.)'), '3');
+        expect(quantityText(tester, 'Precio por unidad (Bs.)'), '3.00');
 
         // Se compra lo de esta ocasión: 2 metros.
         await tester.enterText(
