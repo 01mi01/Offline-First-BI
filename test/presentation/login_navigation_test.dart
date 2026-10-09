@@ -61,6 +61,12 @@ void main() {
         find.widgetWithText(TextFormField, 'Tu contraseña'),
         '123456',
       );
+      // En la superficie de prueba (800x600) el botón queda más abajo de lo
+      // visible: se desplaza hasta él, como haría la persona.
+      await tester.ensureVisible(
+        find.widgetWithText(ElevatedButton, 'Iniciar sesión'),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Iniciar sesión'));
       await tester.pumpAndSettle();
 

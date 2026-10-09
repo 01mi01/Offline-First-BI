@@ -16,7 +16,10 @@ import '../widgets/catalog_filter_bar.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/unit_quantity_input.dart';
-import '../widgets/status_badge.dart';
+import '../widgets/flat_controls.dart';
+import '../widgets/flat_form.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/flat_style.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -26,28 +29,20 @@ class MaterialsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: CustomAppBar(
-          title: 'Materiales',
-          showBack: true,
-          bottom: TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: Theme.of(
-              context,
-            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
-            tabs: const [
-              Tab(text: 'Materiales'),
-              Tab(text: 'Registro de uso'),
-            ],
+    return FlatStyle(
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: const CustomAppBar(
+            title: 'Materiales',
+            showBack: true,
+            bottom: FlatTabBar(labels: ['Materiales', 'Registro de uso']),
+          ),
+          body: const TabBarView(
+            children: [MaterialsListTab(), MaterialsUsageTab()],
           ),
         ),
-        body: const TabBarView(children: [MaterialsListTab(), MaterialsUsageTab()]),
       ),
     );
   }
@@ -70,86 +65,83 @@ class MaterialsListTab extends ConsumerWidget {
       (m) => m.name,
     );
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
-        heroTag: 'materials_list_tab_fab',
-        backgroundColor: AppColors.primary,
-        shape: const CircleBorder(),
-        onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
-      ),
-      body: Column(
-        children: [
-          // El buscador (por nombre) comparte el ancho con el filtro de estado.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s16,
-              AppSpacing.s12,
-              AppSpacing.s16,
-              AppSpacing.s8,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: CatalogSearchField(
-                    initialText: query,
-                    hintText: 'Buscar material',
+    return FlatStyle(
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        floatingActionButton: FlatFab(
+          // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+          // conviven montadas a la vez bajo el shell de navegación inferior.
+          heroTag: 'materials_list_tab_fab',
+          onPressed: () => _showDialog(context, null),
+        ),
+        body: Column(
+          children: [
+            // El buscador (por nombre) comparte el ancho con el filtro de estado.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s12,
+                AppSpacing.s16,
+                AppSpacing.s8,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: CatalogSearchField(
+                      initialText: query,
+                      hintText: 'Buscar material',
+                      onChanged: (value) =>
+                          ref.read(materialListQueryProvider.notifier).state =
+                              value,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s8),
+                  StatusFilterChip(
+                    value: status,
                     onChanged: (value) =>
-                        ref.read(materialListQueryProvider.notifier).state =
+                        ref.read(materialStatusFilterProvider.notifier).state =
                             value,
                   ),
-                ),
-                const SizedBox(width: AppSpacing.s8),
-                StatusFilterChip(
-                  value: status,
-                  onChanged: (value) =>
-                      ref.read(materialStatusFilterProvider.notifier).state =
-                          value,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.materials.isEmpty
-                ? Center(
-                    child: Text(
-                      'No se registraron materiales',
-                      style: TextStyle(color: AppColors.textSecondary),
+            Expanded(
+              child: state.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.materials.isEmpty
+                  ? FlatEmptyState(
+                      icon: Icons.palette_outlined,
+                      message: 'No se registraron materiales',
+                      actionLabel: 'Nuevo material',
+                      onAction: () => _showDialog(context, null),
+                    )
+                  : visible.isEmpty
+                  ? const FlatEmptyState(
+                      icon: Icons.search_off_outlined,
+                      message: 'Sin resultados',
+                    )
+                  : ListView.builder(
+                      padding: AppFlat.listWithFab,
+                      itemCount: visible.length,
+                      itemBuilder: (context, index) {
+                        final m = visible[index];
+                        return _MaterialRow(
+                          material: m,
+                          unitName: units
+                              .where((u) => u.id == m.unitId)
+                              .firstOrNull
+                              ?.name,
+                          unitType: units
+                              .where((u) => u.id == m.unitId)
+                              .firstOrNull
+                              ?.type,
+                          onEdit: () => _showDialog(context, m),
+                        );
+                      },
                     ),
-                  )
-                : visible.isEmpty
-                ? Center(
-                    child: Text(
-                      'Sin resultados',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: AppSpacing.listWithFab,
-                    itemCount: visible.length,
-                    itemBuilder: (context, index) {
-                      final m = visible[index];
-                      return _MaterialCard(
-                        material: m,
-                        unitName: units
-                            .where((u) => u.id == m.unitId)
-                            .firstOrNull
-                            ?.name,
-                        unitType: units
-                            .where((u) => u.id == m.unitId)
-                            .firstOrNull
-                            ?.type,
-                        onEdit: () => _showDialog(context, m),
-                      );
-                    },
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -159,11 +151,11 @@ class MaterialsListTab extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => MaterialDialog(material: material),
+      builder: (_) => FlatStyle(child: MaterialDialog(material: material)),
     );
   }
 }
@@ -201,13 +193,15 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _RegisterUsageSheet(
-        productId: _selectedProductId!,
-        onRegistered: () => _loadUsageLog(_selectedProductId!),
+      builder: (_) => FlatStyle(
+        child: _RegisterUsageSheet(
+          productId: _selectedProductId!,
+          onRegistered: () => _loadUsageLog(_selectedProductId!),
+        ),
       ),
     );
   }
@@ -217,13 +211,15 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _EditUsageSheet(
-        entry: entry,
-        onEdited: () => _loadUsageLog(_selectedProductId!),
+      builder: (_) => FlatStyle(
+        child: _EditUsageSheet(
+          entry: entry,
+          onEdited: () => _loadUsageLog(_selectedProductId!),
+        ),
       ),
     );
   }
@@ -236,153 +232,119 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
         .where((p) => p.isActive)
         .toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      floatingActionButton: _selectedProductId != null
-          ? FloatingActionButton(
-              // Tag único: evita colisiones de Hero cuando varias pestañas
-              // con FAB conviven montadas a la vez bajo el shell de
-              // navegación inferior.
-              heroTag: 'materials_usage_tab_fab',
-              backgroundColor: AppColors.primary,
-              shape: const CircleBorder(),
-              onPressed: _showRegisterSheet,
-              child: const Icon(Icons.add, color: AppColors.surface),
-            )
-          : null,
-      body: Column(
-        children: [
-          // Selector de producto: búsqueda por nombre, sin lista hasta escribir.
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.s16),
-            child: SearchablePickerField<int>(
-              label: 'Producto',
-              searchHint: 'Buscar producto',
-              value: _selectedProductId,
-              options: [
-                for (final p in products) PickerOption<int>(p.id, p.name),
-              ],
-              onChanged: (val) {
-                setState(() {
-                  _selectedProductId = val;
-                  _usageLog = [];
-                });
-                if (val != null) _loadUsageLog(val);
-              },
-            ),
-          ),
-
-          if (_selectedProductId == null)
-            Expanded(
-              child: Center(
-                child: Text(
-                  'Selecciona un producto para ver\nel registro de uso de materiales',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              ),
-            )
-          else if (_loading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
-          else if (_usageLog.isEmpty)
-            Expanded(
-              child: Center(
-                child: Text(
-                  'Sin registros de uso',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  0,
-                  AppSpacing.s16,
-                  AppSpacing.s16 + 56 + AppSpacing.s16,
-                ),
-                itemCount: _usageLog.length,
-                itemBuilder: (context, index) {
-                  final entry = _usageLog[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.s12),
-                    padding: const EdgeInsets.all(AppSpacing.s16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      entry.materialName,
-                                      style: Theme.of(context).textTheme
-                                          .displayMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: entry.isCanceled
-                                                ? AppColors.textSecondary
-                                                : AppColors.textPrimary,
-                                          ),
-                                    ),
-                                  ),
-                                  if (entry.isCanceled) ...[
-                                    const SizedBox(width: AppSpacing.s8),
-                                    const StatusBadge.canceled(label: 'Cancelado'),
-                                  ],
-                                ],
-                              ),
-                              // Cantidad y precio son dos piezas que no se
-                              // parten por dentro: si no caben juntas, el
-                              // precio completo pasa a la línea de abajo.
-                              Wrap(
-                                spacing: AppSpacing.s16,
-                                children: [
-                                  for (final piece in [
-                                    'Cantidad: ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
-                                    'Bs. ${entry.pricePerUnit.toStringAsFixed(2)} / ${entry.materialUnitName}',
-                                  ])
-                                    Text(
-                                      piece,
-                                      softWrap: false,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Un registro cancelado es solo historial: sin acciones.
-                        if (!entry.isCanceled) ...[
-                          IconButton(
-                            icon: const Icon(
-                              Icons.edit_outlined,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
-                            tooltip: 'Editar registro',
-                            onPressed: () => _showEditSheet(entry),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
+    return FlatStyle(
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        floatingActionButton: _selectedProductId != null
+            ? FlatFab(
+                // Tag único: evita colisiones de Hero cuando varias pestañas
+                // con FAB conviven montadas a la vez bajo el shell de
+                // navegación inferior.
+                heroTag: 'materials_usage_tab_fab',
+                onPressed: _showRegisterSheet,
+              )
+            : null,
+        body: Column(
+          children: [
+            // Selector de producto: búsqueda por nombre, sin lista hasta escribir.
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.s16),
+              child: SearchablePickerField<int>(
+                label: 'Producto',
+                searchHint: 'Buscar producto',
+                value: _selectedProductId,
+                options: [
+                  for (final p in products) PickerOption<int>(p.id, p.name),
+                ],
+                onChanged: (val) {
+                  setState(() {
+                    _selectedProductId = val;
+                    _usageLog = [];
+                  });
+                  if (val != null) _loadUsageLog(val);
                 },
               ),
             ),
-        ],
+
+            if (_selectedProductId == null)
+              const Expanded(
+                child: FlatEmptyState(
+                  icon: Icons.palette_outlined,
+                  message:
+                      'Selecciona un producto para ver\nel registro de uso de materiales',
+                ),
+              )
+            else if (_loading)
+              const Expanded(child: Center(child: CircularProgressIndicator()))
+            else if (_usageLog.isEmpty)
+              const Expanded(
+                child: FlatEmptyState(
+                  icon: Icons.history_outlined,
+                  message: 'Sin registros de uso',
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  padding: AppFlat.listWithFab,
+                  itemCount: _usageLog.length,
+                  itemBuilder: (context, index) {
+                    final entry = _usageLog[index];
+                    return FlatListRow(
+                      leading: const FlatThumb(icon: Icons.palette_outlined),
+                      title: entry.materialName,
+                      titleColor: entry.isCanceled
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
+                      details: [
+                        // Cantidad y precio son dos piezas que no se parten por
+                        // dentro: si no caben juntas, el precio completo pasa a
+                        // la línea de abajo.
+                        Wrap(
+                          spacing: AppSpacing.s16,
+                          children: [
+                            for (final piece in [
+                              'Cantidad: ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
+                              'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
+                            ])
+                              Text(
+                                piece,
+                                softWrap: false,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(color: AppColors.textSecondary),
+                              ),
+                          ],
+                        ),
+                        if (entry.isCanceled)
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: FlatStatusPill(
+                              label: 'Cancelado',
+                              status: FlatStatus.canceled,
+                            ),
+                          ),
+                      ],
+                      // Un registro cancelado es solo historial: sin acciones.
+                      onTap: entry.isCanceled
+                          ? null
+                          : () => _showEditSheet(entry),
+                      trailing: entry.isCanceled
+                          ? null
+                          : IconButton(
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: AppColors.primaryDark,
+                                size: 20,
+                              ),
+                              tooltip: 'Editar registro',
+                              onPressed: () => _showEditSheet(entry),
+                            ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -586,93 +548,40 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
                   labelText: 'Cantidad utilizada (${selectedUnit.name})',
                 )
               else
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  controller: _quantityController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                LabeledField(
+                  label: selectedUnit != null
+                      ? 'Cantidad utilizada (${selectedUnit.name})'
+                      : 'Cantidad utilizada',
+                  builder: (labelText) => TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: _quantityController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: labelText,
+                      hintText: '0',
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Campo requerido';
+                      final qty = double.tryParse(v);
+                      if (qty == null || qty <= 0) return 'Cantidad inválida';
+                      return null;
+                    },
                   ),
-                  decoration: InputDecoration(
-                    labelText: selectedUnit != null
-                        ? 'Cantidad utilizada (${selectedUnit.name})'
-                        : 'Cantidad utilizada',
-                    hintText: '0',
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Campo requerido';
-                    final qty = double.tryParse(v);
-                    if (qty == null || qty <= 0) return 'Cantidad inválida';
-                    return null;
-                  },
                 ),
               const SizedBox(height: AppSpacing.s12),
 
               // Error del servidor
-              if (_error != null)
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.s12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 16,
-                      ),
-                      const SizedBox(width: AppSpacing.s8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.displaySmall?.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              if (_error != null) FormErrorBox(message: _error!),
 
               const SizedBox(height: AppSpacing.s24),
 
               // Botones cancelar y registrar
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _register,
-                      child: Text(
-                        'Registrar',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
+              FlatFormActions(
+                onSecondary: () => Navigator.pop(context),
+                primaryLabel: 'Registrar',
+                onPrimary: _register,
               ),
             ],
           ),
@@ -871,96 +780,43 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                       : null,
                 )
               else
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  controller: _quantityController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                LabeledField(
+                  label: 'Nueva cantidad (${widget.entry.materialUnitName})',
+                  builder: (labelText) => TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: _quantityController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: labelText,
+                      hintText: '0',
+                      helperText:
+                          'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Campo requerido';
+                      final qty = double.tryParse(v);
+                      if (qty == null || qty <= 0) return 'Cantidad inválida';
+                      if (qty > availableStock) {
+                        return 'Máximo: $availableText';
+                      }
+                      return null;
+                    },
                   ),
-                  decoration: InputDecoration(
-                    labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
-                    hintText: '0',
-                    helperText:
-                        'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Campo requerido';
-                    final qty = double.tryParse(v);
-                    if (qty == null || qty <= 0) return 'Cantidad inválida';
-                    if (qty > availableStock) {
-                      return 'Máximo: $availableText';
-                    }
-                    return null;
-                  },
                 ),
               const SizedBox(height: AppSpacing.s12),
 
               // Error del servidor
-              if (_error != null)
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.s12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 16,
-                      ),
-                      const SizedBox(width: AppSpacing.s8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.displaySmall?.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              if (_error != null) FormErrorBox(message: _error!),
 
               const SizedBox(height: AppSpacing.s24),
 
               // Botones cancelar y guardar
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(
-                        'Guardar',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
+              FlatFormActions(
+                onSecondary: () => Navigator.pop(context),
+                primaryLabel: 'Guardar',
+                onPrimary: _save,
               ),
 
               // Cancelar el registro: solo aquí, al final del formulario.
@@ -980,6 +836,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
                   ),
                 ),
                 style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
                   minimumSize: const Size(double.infinity, 50),
                 ),
               ),
@@ -991,14 +848,15 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   }
 }
 
-// Tarjeta de material en la lista
-class _MaterialCard extends StatelessWidget {
+// Fila de material en la lista: nombre, descripción y precio por unidad a la
+// izquierda; el stock, el dato clave, a la derecha.
+class _MaterialRow extends StatelessWidget {
   final MaterialModel material;
   final String? unitName;
   final String? unitType;
   final VoidCallback onEdit;
 
-  const _MaterialCard({
+  const _MaterialRow({
     required this.material,
     required this.unitName,
     required this.unitType,
@@ -1007,74 +865,39 @@ class _MaterialCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.s12),
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
+    return FlatListRow(
+      onTap: onEdit,
+      leading: const FlatThumb(icon: Icons.palette_outlined),
+      title: material.name,
+      details: [
+        if (material.description != null && material.description!.isNotEmpty)
+          FlatMutedText(material.description!, maxLines: 2),
+        FlatMutedText(
+          'Bs. ${fixed2(material.pricePerUnit)}${unitName != null ? ' / $unitName' : ''}',
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FlatStatusPill.forState(
+            isActive: material.isActive,
+            activeLabel: 'Activo',
+            inactiveLabel: 'Inactivo',
+          ),
+        ),
+      ],
+      trailing: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  material.name,
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                if (material.description != null &&
-                    material.description!.isNotEmpty)
-                  Text(
-                    material.description!,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.displaySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.s4),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: AppSpacing.s8,
-                  runSpacing: AppSpacing.s2,
-                  children: [
-                    Text(
-                      'Stock: ${_qty(material.stock, unitType, unitName)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}',
-                      style: Theme.of(context).textTheme.displaySmall
-                          ?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    Text(
-                      'Bs. ${material.pricePerUnit.toStringAsFixed(2)}${unitName != null ? ' / $unitName' : ''}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.s4),
-                StatusBadge.forState(
-isActive: material.isActive,
-activeLabel: 'Activo',
-inactiveLabel: 'Inactivo',
-),
-              ],
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.s2),
+            child: FlatValueText(
+              'Stock: ${_qty(material.stock, unitType, unitName)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}',
             ),
           ),
           IconButton(
+            tooltip: 'Editar',
             icon: const Icon(
               Icons.edit_outlined,
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
               size: 20,
             ),
             onPressed: onEdit,

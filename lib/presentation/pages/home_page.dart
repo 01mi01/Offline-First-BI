@@ -1,22 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
+import '../../application/bi_provider.dart';
+import '../../application/client_provider.dart';
 import '../../application/date_range_filter.dart';
+import '../../application/home_dashboard.dart';
+import '../../application/home_period_provider.dart';
 import '../../application/module_permission_provider.dart';
-import '../../application/sale_provider.dart';
 import '../../application/purchase_provider.dart';
-import '../../application/product_provider.dart';
-import '../../models/product_model.dart';
-import '../../theme/app_theme.dart';
-import '../widgets/app_bar_widget.dart';
-import '../pages/sales_page.dart';
-import '../pages/purchases_page.dart';
-import '../pages/inventario_page.dart';
-import '../pages/reports_page.dart';
-import '../../config/date_formatters.dart';
-import '../widgets/profile_button.dart';
+import '../../application/report_provider.dart';
+import '../../application/sale_provider.dart';
+import '../../application/supplier_provider.dart';
 import '../../config/app_clock.dart';
-import '../../config/rounding.dart';
+import '../../models/bi_config.dart';
+import '../../models/bi_models.dart';
+import '../../models/purchase_model.dart';
+import '../../models/report_filters.dart';
+import '../../models/sale_model.dart';
+import '../../theme/app_theme.dart';
+import '../widgets/bi_charts.dart';
+import '../widgets/bi_drilldown.dart';
+import '../widgets/bi_insight_widgets.dart' show BiGroupedBars;
+import '../widgets/home_widgets.dart';
+import 'business_intelligence_page.dart';
+import 'inventario_page.dart';
+import 'purchases_page.dart';
+import 'reports_page.dart';
+import 'sales_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -24,328 +34,355 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
-    // Las ventas canceladas no cuentan como ingreso ni como "últimas ventas".
-    // Una venta con fecha futura solo está "preparada": todavía no ocurrió, así
-    // que tampoco cuenta. Se usa la fecha propia de cada venta.
+    final readable = ref.watch(readableModulesProvider).valueOrNull ?? [];
+    final access = HomeAccess.from(readable);
+    final period = ref.watch(homePeriodProvider);
+
+    final saleState = ref.watch(saleProvider);
+    final purchaseState = ref.watch(purchaseProvider);
+    final loading = saleState.isLoading || purchaseState.isLoading;
+    final failed = saleState.error != null || purchaseState.error != null;
+
     final now = appNow();
-    final sales = ref
-        .watch(saleProvider)
-        .sales
-        .where((s) => !s.isCanceled && !isFutureDated(s.date, now: now))
-        .toList();
-    final purchases = ref.watch(purchaseProvider).purchases;
-    final products = ref.watch(productProvider).products;
-    final readableModules = ref.watch(readableModulesProvider).valueOrNull ?? [];
+    final today = dateOnly(now);
+    final filters = ReportFilters(startDate: period.start(today), endDate: today);
+    final query = BiQuery(filters: filters);
+    final report = access.needsReport && !loading && !failed
+        ? ref.watch(biReportProvider(query))
+        : null;
 
-    // Métricas rápidas: Ingresos y Gastos son los del MES ACTUAL (del día 1 a
-    // hoy), según la fecha de cada registro; lo anterior vive en Reportes.
-    final month = DateRangeFilter.forPreset(DatePreset.month, now: now);
-    final totalIngresos = round2(
-      sales
-          .where((s) => month.matches(s.date))
-          .fold(0.0, (sum, s) => sum + s.finalAmount),
-    );
-    final totalGastos = round2(
-      purchases
-          .where((p) => !p.isCanceled && month.matches(p.date))
-          .fold(0.0, (sum, p) => sum + p.totalAmount),
-    );
-    final productosActivos = products.where((p) => p.isActive).length;
-    final stockBajo = products
-        .where((p) => p.isActive && p.stock <= lowStockThreshold)
-        .length;
+    BiSummary summaryOf(ReportFilters f) {
+      final reports = ref.watch(reportServiceProvider);
+      return ref
+          .watch(biServiceProvider)
+          .summarize(
+            sales: reports.summarizeSaleRows(
+              ref.watch(saleReportRowsProvider(f)),
+            ),
+            purchases: reports.summarizePurchases(
+              ref.watch(filteredPurchasesProvider(f)),
+            ),
+          );
+    }
 
-    // Tarjetas de acceso rápido, solo para módulos que el usuario puede leer
-    final quickAccessCards = <_QuickAccessCard>[
-      if (readableModules.contains('ventas'))
-        _QuickAccessCard(
-          label: 'Ventas',
-          icon: Icons.point_of_sale_outlined,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SalesPage()),
+    BiSummary? previous;
+    HomeProfitSeries? profitSeries;
+    if (report != null && access.profit) {
+      final range = period.previous(today);
+      previous = summaryOf(
+        filters.copyWith(startDate: range.start, endDate: range.end),
+      );
+      profitSeries = buildProfitSeries(
+        period: period,
+        sales: [
+          for (final r in ref.watch(saleReportRowsProvider(filters)))
+            (date: r.sale.date, amount: r.netAmount),
+        ],
+        expenses: [
+          for (final p in ref.watch(filteredPurchasesProvider(filters)))
+            (date: p.date, amount: p.totalAmount),
+        ],
+        now: now,
+      );
+    }
+
+    void reload() {
+      ref.read(saleProvider.notifier).load();
+      ref.read(purchaseProvider.notifier).load();
+    }
+
+    final side = homeSidePadding(context);
+    Widget padded(Widget child, {double bottom = AppSpacing.s16}) => Padding(
+      padding: EdgeInsets.fromLTRB(side, 0, side, bottom),
+      child: child,
+    );
+
+    Widget? hero;
+    if (access.profit) {
+      if (loading) {
+        hero = const HomeLoadingCard();
+      } else if (failed) {
+        hero = HomeErrorCard(onRetry: reload);
+      } else if (report != null && previous != null && profitSeries != null) {
+        hero = HomeEntrance(
+          child: HomeHeroCard(
+            period: period,
+            title: 'Ganancia ${period.ofLabel}',
+            amount: formatMoney(report.summary.balance),
+            change: HomeChange.of(report.summary.balance, previous.balance),
+            sales: report.summary.ingresos,
+            expenses: report.summary.gastos,
+            series: profitSeries,
+            emptyMessage: 'Aún no hay movimientos ${period.duringLabel}',
           ),
+        );
+      }
+    }
+
+    final sections = <Widget Function(BuildContext)>[];
+
+    if ((loading || failed) && !access.profit && access.needsReport) {
+      sections.add(
+        (_) => padded(
+          loading
+              ? const HomeLoadingCard()
+              : HomeErrorCard(onRetry: reload),
         ),
-      if (readableModules.contains('compras'))
-        _QuickAccessCard(
-          label: 'Compras',
-          icon: Icons.shopping_bag_outlined,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PurchasesPage()),
-          ),
-        ),
-      if (readableModules.contains('inventario'))
-        _QuickAccessCard(
-          label: 'Inventario',
-          icon: Icons.inventory_2_outlined,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const InventarioPage()),
-          ),
-        ),
-      if (readableModules.contains('reportes'))
-        _QuickAccessCard(
-          label: 'Reportes',
-          icon: Icons.bar_chart_outlined,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ReportsPage()),
-          ),
+      );
+    }
+
+    final shortcutItems = [
+      for (final shortcut in access.shortcuts)
+        HomeShortcutItem(
+          shortcut: shortcut,
+          icon: _iconFor(shortcut),
+          onTap: () => _open(context, shortcut),
         ),
     ];
+    if (shortcutItems.isNotEmpty) {
+      sections.add(
+        (_) => Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.s16),
+          child: HomeEntrance(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(side, 0, side, AppSpacing.s8),
+                  child: const HomeSectionTitle('Accesos rápidos'),
+                ),
+                HomeShortcutRow(items: shortcutItems),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (report != null) {
+      final kpis = <HomeKpi>[
+        if (access.sales)
+          HomeKpi(
+            key: 'ventas',
+            label: 'Ventas ${period.ofLabel}',
+            value: formatMoney(report.summary.ingresos),
+            icon: Icons.trending_up_rounded,
+            color: AppColors.chartColor1,
+          ),
+        if (access.purchases)
+          HomeKpi(
+            key: 'gastos',
+            label: 'Gastos ${period.ofLabel}',
+            value: formatMoney(report.summary.gastos),
+            icon: Icons.trending_down_rounded,
+            color: AppColors.error,
+            background: AppColors.errorSoft,
+          ),
+        if (access.sales)
+          HomeKpi(
+            key: 'cantidad',
+            label: 'Cantidad de ventas',
+            value: '${report.ticket.salesCount}',
+            icon: Icons.receipt_long_outlined,
+            color: AppColors.success,
+          ),
+        if (access.profit)
+          HomeKpi(
+            key: 'margen',
+            label: 'Margen de ganancia',
+            value: marginText(report.summary.ingresos, report.summary.balance),
+            icon: Icons.percent_rounded,
+            color: AppColors.chartColor5,
+          ),
+      ];
+      if (kpis.isNotEmpty) {
+        sections.add((_) => padded(HomeEntrance(child: HomeKpiGrid(items: kpis))));
+      }
+    }
+
+    if (report != null) {
+      final noMovements =
+          report.timeSeries.isEmpty ||
+          (report.summary.ingresos == 0 && report.summary.gastos == 0);
+      final noMovementsText = 'Aún no hay movimientos ${period.duringLabel}';
+      final noSalesText = 'Aún no hay ventas ${period.duringLabel}';
+
+      if (access.profit) {
+        if (period != HomePeriod.today) {
+          sections.add(
+            (_) => padded(
+              HomeChartCard(
+                id: 'evolucion',
+                title: 'Evolución ${period.ofLabel}',
+                subtitle: period == HomePeriod.year
+                    ? 'Ingresos y gastos por mes'
+                    : 'Ingresos y gastos por día',
+                child: noMovements
+                    ? HomeEmptyMessage(noMovementsText)
+                    : BiTimeSeriesChart(series: report.timeSeries),
+              ),
+            ),
+          );
+        }
+        sections.add(
+          (_) => padded(
+            HomeChartCard(
+              id: 'comparacion',
+              title: 'Ingresos y gastos',
+              subtitle: period.comparisonLabel,
+              child: noMovements || previous == null
+                  ? HomeEmptyMessage(noMovementsText)
+                  : BiGroupedBars(
+                      groups: const ['Ingresos', 'Gastos', 'Balance'],
+                      seriesNames: const ['Actual', 'Anterior'],
+                      values: [
+                        [
+                          report.summary.ingresos,
+                          report.summary.gastos,
+                          report.summary.balance,
+                        ],
+                        [previous.ingresos, previous.gastos, previous.balance],
+                      ],
+                      format: formatMoney,
+                    ),
+            ),
+          ),
+        );
+      }
+      if (access.sales) {
+        sections.add(
+          (_) => padded(
+            HomeChartCard(
+              id: 'categorias',
+              title: 'Ventas por categoría',
+              subtitle: 'Ingresos ${period.ofLabel}',
+              child: report.salesByCategory.isEmpty
+                  ? HomeEmptyMessage(noSalesText)
+                  : BiPieChart(
+                      entries: report.salesByCategory,
+                      byQuantity: false,
+                      quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
+                      maxItems: 5,
+                    ),
+            ),
+          ),
+        );
+        sections.add(
+          (ctx) => padded(
+            HomeChartCard(
+              id: 'productos',
+              title: 'Productos más vendidos',
+              subtitle: 'Ingresos ${period.ofLabel}',
+              child: report.salesByProduct.isEmpty
+                  ? HomeEmptyMessage(noSalesText)
+                  : BiRankingChart(
+                      entries: report.salesByProduct,
+                      byQuantity: false,
+                      quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
+                      maxItems: 5,
+                      onEntryTap: access.businessIntelligence
+                          ? (entry) => showBiDrillDown(
+                              ctx,
+                              kind: BiDrillKind.product,
+                              entry: entry,
+                              query: query,
+                            )
+                          : null,
+                    ),
+            ),
+          ),
+        );
+      }
+    }
+
+    if (access.sales || access.purchases) {
+      final clients = ref.watch(clientProvider).clients;
+      final suppliers = ref.watch(supplierProvider).suppliers;
+      String clientName(SaleModel sale) =>
+          clients.where((c) => c.id == sale.clientId).firstOrNull?.name ??
+          'Sin nombre';
+      String supplierName(PurchaseModel purchase) =>
+          suppliers.where((s) => s.id == purchase.supplierId).firstOrNull?.name ??
+          'Sin proveedor';
+      final activities = loading || failed
+          ? const <HomeActivity>[]
+          : recentActivity(
+              sales: saleState.sales,
+              purchases: purchaseState.purchases,
+              clientName: clientName,
+              supplierName: supplierName,
+              now: now,
+              includeSales: access.sales,
+              includePurchases: access.purchases,
+            );
+      if (!loading && !failed) {
+        sections.add(
+          (ctx) => padded(
+            HomeActivityCard(
+              activities: activities,
+              onTap: (activity) {
+                if (activity.isSale) {
+                  showSaleReceipt(ctx, activity.sale!, activity.title);
+                } else {
+                  showPurchaseDetail(ctx, activity.purchase!, activity.title);
+                }
+              },
+            ),
+          ),
+        );
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-            title: 'Inicio',
-            actions: [ProfileButton()],
-          ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.s24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Saludo
-            Text(
-              'Hola, ${user?.username ?? ""}',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s32),
-
-            // Panel de resumen
-            Text(
-              'Panel de resumen',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s16),
-
-            // Métricas
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricCard(
-                    label: 'Ingresos del mes',
-                    value: 'Bs. ${totalIngresos.toStringAsFixed(2)}',
-                    icon: Icons.trending_up_rounded,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: _MetricCard(
-                    label: 'Gastos del mes',
-                    value: 'Bs. ${totalGastos.toStringAsFixed(2)}',
-                    icon: Icons.trending_down_rounded,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s12),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricCard(
-                    label: 'Productos activos',
-                    value: '$productosActivos',
-                    icon: Icons.inventory_2_outlined,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: _MetricCard(
-                    label: 'Stock bajo',
-                    value: '$stockBajo',
-                    icon: Icons.warning_amber_rounded,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s32),
-
-            // Acceso rápido — solo se muestra si hay algo que mostrar, y
-            // solo con las tarjetas de los módulos accesibles (reflow, sin
-            // relleno para simular tarjetas que el usuario no tiene).
-            if (quickAccessCards.isNotEmpty) ...[
-              Text(
-                'Acceso rápido',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s16),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.6,
-                children: quickAccessCards,
-              ),
-              const SizedBox(height: AppSpacing.s32),
-            ],
-
-            // Últimas ventas
-            if (sales.isNotEmpty) ...[
-              Text(
-                'Últimas ventas',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s12),
-              ...sales
-                  .take(3)
-                  .map(
-                    (s) => Container(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.s10),
-                      padding: const EdgeInsets.all(AppSpacing.s16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _formatDate(s.date),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.displaySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            'Bs. ${s.finalAmount.toStringAsFixed(2)}',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.displayMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) => formatDateTime(date);
-}
-
-// Tarjeta de métricaS
-class _MetricCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _MetricCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.s8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(height: AppSpacing.s12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: HomeHeader(
+              userName: user?.username ?? '',
+              period: period,
+              onPeriodChanged: (value) =>
+                  ref.read(homePeriodProvider.notifier).state = value,
+              hero: hero,
             ),
           ),
-          const SizedBox(height: AppSpacing.s2),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.s16)),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => sections[index](context),
+              childCount: sections.length,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-// Tarjeta de acceso rápido
-class _QuickAccessCard extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
+  IconData _iconFor(HomeShortcut shortcut) => switch (shortcut) {
+    HomeShortcut.products => Icons.inventory_2_outlined,
+    HomeShortcut.sales => Icons.point_of_sale_outlined,
+    HomeShortcut.reports => Icons.bar_chart_outlined,
+    HomeShortcut.businessIntelligence => Icons.insights_outlined,
+  };
 
-  const _QuickAccessCard({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.s16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.s8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
-            ),
-            const SizedBox(width: AppSpacing.s10),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  void _open(BuildContext context, HomeShortcut shortcut) {
+    switch (shortcut) {
+      case HomeShortcut.products:
+        _push(context, const InventarioPage());
+      case HomeShortcut.sales:
+        _push(context, const SalesPage(backLabel: 'Inicio'));
+      case HomeShortcut.reports:
+        _push(context, const ReportsPage());
+      case HomeShortcut.businessIntelligence:
+        _push(context, const BusinessIntelligencePage());
+    }
   }
+
+  void _push(BuildContext context, Widget page) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => page));
 }

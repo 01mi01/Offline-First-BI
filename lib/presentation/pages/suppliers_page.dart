@@ -48,7 +48,7 @@ class SuppliersListBody extends ConsumerWidget {
         // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
         // conviven montadas a la vez bajo el shell de navegación inferior.
         heroTag: 'suppliers_list_body_fab',
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),

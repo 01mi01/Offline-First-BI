@@ -691,7 +691,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
                     icon: const Icon(Icons.zoom_out_map, size: 16),
                     label: const Text('Restablecer vista'),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
+                      foregroundColor: AppColors.primaryDark,
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.s8,
                       ),

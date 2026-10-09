@@ -11,14 +11,18 @@ import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
 import '../dialogs/material_dialog.dart';
-import '../widgets/linked_price_fields.dart';
+import '../widgets/linked_price_fields.dart'
+    show LinkedPriceController, measureUnitInfoMessage, priceInfoMessage;
 import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
-import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
-import '../widgets/searchable_picker.dart';
-import '../widgets/transaction_date_field.dart';
+import '../widgets/ios_controls.dart';
+import '../widgets/ios_group.dart';
+import '../widgets/ios_quantity.dart';
+import '../widgets/ios_sheet.dart';
+import '../widgets/ios_style.dart';
+import '../widgets/searchable_picker.dart' show PickerOption;
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
@@ -45,20 +49,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   final List<Map<String, dynamic>> _materialItems = [];
   bool _isLoading = false;
   String? _error;
-  // El total de una compra de materiales se calcula de sus ítems, pero se puede
-  // escribir a mano: desde entonces manda lo escrito y deja de recalcularse. Es
-  // solo el monto de la compra; el stock y el precio de cada material siguen
-  // saliendo de los ítems.
+  // Un total escrito a mano manda sobre el calculado de los ítems (solo el monto).
   bool _totalOverridden = false;
-  // Fecha de la compra: hoy por defecto, pero se puede registrar una pasada o
-  // futura. Si no se toca, una compra nueva toma el momento de guardarla.
   late DateTime _date = widget.purchase?.date ?? appNow();
   bool _dateChanged = false;
 
   @override
   void initState() {
     super.initState();
-    // Un aviso de "El total debe ser mayor a 0" desaparece al corregir el total.
     _totalController.addListener(_clearError);
     if (widget.purchase != null) {
       _selectedSupplierId = widget.purchase!.supplierId;
@@ -89,8 +87,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
             'unitPrice': item.unitPrice,
           });
         }
-        // Si el total guardado difiere de la suma de los ítems, fue editado a
-        // mano: se respeta en vez de recalcularlo al abrir.
+        // Un total guardado distinto de la suma de los ítems fue editado a mano.
         final calculated = ref
             .read(purchaseRepositoryProvider)
             .calculateMaterialsTotal(_materialItems);
@@ -113,7 +110,6 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     super.dispose();
   }
 
-  // Recalcula el total a partir de los ítems de material
   void _recalcTotal() {
     if (!_isMaterial || _totalOverridden) return;
     final total = ref
@@ -122,8 +118,6 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     _totalController.text = fixed2(total);
   }
 
-  // Formato del campo de total: solo dígitos y un punto decimal, sin ceros a la
-  // izquierda ("05") ni signo negativo.
   static TextInputFormatter _amountFormatter() =>
       TextInputFormatter.withFunction((oldValue, newValue) {
         final text = newValue.text;
@@ -134,10 +128,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
         return newValue;
       });
 
-  // "2 metros", "1 paquete": cantidad con el nombre de su unidad concordado
-  // (igual que en las tarjetas de producto y el registro de uso).
   String _quantityWithUnit(double quantity, UnitModel? unit) {
-    // Dos decimales en medidas; fracciones exactas en unidades por fracciones.
     final number = formatMaterialQuantity(
       quantity,
       unitType: unit?.type ?? 'medida',
@@ -171,14 +162,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   void _showAddMaterialItem() {
     dismissKeyboard();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showIosSheet<void>(
+      context,
+      heightFactor: 0.94,
       builder: (_) => _AddMaterialItemSheet(
         onAdded: (item) {
           setState(() {
@@ -200,16 +186,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    // Sin proveedor elegido no se bloquea el formulario: el repositorio
-    // asigna el proveedor por defecto "Sin proveedor".
     if (_isMaterial && _materialItems.isEmpty) {
       setState(() => _error = 'Agrega al menos un material');
       return;
     }
 
-    // Lo que se escribe con más de dos decimales se redondea a centavos.
     var total = round2(double.tryParse(_totalController.text.trim()) ?? 0);
-    // Un total manual que se dejó vacío vuelve al calculado de los ítems.
     if (_isMaterial && _totalController.text.trim().isEmpty) {
       total = ref
           .read(purchaseRepositoryProvider)
@@ -275,12 +257,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     }
   }
 
-  // Cancela la compra (no la borra): resta del stock lo comprado y la deja en el
-  // historial marcada como cancelada. Solo se ofrece dentro de este formulario
-  // de edición. Si algún material ya se usó, la cancelación se bloquea y no
-  // cambia nada (el mensaje se muestra en el formulario).
+  // Cancelar no borra; si algún material ya se usó, el error se muestra aquí.
   Future<void> _cancelPurchase() async {
-    final confirmed = await confirmCancellation(
+    final confirmed = await showIosConfirm(
       context,
       title: '¿Cancelar compra?',
       message: widget.purchase!.isMaterial
@@ -307,21 +286,15 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   Widget build(BuildContext context) {
     final isEditing = widget.purchase != null;
     final allSuppliers = ref.watch(supplierProvider).suppliers;
-    // El proveedor predeterminado se ofrece como la opción "Sin proveedor"
-    // (valor nulo), no como un proveedor más; un proveedor inactivo solo
-    // aparece si es el que ya tenía la compra que se edita.
     final suppliers = allSuppliers
         .where(
           (s) => !s.isDefault && (s.isActive || s.id == _selectedSupplierId),
         )
         .toList();
-    // El valor del selector solo puede ser una opción que exista en la lista:
-    // el proveedor predeterminado es la opción nula.
     final supplierValue = suppliers.any((s) => s.id == _selectedSupplierId)
         ? _selectedSupplierId
         : null;
 
-    // Material por unidad: nombre de la unidad de cada material de la lista.
     final allMaterials = ref.watch(materialProvider).materials;
     final allUnits = ref.watch(unitProvider).units;
     UnitModel? unitOf(Object? materialId) {
@@ -332,408 +305,158 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       return allUnits.where((u) => u.id == material.unitId).firstOrNull;
     }
 
-    // Con el teclado abierto cada píxel cuenta: los márgenes se reducen para
-    // que el formulario que se desplaza tenga más alto. El título y el
-    // selector siguen fijos.
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-    final gapAfterTitle = keyboardOpen ? AppSpacing.s12 : AppSpacing.s24;
-    final gapAfterSelector = keyboardOpen ? AppSpacing.s8 : AppSpacing.s16;
-
-    // Altura fija (94 % de la pantalla): al cambiar entre "Materiales" y "Gasto
-    // general" el contenido cambia de alto, pero la hoja no, así que el título y
-    // el selector no se mueven. El formulario se desplaza dentro; los botones
-    // van al final del contenido.
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.94,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: AppSpacing.s24,
-          right: AppSpacing.s24,
-          top: keyboardOpen ? AppSpacing.s16 : AppSpacing.s24,
-          bottom:
-              MediaQuery.of(context).viewInsets.bottom +
-              (keyboardOpen ? AppSpacing.s12 : AppSpacing.s32),
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Título
-              Text(
-                isEditing ? 'Editar compra' : 'Nueva compra',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+    return IosSheetScaffold(
+      title: isEditing ? 'Editar compra' : 'Nueva compra',
+      leadingLabel: 'Cancelar',
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+              child: IosSegmented<bool>(
+                segments: const [
+                  IosSegment(true, 'Materiales'),
+                  IosSegment(false, 'Gasto general'),
+                ],
+                selected: _isMaterial,
+                onChanged: (value) {
+                  if (value == null || value == _isMaterial) return;
+                  setState(() {
+                    _error = null;
+                    _isMaterial = value;
+                    _totalOverridden = false;
+                    _materialItems.clear();
+                    _totalController.clear();
+                    _descriptionController.clear();
+                  });
+                },
               ),
-              SizedBox(height: gapAfterTitle),
-
-              // Tipo de compra: dos opciones, cada una con su propio nombre
-              // (no una etiqueta fija con un subtítulo que cambia).
-              SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<bool>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment<bool>(value: true, label: Text('Materiales')),
-                    ButtonSegment<bool>(
-                      value: false,
-                      label: Text('Gasto general'),
-                    ),
-                  ],
-                  selected: {_isMaterial},
-                  onSelectionChanged: (selection) {
-                    if (selection.first == _isMaterial) return;
-                    setState(() {
-                      _error = null;
-                      _isMaterial = selection.first;
-                      _totalOverridden = false;
-                      // Cada modo empieza limpio: nada del otro modo queda
-                      // oculto. Los campos de cada modo tienen su propia llave,
-                      // así que nacen sin haber sido tocados (sin errores).
-                      _materialItems.clear();
-                      _totalController.clear();
-                      _descriptionController.clear();
-                    });
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith(
-                      (states) => states.contains(WidgetState.selected)
-                          ? AppColors.primary.withOpacity(0.1)
-                          : AppColors.surface,
-                    ),
-                    foregroundColor: WidgetStateProperty.resolveWith(
-                      (states) => states.contains(WidgetState.selected)
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                    ),
-                    side: WidgetStateProperty.resolveWith(
-                      (states) => BorderSide(
-                        color: states.contains(WidgetState.selected)
-                            ? AppColors.primary
-                            : AppColors.border,
-                      ),
-                    ),
-                  ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.s8,
+                  bottom: AppSpacing.s32,
                 ),
-              ),
-              SizedBox(height: gapAfterSelector),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: AppSpacing.s4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Selector de proveedor
-                      // Búsqueda por nombre: escala a listas largas. El botón va
-                      // en la fila del campo: los resultados se abren debajo.
-                      SearchablePickerField<int>(
-                        label: 'Proveedor',
-                        searchHint: 'Buscar proveedor',
-                        value: supplierValue,
-                        options: [
-                          const PickerOption<int>(
-                            null,
-                            DefaultRecords.supplier,
-                          ),
-                          for (final s in suppliers)
-                            PickerOption<int>(s.id, s.name),
-                        ],
-                        onChanged: (val) => setState(() {
-                          _selectedSupplierId = val;
-                          _error = null;
-                        }),
-                        trailing: GestureDetector(
-                          onTap: _showAddSupplierSheet,
-                          child: Container(
-                            padding: const EdgeInsets.all(AppSpacing.s12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    IosSection(
+                      children: [
+                        IosPickerRow<int>(
+                          label: 'Proveedor',
+                          searchHint: 'Buscar proveedor',
+                          value: supplierValue,
+                          options: [
+                            const PickerOption<int>(
+                              null,
+                              DefaultRecords.supplier,
                             ),
-                            child: const Icon(
-                              Icons.add_business_outlined,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.s20),
-
-                      // Selector de ubicación (búsqueda en línea, como el de producto)
-                      SearchablePickerField<int>(
-                        label: 'Ubicación',
-                        searchHint: 'Buscar ubicación',
-                        value: _selectedLocationId,
-                        options: [
-                          const PickerOption<int>(null, 'Sin ubicación'),
-                          for (final l in ref.watch(locationProvider).locations)
-                            if (l.isActive || l.id == _selectedLocationId)
-                              PickerOption<int>(
-                              l.id,
-                              locationLabel(l),
-                              subtitle: locationZone(l),
-                              selectedLabel: locationLabelWithZone(l),
-                            ),
-                        ],
-                        onChanged: (val) => setState(() => _selectedLocationId = val),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Selector de evento (búsqueda en línea, como el de producto)
-                      SearchablePickerField<int>(
-                        label: 'Evento',
-                        searchHint: 'Buscar evento',
-                        value: _selectedEventId,
-                        options: [
-                          const PickerOption<int>(null, 'Sin evento'),
-                          for (final e in ref.watch(eventProvider).events)
-                            if (e.isActive || e.id == _selectedEventId)
-                              PickerOption<int>(e.id, e.name),
-                        ],
-                        onChanged: (val) => setState(() => _selectedEventId = val),
-                      ),
-                      const SizedBox(height: AppSpacing.s16),
-
-                      // Fecha de la compra (sin límite: pasada, hoy o futura)
-                      TransactionDateField(
-                        date: _date,
-                        onChanged: (value) => setState(() {
-                          _date = value;
-                          _dateChanged = true;
-                        }),
-                      ),
-                      const SizedBox(height: AppSpacing.s20),
-
-                      // Sección de materiales
-                      if (_isMaterial) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Materiales',
-                              style: Theme.of(context).textTheme.displayMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                            ),
-                            GestureDetector(
-                              onTap: _showAddMaterialItem,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.s12,
-                                  vertical: AppSpacing.s6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.add,
-                                      color: AppColors.primary,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: AppSpacing.s4),
-                                    Text(
-                                      'Agregar',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .displaySmall
-                                          ?.copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            for (final s in suppliers)
+                              PickerOption<int>(s.id, s.name),
                           ],
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-                        if (_materialItems.isEmpty)
-                          Text(
-                            'Sin materiales agregados',
-                            style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(color: AppColors.textSecondary),
-                          )
-                        else
-                          ..._materialItems.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final item = entry.value;
-                            return Container(
-                              margin: const EdgeInsets.only(
-                                bottom: AppSpacing.s8,
-                              ),
-                              padding: const EdgeInsets.all(AppSpacing.s12),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item['materialName'] as String,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                        const SizedBox(height: AppSpacing.s4),
-                                        // Edición inline de cantidad. Wrap: con nombres de
-                                        // unidad largos la línea baja en vez de desbordar.
-                                        Wrap(
-                                          crossAxisAlignment:
-                                              WrapCrossAlignment.center,
-                                          children: [
-                                            GestureDetector(
-                                              onTap: () {
-                                                final current =
-                                                    item['quantity'] as double;
-                                                if (current <= 1) return;
-                                                setState(() {
-                                                  _error = null;
-                                                  _materialItems[index]['quantity'] =
-                                                      current - 1;
-                                                  _recalcTotal();
-                                                });
-                                              },
-                                              child: Container(
-                                                width: 26,
-                                                height: 26,
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.background,
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                  border: Border.all(
-                                                    color: AppColors.border,
-                                                  ),
-                                                ),
-                                                child: const Icon(
-                                                  Icons.remove,
-                                                  size: 14,
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: AppSpacing.s10,
-                                                  ),
-                                              child: Text(
-                                                _quantityWithUnit(
-                                                  item['quantity'] as double,
-                                                  unitOf(item['materialId']),
-                                                ),
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelLarge
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color:
-                                                          AppColors.textPrimary,
-                                                    ),
-                                              ),
-                                            ),
-                                            GestureDetector(
-                                              onTap: () {
-                                                final current =
-                                                    item['quantity'] as double;
-                                                setState(() {
-                                                  _error = null;
-                                                  _materialItems[index]['quantity'] =
-                                                      current + 1;
-                                                  _recalcTotal();
-                                                });
-                                              },
-                                              child: Container(
-                                                width: 26,
-                                                height: 26,
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primary
-                                                      .withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                  border: Border.all(
-                                                    color: AppColors.primary
-                                                        .withOpacity(0.3),
-                                                  ),
-                                                ),
-                                                child: const Icon(
-                                                  Icons.add,
-                                                  size: 14,
-                                                  color: AppColors.primary,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              width: AppSpacing.s8,
-                                            ),
-                                            Text(
-                                              'Bs. ${fixed2((item['quantity'] as double) * (item['unitPrice'] as double))}',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    color: AppColors.primary,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _error = null;
-                                        _materialItems.removeAt(index);
-                                        _recalcTotal();
-                                      });
-                                    },
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: AppColors.error,
-                                      size: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
+                          onChanged: (val) => setState(() {
+                            _selectedSupplierId = val;
+                            _error = null;
                           }),
-                        const SizedBox(height: AppSpacing.s16),
-
-                        // Total: se calcula de los materiales, pero se puede
-                        // escribir a mano; lo escrito reemplaza al calculado.
-                        TextFormField(
-                          key: const ValueKey('purchase-total-materials'),
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          controller: _totalController,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [_amountFormatter()],
-                          decoration: InputDecoration(
-                            labelText: 'Total (Bs.)',
-                            helperText: _totalOverridden
+                          action: IconButton(
+                            tooltip: 'Nuevo proveedor',
+                            icon: const Icon(
+                              Icons.add_business_outlined,
+                              size: 22,
+                              color: AppColors.primaryDark,
+                            ),
+                            onPressed: _showAddSupplierSheet,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IosSection(
+                      children: [
+                        IosPickerRow<int>(
+                          label: 'Ubicación',
+                          searchHint: 'Buscar ubicación',
+                          value: _selectedLocationId,
+                          options: [
+                            const PickerOption<int>(null, 'Sin ubicación'),
+                            for (final l
+                                in ref.watch(locationProvider).locations)
+                              if (l.isActive || l.id == _selectedLocationId)
+                                PickerOption<int>(
+                                  l.id,
+                                  locationLabel(l),
+                                  subtitle: locationZone(l),
+                                  selectedLabel: locationLabelWithZone(l),
+                                ),
+                          ],
+                          onChanged: (val) =>
+                              setState(() => _selectedLocationId = val),
+                        ),
+                        IosPickerRow<int>(
+                          label: 'Evento',
+                          searchHint: 'Buscar evento',
+                          value: _selectedEventId,
+                          options: [
+                            const PickerOption<int>(null, 'Sin evento'),
+                            for (final e in ref.watch(eventProvider).events)
+                              if (e.isActive || e.id == _selectedEventId)
+                                PickerOption<int>(e.id, e.name),
+                          ],
+                          onChanged: (val) =>
+                              setState(() => _selectedEventId = val),
+                        ),
+                        IosDateRow(
+                          date: _date,
+                          onChanged: (value) => setState(() {
+                            _date = value;
+                            _dateChanged = true;
+                          }),
+                        ),
+                      ],
+                    ),
+                    if (_isMaterial) ...[
+                      IosSection(
+                        header: 'Materiales',
+                        headerTrailing: TextButton.icon(
+                          onPressed: _showAddMaterialItem,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Agregar'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primaryDark,
+                            minimumSize: const Size(AppIos.minTap, AppIos.minTap),
+                          ),
+                        ),
+                        children: [
+                          if (_materialItems.isEmpty)
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: AppIos.rowMinHeight,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Sin materiales agregados',
+                                  style: IosText.rowSubtitle(context),
+                                ),
+                              ),
+                            )
+                          else
+                            for (var i = 0; i < _materialItems.length; i++)
+                              _materialRow(context, i, unitOf),
+                        ],
+                      ),
+                      IosSection(
+                        children: [
+                          IosTextFieldRow(
+                            fieldKey: const ValueKey('purchase-total-materials'),
+                            label: 'Total (Bs.)',
+                            controller: _totalController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [_amountFormatter()],
+                            helper: _totalOverridden
                                 ? 'Total escrito a mano'
                                 : 'Calculado de los materiales; puedes editarlo',
-                            suffixIcon: _totalOverridden
+                            suffix: _totalOverridden
                                 ? IconButton(
                                     tooltip: 'Usar el total calculado',
                                     icon: const Icon(
@@ -746,182 +469,154 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                     }),
                                   )
                                 : null,
-                          ),
-                          onChanged: (_) {
-                            if (!_totalOverridden) {
-                              setState(() => _totalOverridden = true);
-                            }
-                          },
-                        ),
-                      ] else ...[
-                        // Gasto general
-                        TextFormField(
-                          key: const ValueKey('purchase-description'),
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          controller: _descriptionController,
-                          decoration: const InputDecoration(
-                            labelText: 'Descripción del gasto',
-                            hintText:
-                                'Ej: transporte, entradas a eventos, etc.',
-                          ),
-                          maxLines: 2,
-                          validator: (v) =>
-                              v == null || v.isEmpty ? 'Campo requerido' : null,
-                        ),
-                        const SizedBox(height: AppSpacing.s16),
-                        TextFormField(
-                          key: const ValueKey('purchase-total-expense'),
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          controller: _totalController,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [_amountFormatter()],
-                          decoration: const InputDecoration(
-                            labelText: 'Total (Bs.)',
-                            hintText: '0',
-                          ),
-                          validator: (v) =>
-                              v == null || v.isEmpty ? 'Campo requerido' : null,
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.s16),
-
-                      // Notas
-                      TextFormField(
-                        autovalidateMode: AutovalidateMode.onUserInteraction,
-                        controller: _notesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Notas',
-                          hintText: 'Observaciones opcionales',
-                        ),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: AppSpacing.s16),
-
-                      // Error al guardar (junto a los botones, al final)
-                      if (_error != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.s12),
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                color: AppColors.error,
-                                size: 16,
-                              ),
-                              const SizedBox(width: AppSpacing.s8),
-                              Expanded(
-                                child: Text(
-                                  _error!,
-                                  style: Theme.of(context).textTheme.displaySmall
-                                      ?.copyWith(color: AppColors.error),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s12),
-                      ],
-
-                      // Botones cancelar y registrar (al final del contenido)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 50),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                side: const BorderSide(color: AppColors.border),
-                              ),
-                              child: const Text(
-                                'Cancelar',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.s12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                alignment: Alignment.center,
-                                // Menos relleno lateral: "Registrar compra" cabe en una
-                                // sola línea dentro de medio ancho.
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.s8,
-                                ),
-                              ),
-                              onPressed: _isLoading ? null : _save,
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: AppSpacing.s20,
-                                      width: AppSpacing.s20,
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.surface,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : FittedBox(
-                                      // Si aun así no cupiera (fuente grande), se
-                                      // reduce en vez de partirse en dos líneas.
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        isEditing ? 'Guardar' : 'Registrar compra',
-                                        maxLines: 1,
-                                        style: Theme.of(context).textTheme.headlineLarge
-                                            ?.copyWith(fontWeight: FontWeight.w600),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                            ),
+                            onChanged: (_) {
+                              if (!_totalOverridden) {
+                                setState(() => _totalOverridden = true);
+                              }
+                            },
                           ),
                         ],
                       ),
-
-                      // Cancelar la compra: solo al editar una existente, al
-                      // final del formulario.
-                      if (isEditing && !widget.purchase!.isCanceled) ...[
-                        const SizedBox(height: AppSpacing.s12),
-                        TextButton.icon(
-                          onPressed: _isLoading ? null : _cancelPurchase,
-                          icon: const Icon(
-                            Icons.cancel_outlined,
-                            color: AppColors.error,
-                            size: 20,
+                    ] else
+                      IosSection(
+                        children: [
+                          IosTextAreaRow(
+                            fieldKey: const ValueKey('purchase-description'),
+                            label: 'Descripción del gasto',
+                            controller: _descriptionController,
+                            hint: 'Ej: transporte, entradas a eventos, etc.',
+                            validator: (v) =>
+                                v == null || v.isEmpty ? 'Campo requerido' : null,
                           ),
-                          label: const Text(
-                            'Cancelar compra',
-                            style: TextStyle(
-                              color: AppColors.error,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          IosTextFieldRow(
+                            fieldKey: const ValueKey('purchase-total-expense'),
+                            label: 'Total (Bs.)',
+                            controller: _totalController,
+                            hint: '0',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [_amountFormatter()],
+                            validator: (v) =>
+                                v == null || v.isEmpty ? 'Campo requerido' : null,
                           ),
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50),
-                          ),
+                        ],
+                      ),
+                    IosSection(
+                      children: [
+                        IosTextAreaRow(
+                          label: 'Notas',
+                          controller: _notesController,
+                          hint: 'Observaciones opcionales',
                         ),
                       ],
-                    ],
-                  ),
+                    ),
+                    if (_error != null) IosErrorNote(message: _error!),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.s16,
+                        0,
+                        AppSpacing.s16,
+                        AppSpacing.s24,
+                      ),
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _save,
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: AppSpacing.s20,
+                                width: AppSpacing.s20,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.textButtons,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                isEditing ? 'Guardar' : 'Registrar compra',
+                                maxLines: 1,
+                                style: Theme.of(context).textTheme.headlineLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textButtons,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                      ),
+                    ),
+                    if (isEditing && !widget.purchase!.isCanceled)
+                      IosDestructiveGroup(
+                        label: 'Cancelar compra',
+                        onTap: _isLoading ? null : _cancelPurchase,
+                      ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _materialRow(
+    BuildContext context,
+    int index,
+    UnitModel? Function(Object?) unitOf,
+  ) {
+    final item = _materialItems[index];
+    final quantity = item['quantity'] as double;
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpacing.s8),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Quitar material',
+            icon: const Icon(
+              Icons.remove_circle,
+              size: 24,
+              color: AppColors.error,
+            ),
+            onPressed: () => setState(() {
+              _error = null;
+              _materialItems.removeAt(index);
+              _recalcTotal();
+            }),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item['materialName'] as String,
+                    style: IosText.rowTitle(context),
+                  ),
+                  Text(
+                    '${_quantityWithUnit(quantity, unitOf(item['materialId']))}  ·  Bs. ${fixed2(quantity * (item['unitPrice'] as double))}',
+                    style: IosText.rowSubtitle(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          IosStepper(
+            onMinus: quantity <= 1
+                ? null
+                : () => setState(() {
+                    _error = null;
+                    _materialItems[index]['quantity'] = quantity - 1;
+                    _recalcTotal();
+                  }),
+            onPlus: () => setState(() {
+              _error = null;
+              _materialItems[index]['quantity'] = quantity + 1;
+              _recalcTotal();
+            }),
+          ),
+        ],
       ),
     );
   }
 }
 
-// Hoja para agregar un material a la compra
 class _AddMaterialItemSheet extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onAdded;
 
@@ -939,11 +634,8 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
   int? _selectedMaterialId;
   String? _selectedMaterialName;
   String? _materialError;
-  // Materiales tipo contenedor: la cantidad se elige con fracciones (media
-  // botella) y se muestran enlazados el precio por unidad y el total pagado.
   double _fractionQuantity = 0;
   String? _quantityError;
-  // Comparte el campo de precio. Vale para todos los tipos de unidad.
   late final LinkedPriceController _container = LinkedPriceController(
     price: _priceController,
   );
@@ -951,8 +643,6 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
   @override
   void initState() {
     super.initState();
-    // Al escribir la cantidad (campo numérico) se recalcula el campo de precio
-    // que no se escribió último.
     _quantityController.addListener(() {
       if (!_isContainer(_selectedMaterialId)) {
         setState(() => _container.setQuantity(_currentQuantity));
@@ -989,12 +679,10 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
   bool _isMedida(int? materialId) => _unitOf(materialId)?.type == unitTypeMedida;
 
-  // Cantidad actual de la línea: fracciones (contenedor) o el campo numérico.
   double get _currentQuantity => _isContainer(_selectedMaterialId)
       ? _fractionQuantity
       : (double.tryParse(_quantityController.text.trim()) ?? 0);
 
-  // Material elegido: sin cantidad todavía y con su precio actual por unidad.
   void _resetFor(double? pricePerUnit) {
     _fractionQuantity = 0;
     _quantityError = null;
@@ -1020,16 +708,39 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
               _selectedMaterialId = materialId;
               _selectedMaterialName = materialName;
               _resetFor(pricePerUnit);
-              // La cantidad NO se rellena con el stock del material: ese stock
-              // inicial ya quedó registrado como su propia compra al crearlo.
-              // Aquí se escribe lo que se compra en esta ocasión, que se suma
-              // al stock existente.
+              // El stock inicial del material ya quedó como su propia compra.
               _quantityController.clear();
             });
           }
         },
       ),
     );
+  }
+
+  void _add() {
+    final valid = _formKey.currentState!.validate();
+    if (_selectedMaterialId == null) {
+      setState(() => _materialError = 'Selecciona un material');
+      return;
+    }
+    final container = _isContainer(_selectedMaterialId);
+    if (container && _fractionQuantity <= 0) {
+      setState(() => _quantityError = 'Selecciona una cantidad');
+      return;
+    }
+    if (!valid) return;
+    final quantity = roundQuantity(
+      _currentQuantity,
+      unitType: _unitOf(_selectedMaterialId)?.type ?? 'medida',
+    );
+    final unitPrice = _container.resolvedPrice ?? 0;
+    widget.onAdded({
+      'materialId': _selectedMaterialId,
+      'materialName': _selectedMaterialName,
+      'quantity': quantity,
+      'unitPrice': unitPrice,
+    });
+    Navigator.pop(context);
   }
 
   @override
@@ -1040,254 +751,163 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
         .where((m) => m.isActive)
         .toList();
     final units = ref.watch(unitProvider).units;
+    final selectedMaterial = materials
+        .where((m) => m.id == _selectedMaterialId)
+        .firstOrNull;
+    final selectedUnit = selectedMaterial != null
+        ? units.where((u) => u.id == selectedMaterial.unitId).firstOrNull
+        : null;
+    final discrete =
+        selectedUnit != null &&
+        isDiscreteUnit(selectedUnit.type, selectedUnit.name);
+    final label = selectedUnit != null
+        ? 'Cantidad (${selectedUnit.name})'
+        : 'Cantidad';
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.s24,
-        right: AppSpacing.s24,
-        top: AppSpacing.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
-      ),
-      // Con el teclado abierto la hoja (con dos campos de precio) no cabe:
-      // se desplaza en vez de desbordarse.
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
+    return IosSheetScaffold(
+      title: 'Agregar material',
+      leadingLabel: 'Cancelar',
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(
+            top: AppSpacing.s8,
+            bottom: AppSpacing.s32,
+          ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Agregar material',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s24),
-
-              // Selector de material existente
-              // Búsqueda por nombre: escala a listas largas.
-              SearchablePickerField<int>(
-                label: 'Material',
-                searchHint: 'Buscar material',
-                value: _selectedMaterialId,
-                options: [
-                  for (final m in materials) PickerOption<int>(m.id, m.name),
+              IosSection(
+                children: [
+                  IosPickerRow<int>(
+                    label: 'Material',
+                    searchHint: 'Buscar material',
+                    value: _selectedMaterialId,
+                    options: [
+                      for (final m in materials)
+                        PickerOption<int>(m.id, m.name),
+                    ],
+                    onChanged: (val) {
+                      final mat = materials
+                          .where((m) => m.id == val)
+                          .firstOrNull;
+                      setState(() {
+                        _selectedMaterialId = val;
+                        _selectedMaterialName = mat?.name;
+                        _materialError = null;
+                        _resetFor(mat?.pricePerUnit);
+                      });
+                    },
+                  ),
+                  IosRow(
+                    title: 'Crear nuevo material',
+                    titleColor: AppColors.primaryDark,
+                    leading: const Icon(
+                      Icons.add_circle_outline,
+                      size: 22,
+                      color: AppColors.primaryDark,
+                    ),
+                    onTap: _showCreateMaterialSheet,
+                  ),
                 ],
-                onChanged: (val) {
-                  final mat = materials.where((m) => m.id == val).firstOrNull;
-                  setState(() {
-                    _selectedMaterialId = val;
-                    _selectedMaterialName = mat?.name;
-                    _materialError = null;
-                    _resetFor(mat?.pricePerUnit);
-                  });
-                },
               ),
               if (_materialError != null)
                 Padding(
-                  padding: const EdgeInsets.only(
-                    left: AppSpacing.s16,
-                    top: AppSpacing.s4,
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s32,
+                    0,
+                    AppSpacing.s16,
+                    AppSpacing.s16,
                   ),
-                  child: Text(
-                    _materialError!,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelMedium?.copyWith(color: AppColors.error),
-                  ),
+                  child: Text(_materialError!, style: IosText.error(context)),
                 ),
-              const SizedBox(height: AppSpacing.s8),
-
-              // Botón crear nuevo material
-              GestureDetector(
-                onTap: _showCreateMaterialSheet,
-                child: Row(
+              if (selectedUnit != null &&
+                  isFractionFriendlyUnitType(selectedUnit.type))
+                IosFractionPicker(
+                  unit: selectedUnit.name,
+                  value: _fractionQuantity,
+                  onChanged: (v) => setState(() {
+                    _fractionQuantity = v;
+                    _quantityError = null;
+                    _container.setQuantity(v);
+                  }),
+                )
+              else
+                IosSection(
                   children: [
-                    const Icon(Icons.add, color: AppColors.primary, size: 14),
-                    const SizedBox(width: AppSpacing.s4),
-                    Text(
-                      'Crear nuevo material',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+                    if (discrete)
+                      IosWholeNumberRow(
+                        controller: _quantityController,
+                        label: label,
+                      )
+                    else
+                      IosTextFieldRow(
+                        label: label,
+                        controller: _quantityController,
+                        hint: '0',
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          TextInputFormatter.withFunction((oldValue, newValue) {
+                            if (newValue.text.isEmpty) return newValue;
+                            if (newValue.text == '0') return newValue;
+                            if (newValue.text.startsWith('0') &&
+                                !newValue.text.startsWith('0.')) {
+                              return oldValue;
+                            }
+                            if (double.tryParse(newValue.text) == null &&
+                                newValue.text != '.') {
+                              return oldValue;
+                            }
+                            return newValue;
+                          }),
+                        ],
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Campo requerido';
+                          final qty = double.tryParse(v);
+                          if (qty == null || qty <= 0) return 'Cantidad inválida';
+                          return null;
+                        },
                       ),
-                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Cantidad: unidades "por pieza" (contenedor, paquete, unidad...) solo
-              // aceptan enteros, porque a un proveedor se le compran piezas
-              // completas, no fracciones.
-              Builder(
-                builder: (context) {
-                  final selectedMaterial = materials
-                      .where((m) => m.id == _selectedMaterialId)
-                      .firstOrNull;
-                  final selectedUnit = selectedMaterial != null
-                      ? units
-                            .where((u) => u.id == selectedMaterial.unitId)
-                            .firstOrNull
-                      : null;
-                  final discrete =
-                      selectedUnit != null &&
-                      isDiscreteUnit(selectedUnit.type, selectedUnit.name);
-                  final label = selectedUnit != null
-                      ? 'Cantidad (${selectedUnit.name})'
-                      : 'Cantidad';
-                  // Contenedores: se puede comprar media botella, un cuarto...
-                  if (selectedUnit != null &&
-                      isFractionFriendlyUnitType(selectedUnit.type)) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FractionQuantityPicker(
-                          unit: selectedUnit.name,
-                          value: _fractionQuantity,
-                          onChanged: (v) => setState(() {
-                            _fractionQuantity = v;
-                            _quantityError = null;
-                            // Recalcula el campo que no se escribió último.
-                            _container.setQuantity(v);
-                          }),
-                        ),
-                        if (_quantityError != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.s4),
-                            child: Text(
-                              _quantityError!,
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(color: AppColors.error),
-                            ),
-                          ),
-                      ],
-                    );
-                  }
-                  if (discrete) {
-                    return WholeNumberQuantityField(
-                      controller: _quantityController,
-                      labelText: label,
-                    );
-                  }
-                  return TextFormField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _quantityController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      TextInputFormatter.withFunction((oldValue, newValue) {
-                        if (newValue.text.isEmpty) return newValue;
-                        if (newValue.text == '0') return newValue;
-                        if (newValue.text.startsWith('0') &&
-                            !newValue.text.startsWith('0.')) {
-                          return oldValue;
-                        }
-                        if (double.tryParse(newValue.text) == null &&
-                            newValue.text != '.') {
-                          return oldValue;
-                        }
-                        return newValue;
-                      }),
-                    ],
-                    decoration: InputDecoration(
-                      labelText: label,
-                      hintText: '0',
-                    ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Campo requerido';
-                      final qty = double.tryParse(v);
-                      if (qty == null || qty <= 0) return 'Cantidad inválida';
-                      return null;
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Precio por unidad y total pagado, enlazados, para cualquier unidad.
-              LinkedPriceFields(
-                controller: _container,
-                onChanged: () => setState(() {}),
-                priceLabel: 'Precio por unidad (Bs.)',
-                extraInfo: _isMedida(_selectedMaterialId)
-                    ? measureUnitInfoMessage
-                    : null,
-              ),
-              const SizedBox(height: AppSpacing.s24),
-
-              // Botones
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+              if (_quantityError != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s32,
+                    0,
+                    AppSpacing.s16,
+                    AppSpacing.s16,
                   ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final valid = _formKey.currentState!.validate();
-                        // El selector con búsqueda no es un campo de formulario:
-                        // se valida aparte.
-                        if (_selectedMaterialId == null) {
-                          setState(
-                            () => _materialError = 'Selecciona un material',
-                          );
-                          return;
-                        }
-                        final container = _isContainer(_selectedMaterialId);
-                        if (container && _fractionQuantity <= 0) {
-                          setState(
-                            () => _quantityError = 'Selecciona una cantidad',
-                          );
-                          return;
-                        }
-                        if (!valid) return;
-                        // Lo escrito con más decimales de los permitidos se
-                        // redondea al agregar (dos en medidas; fracciones sin
-                        // ruido).
-                        final quantity = roundQuantity(
-                          _currentQuantity,
-                          unitType: _unitOf(_selectedMaterialId)?.type ?? 'medida',
-                        );
-                        // Manda el último campo escrito (precio por unidad o
-                        // total pagado).
-                        final unitPrice = _container.resolvedPrice ?? 0;
-                        widget.onAdded({
-                          'materialId': _selectedMaterialId,
-                          'materialName': _selectedMaterialName,
-                          'quantity': quantity,
-                          'unitPrice': unitPrice,
-                        });
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        'Agregar',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  child: Text(_quantityError!, style: IosText.error(context)),
+                ),
+              IosSection(
+                footer: _isMedida(_selectedMaterialId)
+                    ? '$priceInfoMessage $measureUnitInfoMessage'
+                    : priceInfoMessage,
+                children: [
+                  IosLinkedPriceRows(
+                    controller: _container,
+                    onChanged: () => setState(() {}),
+                    priceLabel: 'Precio por unidad (Bs.)',
                   ),
                 ],
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s16,
+                ),
+                child: ElevatedButton(
+                  onPressed: _add,
+                  child: Text(
+                    'Agregar',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textButtons,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

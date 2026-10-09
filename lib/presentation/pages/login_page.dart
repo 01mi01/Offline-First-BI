@@ -5,6 +5,10 @@ import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../navigation/main_navigation_page.dart';
 
+const double _maxContentWidth = 420;
+const double _cardRadius = AppSpacing.s28;
+const Duration _motion = Duration(milliseconds: 300);
+
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -40,196 +44,260 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
+  InputDecoration _decoration({
+    required String hint,
+    required IconData icon,
+    Widget? suffix,
+  }) {
+    OutlineInputBorder border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppIos.groupRadius),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    final enabled = border(AppColors.border);
+    final focused = border(AppColors.primaryDark, 2);
+    return InputDecoration(
+      hintText: hint,
+      fillColor: AppColors.surface,
+      prefixIcon: Icon(icon),
+      prefixIconColor: AppColors.primaryDark,
+      suffixIcon: suffix,
+      border: enabled,
+      enabledBorder: enabled,
+      errorBorder: enabled,
+      focusedBorder: focused,
+      focusedErrorBorder: focused,
+      errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: AppColors.error,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Sección superior con el logo y título
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.s32,
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: screenHeight * 0.08),
-                  Center(
-                    child: SvgPicture.asset(
-                      'assets/images/logo.svg',
-                      width: MediaQuery.of(context).size.width * 0.6,
-                      fit: BoxFit.contain,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const padding = AppSpacing.s24;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(padding),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: (constraints.maxHeight - 2 * padding).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: _maxContentWidth,
+                    ),
+                    child: _EntranceFade(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s24,
+                          vertical: AppSpacing.s48,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(_cardRadius),
+                          ),
+                          boxShadow: AppShadows.card,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Center(
+                              child: SvgPicture.asset(
+                                'assets/images/logo.svg',
+                                width: MediaQuery.of(context).size.width * 0.6,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.s32),
+                            Text(
+                              'Iniciar sesión',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textSecondaryDark,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: AppSpacing.s32),
+                            _buildForm(context, authState),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.06),
-                  Text(
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForm(BuildContext context, AuthState authState) {
+    final fieldStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: AppColors.textPrimary,
+    );
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _usernameController,
+            style: fieldStyle,
+            cursorColor: AppColors.primaryDark,
+            cursorErrorColor: AppColors.primaryDark,
+            autocorrect: false,
+            textInputAction: TextInputAction.next,
+            decoration: _decoration(
+              hint: 'Nombre de usuario',
+              icon: Icons.person_outline,
+            ),
+            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+          ),
+          const SizedBox(height: AppSpacing.s20),
+          TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            style: fieldStyle,
+            cursorColor: AppColors.primaryDark,
+            cursorErrorColor: AppColors.primaryDark,
+            textInputAction: TextInputAction.done,
+            decoration: _decoration(
+              hint: 'Tu contraseña',
+              icon: Icons.lock_outline,
+              suffix: Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.s4),
+                child: IconButton(
+                  tooltip: _obscurePassword
+                      ? 'Mostrar contraseña'
+                      : 'Ocultar contraseña',
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: AppColors.primaryDark,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+            ),
+            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+          ),
+          const SizedBox(height: AppSpacing.s32),
+          AnimatedSize(
+            duration: _motion,
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: AnimatedSwitcher(
+              duration: _motion,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, -0.15),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: authState.error == null
+                  ? const SizedBox(width: double.infinity)
+                  : _ErrorText(
+                      key: ValueKey(authState.error),
+                      message: authState.error!,
+                    ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: authState.isLoading ? null : _handleLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryDark,
+              foregroundColor: AppColors.textButtons,
+              disabledBackgroundColor: AppColors.primaryDark,
+              disabledForegroundColor: AppColors.textButtons,
+            ),
+            child: authState.isLoading
+                ? const SizedBox(
+                    height: AppSpacing.s20,
+                    width: AppSpacing.s20,
+                    child: CircularProgressIndicator(
+                      color: AppColors.textButtons,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
                     'Iniciar sesión',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.s8),
-                  Text(
-                    'Ingresa tus datos para acceder a tu cuenta',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: screenHeight * 0.06),
-                ],
-              ),
-            ),
-
-            // Sección inferior con fondo gris y formulario
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(32),
-                    topRight: Radius.circular(32),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s32,
-                    AppSpacing.s32,
-                    AppSpacing.s32,
-                    AppSpacing.s32,
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Campo usuario
-                        Text(
-                          'Usuario',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-                        TextFormField(
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          controller: _usernameController,
-                          style: const TextStyle(fontSize: 16),
-                          decoration: const InputDecoration(
-                            hintText: 'Nombre de usuario',
-                            prefixIcon: Icon(Icons.person_outline),
-                            filled: true,
-                            fillColor: AppColors.surface,
-                          ),
-                          validator: (v) =>
-                              v == null || v.isEmpty ? 'Campo requerido' : null,
-                        ),
-                        const SizedBox(height: AppSpacing.s20),
-
-                        // Campo contraseña
-                        Text(
-                          'Contraseña',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-                        TextFormField(
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          style: const TextStyle(fontSize: 16),
-                          decoration: InputDecoration(
-                            hintText: 'Tu contraseña',
-                            filled: true,
-                            fillColor: AppColors.surface,
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.only(
-                                right: AppSpacing.s8,
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                                onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
-                              ),
-                            ),
-                          ),
-                          validator: (v) =>
-                              v == null || v.isEmpty ? 'Campo requerido' : null,
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-
-                        // Error de login
-                        if (authState.error != null)
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.s12),
-                            decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  color: AppColors.error,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: AppSpacing.s8),
-                                Text(
-                                  authState.error!,
-                                  style: const TextStyle(
-                                    color: AppColors.error,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        const SizedBox(height: AppSpacing.s28),
-
-                        // Botón iniciar sesión
-                        ElevatedButton(
-                          onPressed: authState.isLoading ? null : _handleLogin,
-                          child: authState.isLoading
-                              ? const SizedBox(
-                                  height: AppSpacing.s20,
-                                  width: AppSpacing.s20,
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.surface,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  'Iniciar sesión',
-                                  style: Theme.of(context).textTheme
-                                      .headlineLarge?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                        ),
-                      ],
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textButtons,
                     ),
                   ),
-                ),
-              ),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorText extends StatelessWidget {
+  final String message;
+
+  const _ErrorText({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s16),
+      child: Semantics(
+        liveRegion: true,
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.error,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EntranceFade extends StatelessWidget {
+  final Widget child;
+
+  const _EntranceFade({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: _motion,
+      curve: Curves.easeOut,
+      child: child,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, (1 - value) * AppSpacing.s16),
+          child: child,
         ),
       ),
     );

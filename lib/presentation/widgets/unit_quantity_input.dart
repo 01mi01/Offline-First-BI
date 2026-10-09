@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
+import 'flat_form.dart';
+import 'flat_style.dart';
 
 // Clasificación del comportamiento de entrada de cantidad según el tipo de
 // unidad (Units.type, ver app_database.dart): "contenedor" (contenedor, paquete, rollo, tira)
@@ -95,6 +97,7 @@ class FractionQuantityPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final flat = FlatStyle.isActive(context);
     final parts = splitContainerQuantity(value);
     final whole = parts.whole;
     final fractionPart = parts.fraction;
@@ -125,22 +128,33 @@ class FractionQuantityPicker extends StatelessWidget {
                   horizontal: AppSpacing.s14,
                   vertical: AppSpacing.s10,
                 ),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.primary.withOpacity(0.1)
-                      : AppColors.background,
-                  borderRadius: BorderRadius.circular(50),
-                  border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.border,
-                  ),
-                ),
+                decoration: flat
+                    ? BoxDecoration(
+                        color: selected
+                            ? AppColors.primarySoft
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
+                      )
+                    : BoxDecoration(
+                        color: selected
+                            ? AppColors.primaryDark.withOpacity(0.1)
+                            : AppColors.background,
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(
+                          color: selected ? AppColors.primaryDark : AppColors.border,
+                        ),
+                      ),
                 child: Text(
                   presetLabel,
                   style: TextStyle(
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                    color: flat
+                        ? (selected
+                              ? AppColors.primaryDark
+                              : AppColors.textPrimary)
+                        : (selected
+                              ? AppColors.primaryDark
+                              : AppColors.textSecondary),
                   ),
                 ),
               ),
@@ -190,7 +204,7 @@ class FractionQuantityPicker extends StatelessWidget {
             'Total: ${formatNumber(cleanFloat(value))} ${unitLabel(unit, value)}',
             key: const ValueKey('container-total'),
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.primary,
+              color: flat ? AppColors.primaryDark : AppColors.primaryDark,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -209,6 +223,24 @@ class _StepperButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
+    if (FlatStyle.isActive(context)) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: AppFlat.minTap,
+          height: AppFlat.minTap,
+          decoration: BoxDecoration(
+            color: enabled ? AppColors.primarySoft : AppColors.surface,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: enabled ? AppColors.primaryDark : AppColors.textSecondary,
+          ),
+        ),
+      );
+    }
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -216,17 +248,17 @@ class _StepperButton extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           color: enabled
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primaryDark.withOpacity(0.1)
               : AppColors.background,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: enabled ? AppColors.primary : AppColors.border,
+            color: enabled ? AppColors.primaryDark : AppColors.border,
           ),
         ),
         child: Icon(
           icon,
           size: 18,
-          color: enabled ? AppColors.primary : AppColors.textSecondary,
+          color: enabled ? AppColors.primaryDark : AppColors.textSecondary,
         ),
       ),
     );
@@ -303,34 +335,37 @@ class _WholeNumberQuantityFieldState extends State<WholeNumberQuantityField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      controller: widget.controller,
-      // Sin la opción decimal el teclado numérico estándar no ofrece el
-      // punto; algunos teclados (p. ej. Samsung) lo muestran igual, por eso
-      // el formatter es quien realmente lo impide.
-      keyboardType: const TextInputType.numberWithOptions(
-        decimal: false,
-        signed: false,
+    return LabeledField(
+      label: widget.labelText,
+      builder: (labelText) => TextFormField(
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        controller: widget.controller,
+        // Sin la opción decimal el teclado numérico estándar no ofrece el
+        // punto; algunos teclados (p. ej. Samsung) lo muestran igual, por eso
+        // el formatter es quien realmente lo impide.
+        keyboardType: const TextInputType.numberWithOptions(
+          decimal: false,
+          signed: false,
+        ),
+        inputFormatters: [WholeNumberInputFormatter(onRejected: _onRejected)],
+        onChanged: (_) {
+          if (_rejectedDecimal) setState(() => _rejectedDecimal = false);
+        },
+        decoration: InputDecoration(
+          labelText: labelText,
+          hintText: widget.hintText,
+          helperText: widget.helperText,
+          errorText: _rejectedDecimal ? wholeNumberOnlyMessage : null,
+        ),
+        validator: (v) {
+          final error = validateWholeNumberQuantity(
+            v,
+            allowZero: widget.allowZero,
+          );
+          if (error != null) return error;
+          return widget.extraValidator?.call(int.parse(v!));
+        },
       ),
-      inputFormatters: [WholeNumberInputFormatter(onRejected: _onRejected)],
-      onChanged: (_) {
-        if (_rejectedDecimal) setState(() => _rejectedDecimal = false);
-      },
-      decoration: InputDecoration(
-        labelText: widget.labelText,
-        hintText: widget.hintText,
-        helperText: widget.helperText,
-        errorText: _rejectedDecimal ? wholeNumberOnlyMessage : null,
-      ),
-      validator: (v) {
-        final error = validateWholeNumberQuantity(
-          v,
-          allowZero: widget.allowZero,
-        );
-        if (error != null) return error;
-        return widget.extraValidator?.call(int.parse(v!));
-      },
     );
   }
 }

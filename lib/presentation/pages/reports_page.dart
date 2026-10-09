@@ -12,6 +12,7 @@ import '../widgets/report_filters_widget.dart';
 import '../widgets/report_sale_card.dart';
 import '../widgets/report_purchase_card.dart';
 import 'report_detail_page.dart';
+import '../../config/rounding.dart';
 
 class ReportsPage extends ConsumerWidget {
   const ReportsPage({super.key});
@@ -89,9 +90,9 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
               color: AppColors.background,
               child: TabBar(
                 controller: _tabController,
-                labelColor: AppColors.primary,
+                labelColor: AppColors.primaryDark,
                 unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.primary,
+                indicatorColor: AppColors.primaryDark,
                 indicatorSize: TabBarIndicatorSize.label,
                 labelStyle: Theme.of(
                   context,
@@ -186,12 +187,12 @@ class _SalesTab extends ConsumerWidget {
             _SummaryTile(label: 'Ventas', value: '${summary.count}'),
             _SummaryTile(
               label: 'Ingresos',
-              value: 'Bs. ${summary.totalAmount.toStringAsFixed(2)}',
-              valueColor: AppColors.primary,
+              value: 'Bs. ${fixed2(summary.totalAmount)}',
+              valueColor: AppColors.primaryDark,
             ),
             _SummaryTile(
               label: 'Descuentos',
-              value: 'Bs. ${summary.totalDiscount.toStringAsFixed(2)}',
+              value: 'Bs. ${fixed2(summary.totalDiscount)}',
               valueColor: AppColors.error,
             ),
           ],
@@ -254,13 +255,13 @@ class _PurchasesTab extends ConsumerWidget {
             _SummaryTile(label: 'Compras', value: '${summary.count}'),
             _SummaryTile(
               label: 'Gasto total',
-              value: 'Bs. ${summary.totalAmount.toStringAsFixed(2)}',
+              value: 'Bs. ${fixed2(summary.totalAmount)}',
               valueColor: AppColors.error,
             ),
             _SummaryTile(
               label: materialsSummaryLabel(summary.materialCount),
               value: '${summary.materialCount}',
-              valueColor: AppColors.primary,
+              valueColor: AppColors.primaryDark,
             ),
           ],
         ),
@@ -379,9 +380,9 @@ class _ViewFullReportButton extends StatelessWidget {
       label: const Text('Ver reporte completo y exportar'),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 44),
-        foregroundColor: AppColors.primary,
-        side: BorderSide(color: AppColors.primary),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+        foregroundColor: AppColors.primaryDark,
+        side: BorderSide(color: AppColors.primaryDark),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppIos.groupRadius)),
       ),
     );
   }

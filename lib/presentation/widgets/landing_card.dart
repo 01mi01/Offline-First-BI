@@ -32,10 +32,10 @@ class LandingCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.s12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primaryDark.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 24),
+              child: Icon(icon, color: AppColors.primaryDark, size: 24),
             ),
             const SizedBox(width: AppSpacing.s16),
             Expanded(

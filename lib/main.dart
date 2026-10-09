@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'config/app_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'application/auth_provider.dart';
@@ -36,6 +37,10 @@ class MyApp extends ConsumerWidget {
       title: 'Sistema de gestión para emprendimientos artísticos',
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: appSystemOverlayStyle,
+        child: child ?? const SizedBox.shrink(),
+      ),
       // Textos propios de Material (selectores de fecha, botones, etc.) en
       // español, sin importar el idioma del dispositivo.
       locale: appLocale,

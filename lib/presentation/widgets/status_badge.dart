@@ -37,7 +37,7 @@ class StatusBadge extends StatelessWidget {
       positive ? AppColors.successDark : AppColors.error;
 
   static Color backgroundColor(bool positive) =>
-      (positive ? AppColors.success : AppColors.error).withOpacity(0.1);
+      positive ? AppColors.successSoft : AppColors.errorSoft;
 
   @override
   Widget build(BuildContext context) {

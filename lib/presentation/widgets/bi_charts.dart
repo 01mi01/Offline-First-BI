@@ -7,6 +7,7 @@ import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
+import 'ios_sheet.dart';
 import 'bi_interaction.dart';
 
 // Widgets de los gráficos de Business Intelligence. Todos los colores de las
@@ -37,38 +38,8 @@ const TextStyle _axisStyle = TextStyle(
 );
 
 // Muestra el texto de ayuda de un indicador: qué muestra y para qué sirve.
-Future<void> showBiInfo(BuildContext context, String title, String info) {
-  return showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.surface,
-      title: Text(
-        title,
-        style: Theme.of(ctx).textTheme.headlineLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      content: SingleChildScrollView(
-        child: Text(
-          info,
-          style: Theme.of(
-            ctx,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text(
-            'Entendido',
-            style: TextStyle(color: AppColors.primary),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+Future<void> showBiInfo(BuildContext context, String title, String info) =>
+    showIosInfo(context, title: title, message: info);
 
 IconData _chartTypeIcon(BiChartType type) => switch (type) {
   BiChartType.bar => Icons.bar_chart,
@@ -112,12 +83,12 @@ class BiChartTypePicker extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: type == selected
-                        ? AppColors.primary.withValues(alpha: 0.1)
+                        ? AppColors.primaryDark.withValues(alpha: 0.1)
                         : AppColors.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: type == selected
-                          ? AppColors.primary
+                          ? AppColors.primaryDark
                           : AppColors.border,
                     ),
                   ),
@@ -126,7 +97,7 @@ class BiChartTypePicker extends StatelessWidget {
                     size: 18,
                     semanticLabel: type.label,
                     color: type == selected
-                        ? AppColors.primary
+                        ? AppColors.primaryDark
                         : AppColors.textSecondary,
                   ),
                 ),
@@ -192,7 +163,7 @@ class BiSectionCard extends StatelessWidget {
                     child: Icon(
                       Icons.info_outline,
                       size: 20,
-                      color: AppColors.primary,
+                      color: AppColors.primaryDark,
                       semanticLabel: 'Información',
                     ),
                   ),
@@ -690,18 +661,18 @@ class BiMetricToggle extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: i == selected
-                    ? AppColors.primary.withValues(alpha: 0.1)
+                    ? AppColors.primaryDark.withValues(alpha: 0.1)
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: i == selected ? AppColors.primary : AppColors.border,
+                  color: i == selected ? AppColors.primaryDark : AppColors.border,
                 ),
               ),
               child: Text(
                 labels[i],
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: i == selected
-                      ? AppColors.primary
+                      ? AppColors.primaryDark
                       : AppColors.textSecondary,
                   fontWeight: i == selected
                       ? FontWeight.w600
@@ -1181,7 +1152,7 @@ List<TouchedSpotIndicatorData?> biSpotIndicators(
         FlDotData(
           getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
             radius: 5,
-            color: bar.color ?? AppColors.primary,
+            color: bar.color ?? AppColors.primaryDark,
             strokeWidth: 2,
             strokeColor: AppColors.surface,
           ),

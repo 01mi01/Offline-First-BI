@@ -6,11 +6,14 @@ import '../../application/category_catalog_filter.dart';
 import '../../models/category_model.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../../models/default_records.dart';
+import '../widgets/flat_controls.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/flat_style.dart';
 import '../widgets/protected_record_icon.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/category_dialog.dart';
-import '../widgets/status_badge.dart';
 
+// Categorías con el estilo plano de Inventario (ver flat_style.dart).
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
 
@@ -28,81 +31,79 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     final setFilter = ref.read(categoryCatalogFilterProvider.notifier);
     final visible = filter.apply(state.categories);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
-        heroTag: 'categories_page_fab',
-        backgroundColor: AppColors.primary,
-        shape: const CircleBorder(),
-        onPressed: () => _showDialog(context, ref, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
-      ),
-      body: Column(
-        children: [
-          // Igual que Productos: el filtro de estado arriba, alineado a la
-          // derecha; debajo, el buscador a todo el ancho junto al toggle
-          // lista/catálogo. Igual en ambas vistas.
-          CatalogListHeader(
-            chips: [
-              FilterMenuChip<CategoryStatusFilter>(
-                label: switch (filter.status) {
-                  CategoryStatusFilter.all => 'Todas',
-                  CategoryStatusFilter.active => 'Activas',
-                  CategoryStatusFilter.inactive => 'Inactivas',
-                },
-                active: filter.status != CategoryStatusFilter.all,
-                selected: filter.status,
-                options: const [
-                  FilterOption(CategoryStatusFilter.all, 'Todas'),
-                  FilterOption(CategoryStatusFilter.active, 'Activas'),
-                  FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
-                ],
-                onSelected: (value) =>
-                    setFilter.update((f) => f.copyWith(status: value)),
+    return FlatStyle(
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        floatingActionButton: FlatFab(
+          // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+          // conviven montadas a la vez bajo el shell de navegación inferior.
+          heroTag: 'categories_page_fab',
+          onPressed: () => _showDialog(context, ref, null),
+        ),
+        body: Column(
+          children: [
+            // Igual que Productos: el filtro de estado arriba, alineado a la
+            // derecha; debajo, el buscador a todo el ancho junto al toggle
+            // lista/catálogo. Igual en ambas vistas.
+            CatalogListHeader(
+              chips: [
+                FilterMenuChip<CategoryStatusFilter>(
+                  label: switch (filter.status) {
+                    CategoryStatusFilter.all => 'Todas',
+                    CategoryStatusFilter.active => 'Activas',
+                    CategoryStatusFilter.inactive => 'Inactivas',
+                  },
+                  active: filter.status != CategoryStatusFilter.all,
+                  selected: filter.status,
+                  options: const [
+                    FilterOption(CategoryStatusFilter.all, 'Todas'),
+                    FilterOption(CategoryStatusFilter.active, 'Activas'),
+                    FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
+                  ],
+                  onSelected: (value) =>
+                      setFilter.update((f) => f.copyWith(status: value)),
+                ),
+              ],
+              search: CatalogSearchField(
+                initialText: filter.query,
+                hintText: 'Buscar categoría',
+                onChanged: (value) =>
+                    setFilter.update((f) => f.copyWith(query: value)),
               ),
-            ],
-            search: CatalogSearchField(
-              initialText: filter.query,
-              hintText: 'Buscar categoría',
-              onChanged: (value) =>
-                  setFilter.update((f) => f.copyWith(query: value)),
+              trailing: FlatViewToggle(
+                isGrid: _isGrid,
+                onToggle: (val) => setState(() => _isGrid = val),
+              ),
             ),
-            trailing: _ViewToggle(
-              isGrid: _isGrid,
-              onToggle: (val) => setState(() => _isGrid = val),
+            const SizedBox(height: AppSpacing.s8),
+            Expanded(
+              child: state.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.categories.isEmpty
+                  ? FlatEmptyState(
+                      icon: Icons.category_outlined,
+                      message: 'No se registraron categorías',
+                      actionLabel: 'Nueva categoría',
+                      onAction: () => _showDialog(context, ref, null),
+                    )
+                  : visible.isEmpty
+                  ? const FlatEmptyState(
+                      icon: Icons.search_off_outlined,
+                      message: 'Sin resultados',
+                    )
+                  : _isGrid
+                  ? _GridView(
+                      categories: visible,
+                      showInactive:
+                          filter.status == CategoryStatusFilter.inactive,
+                    )
+                  : _ListViewWidget(
+                      categories: visible,
+                      onEdit: (cat) => _showDialog(context, ref, cat),
+                    ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.s8),
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.categories.isEmpty
-                ? Center(
-                    child: Text(
-                      'No se registraron categorías',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  )
-                : visible.isEmpty
-                ? Center(
-                    child: Text(
-                      'Sin resultados',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  )
-                : _isGrid
-                ? _GridView(
-                    categories: visible,
-                    showInactive: filter.status == CategoryStatusFilter.inactive,
-                  )
-                : _ListViewWidget(
-                    categories: visible,
-                    onEdit: (cat) => _showDialog(context, ref, cat),
-                  ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -116,77 +117,11 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => CategoryDialog(category: category),
-    );
-  }
-}
-
-class _ViewToggle extends StatelessWidget {
-  final bool isGrid;
-  final ValueChanged<bool> onToggle;
-
-  const _ViewToggle({required this.isGrid, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          _ToggleBtn(
-            icon: Icons.list,
-            active: !isGrid,
-            onTap: () => onToggle(false),
-          ),
-          _ToggleBtn(
-            icon: Icons.grid_view_rounded,
-            active: isGrid,
-            onTap: () => onToggle(true),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ToggleBtn extends StatelessWidget {
-  final IconData icon;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _ToggleBtn({
-    required this.icon,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        // Tamaño del botón del toggle
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s14,
-          vertical: AppSpacing.s10,
-        ),
-        decoration: BoxDecoration(
-          color: active ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: active ? AppColors.surface : AppColors.textSecondary,
-        ),
-      ),
+      builder: (_) => FlatStyle(child: CategoryDialog(category: category)),
     );
   }
 }
@@ -200,11 +135,11 @@ class _ListViewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: AppSpacing.listWithFab,
+      padding: AppFlat.listWithFab,
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final cat = categories[index];
-        return _CategoryCard(category: cat, onEdit: () => onEdit(cat));
+        return _CategoryRow(category: cat, onEdit: () => onEdit(cat));
       },
     );
   }
@@ -225,17 +160,22 @@ class _GridView extends StatelessWidget {
         : categories.where((c) => c.isActive).toList();
 
     return GridView.builder(
-      padding: AppSpacing.listWithFab,
+      padding: AppFlat.gridWithFab,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
+        crossAxisSpacing: AppSpacing.s16,
+        mainAxisSpacing: AppSpacing.s16,
+        childAspectRatio: 0.9,
       ),
       itemCount: active.length,
       itemBuilder: (context, index) {
         final cat = active[index];
-        return _GridCard(category: cat, onTap: () => _showDetail(context, cat));
+        return FlatTile(
+          imagePath: cat.image,
+          icon: Icons.category_outlined,
+          title: cat.name,
+          onTap: () => _showDetail(context, cat),
+        );
       },
     );
   }
@@ -243,170 +183,53 @@ class _GridView extends StatelessWidget {
   void _showDetail(BuildContext context, CategoryModel cat) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: AppColors.textPrimary.withValues(alpha: 0.5),
       builder: (_) => _CategoryDetail(category: cat),
     );
   }
 }
 
-class _CategoryCard extends StatelessWidget {
+class _CategoryRow extends StatelessWidget {
   final CategoryModel category;
   final VoidCallback onEdit;
 
-  const _CategoryCard({required this.category, required this.onEdit});
+  const _CategoryRow({required this.category, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.s12),
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+    return FlatListRow(
+      // La categoría predeterminada no se edita: sin acción al tocar.
+      onTap: category.isDefault ? null : onEdit,
+      leading: FlatThumb(
+        imagePath: category.image,
+        icon: Icons.category_outlined,
       ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: category.image != null
-                ? Image.file(
-                    File(category.image!),
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(),
-                  )
-                : _placeholder(),
+      title: category.name,
+      details: [
+        if (category.description != null && category.description!.isNotEmpty)
+          FlatMutedText(category.description!, maxLines: 2),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FlatStatusPill.forState(
+            isActive: category.isActive,
+            activeLabel: 'Activa',
+            inactiveLabel: 'Inactiva',
           ),
-          const SizedBox(width: AppSpacing.s16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  category.name,
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                if (category.description != null &&
-                    category.description!.isNotEmpty)
-                  Text(
-                    category.description!,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.displaySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.s4),
-                StatusBadge.forState(
-isActive: category.isActive,
-activeLabel: 'Activa',
-inactiveLabel: 'Inactiva',
-),
-              ],
-            ),
-          ),
-          if (category.isDefault)
-            const ProtectedRecordIcon(
+        ),
+      ],
+      trailing: category.isDefault
+          ? const ProtectedRecordIcon(
               message: DefaultRecords.protectedCategoryMessage,
             )
-          else
-            IconButton(
+          : IconButton(
+              tooltip: 'Editar',
               icon: const Icon(
                 Icons.edit_outlined,
-                color: AppColors.primary,
+                color: AppColors.primaryDark,
                 size: 20,
               ),
               onPressed: onEdit,
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _placeholder() {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Icon(
-        Icons.category_outlined,
-        color: AppColors.primary,
-        size: 28,
-      ),
-    );
-  }
-}
-
-class _GridCard extends StatelessWidget {
-  final CategoryModel category;
-  final VoidCallback onTap;
-
-  const _GridCard({required this.category, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-                child: category.image != null
-                    ? Image.file(
-                        File(category.image!),
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _gridPlaceholder(),
-                      )
-                    : _gridPlaceholder(),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.s12),
-              child: Text(
-                category.name,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _gridPlaceholder() {
-    return Container(
-      color: AppColors.primary.withOpacity(0.07),
-      child: const Center(
-        child: Icon(
-          Icons.category_outlined,
-          color: AppColors.primary,
-          size: 40,
-        ),
-      ),
     );
   }
 }
@@ -419,11 +242,12 @@ class _CategoryDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         child: Container(
           color: AppColors.surface,
           child: Column(
@@ -446,20 +270,21 @@ class _CategoryDetail extends StatelessWidget {
 
                   // Botón cerrar en la esquina superior derecha
                   Positioned(
-                    top: 12,
-                    right: 12,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.s6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.4),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: AppColors.surface,
-                          size: 18,
+                    top: AppSpacing.s12,
+                    right: AppSpacing.s12,
+                    child: Material(
+                      color: AppColors.surface,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.pop(context),
+                        child: const Padding(
+                          padding: EdgeInsets.all(AppSpacing.s8),
+                          child: Icon(
+                            Icons.close,
+                            color: AppColors.textPrimary,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
@@ -475,7 +300,7 @@ class _CategoryDetail extends StatelessWidget {
                   children: [
                     Text(
                       category.name,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
@@ -485,11 +310,10 @@ class _CategoryDetail extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s8),
                       Text(
                         category.description!,
-                        style: Theme.of(context).textTheme.displayMedium
-                            ?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
+                        style: textTheme.displayMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.5,
+                        ),
                       ),
                     ],
                   ],
@@ -509,7 +333,7 @@ class _CategoryDetail extends StatelessWidget {
       color: AppColors.surface,
       child: const Icon(
         Icons.category_outlined,
-        color: AppColors.primary,
+        color: AppColors.primaryDark,
         size: 60,
       ),
     );

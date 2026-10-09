@@ -44,7 +44,7 @@ class BiSummaryCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final balanceColor = summary.balance < 0
         ? AppColors.error
-        : AppColors.primary;
+        : AppColors.primaryDark;
     return BiSectionCard(
       title: BiIndicator.summary.title,
       info: BiIndicator.summary.info,
@@ -54,7 +54,7 @@ class BiSummaryCards extends StatelessWidget {
             child: _SummaryTile(
               label: 'Ingresos',
               value: formatMoney(summary.ingresos),
-              valueColor: AppColors.primary,
+              valueColor: AppColors.primaryDark,
             ),
           ),
           Expanded(
@@ -113,14 +113,14 @@ class _SummaryTile extends StatelessWidget {
 // cada grupo (la serie i toma chartColorAt(i)). Admite valores negativos. Las
 // barras crecen al aparecer, tocar un grupo muestra el valor de cada serie y la
 // leyenda oculta o muestra cada serie (siempre queda una visible).
-class _GroupedBars extends StatefulWidget {
+class BiGroupedBars extends StatefulWidget {
   final List<String> groups;
   final List<String> seriesNames;
   // values[serie][grupo]
   final List<List<double>> values;
   final String Function(double) format;
 
-  const _GroupedBars({
+  const BiGroupedBars({
     required this.groups,
     required this.seriesNames,
     required this.values,
@@ -128,10 +128,10 @@ class _GroupedBars extends StatefulWidget {
   });
 
   @override
-  State<_GroupedBars> createState() => _GroupedBarsState();
+  State<BiGroupedBars> createState() => BiGroupedBarsState();
 }
 
-class _GroupedBarsState extends State<_GroupedBars> {
+class BiGroupedBarsState extends State<BiGroupedBars> {
   Set<int> _hidden = {};
   int? _touchedGroup;
   final _tip = GlobalKey<BiTooltipLayerState>();
@@ -324,7 +324,7 @@ class BiPeriodComparisonSection extends StatelessWidget {
       child: !comparison.isAvailable
           ? BiEmptyState(message: comparison.unavailableReason!)
           : chartType == BiChartType.bar
-          ? _GroupedBars(
+          ? BiGroupedBars(
               groups: const ['Ingresos', 'Gastos', 'Balance'],
               seriesNames: const ['Actual', 'Anterior'],
               values: [
@@ -395,7 +395,7 @@ class _ComparisonRow extends StatelessWidget {
         : (change > 0) == higherIsBetter;
     final color = improved == null
         ? AppColors.textSecondary
-        : (improved ? AppColors.primary : AppColors.error);
+        : (improved ? AppColors.primaryDark : AppColors.error);
     final sign = change == null
         ? ''
         : (change > 0 ? '+' : (change < 0 ? '−' : ''));
@@ -944,7 +944,7 @@ class BiEventComparisonSection extends StatelessWidget {
             'que comparar.',
       );
     } else if (chartType == BiChartType.bar) {
-      body = _GroupedBars(
+      body = BiGroupedBars(
         groups: const ['Por día', 'Por venta'],
         seriesNames: const ['Días de evento', 'Días regulares'],
         values: [
@@ -1130,7 +1130,7 @@ class BiMaterialCostSection extends StatelessWidget {
             child: _SummaryTile(
               label: 'Ingresos',
               value: formatMoney(cost.revenue),
-              valueColor: AppColors.primary,
+              valueColor: AppColors.primaryDark,
             ),
           ),
           Expanded(
@@ -1472,9 +1472,9 @@ class _BiRadarSectionState extends State<BiRadarSection> {
         icon: const Icon(Icons.tune, size: 16),
         label: const Text('Elegir productos'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+          foregroundColor: AppColors.primaryDark,
+          side: const BorderSide(color: AppColors.primaryDark),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppIos.groupRadius)),
         ),
       ),
       child: radar.products.length < radarMinProducts
@@ -1720,7 +1720,7 @@ class _RadarPickerState extends State<_RadarPicker> {
                     CheckboxListTile(
                       key: ValueKey('bi-radar-option-${p.id}'),
                       contentPadding: EdgeInsets.zero,
-                      activeColor: AppColors.primary,
+                      activeColor: AppColors.primaryDark,
                       title: Text(p.name),
                       value: _selected.contains(p.id),
                       onChanged: !_selected.contains(p.id) && full
@@ -1741,11 +1741,11 @@ class _RadarPickerState extends State<_RadarPicker> {
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context, <int>[]),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
+                            foregroundColor: AppColors.primaryDark,
+                            side: const BorderSide(color: AppColors.primaryDark),
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50),
+                              borderRadius: BorderRadius.circular(AppIos.groupRadius),
                             ),
                           ),
                           // Una sola línea: en pantallas angostas se reduce un poco.

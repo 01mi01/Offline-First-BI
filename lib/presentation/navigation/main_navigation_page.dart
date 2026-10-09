@@ -179,7 +179,7 @@ class _AdaptiveBottomBar extends StatelessWidget {
           children: overflowGroups
               .map(
                 (group) => ListTile(
-                  leading: Icon(iconForGroup(group), color: AppColors.primary),
+                  leading: Icon(iconForGroup(group), color: AppColors.primaryDark),
                   title: Text(labelForGroup(group)),
                   onTap: () {
                     Navigator.pop(sheetContext);
@@ -209,7 +209,7 @@ class _NavTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.textSecondary;
+    final color = selected ? AppColors.primaryDark : AppColors.textSecondary;
     return InkWell(
       onTap: onTap,
       child: Column(

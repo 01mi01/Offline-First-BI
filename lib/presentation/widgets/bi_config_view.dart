@@ -105,7 +105,7 @@ class BiConfigView extends StatelessWidget {
                     child: Text(
                       group.label,
                       style: textTheme.labelMedium?.copyWith(
-                        color: AppColors.primary,
+                        color: AppColors.primaryDark,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -172,7 +172,7 @@ class _IndicatorTile extends StatelessWidget {
           children: [
             Checkbox(
               value: selected,
-              activeColor: AppColors.primary,
+              activeColor: AppColors.primaryDark,
               onChanged: (v) => onChanged(v ?? false),
             ),
             Expanded(
@@ -201,7 +201,7 @@ class _IndicatorTile extends StatelessWidget {
               icon: const Icon(
                 Icons.info_outline,
                 size: 20,
-                color: AppColors.primary,
+                color: AppColors.primaryDark,
               ),
               onPressed: () => showBiInfo(context, indicator.title, indicator.info),
             ),

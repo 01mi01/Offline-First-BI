@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../application/material_pricing.dart';
 import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
+import 'flat_form.dart';
 
 // Precio de un material, para TODOS los tipos de unidad (contenedor, medida y
 // otros): dos campos siempre visibles y enlazados, "Precio por unidad" y
@@ -135,43 +136,51 @@ class LinkedPriceFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextFormField(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          controller: controller.price,
-          keyboardType: TextInputType.number,
-          inputFormatters: [_decimalFormatter],
-          decoration: InputDecoration(labelText: priceLabel, hintText: '0'),
-          onChanged: (_) {
-            controller.priceTyped();
-            onChanged();
-          },
-          validator: (v) {
-            if (controller.source != PriceSource.perUnit) return null;
-            if (v == null || v.isEmpty) return 'Campo requerido';
-            if ((double.tryParse(v) ?? 0) <= 0) return 'Precio inválido';
-            return null;
-          },
+        LabeledField(
+          label: priceLabel,
+          builder: (labelText) => TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: controller.price,
+            keyboardType: TextInputType.number,
+            inputFormatters: [_decimalFormatter],
+            decoration: InputDecoration(labelText: labelText, hintText: '0'),
+            onChanged: (_) {
+              controller.priceTyped();
+              onChanged();
+            },
+            validator: (v) {
+              if (controller.source != PriceSource.perUnit) return null;
+              if (v == null || v.isEmpty) return 'Campo requerido';
+              if ((double.tryParse(v) ?? 0) <= 0) return 'Precio inválido';
+              return null;
+            },
+          ),
         ),
         const SizedBox(height: AppSpacing.s16),
-        TextFormField(
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          controller: controller.total,
-          keyboardType: TextInputType.number,
-          inputFormatters: [_decimalFormatter],
-          decoration: InputDecoration(labelText: totalLabel, hintText: '0'),
-          onChanged: (_) {
-            controller.totalTyped();
-            onChanged();
-          },
-          validator: (v) {
-            if (controller.source != PriceSource.total) return null;
-            if (v == null || v.isEmpty) return 'Campo requerido';
-            if ((double.tryParse(v) ?? 0) <= 0) return 'Ingresa lo que pagaste';
-            if (controller.quantity <= 0) {
-              return 'Indica la cantidad para calcular el precio';
-            }
-            return null;
-          },
+        LabeledField(
+          label: totalLabel,
+          builder: (labelText) => TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: controller.total,
+            keyboardType: TextInputType.number,
+            inputFormatters: [_decimalFormatter],
+            decoration: InputDecoration(labelText: labelText, hintText: '0'),
+            onChanged: (_) {
+              controller.totalTyped();
+              onChanged();
+            },
+            validator: (v) {
+              if (controller.source != PriceSource.total) return null;
+              if (v == null || v.isEmpty) return 'Campo requerido';
+              if ((double.tryParse(v) ?? 0) <= 0) {
+                return 'Ingresa lo que pagaste';
+              }
+              if (controller.quantity <= 0) {
+                return 'Indica la cantidad para calcular el precio';
+              }
+              return null;
+            },
+          ),
         ),
       ],
     );

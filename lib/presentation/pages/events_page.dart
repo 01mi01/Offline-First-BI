@@ -30,9 +30,9 @@ class EventsPage extends ConsumerWidget {
           title: 'Eventos',
           showBack: true,
           bottom: TabBar(
-            labelColor: AppColors.primary,
+            labelColor: AppColors.primaryDark,
             unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
+            indicatorColor: AppColors.primaryDark,
             indicatorSize: TabBarIndicatorSize.label,
             labelStyle: Theme.of(
               context,
@@ -77,7 +77,7 @@ class _EventsTab extends ConsumerWidget {
         // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
         // conviven montadas a la vez bajo el shell de navegación inferior.
         heroTag: 'events_tab_fab',
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),
@@ -189,7 +189,7 @@ class _LocationsTab extends ConsumerWidget {
         // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
         // conviven montadas a la vez bajo el shell de navegación inferior.
         heroTag: 'locations_tab_fab',
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),
@@ -392,7 +392,7 @@ class _EventCard extends StatelessWidget {
                               vertical: AppSpacing.s2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primaryDark.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -400,7 +400,7 @@ class _EventCard extends StatelessWidget {
                               style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
+                                    color: AppColors.primaryDark,
                                   ),
                             ),
                           ),
@@ -473,7 +473,7 @@ class _EventCard extends StatelessWidget {
                         vertical: AppSpacing.s2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primaryDark.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -481,7 +481,7 @@ class _EventCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.labelSmall
                             ?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                              color: AppColors.primaryDark,
                             ),
                       ),
                     ),
@@ -511,7 +511,7 @@ class _EventCard extends StatelessWidget {
             IconButton(
               icon: const Icon(
                 Icons.edit_outlined,
-                color: AppColors.primary,
+                color: AppColors.primaryDark,
                 size: 20,
               ),
               onPressed: onEdit,
@@ -678,7 +678,7 @@ inactiveLabel: 'Inactiva',
             IconButton(
               icon: const Icon(
                 Icons.edit_outlined,
-                color: AppColors.primary,
+                color: AppColors.primaryDark,
                 size: 20,
               ),
               onPressed: onEdit,

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../application/search_filter.dart';
 import '../../theme/app_theme.dart';
+import 'flat_form.dart';
+import 'flat_style.dart';
 import 'focus_utils.dart';
 
 // Opción de un [SearchablePickerField]. [value] puede ser null para la opción
@@ -180,7 +182,9 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _withTrailing(TextField(
+          _withTrailing(LabeledField(
+            label: widget.label,
+            builder: (labelText) => TextField(
             controller: _controller,
             focusNode: _focus,
             autofocus: widget.autofocus,
@@ -193,7 +197,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             scrollPadding: EdgeInsets.zero,
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              labelText: widget.label,
+              labelText: labelText,
               hintText: widget.searchHint,
               prefixIcon: const Icon(
                 Icons.search,
@@ -215,7 +219,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
                     )
                   : null,
             ),
-          )),
+          ))),
           if (focused) ...[
             const SizedBox(height: AppSpacing.s8),
             // Alto fijo: la lista de resultados no cambia de tamaño mientras se
@@ -223,11 +227,16 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             // los resultados aparecen, aumentan o disminuyen.
             Container(
               height: maxResultsHeight,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
+              decoration: FlatStyle.isActive(context)
+                  ? BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppFlat.tileRadius),
+                    )
+                  : BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
               child: ListView(
                 padding: const EdgeInsets.all(AppSpacing.s8),
                 children: [
@@ -283,7 +292,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
               ),
             ),
       trailing: isSelected
-          ? const Icon(Icons.check, color: AppColors.primary)
+          ? const Icon(Icons.check, color: AppColors.primaryDark)
           : null,
       onTap: () => _choose(option),
     );

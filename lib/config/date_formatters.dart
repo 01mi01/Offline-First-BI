@@ -15,3 +15,22 @@ String formatDateTime(DateTime date) =>
 // 2026-09-29: para nombres de archivo (ordenable y sin barras).
 String formatDateForFileName(DateTime date) =>
     '${date.year}-${_two(date.month)}-${_two(date.day)}';
+
+const List<String> _monthNames = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
+// Octubre 2026: nombre del mes y año (para el periodo mostrado en Inicio).
+String formatMonthYear(DateTime date) =>
+    '${_monthNames[date.month - 1]} ${date.year}';

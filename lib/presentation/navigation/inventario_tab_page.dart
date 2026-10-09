@@ -6,7 +6,8 @@ import '../pages/categories_page.dart';
 import '../pages/materials_page.dart';
 import '../pages/products_page.dart';
 import '../widgets/app_bar_widget.dart';
-import '../widgets/landing_card.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/flat_style.dart';
 import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
 
@@ -26,43 +27,40 @@ class InventarioTabPage extends ConsumerWidget {
       data: (modules) {
         final cards = resolveInventarioCards(modules);
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(
-            title: 'Inventario',
-            actions: [ProfileButton()],
-          ),
-          body: cards.isEmpty
-              ? Center(
-                  child: Text(
-                    'No tienes acceso a ningún módulo de inventario',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(AppSpacing.s16),
-                  child: Column(
-                    children: cards
-                        .map(
-                          (card) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.s12,
-                            ),
-                            child: LandingCard(
-                              label: _labelFor(card),
-                              icon: _iconFor(card),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => _pageFor(card),
-                                ),
-                              ),
+        return FlatStyle(
+          child: Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: const CustomAppBar(
+              title: 'Inventario',
+              actions: [ProfileButton()],
+            ),
+            body: cards.isEmpty
+                ? const FlatEmptyState(
+                    icon: Icons.inventory_2_outlined,
+                    message: 'No tienes acceso a ningún módulo de inventario',
+                  )
+                : ListView(
+                    padding: const EdgeInsets.only(top: AppSpacing.s8),
+                    children: [
+                      for (final card in cards)
+                        FlatListRow(
+                          leading: FlatThumb(icon: _iconFor(card)),
+                          title: _labelFor(card),
+                          trailing: const Padding(
+                            padding: EdgeInsets.only(top: AppSpacing.s14),
+                            child: Icon(
+                              Icons.chevron_right,
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                        )
-                        .toList(),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => _pageFor(card)),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
+          ),
         );
       },
       loading: () => const Scaffold(
@@ -103,16 +101,20 @@ IconData _iconFor(InventarioCard card) {
 Widget _pageFor(InventarioCard card) {
   switch (card) {
     case InventarioCard.productos:
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: const CustomAppBar(title: 'Productos', showBack: true),
-        body: const ProductsPage(),
+      return const FlatStyle(
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: CustomAppBar(title: 'Productos', showBack: true),
+          body: ProductsPage(),
+        ),
       );
     case InventarioCard.categorias:
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: const CustomAppBar(title: 'Categorías', showBack: true),
-        body: const CategoriesPage(),
+      return const FlatStyle(
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: CustomAppBar(title: 'Categorías', showBack: true),
+          body: CategoriesPage(),
+        ),
       );
     case InventarioCard.materiales:
       return const MaterialsPage();

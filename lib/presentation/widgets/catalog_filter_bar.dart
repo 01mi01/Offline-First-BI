@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../application/status_filter.dart';
 import '../../theme/app_theme.dart';
+import 'flat_style.dart';
 import 'focus_utils.dart';
 
 // Piezas reutilizables para buscar y filtrar las vistas de lista y de catálogo
@@ -113,7 +114,12 @@ class FilterMenuChip<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : AppColors.textSecondary;
+    final flat = FlatStyle.isActive(context);
+    // Estilo plano: píldora neutra sin borde; activa, con tinte cian suave y
+    // texto cian oscuro (el cian base no llega al contraste de texto).
+    final color = flat
+        ? (active ? AppColors.primaryDark : AppColors.textPrimary)
+        : (active ? AppColors.primaryDark : AppColors.textSecondary);
     return PopupMenuButton<int>(
       tooltip: label,
       color: AppColors.surface,
@@ -127,46 +133,63 @@ class FilterMenuChip<T> extends StatelessWidget {
             child: Text(options[i].label),
           ),
       ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s12,
-          vertical: AppSpacing.s8,
-        ),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.primary.withOpacity(0.1)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: active ? AppColors.primary : AppColors.border,
+      child: _wrapTap(
+        flat,
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s12,
+            vertical: AppSpacing.s8,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: AppSpacing.s6),
-            ],
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxLabelWidth),
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
+          decoration: flat
+              ? BoxDecoration(
+                  color: active ? AppColors.primarySoft : AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
+                )
+              : BoxDecoration(
+                  color: active
+                      ? AppColors.primaryDark.withOpacity(0.1)
+                      : AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: active ? AppColors.primaryDark : AppColors.border,
+                  ),
+                ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: AppSpacing.s6),
+              ],
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxLabelWidth),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.s2),
-            Icon(Icons.arrow_drop_down, size: 18, color: color),
-          ],
+              const SizedBox(width: AppSpacing.s2),
+              Icon(Icons.arrow_drop_down, size: 18, color: color),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  // Estilo plano: el área que responde al toque mide al menos 48 de alto,
+  // aunque la píldora se vea más baja.
+  Widget _wrapTap(bool flat, Widget chip) => flat
+      ? ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: AppFlat.minTap),
+          child: Center(widthFactor: 1, heightFactor: 1, child: chip),
+        )
+      : chip;
 }
 
 // Fila de chips de filtro que se desplaza en horizontal si no caben.

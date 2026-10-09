@@ -11,6 +11,7 @@ import 'package:offline_first_bi/application/category_provider.dart';
 import 'package:offline_first_bi/application/client_provider.dart';
 import 'package:offline_first_bi/application/event_provider.dart';
 import 'package:offline_first_bi/application/location_provider.dart';
+import 'package:offline_first_bi/application/module_permission_provider.dart';
 import 'package:offline_first_bi/application/product_provider.dart';
 import 'package:offline_first_bi/application/supplier_provider.dart';
 import 'package:offline_first_bi/application/purchase_provider.dart';
@@ -87,7 +88,14 @@ void main() {
       ),
     );
     container = ProviderContainer(
-      overrides: [databaseProvider.overrideWithValue(db)],
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        // Inicio solo muestra los bloques de los módulos legibles: aquí la
+        // persona es dueña y lee todos.
+        readableModulesProvider.overrideWith(
+          (ref) async => ['ventas', 'compras'],
+        ),
+      ],
     );
   });
 
@@ -266,7 +274,7 @@ void main() {
     }
 
     String metric(WidgetTester tester, String label) {
-      // La tarjeta es una Column: valor y luego etiqueta.
+      // La tarjeta es una Column: etiqueta y luego valor.
       final card = find.ancestor(
         of: find.text(label),
         matching: find.byType(Column),
@@ -275,7 +283,7 @@ void main() {
           .widgetList<Text>(find.descendant(of: card, matching: find.byType(Text)))
           .map((t) => t.data!)
           .toList();
-      return texts.first;
+      return texts.last;
     }
 
     testWidgets('future-dated and last-month records stay out of the monthly figures', (tester) async {
@@ -290,9 +298,9 @@ void main() {
       });
       await pumpHome(tester);
 
-      expect(metric(tester, 'Ingresos del mes'), 'Bs. 100.00');
+      expect(metric(tester, 'Ventas del mes'), 'Bs. 100.00');
       expect(metric(tester, 'Gastos del mes'), 'Bs. 40.00');
-      // "Últimas ventas" tampoco muestra la venta futura (999).
+      // "Actividad reciente" tampoco muestra la venta futura (999).
       expect(find.text('Bs. 999.00'), findsNothing);
     });
 
@@ -302,7 +310,7 @@ void main() {
         await refresh();
       });
       await pumpHome(tester);
-      expect(metric(tester, 'Ingresos del mes'), 'Bs. 0.00');
+      expect(metric(tester, 'Ventas del mes'), 'Bs. 0.00');
 
       await tester.runAsync(() async {
         final sale = container.read(saleProvider).sales.single;
@@ -322,7 +330,7 @@ void main() {
         expect(err, isNull);
       });
       await tester.pumpAndSettle();
-      expect(metric(tester, 'Ingresos del mes'), 'Bs. 250.00');
+      expect(metric(tester, 'Ventas del mes'), 'Bs. 250.00');
     });
   });
 

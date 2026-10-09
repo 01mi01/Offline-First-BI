@@ -12,29 +12,22 @@ import '../../models/purchase_model.dart';
 import '../../models/purchase_item_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/purchase_dialog.dart';
-import '../widgets/app_bar_widget.dart';
-import '../widgets/catalog_filter_bar.dart';
-import '../widgets/date_range_filter_bar.dart';
-import '../widgets/status_badge.dart';
+import '../widgets/ios_controls.dart';
+import '../widgets/ios_filters.dart';
+import '../widgets/ios_group.dart';
+import '../widgets/ios_scaffold.dart';
+import '../widgets/ios_sheet.dart';
+import '../widgets/ios_style.dart';
 import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
 
-class PurchasesPage extends ConsumerWidget {
+class PurchasesPage extends StatelessWidget {
   const PurchasesPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: 'Compras', showBack: true),
-      body: const PurchasesListBody(),
-    );
-  }
+  Widget build(BuildContext context) => const PurchasesListBody();
 }
 
-// Contenido de la lista de compras, sin AppBar propia. Se usa tanto en
-// PurchasesPage (con AppBar y back) como embebido en el tab "Ventas y
-// Compras" de la navegación inferior (sin AppBar).
 class PurchasesListBody extends ConsumerWidget {
   const PurchasesListBody({super.key});
 
@@ -54,575 +47,124 @@ class PurchasesListBody extends ConsumerWidget {
         )
         .toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
-        heroTag: 'purchases_list_body_fab',
-        backgroundColor: AppColors.primary,
-        shape: const CircleBorder(),
-        onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
-      ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.purchases.isEmpty
-          ? Center(
-              child: Text(
-                'No se registraron compras',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          : Column(
-              children: [
-                // Arriba del todo, a la derecha: filtro por tipo (solo
-                // materiales, solo gastos o ambos) y ocultar o no las compras
-                // con fecha futura.
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.s12),
-                  child: FilterChipRow(
-                    chips: [
-                      FilterMenuChip<PurchaseKind>(
-                        icon: Icons.filter_list,
-                        label: kind == PurchaseKind.all
-                            ? 'Tipo'
-                            : kind.label,
-                        active: kind != PurchaseKind.all,
-                        selected: kind,
-                        options: [
-                          for (final k in PurchaseKind.values)
-                            FilterOption(
-                              k,
-                              k == PurchaseKind.all ? 'Ambos tipos' : k.label,
-                            ),
-                        ],
-                        onSelected: (value) => ref
-                            .read(purchaseKindFilterProvider.notifier)
-                            .state = value,
-                      ),
-                      // Ocultar o no las compras con fecha futura.
-                      FilterMenuChip<RecordTimeFilter>(
-                        icon: Icons.event_available_outlined,
-                        label: timeFilter == RecordTimeFilter.current
-                            ? 'Compras actuales'
-                            : 'Todas',
-                        active: timeFilter != RecordTimeFilter.current,
-                        selected: timeFilter,
-                        options: const [
-                          FilterOption(
-                            RecordTimeFilter.current,
-                            'Compras actuales',
-                          ),
-                          FilterOption(RecordTimeFilter.all, 'Todas'),
-                        ],
-                        onSelected: (value) => ref
-                            .read(purchaseTimeFilterProvider.notifier)
-                            .state = value,
-                      ),
-                    ],
-                  ),
-                ),
-                // Debajo: atajos de fecha y rango Desde/Hasta.
-                DateRangeFilterBar(
-                  value: dates,
-                  onChanged: (value) => ref
-                      .read(purchaseDateFilterProvider.notifier)
-                      .state = value,
-                ),
-                const SizedBox(height: AppSpacing.s8),
-                Expanded(
-                  child: visible.isEmpty
-                      ? Center(
-                          child: Text(
-                            'Sin resultados',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: AppSpacing.listWithFab,
-                          itemCount: visible.length,
-                          itemBuilder: (context, index) {
-                            final purchase = visible[index];
-                            final supplier = suppliers
-                                .where((s) => s.id == purchase.supplierId)
-                                .firstOrNull;
-                            return _PurchaseCard(
-                              purchase: purchase,
-                              supplierName: supplier?.name ?? 'Sin proveedor',
-                              onEdit: () => _showDialog(context, purchase),
-                              onTap: () => _showDetail(
-                                context,
-                                ref,
-                                purchase,
-                                supplier?.name ?? 'Sin proveedor',
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-    );
-  }
+    String supplierName(PurchaseModel purchase) =>
+        suppliers.where((s) => s.id == purchase.supplierId).firstOrNull?.name ??
+        'Sin proveedor';
 
-  void _showDialog(BuildContext context, PurchaseModel? purchase) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => PurchaseDialog(purchase: purchase),
-    );
-  }
-
-  void _showDetail(
-    BuildContext context,
-    WidgetRef ref,
-    PurchaseModel purchase,
-    String supplierName,
-  ) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
-      builder: (_) =>
-          _PurchaseDetailDialog(purchase: purchase, supplierName: supplierName),
-    );
-  }
-}
-
-// Tarjeta de compra
-class _PurchaseCard extends StatelessWidget {
-  final PurchaseModel purchase;
-  final String supplierName;
-  final VoidCallback onEdit;
-  final VoidCallback onTap;
-
-  const _PurchaseCard({
-    required this.purchase,
-    required this.supplierName,
-    required this.onEdit,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
-        padding: const EdgeInsets.all(AppSpacing.s16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+    return IosLargeTitleScaffold(
+      title: 'Compras',
+      backLabel: 'Ventas y Compras',
+      actions: [
+        IconButton(
+          tooltip: 'Nueva compra',
+          icon: const Icon(
+            Icons.add_rounded,
+            size: 28,
+            color: AppColors.primaryDark,
+          ),
+          onPressed: () => showPurchaseForm(context),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      ],
+      slivers: [
+        if (state.isLoading)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (state.purchases.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: IosEmptyState(
+                icon: Icons.shopping_bag_outlined,
+                title: 'No se registraron compras',
+                actionLabel: 'Nueva compra',
+                onAction: () => showPurchaseForm(context),
+              ),
+            ),
+          )
+        else ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          supplierName,
-                          style: Theme.of(context).textTheme.headlineLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: purchase.isCanceled
-                                    ? AppColors.textSecondary
-                                    : AppColors.textPrimary,
-                              ),
+                  IosMenuButton<PurchaseKind>(
+                    label: kind == PurchaseKind.all ? 'Tipo' : kind.label,
+                    active: kind != PurchaseKind.all,
+                    selected: kind,
+                    options: [
+                      for (final k in PurchaseKind.values)
+                        IosMenuOption(
+                          k,
+                          k == PurchaseKind.all ? 'Ambos tipos' : k.label,
                         ),
-                      ),
-                      // Pill material o gasto
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s8,
-                          vertical: AppSpacing.s2,
-                        ),
-                        decoration: BoxDecoration(
-                          // "Gasto" va en el color neutro de texto (ni verde
-                          // ni el rojo de las acciones destructivas).
-                          color: purchase.isMaterial
-                              ? AppColors.primary.withOpacity(0.1)
-                              : AppColors.textSecondary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          purchase.isMaterial ? 'Material' : 'Gasto',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: purchase.isMaterial
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                              ),
-                        ),
-                      ),
-                      if (purchase.isCanceled) ...[
-                        const SizedBox(width: AppSpacing.s8),
-                        const StatusBadge.canceled(),
-                      ],
                     ],
+                    onSelected: (value) =>
+                        ref.read(purchaseKindFilterProvider.notifier).state =
+                            value,
                   ),
-                  const SizedBox(height: AppSpacing.s4),
-                  Text(
-                    _formatDate(purchase.date),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (purchase.description != null &&
-                      purchase.description!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      purchase.description!,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.displaySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.s6),
-                  Text(
-                    'Bs. ${purchase.totalAmount.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.displayMedium
-                        ?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: purchase.isCanceled
-                              ? AppColors.textSecondary
-                              : AppColors.primary,
-                          decoration: purchase.isCanceled
-                              ? TextDecoration.lineThrough
-                              : null,
+                  const SizedBox(width: AppSpacing.s8),
+                  Expanded(
+                    child: IosSegmented<RecordTimeFilter>(
+                      segments: const [
+                        IosSegment(
+                          RecordTimeFilter.current,
+                          'Compras actuales',
                         ),
+                        IosSegment(RecordTimeFilter.all, 'Todas'),
+                      ],
+                      selected: timeFilter,
+                      onChanged: (value) {
+                        if (value != null) {
+                          ref.read(purchaseTimeFilterProvider.notifier).state =
+                              value;
+                        }
+                      },
+                    ),
                   ),
                 ],
               ),
             ),
-            // Una compra cancelada es solo historial: sin editar. Cancelar se
-            // hace desde el formulario de edición.
-            if (!purchase.isCanceled)
-              IconButton(
-                icon: const Icon(
-                  Icons.edit_outlined,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-                onPressed: onEdit,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) => formatDateTime(date);
-}
-
-// Diálogo de detalle de compra
-class _PurchaseDetailDialog extends ConsumerStatefulWidget {
-  final PurchaseModel purchase;
-  final String supplierName;
-
-  const _PurchaseDetailDialog({
-    required this.purchase,
-    required this.supplierName,
-  });
-
-  @override
-  ConsumerState<_PurchaseDetailDialog> createState() =>
-      _PurchaseDetailDialogState();
-}
-
-class _PurchaseDetailDialogState extends ConsumerState<_PurchaseDetailDialog> {
-  List<PurchaseItemModel> _items = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.purchase.isMaterial)
-      _loadItems();
-    else
-      setState(() => _loading = false);
-  }
-
-  Future<void> _loadItems() async {
-    final items = await ref
-        .read(purchaseProvider.notifier)
-        .getItemsForPurchase(widget.purchase.id);
-    if (mounted)
-      setState(() {
-        _items = items;
-        _loading = false;
-      });
-  }
-
-  String _formatDate(DateTime date) => formatDateTime(date);
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          color: AppColors.surface,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Encabezado
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s24,
-                  AppSpacing.s24,
-                  AppSpacing.s24,
-                  0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Detalle de compra',
-                      style: Theme.of(context).textTheme.displayLarge
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.s6),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: AppColors.textSecondary,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          SliverToBoxAdapter(
+            child: IosDateRangeFilter(
+              value: dates,
+              onChanged: (value) =>
+                  ref.read(purchaseDateFilterProvider.notifier).state = value,
+            ),
+          ),
+          if (visible.isEmpty)
+            const SliverToBoxAdapter(
+              child: IosEmptyState(
+                icon: Icons.search_off_outlined,
+                title: 'Sin resultados',
               ),
-              const SizedBox(height: AppSpacing.s16),
-
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s24,
-                    0,
-                    AppSpacing.s24,
-                    AppSpacing.s24,
+            )
+          else
+            IosSliverGroup(
+              dividerIndent: AppIos.dividerIndentWithTile,
+              itemCount: visible.length,
+              itemBuilder: (context, index) {
+                final purchase = visible[index];
+                return _PurchaseRow(
+                  purchase: purchase,
+                  supplierName: supplierName(purchase),
+                  onTap: () => showPurchaseDetail(
+                    context,
+                    purchase,
+                    supplierName(purchase),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _DetailRow(
-                        label: 'Proveedor',
-                        value: widget.supplierName,
-                      ),
-                      const SizedBox(height: AppSpacing.s8),
-                      _DetailRow(
-                        label: 'Fecha',
-                        value: _formatDate(widget.purchase.date),
-                      ),
-                      const SizedBox(height: AppSpacing.s8),
-                      _DetailRow(
-                        label: 'Tipo',
-                        value: widget.purchase.isMaterial
-                            ? 'Compra de materiales'
-                            : 'Gasto general',
-                      ),
-                      if (widget.purchase.locationId != null) ...[
-                        const SizedBox(height: AppSpacing.s8),
-                        _DetailRow(
-                          label: 'Ubicación',
-                          value: _locationText(
-                            ref
-                                .watch(locationProvider)
-                                .locations
-                                .where((l) => l.id == widget.purchase.locationId)
-                                .firstOrNull,
-                          ),
-                        ),
-                      ],
-                      if (widget.purchase.eventId != null) ...[
-                        const SizedBox(height: AppSpacing.s8),
-                        _DetailRow(
-                          label: 'Evento',
-                          value:
-                              ref
-                                  .watch(eventProvider)
-                                  .events
-                                  .where((e) => e.id == widget.purchase.eventId)
-                                  .firstOrNull
-                                  ?.name ??
-                              '',
-                        ),
-                      ],
-                      if (widget.purchase.description != null &&
-                          widget.purchase.description!.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.s8),
-                        _DetailRow(
-                          label: 'Descripción',
-                          value: widget.purchase.description!,
-                        ),
-                      ],
-                      if (widget.purchase.notes != null &&
-                          widget.purchase.notes!.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.s8),
-                        _DetailRow(
-                          label: 'Notas',
-                          value: widget.purchase.notes!,
-                        ),
-                      ],
-
-                      if (widget.purchase.isMaterial) ...[
-                        const SizedBox(height: AppSpacing.s16),
-                        const Divider(color: AppColors.border),
-                        const SizedBox(height: AppSpacing.s12),
-                        Text(
-                          'Materiales',
-                          style: Theme.of(context).textTheme.displayMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-                        if (_loading)
-                          const Center(child: CircularProgressIndicator())
-                        else
-                          ..._items.map(
-                            (item) => Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: AppSpacing.s8,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(AppSpacing.s12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.materialName,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${formatMaterialQuantity(item.quantity, unitType: item.unitType, unitName: item.unitName)} × Bs. ${item.unitPrice.toStringAsFixed(2)}',
-                                            style: Theme.of(context).textTheme
-                                                .labelMedium?.copyWith(
-                                                  color: AppColors
-                                                      .textSecondary,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Text(
-                                      'Bs. ${item.subtotal.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-
-                      const SizedBox(height: AppSpacing.s12),
-                      const Divider(color: AppColors.border),
-                      const SizedBox(height: AppSpacing.s8),
-                      _DetailRow(
-                        label: 'Total',
-                        value:
-                            'Bs. ${widget.purchase.totalAmount.toStringAsFixed(2)}',
-                        bold: true,
-                        valueColor: AppColors.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Fila de detalle
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool bold;
-  final Color? valueColor;
-
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.bold = false,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 90,
-          child: Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.displaySmall?.copyWith(color: AppColors.textSecondary),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: (bold
-                    ? Theme.of(context).textTheme.headlineLarge
-                    : Theme.of(context).textTheme.displaySmall)
-                ?.copyWith(
-                  fontWeight: bold ? FontWeight.bold : FontWeight.w500,
-                  color: valueColor ?? AppColors.textPrimary,
-                ),
+                  onEdit: purchase.isCanceled
+                      ? null
+                      : () => showPurchaseForm(context, purchase),
+                );
+              },
+            ),
+        ],
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
           ),
         ),
       ],
@@ -630,5 +172,243 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-// Ubicación mostrada en el detalle: "Ciudad, País" y su zona.
+void showPurchaseForm(BuildContext context, [PurchaseModel? purchase]) {
+  showIosSheet<void>(
+    context,
+    heightFactor: 0.94,
+    builder: (_) => PurchaseDialog(purchase: purchase),
+  );
+}
+
+void showPurchaseDetail(
+  BuildContext context,
+  PurchaseModel purchase,
+  String supplierName,
+) {
+  showIosSheet<void>(
+    context,
+    heightFactor: 0.92,
+    builder: (_) => _PurchaseDetailSheet(
+      purchase: purchase,
+      supplierName: supplierName,
+      onEdit: purchase.isCanceled
+          ? null
+          : () => showPurchaseForm(context, purchase),
+    ),
+  );
+}
+
+class _PurchaseRow extends StatelessWidget {
+  final PurchaseModel purchase;
+  final String supplierName;
+  final VoidCallback onTap;
+  final VoidCallback? onEdit;
+
+  const _PurchaseRow({
+    required this.purchase,
+    required this.supplierName,
+    required this.onTap,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canceled = purchase.isCanceled;
+    return IosRow(
+      leading: IosTile(
+        icon: purchase.isMaterial
+            ? Icons.shopping_bag_outlined
+            : Icons.receipt_long_outlined,
+        color: canceled
+            ? AppColors.iosTrack
+            : (purchase.isMaterial ? AppColors.accent : AppColors.navy),
+        iconColor: canceled
+            ? AppColors.textSecondary
+            : (purchase.isMaterial ? AppColors.onPrimary : AppColors.surface),
+      ),
+      title: supplierName,
+      titleColor: canceled ? AppColors.textSecondary : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text.rich(
+            TextSpan(
+              text:
+                  '${formatDateTime(purchase.date)}  ${purchase.isMaterial ? 'Material' : 'Gasto'}',
+              children: [
+                if (canceled)
+                  const TextSpan(
+                    text: '  Cancelada',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+              ],
+            ),
+            style: IosText.rowSubtitle(context),
+          ),
+          if (purchase.description != null && purchase.description!.isNotEmpty)
+            Text(
+              purchase.description!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: IosText.rowSubtitle(context),
+            ),
+        ],
+      ),
+      trailing: Text(
+        'Bs. ${fixed2(purchase.totalAmount)}',
+        style: IosText.rowTitle(
+          context,
+          color: canceled ? AppColors.textSecondary : AppColors.textPrimary,
+        ).copyWith(
+          fontWeight: FontWeight.w600,
+          decoration: canceled ? TextDecoration.lineThrough : null,
+        ),
+      ),
+      chevron: true,
+      onTap: onTap,
+      onLongPress: onEdit,
+    );
+  }
+}
+
+class _PurchaseDetailSheet extends ConsumerStatefulWidget {
+  final PurchaseModel purchase;
+  final String supplierName;
+  final VoidCallback? onEdit;
+
+  const _PurchaseDetailSheet({
+    required this.purchase,
+    required this.supplierName,
+    required this.onEdit,
+  });
+
+  @override
+  ConsumerState<_PurchaseDetailSheet> createState() =>
+      _PurchaseDetailSheetState();
+}
+
+class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
+  List<PurchaseItemModel> _items = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.purchase.isMaterial) {
+      _loadItems();
+    } else {
+      _loading = false;
+    }
+  }
+
+  Future<void> _loadItems() async {
+    final items = await ref
+        .read(purchaseProvider.notifier)
+        .getItemsForPurchase(widget.purchase.id);
+    if (mounted) {
+      setState(() {
+        _items = items;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final purchase = widget.purchase;
+    final location = purchase.locationId == null
+        ? null
+        : ref
+              .watch(locationProvider)
+              .locations
+              .where((l) => l.id == purchase.locationId)
+              .firstOrNull;
+    final eventName = purchase.eventId == null
+        ? null
+        : ref
+                  .watch(eventProvider)
+                  .events
+                  .where((e) => e.id == purchase.eventId)
+                  .firstOrNull
+                  ?.name ??
+              '';
+
+    return IosSheetScaffold(
+      title: 'Detalle de compra',
+      leadingLabel: widget.onEdit == null ? null : 'Editar',
+      onLeading: () {
+        Navigator.pop(context);
+        widget.onEdit?.call();
+      },
+      trailingLabel: 'Cerrar',
+      child: ListView(
+        padding: const EdgeInsets.only(top: AppSpacing.s8, bottom: AppSpacing.s32),
+        children: [
+          IosBigTotal(
+            label: 'Total',
+            value: 'Bs. ${fixed2(purchase.totalAmount)}',
+          ),
+          IosSection(
+            children: [
+              IosValueRow(label: 'Proveedor', value: widget.supplierName),
+              IosValueRow(label: 'Fecha', value: formatDateTime(purchase.date)),
+              IosValueRow(
+                label: 'Tipo',
+                value: purchase.isMaterial
+                    ? 'Compra de materiales'
+                    : 'Gasto general',
+              ),
+              if (purchase.locationId != null)
+                IosValueRow(label: 'Ubicación', value: _locationText(location)),
+              if (purchase.eventId != null)
+                IosValueRow(label: 'Evento', value: eventName ?? ''),
+              if (purchase.description != null &&
+                  purchase.description!.isNotEmpty)
+                IosValueRow(label: 'Descripción', value: purchase.description!),
+              if (purchase.notes != null && purchase.notes!.isNotEmpty)
+                IosValueRow(label: 'Notas', value: purchase.notes!),
+            ],
+          ),
+          if (purchase.isMaterial)
+            IosSection(
+              header: 'Materiales',
+              children: [
+                if (_loading)
+                  const Padding(
+                    padding: EdgeInsets.all(AppSpacing.s16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  for (final item in _items)
+                    IosRow(
+                      title: item.materialName,
+                      subtitle: Text(
+                        '${formatMaterialQuantity(item.quantity, unitType: item.unitType, unitName: item.unitName)} × Bs. ${fixed2(item.unitPrice)}',
+                        style: IosText.rowSubtitle(context),
+                      ),
+                      trailing: Text(
+                        'Bs. ${fixed2(item.subtotal)}',
+                        style: IosText.rowTitle(context).copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+              ],
+            ),
+          IosSection(
+            children: [
+              IosValueRow(
+                label: 'Total',
+                value: 'Bs. ${fixed2(purchase.totalAmount)}',
+                bold: true,
+                valueColor: AppColors.textPrimary,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 String _locationText(LocationModel? l) => l == null ? '' : locationLabelWithZone(l);

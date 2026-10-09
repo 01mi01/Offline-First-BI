@@ -176,7 +176,7 @@ class _DrillSheet extends ConsumerWidget {
               statKey: 'revenue',
               label: 'Ingresos',
               value: formatMoney(d.revenue),
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
             ),
           ),
           Expanded(
@@ -232,7 +232,7 @@ class _DrillSheet extends ConsumerWidget {
               statKey: 'revenue',
               label: 'Ingresos',
               value: formatMoney(d.revenue),
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
             ),
           ),
           Expanded(
@@ -393,7 +393,7 @@ class _DrillSheet extends ConsumerWidget {
                   ? 'Ingresos (1 venta)'
                   : 'Ingresos (${d.sales.length} ventas)',
               value: formatMoney(d.income),
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
             ),
           ),
           Expanded(
@@ -411,7 +411,7 @@ class _DrillSheet extends ConsumerWidget {
               statKey: 'profit',
               label: 'Resultado',
               value: formatMoney(profit),
-              color: profit < 0 ? AppColors.error : AppColors.primary,
+              color: profit < 0 ? AppColors.error : AppColors.primaryDark,
             ),
           ),
         ],
@@ -469,7 +469,7 @@ class _DrillSheet extends ConsumerWidget {
               statKey: 'spend',
               label: 'Gasto',
               value: formatMoney(d.spend),
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
             ),
           ),
           Expanded(

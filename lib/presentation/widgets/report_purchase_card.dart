@@ -69,7 +69,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                                   ? 'Material'
                                   : 'Gasto',
                               color: widget.purchase.isMaterial
-                                  ? AppColors.primary
+                                  ? AppColors.primaryDark
                                   : AppColors.textPrimary,
                             ),
                           ],
@@ -103,7 +103,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                             if (widget.locationName != null)
                               _MiniPill(
                                 label: widget.locationName!,
-                                color: AppColors.primary,
+                                color: AppColors.primaryDark,
                               ),
                             if (widget.eventName != null)
                               _MiniPill(
@@ -116,7 +116,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                     ),
                   ),
                   Text(
-                    'Bs. ${widget.purchase.totalAmount.toStringAsFixed(2)}',
+                    'Bs. ${fixed2(widget.purchase.totalAmount)}',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.error,
@@ -167,10 +167,10 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                                     ),
                                   ),
                                   Text(
-                                    'Bs. ${item.subtotal.toStringAsFixed(2)}',
+                                    'Bs. ${fixed2(item.subtotal)}',
                                     style: Theme.of(context).textTheme
                                         .labelMedium?.copyWith(
-                                          color: AppColors.primary,
+                                          color: AppColors.primaryDark,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),

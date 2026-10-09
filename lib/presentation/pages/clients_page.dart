@@ -50,7 +50,7 @@ class ClientsListBody extends ConsumerWidget {
         // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
         // conviven montadas a la vez bajo el shell de navegación inferior.
         heroTag: 'clients_list_body_fab',
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
         child: const Icon(Icons.add, color: AppColors.surface),
@@ -251,7 +251,7 @@ class _ContactCardState extends State<ContactCard> {
                                         content: const Text(
                                           'Copiado al portapapeles',
                                         ),
-                                        backgroundColor: AppColors.primary,
+                                        backgroundColor: AppColors.primaryDark,
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -265,12 +265,12 @@ class _ContactCardState extends State<ContactCard> {
                                   child: Container(
                                     padding: const EdgeInsets.all(AppSpacing.s6),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
+                                      color: AppColors.primaryDark.withOpacity(0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.copy_outlined,
-                                      color: AppColors.primary,
+                                      color: AppColors.primaryDark,
                                       size: 18,
                                     ),
                                   ),
@@ -347,7 +347,7 @@ inactiveLabel: 'Inactivo',
               IconButton(
                 icon: const Icon(
                   Icons.edit_outlined,
-                  color: AppColors.primary,
+                  color: AppColors.primaryDark,
                   size: 20,
                 ),
                 onPressed: widget.onEdit,

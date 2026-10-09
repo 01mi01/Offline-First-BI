@@ -36,7 +36,7 @@ void main() {
   };
 
   group('chart palette', () {
-    test('exactly five chart colors, derived from the primary hue family', () {
+    test('exactly five chart colors, each in its palette family', () {
       final colors = [
         AppColors.chartColor1,
         AppColors.chartColor2,
@@ -46,11 +46,23 @@ void main() {
       ];
       expect(colors.toSet().length, 5);
       expect(AppColors.chartColor1, AppColors.primary);
-      expect(AppColors.chartColor2, AppColors.primaryDark);
-      // Todos en la familia verde / verde azulado / cian (HSL 140°–195°).
-      for (final c in colors) {
-        final hue = HSLColor.fromColor(c).hue;
-        expect(hue, inInclusiveRange(140, 195), reason: '$c');
+      expect(AppColors.chartColor4, AppColors.primaryDark);
+      // Cada color pertenece a su familia de la paleta: cian, azul marino,
+      // verde lima, cian oscuro y azul.
+      const hueRanges = [
+        (170.0, 195.0), // chartColor1: cian
+        (205.0, 235.0), // chartColor2: azul marino
+        (60.0, 90.0), // chartColor3: verde lima
+        (170.0, 195.0), // chartColor4: cian oscuro
+        (195.0, 215.0), // chartColor5: azul
+      ];
+      for (var i = 0; i < colors.length; i++) {
+        final hue = HSLColor.fromColor(colors[i]).hue;
+        expect(
+          hue,
+          inInclusiveRange(hueRanges[i].$1, hueRanges[i].$2),
+          reason: 'chartColor${i + 1}: ${colors[i]}',
+        );
       }
     });
 

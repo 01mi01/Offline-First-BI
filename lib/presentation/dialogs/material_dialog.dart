@@ -8,6 +8,7 @@ import '../../models/material_model.dart';
 import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/flat_form.dart';
 import '../widgets/linked_price_fields.dart';
 import '../widgets/unit_quantity_input.dart';
 
@@ -178,36 +179,44 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
               const SizedBox(height: AppSpacing.s24),
 
               // Nombre
-              TextFormField(
+              LabeledField(
+                label: 'Nombre',
+                builder: (labelText) => TextFormField(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
+                decoration: InputDecoration(
+                  labelText: labelText,
                   hintText: 'Nombre del material',
                 ),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
+              ),
               const SizedBox(height: AppSpacing.s16),
 
               // Descripción
-              TextFormField(
+              LabeledField(
+                label: 'Descripción',
+                builder: (labelText) => TextFormField(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
+                decoration: InputDecoration(
+                  labelText: labelText,
                   hintText: 'Descripción opcional',
                 ),
                 maxLines: 2,
               ),
+              ),
               const SizedBox(height: AppSpacing.s16),
 
               // Unidad de medida
-              DropdownButtonFormField<int>(
+              LabeledField(
+                label: 'Unidad',
+                builder: (labelText) => DropdownButtonFormField<int>(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 value: _selectedUnitId,
                 decoration: InputDecoration(
-                  labelText: 'Unidad',
+                  labelText: labelText,
                   helperText: currentUnit != null
                       ? 'Solo unidades del mismo tipo'
                       : null,
@@ -220,18 +229,21 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                 onChanged: (val) => setState(() => _selectedUnitId = val),
                 validator: (v) => v == null ? 'Selecciona una unidad' : null,
               ),
+              ),
               const SizedBox(height: AppSpacing.s16),
 
               // Stock y precio por unidad
-              TextFormField(
+              LabeledField(
+                label: 'Stock',
+                builder: (labelText) => TextFormField(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _stockController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                 ],
-                decoration: const InputDecoration(
-                  labelText: 'Stock',
+                decoration: InputDecoration(
+                  labelText: labelText,
                   hintText: '0',
                 ),
                 // Al crear, el stock es la cantidad a la que corresponde el total.
@@ -241,6 +253,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                   }
                 }),
                 validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+              ),
               ),
               const SizedBox(height: AppSpacing.s16),
               // Precio por unidad y total pagado, enlazados (todas las unidades).
@@ -252,7 +265,9 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
               // Editar: la cantidad a la que corresponde el total.
               if (isEditing) ...[
                 const SizedBox(height: AppSpacing.s16),
-                TextFormField(
+                LabeledField(
+                  label: 'Cantidad ($unitName)',
+                  builder: (labelText) => TextFormField(
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _quantityController,
                   keyboardType: TextInputType.number,
@@ -260,7 +275,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                   ],
                   decoration: InputDecoration(
-                    labelText: 'Cantidad ($unitName)',
+                    labelText: labelText,
                     hintText: '1',
                   ),
                   onChanged: (v) => setState(
@@ -274,95 +289,28 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
                     return null;
                   },
                 ),
+                ),
               ],
               const SizedBox(height: AppSpacing.s20),
 
               // Toggle activo/inactivo solo en edición
               if (isEditing)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s16,
-                    vertical: AppSpacing.s12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Material activo',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            _isActive
-                                ? 'Disponible en el sistema'
-                                : 'No disponible en el sistema',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Switch(
-                        value: _isActive,
-                        onChanged: _onToggleActive,
-                        activeColor: AppColors.primary,
-                        inactiveTrackColor: AppColors.border,
-                        inactiveThumbColor: AppColors.surface,
-                        trackOutlineColor: WidgetStateProperty.all(
-                          Colors.transparent,
-                        ),
-                      ),
-                    ],
-                  ),
+                FlatToggleRow(
+                  title: 'Material activo',
+                  subtitle: _isActive
+                      ? 'Disponible en el sistema'
+                      : 'No disponible en el sistema',
+                  value: _isActive,
+                  onChanged: _onToggleActive,
                 ),
 
               const SizedBox(height: AppSpacing.s24),
 
               // Botones cancelar y guardar
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(
-                        isEditing ? 'Guardar' : 'Crear',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
+              FlatFormActions(
+                onSecondary: () => Navigator.pop(context),
+                primaryLabel: isEditing ? 'Guardar' : 'Crear',
+                onPrimary: _save,
               ),
             ],
           ),

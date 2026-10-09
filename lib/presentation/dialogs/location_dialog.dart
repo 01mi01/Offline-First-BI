@@ -194,7 +194,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
                       Switch(
                         value: _isActive,
                         onChanged: _onToggleActive,
-                        activeColor: AppColors.primary,
+                        activeColor: AppColors.primaryDark,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: AppColors.surface,
                         trackOutlineColor:
@@ -242,7 +242,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50)),
+                            borderRadius: BorderRadius.circular(AppIos.groupRadius)),
                         side: const BorderSide(color: AppColors.border),
                       ),
                       child: const Text('Cancelar',

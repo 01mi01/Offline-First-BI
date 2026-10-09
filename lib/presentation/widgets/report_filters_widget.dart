@@ -231,7 +231,7 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
                     child: Text(
                       'Limpiar',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: AppColors.primaryDark,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -249,7 +249,7 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
                       contentPadding: EdgeInsets.zero,
                       title: item.child,
                       trailing: item.value == value
-                          ? Icon(Icons.check, color: AppColors.primary)
+                          ? Icon(Icons.check, color: AppColors.primaryDark)
                           : null,
                       onTap: () {
                         onSelect(item.value);
@@ -315,7 +315,7 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
                   child: Text(
                     'Limpiar todo',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
+                      color: AppColors.primaryDark,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -688,11 +688,11 @@ class _DropChip<T> extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: active
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primaryDark.withOpacity(0.1)
               : AppColors.background,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: active ? AppColors.primary : AppColors.border,
+            color: active ? AppColors.primaryDark : AppColors.border,
           ),
         ),
         child: Row(
@@ -704,7 +704,7 @@ class _DropChip<T> extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: active ? AppColors.primary : AppColors.textSecondary,
+                  color: active ? AppColors.primaryDark : AppColors.textSecondary,
                   fontWeight: active ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
@@ -713,7 +713,7 @@ class _DropChip<T> extends StatelessWidget {
             Icon(
               Icons.arrow_drop_down,
               size: 16,
-              color: active ? AppColors.primary : AppColors.textSecondary,
+              color: active ? AppColors.primaryDark : AppColors.textSecondary,
             ),
             if (active) ...[
               const SizedBox(width: AppSpacing.s2),
@@ -722,7 +722,7 @@ class _DropChip<T> extends StatelessWidget {
                 child: const Icon(
                   Icons.close,
                   size: 14,
-                  color: AppColors.primary,
+                  color: AppColors.primaryDark,
                 ),
               ),
             ],

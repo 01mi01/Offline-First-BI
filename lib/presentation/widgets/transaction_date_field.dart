@@ -39,7 +39,7 @@ class TransactionDateField extends StatelessWidget {
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primary)),
+        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryDark)),
         child: child!,
       ),
     );

@@ -4,14 +4,11 @@ import '../../application/module_permission_provider.dart';
 import '../../theme/app_theme.dart';
 import '../pages/purchases_page.dart';
 import '../pages/sales_page.dart';
-import '../widgets/app_bar_widget.dart';
-import '../widgets/landing_card.dart';
-import 'nav_resolver.dart';
+import '../widgets/ios_group.dart';
+import '../widgets/ios_scaffold.dart';
 import '../widgets/profile_button.dart';
+import 'nav_resolver.dart';
 
-// Tab "Ventas y Compras" de la navegación inferior: pantalla de aterrizaje
-// con tarjetas (Ventas, Compras), mostrando solo las que el usuario puede
-// leer, con el mismo patrón visual que Inventario/Contactos/Reportes.
 class VentasComprasTabPage extends ConsumerWidget {
   const VentasComprasTabPage({super.key});
 
@@ -23,31 +20,32 @@ class VentasComprasTabPage extends ConsumerWidget {
       data: (modules) {
         final cards = resolveVentasComprasCards(modules);
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(
-            title: 'Ventas y Compras',
-            actions: [ProfileButton()],
-          ),
-          body: cards.isEmpty
-              ? Center(
-                  child: Text(
-                    'No tienes acceso a ventas ni compras',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(AppSpacing.s16),
-                  child: Column(
-                    children: cards
-                        .map(
-                          (card) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.s12,
-                            ),
-                            child: LandingCard(
-                              label: _labelFor(card),
-                              icon: _iconFor(card),
+        return IosLargeTitleScaffold(
+          title: 'Ventas y Compras',
+          actions: const [ProfileButton()],
+          slivers: [
+            SliverToBoxAdapter(
+              child: cards.isEmpty
+                  ? const IosEmptyState(
+                      icon: Icons.point_of_sale_outlined,
+                      title: 'No tienes acceso a ventas ni compras',
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.s8),
+                      child: IosSection(
+                        dividerIndent: AppIos.dividerIndentWithTile,
+                        children: [
+                          for (final card in cards)
+                            IosRow(
+                              leading: IosTile(
+                                icon: _iconFor(card),
+                                color: _colorFor(card),
+                                iconColor: card == VentasComprasCard.compras
+                                    ? AppColors.onPrimary
+                                    : AppColors.surface,
+                              ),
+                              title: _labelFor(card),
+                              chevron: true,
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -55,11 +53,11 @@ class VentasComprasTabPage extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
         );
       },
       loading: () => const Scaffold(
@@ -87,6 +85,15 @@ IconData _iconFor(VentasComprasCard card) {
       return Icons.point_of_sale_outlined;
     case VentasComprasCard.compras:
       return Icons.shopping_bag_outlined;
+  }
+}
+
+Color _colorFor(VentasComprasCard card) {
+  switch (card) {
+    case VentasComprasCard.ventas:
+      return AppColors.primaryDark;
+    case VentasComprasCard.compras:
+      return AppColors.accent;
   }
 }
 

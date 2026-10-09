@@ -60,7 +60,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primary)),
+        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryDark)),
         child: child!,
       ),
     );
@@ -83,7 +83,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primary)),
+        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryDark)),
         child: child!,
       ),
     );
@@ -224,12 +224,12 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.s12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primaryDark.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.add_location_outlined,
-                      color: AppColors.primary,
+                      color: AppColors.primaryDark,
                       size: 22,
                     ),
                   ),
@@ -378,7 +378,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       Switch(
                         value: _isActive,
                         onChanged: _onToggleActive,
-                        activeColor: AppColors.primary,
+                        activeColor: AppColors.primaryDark,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: AppColors.surface,
                         trackOutlineColor: MaterialStateProperty.all(
@@ -431,7 +431,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
+                          borderRadius: BorderRadius.circular(AppIos.groupRadius),
                         ),
                         side: const BorderSide(color: AppColors.border),
                       ),

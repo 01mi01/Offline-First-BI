@@ -4,6 +4,7 @@ import '../../application/sale_provider.dart';
 import '../../models/report_models.dart';
 import '../../theme/app_theme.dart';
 import '../../config/date_formatters.dart';
+import '../../config/rounding.dart';
 
 class ReportSaleCard extends ConsumerStatefulWidget {
   // Venta del reporte. Sus montos y su detalle se limitan a las líneas que
@@ -68,9 +69,9 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                       ),
                     ),
                     Text(
-                      'Bs. ${line.subtotal.toStringAsFixed(2)}',
+                      'Bs. ${fixed2(line.subtotal)}',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.primary,
+                        color: AppColors.primaryDark,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -130,7 +131,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                               if (widget.row.locationName != null)
                                 _MiniPill(
                                   label: widget.row.locationName!,
-                                  color: AppColors.primary,
+                                  color: AppColors.primaryDark,
                                 ),
                               if (widget.row.eventName != null)
                                 _MiniPill(
@@ -146,16 +147,16 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Bs. ${widget.row.netAmount.toStringAsFixed(2)}',
+                        'Bs. ${fixed2(widget.row.netAmount)}',
                         style: Theme.of(context).textTheme.labelLarge
                             ?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: AppColors.primaryDark,
                             ),
                       ),
                       if (widget.row.discountAmount > 0)
                         Text(
-                          '-Bs. ${widget.row.discountAmount.toStringAsFixed(2)}',
+                          '-Bs. ${fixed2(widget.row.discountAmount)}',
                           style: Theme.of(
                             context,
                           ).textTheme.labelSmall?.copyWith(

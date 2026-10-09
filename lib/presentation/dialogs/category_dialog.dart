@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../application/image_storage_provider.dart';
 import '../../data/services/image_storage.dart';
@@ -8,6 +7,7 @@ import '../../application/category_provider.dart';
 import '../../models/category_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/flat_form.dart';
 
 class CategoryDialog extends ConsumerStatefulWidget {
   final CategoryModel? category;
@@ -122,22 +122,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
     Navigator.pop(context);
   }
 
-  // Marcador para elegir una foto (también se muestra si el archivo de la
-  // imagen ya no existe).
-  Widget _imagePlaceholder() => Container(
-    width: 100,
-    height: 100,
-    decoration: BoxDecoration(
-      color: AppColors.primary.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: const Icon(
-      Icons.add_a_photo_outlined,
-      color: AppColors.primary,
-      size: 32,
-    ),
-  );
-
   Future<void> _onToggleActive(bool value) async {
     if (!value) {
       // Confirmar antes de desactivar
@@ -182,168 +166,63 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
               const SizedBox(height: AppSpacing.s24),
 
               // Selector de imagen
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _imagePath != null
-                        ? Image.file(
-                            File(_imagePath!),
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                            // Si el archivo ya no existe, se muestra el
-                            // marcador para elegir otra foto.
-                            errorBuilder: (_, __, ___) => _imagePlaceholder(),
-                          )
-                        : _imagePlaceholder(),
-                  ),
-                ),
-              ),
+              FlatPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
               const SizedBox(height: AppSpacing.s20),
 
               // Nombre
-              TextFormField(
+              LabeledField(
+                label: 'Nombre',
+                builder: (labelText) => TextFormField(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
+                decoration: InputDecoration(
+                  labelText: labelText,
                   hintText: 'Nombre de la categoría',
                 ),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
+              ),
               const SizedBox(height: AppSpacing.s16),
 
               // Descripción
-              TextFormField(
+              LabeledField(
+                label: 'Descripción',
+                builder: (labelText) => TextFormField(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
+                decoration: InputDecoration(
+                  labelText: labelText,
                   hintText: 'Descripción opcional',
                 ),
                 maxLines: 2,
+              ),
               ),
               const SizedBox(height: AppSpacing.s20),
 
               // Toggle activo/inactivo solo en edición
               if (isEditing)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s16,
-                    vertical: AppSpacing.s12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Categoría activa',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            _isActive
-                                ? 'Visible en el sistema'
-                                : 'Oculta en el sistema',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Switch(
-                        value: _isActive,
-                        onChanged: _onToggleActive,
-                        activeColor: AppColors.primary,
-                        inactiveTrackColor: AppColors.border,
-                        inactiveThumbColor: AppColors.surface,
-                        trackOutlineColor: MaterialStateProperty.all(
-                          Colors.transparent,
-                        ),
-                      ),
-                    ],
-                  ),
+                FlatToggleRow(
+                  title: 'Categoría activa',
+                  subtitle: _isActive
+                      ? 'Visible en el sistema'
+                      : 'Oculta en el sistema',
+                  value: _isActive,
+                  onChanged: _onToggleActive,
                 ),
               // Error al guardar
               if (_saveError != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.s12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 16,
-                      ),
-                      const SizedBox(width: AppSpacing.s8),
-                      Expanded(
-                        child: Text(
-                          _saveError!,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.displaySmall?.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: AppSpacing.s12),
+                FormErrorBox(message: _saveError!),
                 const SizedBox(height: AppSpacing.s12),
               ],
               const SizedBox(height: AppSpacing.s24),
 
               // Botones
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(
-                        isEditing ? 'Guardar' : 'Crear',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
+              FlatFormActions(
+                onSecondary: () => Navigator.pop(context),
+                primaryLabel: isEditing ? 'Guardar' : 'Crear',
+                onPrimary: _save,
               ),
             ],
           ),

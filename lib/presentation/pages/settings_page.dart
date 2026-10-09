@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/app_bar_widget.dart';
-import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/ios_group.dart';
+import '../widgets/ios_scaffold.dart';
+import '../widgets/ios_sheet.dart';
+import '../widgets/ios_style.dart';
 import 'login_page.dart';
 
-// Ajustes: datos de la cuenta, un espacio reservado para preferencias
-// futuras y el cierre de sesión.
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await confirmCancellation(
+    final confirmed = await showIosConfirm(
       context,
       title: '¿Cerrar sesión?',
       confirmLabel: 'Cerrar sesión',
@@ -23,9 +23,7 @@ class SettingsPage extends ConsumerWidget {
     final navigator = Navigator.of(context);
     final auth = ref.read(authProvider.notifier);
     await auth.logout();
-    // Igual que al iniciar sesión (que reemplaza la ruta por el shell), al
-    // cerrarla hay que navegar de forma explícita: se vacía toda la pila
-    // (Ajustes y el shell) y queda solo la pantalla de inicio de sesión.
+    // Se vacía toda la pila (Ajustes y el shell) y queda solo el inicio de sesión.
     navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
       (route) => false,
@@ -35,121 +33,117 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
-    final textTheme = Theme.of(context).textTheme;
+    final username = user?.username ?? '';
+    final email = user?.email ?? '';
+    final role = user?.role ?? '';
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Ajustes', showBack: true),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.s24),
-        children: [
-          // Cuenta
-          _SectionTitle('Cuenta'),
-          _Card(
-            child: Row(
+    return IosLargeTitleScaffold(
+      title: 'Ajustes',
+      backLabel: 'Atrás',
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.s8),
+            child: Column(
               children: [
-                // Mismo estilo que los iconos de las tarjetas de la app:
-                // icono de contorno sobre un recuadro redondeado del acento.
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.s12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.person_outline_rounded,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
+                IosSection(
+                  children: [
+                    IosRow(
+                      leading: _Avatar(name: username),
+                      title: username,
+                      subtitle: role.isEmpty
+                          ? null
+                          : Text(
+                              _capitalize(role),
+                              style: IosText.rowSubtitle(context),
+                            ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppSpacing.s16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.username ?? '',
-                        style: textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
+                IosSection(
+                  header: 'Cuenta',
+                  dividerIndent: AppIos.dividerIndentWithTile,
+                  children: [
+                    _valueRow(
+                      context,
+                      icon: Icons.person_outline_rounded,
+                      color: AppColors.primaryDark,
+                      iconColor: AppColors.surface,
+                      title: 'Usuario',
+                      value: username,
+                    ),
+                    if (email.isNotEmpty)
+                      _valueRow(
+                        context,
+                        icon: Icons.mail_outline_rounded,
+                        color: AppColors.chartColor5,
+                        iconColor: AppColors.surface,
+                        title: 'Correo',
+                        value: email,
                       ),
-                      if ((user?.email ?? '').isNotEmpty)
-                        Text(
-                          user!.email,
-                          style: textTheme.labelMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      if ((user?.role ?? '').isNotEmpty)
-                        Text(
-                          _capitalize(user!.role),
-                          style: textTheme.labelMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s24),
-          const Divider(height: 1, thickness: 1, color: AppColors.border),
-          const SizedBox(height: AppSpacing.s24),
-
-          // Preferencias (espacio reservado; todavía no hacen nada)
-          _SectionTitle('Preferencias'),
-          _Card(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tema oscuro',
-                        style: textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
+                IosSection(
+                  header: 'Apariencia',
+                  dividerIndent: AppIos.dividerIndentWithTile,
+                  children: [
+                    IosRow(
+                      leading: const IosTile(
+                        icon: Icons.dark_mode_outlined,
+                        color: AppColors.navy,
+                        iconColor: AppColors.surface,
                       ),
-                      Text(
+                      title: 'Tema oscuro',
+                      titleColor: AppColors.textSecondary,
+                      subtitle: Text(
                         'Próximamente',
-                        style: textTheme.labelMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                        style: IosText.rowSubtitle(context),
                       ),
-                    ],
-                  ),
+                      trailing: const Switch(
+                        value: false,
+                        onChanged: null,
+                        activeTrackColor: AppColors.primaryDark,
+                        inactiveTrackColor: AppColors.border,
+                        inactiveThumbColor: AppColors.surface,
+                      ),
+                    ),
+                  ],
                 ),
-                // Sin onChanged: el interruptor queda desactivado.
-                const Switch(value: false, onChanged: null),
+                IosDestructiveGroup(
+                  label: 'Cerrar sesión',
+                  onTap: () => _logout(context, ref),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.s32),
-
-          // Cerrar sesión
-          ElevatedButton.icon(
-            onPressed: () => _logout(context, ref),
-            icon: const Icon(Icons.logout, color: AppColors.surface),
-            label: const Text(
-              'Cerrar sesión',
-              style: TextStyle(
-                color: AppColors.surface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(50),
-              ),
-            ),
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: AppSpacing.s16 + MediaQuery.paddingOf(context).bottom,
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _valueRow(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required Color iconColor,
+    required String title,
+    required String value,
+  }) {
+    return IosRow(
+      leading: IosTile(icon: icon, color: color, iconColor: iconColor),
+      title: title,
+      trailing: Flexible(
+        child: Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: IosText.rowSubtitle(context),
+        ),
       ),
     );
   }
@@ -158,41 +152,30 @@ class SettingsPage extends ConsumerWidget {
       value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 }
 
-class _SectionTitle extends StatelessWidget {
-  final String text;
+class _Avatar extends StatelessWidget {
+  final String name;
 
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.s12),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
-}
-
-class _Card extends StatelessWidget {
-  final Widget child;
-
-  const _Card({required this.child});
+  const _Avatar({required this.name});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+      width: 56,
+      height: 56,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: AppColors.primaryDark,
+        shape: BoxShape.circle,
       ),
-      child: child,
+      child: name.isEmpty
+          ? const Icon(Icons.person_rounded, color: AppColors.surface)
+          : Text(
+              name[0].toUpperCase(),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.surface,
+              ),
+            ),
     );
   }
 }

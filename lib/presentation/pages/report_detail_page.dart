@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../widgets/app_bar_widget.dart';
 import '../widgets/report_sale_card.dart';
 import '../widgets/report_purchase_card.dart';
+import '../../config/rounding.dart';
 
 enum ReportType { sales, purchases }
 
@@ -112,10 +113,10 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.primary,
+                      color: AppColors.primaryDark,
                     ),
                   )
-                : const Icon(Icons.download_outlined, color: AppColors.primary),
+                : const Icon(Icons.download_outlined, color: AppColors.primaryDark),
             onSelected: (v) {
               if (v == 'pdf') _exportPDF();
               if (v == 'excel') _exportExcel();
@@ -178,12 +179,12 @@ class _SalesDetailList extends ConsumerWidget {
             _SummaryRow(label: 'Total ventas', value: '${summary.count}'),
             _SummaryRow(
               label: 'Ingresos totales',
-              value: 'Bs. ${summary.totalAmount.toStringAsFixed(2)}',
-              valueColor: AppColors.primary,
+              value: 'Bs. ${fixed2(summary.totalAmount)}',
+              valueColor: AppColors.primaryDark,
             ),
             _SummaryRow(
               label: 'Descuentos',
-              value: 'Bs. ${summary.totalDiscount.toStringAsFixed(2)}',
+              value: 'Bs. ${fixed2(summary.totalDiscount)}',
               valueColor: AppColors.error,
             ),
           ],
@@ -214,7 +215,7 @@ class _PurchasesDetailList extends ConsumerWidget {
             _SummaryRow(label: 'Total compras', value: '${summary.count}'),
             _SummaryRow(
               label: 'Gasto total',
-              value: 'Bs. ${summary.totalAmount.toStringAsFixed(2)}',
+              value: 'Bs. ${fixed2(summary.totalAmount)}',
               valueColor: AppColors.error,
             ),
           ],

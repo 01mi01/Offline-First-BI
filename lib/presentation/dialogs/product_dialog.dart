@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../application/image_storage_provider.dart';
 import '../../data/services/image_storage.dart';
@@ -11,6 +10,7 @@ import '../../theme/app_theme.dart';
 import '../../config/rounding.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/flat_form.dart';
 import '../../models/default_records.dart';
 
 class ProductDialog extends ConsumerStatefulWidget {
@@ -144,22 +144,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     if (mounted) Navigator.pop(context);
   }
 
-  // Marcador para elegir una foto (también se muestra si el archivo de la
-  // imagen ya no existe).
-  Widget _imagePlaceholder() => Container(
-    width: 100,
-    height: 100,
-    decoration: BoxDecoration(
-      color: AppColors.primary.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: const Icon(
-      Icons.add_a_photo_outlined,
-      color: AppColors.primary,
-      size: 32,
-    ),
-  );
-
   // Solo uno de los dos precios es obligatorio: si este está vacío, basta con
   // que el otro (de [other]) tenga valor.
   String? _validatePrice(String? v, TextEditingController other) {
@@ -261,46 +245,32 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Selector de imagen
-                    Center(
-                      child: GestureDetector(
-                        onTap: _pickImage,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: _imagePath != null
-                              ? Image.file(
-                                  File(_imagePath!),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  // Si el archivo ya no existe, se muestra el
-                                  // marcador para elegir otra foto.
-                                  errorBuilder: (_, __, ___) =>
-                                      _imagePlaceholder(),
-                                )
-                              : _imagePlaceholder(),
-                        ),
-                      ),
-                    ),
+                    FlatPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
                     const SizedBox(height: AppSpacing.s20),
 
                     // Nombre
-                    TextFormField(
+                    LabeledField(
+                      label: 'Nombre',
+                      builder: (labelText) => TextFormField(
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre',
+                      decoration: InputDecoration(
+                        labelText: labelText,
                         hintText: 'Nombre del producto',
                       ),
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Campo requerido' : null,
                     ),
+                    ),
                     const SizedBox(height: AppSpacing.s16),
 
                     // Categoría
-                    DropdownButtonFormField<int>(
+                    LabeledField(
+                      label: 'Categoría',
+                      builder: (labelText) => DropdownButtonFormField<int>(
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       value: categoryValue,
-                      decoration: const InputDecoration(labelText: 'Categoría'),
+                      decoration: InputDecoration(labelText: labelText),
                       items: [
                         const DropdownMenuItem<int>(
                           value: null,
@@ -317,63 +287,76 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
                         setState(() => _selectedCategoryId = val);
                       },
                     ),
+                    ),
                     const SizedBox(height: AppSpacing.s16),
 
                     // Descripción
-                    TextFormField(
+                    LabeledField(
+                      label: 'Descripción',
+                      builder: (labelText) => TextFormField(
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _descController,
-                      decoration: const InputDecoration(
-                        labelText: 'Descripción',
+                      decoration: InputDecoration(
+                        labelText: labelText,
                         hintText: 'Descripción opcional',
                       ),
                       maxLines: 2,
                     ),
+                    ),
                     const SizedBox(height: AppSpacing.s16),
 
                     // Precios de venta (A y B, independientes) y costo de producción
-                    TextFormField(
+                    LabeledField(
+                      label: 'Precio A',
+                      builder: (labelText) => TextFormField(
                       key: _priceAKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _priceAController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Precio A',
+                      decoration: InputDecoration(
+                        labelText: labelText,
                         hintText: '0.00',
                       ),
                       validator: (v) => _validatePrice(v, _priceBController),
                       onChanged: (_) => _onPriceChanged(_priceBKey),
                     ),
+                    ),
                     const SizedBox(height: AppSpacing.s16),
-                    TextFormField(
+                    LabeledField(
+                      label: 'Precio B',
+                      builder: (labelText) => TextFormField(
                       key: _priceBKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _priceBController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Precio B',
+                      decoration: InputDecoration(
+                        labelText: labelText,
                         hintText: '0.00',
                       ),
                       validator: (v) => _validatePrice(v, _priceAController),
                       onChanged: (_) => _onPriceChanged(_priceAKey),
                     ),
+                    ),
                     const SizedBox(height: AppSpacing.s16),
-                    TextFormField(
+                    LabeledField(
+                      label: 'Costo de producción',
+                      builder: (labelText) => TextFormField(
                       key: _costKey,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       controller: _costController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Costo de producción',
+                      decoration: InputDecoration(
+                        labelText: labelText,
                         hintText: '0.00',
                       ),
                       validator: _validateCost,
+                    ),
                     ),
                     const SizedBox(height: AppSpacing.s16),
 
@@ -388,88 +371,21 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
                     // Toggle activo/inactivo solo en edición
                     if (isEditing)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s16,
-                          vertical: AppSpacing.s12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Producto activo',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                Text(
-                                  _isActive
-                                      ? 'Disponible para ventas'
-                                      : 'No disponible para ventas',
-                                  style: Theme.of(context).textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                ),
-                              ],
-                            ),
-                            Switch(
-                              value: _isActive,
-                              onChanged: _onToggleActive,
-                              activeColor: AppColors.primary,
-                              inactiveTrackColor: AppColors.border,
-                              inactiveThumbColor: AppColors.surface,
-                              trackOutlineColor: WidgetStateProperty.all(
-                                Colors.transparent,
-                              ),
-                            ),
-                          ],
-                        ),
+                      FlatToggleRow(
+                        title: 'Producto activo',
+                        subtitle: _isActive
+                            ? 'Disponible para ventas'
+                            : 'No disponible para ventas',
+                        value: _isActive,
+                        onChanged: _onToggleActive,
                       ),
                     const SizedBox(height: AppSpacing.s24),
 
                     // Botones cancelar y guardar (al final del contenido)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              side: const BorderSide(color: AppColors.border),
-                            ),
-                            child: const Text(
-                              'Cancelar',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.s12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _save,
-                            child: Text(
-                              isEditing ? 'Guardar' : 'Crear',
-                              style: Theme.of(context).textTheme.headlineLarge
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ),
-                      ],
+                    FlatFormActions(
+                      onSecondary: () => Navigator.pop(context),
+                      primaryLabel: isEditing ? 'Guardar' : 'Crear',
+                      onPrimary: _save,
                     ),
                   ],
                 ),
