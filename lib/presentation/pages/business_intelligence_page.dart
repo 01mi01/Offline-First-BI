@@ -385,10 +385,10 @@ class _DashboardHeader extends StatelessWidget {
             label: const Text('Configurar'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 44),
-              foregroundColor: AppColors.primaryDark,
-              side: const BorderSide(color: AppColors.primaryDark),
+              foregroundColor: AppColors.cyanDark,
+              side: const BorderSide(color: AppColors.cyanDark),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppIos.groupRadius),
+                borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
               ),
             ),
           ),

@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import '../../config/rounding.dart';
-import 'ios_controls.dart';
-import 'ios_group.dart';
-import 'ios_style.dart';
+import 'app_controls.dart';
+import 'app_group.dart';
+import 'app_style.dart';
 import 'linked_price_fields.dart';
 import 'unit_quantity_input.dart';
 
-// Cantidad de un envase con fracciones simples y envases completos, con el
-// estilo iOS. Misma lógica que FractionQuantityPicker.
-class IosFractionPicker extends StatelessWidget {
+// Cantidad de un envase con fracciones simples y envases completos. Misma
+// lógica que FractionQuantityPicker.
+class AppFractionPicker extends StatelessWidget {
   final String unit;
   final double value;
   final ValueChanged<double> onChanged;
   final String label;
 
-  const IosFractionPicker({
+  const AppFractionPicker({
     super.key,
     required this.unit,
     required this.value,
@@ -52,7 +52,7 @@ class IosFractionPicker extends StatelessWidget {
       if (selected) selectedPreset = fraction;
     }
 
-    return IosSection(
+    return AppSection(
       header: '$label ($unit)',
       footer: value > 0
           ? 'Total: ${formatNumber(cleanFloat(value))} ${unitLabel(unit, value)}'
@@ -60,9 +60,9 @@ class IosFractionPicker extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8),
-          child: IosSegmented<double>(
+          child: AppSegmented<double>(
             segments: [
-              for (final (fraction, text) in _presets) IosSegment(fraction, text),
+              for (final (fraction, text) in _presets) AppSegment(fraction, text),
             ],
             selected: selectedPreset,
             onChanged: (fraction) {
@@ -70,7 +70,7 @@ class IosFractionPicker extends StatelessWidget {
             },
           ),
         ),
-        IosRow(
+        AppRow(
           title: 'Envases completos',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -78,12 +78,12 @@ class IosFractionPicker extends StatelessWidget {
               Text(
                 '$whole',
                 key: const ValueKey('container-whole-count'),
-                style: IosText.rowTitle(context).copyWith(
+                style: AppText.rowTitle(context).copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: AppSpacing.s12),
-              IosStepper(
+              AppStepper(
                 onMinus: whole > 0
                     ? () => onChanged(
                         combineContainerQuantity(whole - 1, fractionPart),
@@ -102,7 +102,7 @@ class IosFractionPicker extends StatelessWidget {
 
 // Fila de cantidad para unidades por pieza: solo enteros, con el aviso de
 // siempre al intentar escribir un decimal.
-class IosWholeNumberRow extends StatefulWidget {
+class AppWholeNumberRow extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final String hint;
@@ -110,7 +110,7 @@ class IosWholeNumberRow extends StatefulWidget {
   final bool allowZero;
   final String? Function(int quantity)? extraValidator;
 
-  const IosWholeNumberRow({
+  const AppWholeNumberRow({
     super.key,
     required this.controller,
     required this.label,
@@ -121,10 +121,10 @@ class IosWholeNumberRow extends StatefulWidget {
   });
 
   @override
-  State<IosWholeNumberRow> createState() => _IosWholeNumberRowState();
+  State<AppWholeNumberRow> createState() => _AppWholeNumberRowState();
 }
 
-class _IosWholeNumberRowState extends State<IosWholeNumberRow> {
+class _AppWholeNumberRowState extends State<AppWholeNumberRow> {
   bool _rejectedDecimal = false;
 
   void _onRejected() {
@@ -141,7 +141,7 @@ class _IosWholeNumberRowState extends State<IosWholeNumberRow> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.s16),
-            child: Text(widget.label, style: IosText.rowTitle(context)),
+            child: Text(widget.label, style: AppText.rowTitle(context)),
           ),
           const SizedBox(width: AppSpacing.s16),
           Expanded(
@@ -156,11 +156,11 @@ class _IosWholeNumberRowState extends State<IosWholeNumberRow> {
                 WholeNumberInputFormatter(onRejected: _onRejected),
               ],
               textAlign: TextAlign.end,
-              style: IosText.rowTitle(context),
+              style: AppText.rowTitle(context),
               onChanged: (_) {
                 if (_rejectedDecimal) setState(() => _rejectedDecimal = false);
               },
-              decoration: iosFieldDecoration(
+              decoration: appFieldDecoration(
                 context,
                 hint: widget.hint,
                 helper: widget.helper,
@@ -188,14 +188,14 @@ final _decimalFormatter = FilteringTextInputFormatter.allow(
 );
 
 // Precio por unidad y total pagado enlazados (misma lógica que
-// LinkedPriceFields), en dos filas iOS.
-class IosLinkedPriceRows extends StatelessWidget {
+// LinkedPriceFields), en dos filas.
+class AppLinkedPriceRows extends StatelessWidget {
   final LinkedPriceController controller;
   final VoidCallback onChanged;
   final String priceLabel;
   final String totalLabel;
 
-  const IosLinkedPriceRows({
+  const AppLinkedPriceRows({
     super.key,
     required this.controller,
     required this.onChanged,
@@ -207,7 +207,7 @@ class IosLinkedPriceRows extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        IosTextFieldRow(
+        AppTextFieldRow(
           label: priceLabel,
           controller: controller.price,
           hint: '0',
@@ -227,10 +227,10 @@ class IosLinkedPriceRows extends StatelessWidget {
         const Divider(
           height: 1,
           thickness: 1,
-          indent: AppIos.dividerIndent,
-          color: AppColors.iosSeparator,
+          indent: AppMetrics.dividerIndent,
+          color: AppColors.separator,
         ),
-        IosTextFieldRow(
+        AppTextFieldRow(
           label: totalLabel,
           controller: controller.total,
           hint: '0',

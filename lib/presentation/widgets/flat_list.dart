@@ -25,7 +25,7 @@ class FlatThumb extends StatelessWidget {
     width: size,
     height: size,
     color: AppColors.surface,
-    child: Icon(icon, color: AppColors.primaryDark, size: size * 0.45),
+    child: Icon(icon, color: AppColors.cyanDark, size: size * 0.45),
   );
 
   @override
@@ -297,13 +297,13 @@ class FlatEmptyState extends StatelessWidget {
               ElevatedButton(
                 onPressed: onAction,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, AppIos.minTap),
+                  minimumSize: const Size(200, AppMetrics.minTap),
                 ),
                 child: Text(
                   actionLabel!,
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textButtons,
+                    color: AppColors.onDark,
                   ),
                 ),
               ),
@@ -336,7 +336,7 @@ class FlatTile extends StatelessWidget {
   Widget _placeholder() => Container(
     color: AppColors.surface,
     child: Center(
-      child: Icon(icon, color: AppColors.primaryDark, size: 40),
+      child: Icon(icon, color: AppColors.cyanDark, size: 40),
     ),
   );
 
@@ -410,15 +410,15 @@ class FlatFab extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton(
       heroTag: heroTag,
-      backgroundColor: AppColors.primaryDark,
-      foregroundColor: AppColors.textButtons,
+      backgroundColor: AppColors.cyanDark,
+      foregroundColor: AppColors.onDark,
       elevation: 0,
       focusElevation: 0,
       hoverElevation: 0,
       highlightElevation: 0,
       shape: const CircleBorder(),
       onPressed: onPressed,
-      child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
+      child: const Icon(Icons.add_rounded, color: AppColors.onDark),
     );
   }
 }

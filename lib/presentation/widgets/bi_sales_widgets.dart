@@ -547,7 +547,7 @@ class BiTicketSection extends StatelessWidget {
             key: const ValueKey('bi-ticket-average'),
             label: 'Ticket promedio',
             value: formatMoney(average),
-            valueColor: AppColors.primaryDark,
+            valueColor: AppColors.cyanDark,
             large: true,
           ),
           const SizedBox(height: AppSpacing.s16),
@@ -806,7 +806,7 @@ class BiDiscountSection extends StatelessWidget {
               key: const ValueKey('bi-discount-total'),
               label: 'Descuentos',
               value: formatMoney(report.totalDiscount),
-              valueColor: AppColors.primaryDark,
+              valueColor: AppColors.cyanDark,
             ),
           ),
           Expanded(

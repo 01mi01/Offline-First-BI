@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/ios_group.dart';
+import '../widgets/app_group.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/ios_style.dart';
+import '../widgets/app_style.dart';
 import 'login_page.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/app_buttons.dart';
@@ -45,28 +45,28 @@ class SettingsPage extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Column(
               children: [
-                IosSection(
+                AppSection(
                   children: [
-                    IosRow(
+                    AppRow(
                       leading: AppAvatar(name: username),
                       title: username,
                       subtitle: role.isEmpty
                           ? null
                           : Text(
                               _capitalize(role),
-                              style: IosText.rowSubtitle(context),
+                              style: AppText.rowSubtitle(context),
                             ),
                     ),
                   ],
                 ),
-                IosSection(
+                AppSection(
                   header: 'Cuenta',
-                  dividerIndent: AppIos.dividerIndentWithTile,
+                  dividerIndent: AppMetrics.dividerIndentWithTile,
                   children: [
                     _valueRow(
                       context,
                       icon: Icons.person_rounded,
-                      color: AppColors.primary,
+                      color: AppColors.cyan,
                       title: 'Usuario',
                       value: username,
                     ),
@@ -74,32 +74,32 @@ class SettingsPage extends ConsumerWidget {
                       _valueRow(
                         context,
                         icon: Icons.mail_rounded,
-                        color: AppColors.chartColor5,
+                        color: AppColors.blue,
                         title: 'Correo',
                         value: email,
                       ),
                   ],
                 ),
-                IosSection(
+                AppSection(
                   header: 'Apariencia',
-                  dividerIndent: AppIos.dividerIndentWithTile,
+                  dividerIndent: AppMetrics.dividerIndentWithTile,
                   children: [
-                    IosRow(
-                      leading: const IosTile(
+                    AppRow(
+                      leading: const AppTile(
                         icon: Icons.dark_mode_rounded,
                         color: AppColors.navy,
-                        iconColor: AppColors.textButtons,
+                        iconColor: AppColors.onDark,
                       ),
                       title: 'Tema oscuro',
                       titleColor: AppColors.textSecondary,
                       subtitle: Text(
                         'Próximamente',
-                        style: IosText.rowSubtitle(context),
+                        style: AppText.rowSubtitle(context),
                       ),
                       trailing: const Switch(
                         value: false,
                         onChanged: null,
-                        activeTrackColor: AppColors.primaryDark,
+                        activeTrackColor: AppColors.cyanDark,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: AppColors.surface,
                       ),
@@ -131,23 +131,22 @@ class SettingsPage extends ConsumerWidget {
     required String title,
     required String value,
   }) {
-    return IosRow(
-      leading: IosTile(
+    return AppRow(
+      leading: AppTile(
         icon: icon,
         color: color,
-        iconColor: AppColors.textButtons,
+        iconColor: AppColors.onDark,
       ),
       title: title,
-      trailing: Flexible(
-        child: Padding(
-          padding: const EdgeInsets.only(right: AppSpacing.s4),
-          child: Text(
-            value,
-            maxLines: 1,
-            textAlign: TextAlign.right,
-            overflow: TextOverflow.ellipsis,
-            style: IosText.rowSubtitle(context),
-          ),
+      trailingFlex: 3,
+      trailing: Padding(
+        padding: const EdgeInsets.only(right: AppSpacing.s4),
+        child: Text(
+          value,
+          maxLines: 1,
+          textAlign: TextAlign.right,
+          overflow: TextOverflow.ellipsis,
+          style: AppText.rowSubtitle(context),
         ),
       ),
     );

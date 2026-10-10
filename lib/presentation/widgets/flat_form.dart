@@ -24,17 +24,26 @@ import 'app_buttons.dart';
 class LabeledField extends StatelessWidget {
   final String label;
   final Widget Function(String? labelText) builder;
+  final double inset;
+  final bool hidden;
 
-  const LabeledField({super.key, required this.label, required this.builder});
+  const LabeledField({
+    super.key,
+    required this.label,
+    required this.builder,
+    this.inset = AppSpacing.s4,
+    this.hidden = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (hidden) return builder(null);
     if (!FlatStyle.isActive(context)) return builder(label);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.s4),
+          padding: EdgeInsets.only(left: inset),
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -144,7 +153,7 @@ class FlatToggleRow extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primaryDark,
+            activeColor: AppColors.cyanDark,
             inactiveTrackColor: AppColors.border,
             inactiveThumbColor: AppColors.surface,
             trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
@@ -206,7 +215,7 @@ class FlatPhotoSlot extends StatelessWidget {
     color: AppColors.surface,
     child: const Icon(
       Icons.add_a_photo_rounded,
-      color: AppColors.primaryDark,
+      color: AppColors.cyanDark,
       size: 32,
     ),
   );

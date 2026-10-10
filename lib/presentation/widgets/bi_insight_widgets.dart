@@ -44,7 +44,7 @@ class BiSummaryCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final balanceColor = summary.balance < 0
         ? AppColors.error
-        : AppColors.primaryDark;
+        : AppColors.cyanDark;
     return BiSectionCard(
       title: BiIndicator.summary.title,
       info: BiIndicator.summary.info,
@@ -54,7 +54,7 @@ class BiSummaryCards extends StatelessWidget {
             child: _SummaryTile(
               label: 'Ingresos',
               value: formatMoney(summary.ingresos),
-              valueColor: AppColors.primaryDark,
+              valueColor: AppColors.cyanDark,
             ),
           ),
           Expanded(
@@ -395,7 +395,7 @@ class _ComparisonRow extends StatelessWidget {
         : (change > 0) == higherIsBetter;
     final color = improved == null
         ? AppColors.textSecondary
-        : (improved ? AppColors.primaryDark : AppColors.error);
+        : (improved ? AppColors.cyanDark : AppColors.error);
     final sign = change == null
         ? ''
         : (change > 0 ? '+' : (change < 0 ? '−' : ''));
@@ -1130,7 +1130,7 @@ class BiMaterialCostSection extends StatelessWidget {
             child: _SummaryTile(
               label: 'Ingresos',
               value: formatMoney(cost.revenue),
-              valueColor: AppColors.primaryDark,
+              valueColor: AppColors.cyanDark,
             ),
           ),
           Expanded(
@@ -1472,9 +1472,9 @@ class _BiRadarSectionState extends State<BiRadarSection> {
         icon: const Icon(Icons.tune_rounded, size: 16),
         label: const Text('Elegir productos'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primaryDark,
-          side: const BorderSide(color: AppColors.primaryDark),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppIos.groupRadius)),
+          foregroundColor: AppColors.cyanDark,
+          side: const BorderSide(color: AppColors.cyanDark),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppMetrics.groupRadius)),
         ),
       ),
       child: radar.products.length < radarMinProducts
@@ -1720,7 +1720,7 @@ class _RadarPickerState extends State<_RadarPicker> {
                     CheckboxListTile(
                       key: ValueKey('bi-radar-option-${p.id}'),
                       contentPadding: EdgeInsets.zero,
-                      activeColor: AppColors.primaryDark,
+                      activeColor: AppColors.cyanDark,
                       title: Text(p.name),
                       value: _selected.contains(p.id),
                       onChanged: !_selected.contains(p.id) && full
@@ -1741,11 +1741,11 @@ class _RadarPickerState extends State<_RadarPicker> {
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context, <int>[]),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primaryDark,
-                            side: const BorderSide(color: AppColors.primaryDark),
+                            foregroundColor: AppColors.cyanDark,
+                            side: const BorderSide(color: AppColors.cyanDark),
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppIos.groupRadius),
+                              borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
                             ),
                           ),
                           // Una sola línea: en pantallas angostas se reduce un poco.

@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import 'flat_form.dart';
 import 'flat_style.dart';
 import 'focus_utils.dart';
+import 'app_controls.dart';
 
 // Opción de un [SearchablePickerField]. [value] puede ser null para la opción
 // predeterminada ("Sin nombre", "Sin proveedor"...).
@@ -45,6 +46,12 @@ class SearchablePickerField<T> extends StatefulWidget {
   // los resultados se abren debajo de esa fila, sin mover el botón.
   final Widget? trailing;
 
+  // Campo de búsqueda con el aspecto común de las listas (opt-in).
+  final bool searchStyle;
+
+  // Sin etiqueta encima del campo (el texto de ayuda lo describe).
+  final bool showLabel;
+
   const SearchablePickerField({
     super.key,
     required this.label,
@@ -55,6 +62,8 @@ class SearchablePickerField<T> extends StatefulWidget {
     this.autofocus = false,
     this.onDismissed,
     this.trailing,
+    this.searchStyle = false,
+    this.showLabel = true,
   });
 
   @override
@@ -149,6 +158,50 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
     );
   }
 
+  InputDecoration _decoration(
+    BuildContext context,
+    String? labelText,
+    bool focused,
+    String query,
+  ) {
+    final clear = focused && query.isNotEmpty
+        ? IconButton(
+            tooltip: 'Borrar búsqueda',
+            icon: const Icon(
+              Icons.close_rounded,
+              color: AppColors.textSecondary,
+              size: 18,
+            ),
+            onPressed: () {
+              _controller.clear();
+              setState(() {});
+            },
+          )
+        : null;
+    if (widget.searchStyle) {
+      return appSearchDecoration(
+        context,
+        hintText: widget.searchHint,
+        labelText: labelText,
+        suffixIcon: clear,
+      );
+    }
+    return InputDecoration(
+      labelText: labelText,
+      hintText: widget.searchHint,
+      prefixIcon: const Icon(
+        Icons.search_rounded,
+        color: AppColors.textSecondary,
+        size: 20,
+      ),
+      suffixIcon: clear,
+    );
+  }
+
+  Widget _sized(Widget field) => widget.searchStyle
+      ? SizedBox(height: AppMetrics.controlHeight, child: field)
+      : field;
+
   void _choose(PickerOption<T> option) {
     _controller.text = option.selectedLabel ?? option.label;
     widget.onChanged(option.value);
@@ -184,7 +237,9 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
         children: [
           _withTrailing(LabeledField(
             label: widget.label,
-            builder: (labelText) => TextField(
+            inset: widget.searchStyle ? 0 : AppSpacing.s4,
+            hidden: !widget.showLabel,
+            builder: (labelText) => _sized(TextField(
             controller: _controller,
             focusNode: _focus,
             autofocus: widget.autofocus,
@@ -196,30 +251,8 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             // desplaza (la pantalla solo se mueve al enfocar).
             scrollPadding: EdgeInsets.zero,
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              labelText: labelText,
-              hintText: widget.searchHint,
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                color: AppColors.textSecondary,
-                size: 20,
-              ),
-              suffixIcon: focused && query.isNotEmpty
-                  ? IconButton(
-                      tooltip: 'Borrar búsqueda',
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        _controller.clear();
-                        setState(() {});
-                      },
-                    )
-                  : null,
-            ),
-          ))),
+            decoration: _decoration(context, labelText, focused, query),
+          )))),
           if (focused) ...[
             const SizedBox(height: AppSpacing.s8),
             // Alto fijo: la lista de resultados no cambia de tamaño mientras se
@@ -292,7 +325,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
               ),
             ),
       trailing: isSelected
-          ? const Icon(Icons.check_rounded, color: AppColors.primaryDark)
+          ? const Icon(Icons.check_rounded, color: AppColors.cyanDark)
           : null,
       onTap: () => _choose(option),
     );

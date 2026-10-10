@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
 import '../../application/search_filter.dart';
 import '../../application/status_filter.dart';
-import '../widgets/catalog_filter_bar.dart';
 import '../../models/client_model.dart';
 import '../../models/default_records.dart';
 import '../../theme/app_theme.dart';
@@ -12,6 +11,10 @@ import '../dialogs/client_dialog.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/protected_record_icon.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/app_controls.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/profile_button.dart';
+import '../widgets/filter_panel.dart';
 
 // Página de Clientes, con su propio módulo de permisos ("clientes"),
 // independiente de Proveedores.
@@ -20,7 +23,11 @@ class ClientsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ScreenScaffold(title: 'Clientes', body: const ClientsListBody());
+    return ScreenScaffold(
+      title: 'Clientes',
+      actions: const [ProfileButton()],
+      body: const ClientsListBody(),
+    );
   }
 }
 
@@ -42,31 +49,29 @@ class ClientsListBody extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
+      floatingActionButton: FlatFab(
         heroTag: 'clients_list_body_fab',
-        backgroundColor: AppColors.primaryDark,
-        shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [
-          CatalogListHeader(
-            chips: [
-              StatusFilterChip(
-                value: status,
-                onChanged: (value) =>
-                    ref.read(clientStatusFilterProvider.notifier).state = value,
-              ),
-            ],
-            search: CatalogSearchField(
+          FilterArea(
+            search: AppSearchBar(
               initialText: query,
               hintText: 'Buscar cliente',
               onChanged: (value) =>
                   ref.read(clientListQueryProvider.notifier).state = value,
             ),
+            fields: [
+              FilterDropdown<StatusFilter>(
+                label: 'Estado',
+                options: statusFilterOptions(),
+                current: status,
+                defaultValue: StatusFilter.all,
+                onApply: (value) =>
+                    ref.read(clientStatusFilterProvider.notifier).state = value,
+              ),
+            ],
           ),
           Expanded(
             child: state.isLoading
@@ -149,7 +154,7 @@ class _ContactCardState extends State<ContactCard> {
   void _showDetail(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: AppColors.scrim,
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
@@ -247,7 +252,7 @@ class _ContactCardState extends State<ContactCard> {
                                         content: const Text(
                                           'Copiado al portapapeles',
                                         ),
-                                        backgroundColor: AppColors.primaryDark,
+                                        backgroundColor: AppColors.cyanDark,
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -261,12 +266,12 @@ class _ContactCardState extends State<ContactCard> {
                                   child: Container(
                                     padding: const EdgeInsets.all(AppSpacing.s6),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryDark.withOpacity(0.1),
+                                      color: AppColors.cyanDark.withOpacity(0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
                                       Icons.copy_rounded,
-                                      color: AppColors.primaryDark,
+                                      color: AppColors.cyanDark,
                                       size: 18,
                                     ),
                                   ),
@@ -343,7 +348,7 @@ inactiveLabel: 'Inactivo',
               IconButton(
                 icon: const Icon(
                   Icons.edit_rounded,
-                  color: AppColors.primaryDark,
+                  color: AppColors.cyanDark,
                   size: 20,
                 ),
                 onPressed: widget.onEdit,

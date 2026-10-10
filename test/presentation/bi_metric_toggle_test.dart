@@ -27,7 +27,7 @@ void main() {
 
   // La opción de un interruptor se ve resaltada en el color primario.
   bool selected(WidgetTester tester, BiIndicator i, String label) =>
-      tester.widget<Text>(chip(i, label)).style?.color == AppColors.primary;
+      tester.widget<Text>(chip(i, label)).style?.color == AppColors.cyan;
 
   BiConfig config() => h.container.read(biConfigProvider);
 

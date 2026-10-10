@@ -86,9 +86,9 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
               color: AppColors.background,
               child: TabBar(
                 controller: _tabController,
-                labelColor: AppColors.primaryDark,
+                labelColor: AppColors.cyanDark,
                 unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.primaryDark,
+                indicatorColor: AppColors.cyanDark,
                 indicatorSize: TabBarIndicatorSize.label,
                 labelStyle: Theme.of(
                   context,
@@ -184,7 +184,7 @@ class _SalesTab extends ConsumerWidget {
             _SummaryTile(
               label: 'Ingresos',
               value: 'Bs. ${fixed2(summary.totalAmount)}',
-              valueColor: AppColors.primaryDark,
+              valueColor: AppColors.cyanDark,
             ),
             _SummaryTile(
               label: 'Descuentos',
@@ -257,7 +257,7 @@ class _PurchasesTab extends ConsumerWidget {
             _SummaryTile(
               label: materialsSummaryLabel(summary.materialCount),
               value: '${summary.materialCount}',
-              valueColor: AppColors.primaryDark,
+              valueColor: AppColors.cyanDark,
             ),
           ],
         ),
@@ -376,9 +376,9 @@ class _ViewFullReportButton extends StatelessWidget {
       label: const Text('Ver reporte completo y exportar'),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 44),
-        foregroundColor: AppColors.primaryDark,
-        side: BorderSide(color: AppColors.primaryDark),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppIos.groupRadius)),
+        foregroundColor: AppColors.cyanDark,
+        side: BorderSide(color: AppColors.cyanDark),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppMetrics.groupRadius)),
       ),
     );
   }

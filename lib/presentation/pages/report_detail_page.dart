@@ -111,10 +111,10 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.primaryDark,
+                      color: AppColors.cyanDark,
                     ),
                   )
-                : const Icon(Icons.download_rounded, color: AppColors.primaryDark),
+                : const Icon(Icons.download_rounded, color: AppColors.cyanDark),
             onSelected: (v) {
               if (v == 'pdf') _exportPDF();
               if (v == 'excel') _exportExcel();
@@ -177,7 +177,7 @@ class _SalesDetailList extends ConsumerWidget {
             _SummaryRow(
               label: 'Ingresos totales',
               value: 'Bs. ${fixed2(summary.totalAmount)}',
-              valueColor: AppColors.primaryDark,
+              valueColor: AppColors.cyanDark,
             ),
             _SummaryRow(
               label: 'Descuentos',

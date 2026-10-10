@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'ios_style.dart';
+import 'app_style.dart';
 
 TextStyle? screenTitleStyle(BuildContext context) =>
     Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -162,7 +162,7 @@ class _BackButton extends StatelessWidget {
               const Icon(
                 Icons.chevron_left_rounded,
                 size: AppHeader.backIconSize,
-                color: AppColors.primaryDark,
+                color: AppColors.cyanDark,
               ),
               ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -172,7 +172,7 @@ class _BackButton extends StatelessWidget {
                   'Atrás',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: IosText.link(context),
+                  style: AppText.link(context),
                 ),
               ),
             ],

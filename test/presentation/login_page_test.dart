@@ -243,8 +243,8 @@ void main() {
         (theme.shape!.resolve({}) as RoundedRectangleBorder).borderRadius,
         BorderRadius.circular(50),
       );
-      expect(style.backgroundColor!.resolve({}), AppColors.primaryDark);
-      expect(style.backgroundColor!.resolve({WidgetState.disabled}), AppColors.primaryDark);
+      expect(style.backgroundColor!.resolve({}), AppColors.cyanDark);
+      expect(style.backgroundColor!.resolve({WidgetState.disabled}), AppColors.cyanDark);
       expect(style.foregroundColor!.resolve({WidgetState.disabled}), AppColors.surface);
 
       final label = tester.widget<Text>(
@@ -295,13 +295,13 @@ void main() {
       Color? iconColor(IconData icon) =>
           IconTheme.of(tester.element(find.byIcon(icon))).color;
 
-      expect(iconColor(Icons.person_outline), AppColors.primaryDark);
-      expect(iconColor(Icons.lock_outline), AppColors.primaryDark);
+      expect(iconColor(Icons.person_outline), AppColors.cyanDark);
+      expect(iconColor(Icons.lock_outline), AppColors.cyanDark);
 
       await tester.tap(field('Usuario'));
       await tester.pumpAndSettle();
-      expect(iconColor(Icons.person_outline), AppColors.primaryDark);
-      expect(iconColor(Icons.lock_outline), AppColors.primaryDark);
+      expect(iconColor(Icons.person_outline), AppColors.cyanDark);
+      expect(iconColor(Icons.lock_outline), AppColors.cyanDark);
     });
 
     testWidgets('empty fields show the existing validation message and do not sign in', (
@@ -316,7 +316,7 @@ void main() {
       for (final f in tester.widgetList<InputDecorator>(find.byType(InputDecorator))) {
         expect(f.decoration.errorBorder, f.decoration.enabledBorder);
         expect(f.decoration.focusedErrorBorder, f.decoration.focusedBorder);
-        expect(f.decoration.prefixIconColor, AppColors.primaryDark);
+        expect(f.decoration.prefixIconColor, AppColors.cyanDark);
       }
       expect(find.text('Usuario o contraseña incorrectos'), findsNothing);
     });

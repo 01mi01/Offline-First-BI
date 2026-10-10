@@ -182,7 +182,7 @@ class MainBottomBar extends StatelessWidget {
           children: overflowGroups
               .map(
                 (group) => ListTile(
-                  leading: Icon(iconForGroup(group), color: AppColors.primaryDark),
+                  leading: Icon(iconForGroup(group), color: AppColors.cyanDark),
                   title: Text(labelForGroup(group)),
                   onTap: () {
                     Navigator.pop(sheetContext);
@@ -212,7 +212,7 @@ class _NavTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primaryDark : AppColors.textSecondary;
+    final color = selected ? AppColors.cyanDark : AppColors.textSecondary;
     return InkWell(
       onTap: onTap,
       child: Column(

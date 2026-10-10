@@ -131,17 +131,17 @@ class FractionQuantityPicker extends StatelessWidget {
                 decoration: flat
                     ? BoxDecoration(
                         color: selected
-                            ? AppColors.primarySoft
+                            ? AppColors.cyanSoft
                             : AppColors.surface,
                         borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
                       )
                     : BoxDecoration(
                         color: selected
-                            ? AppColors.primaryDark.withOpacity(0.1)
+                            ? AppColors.cyanDark.withOpacity(0.1)
                             : AppColors.background,
                         borderRadius: BorderRadius.circular(50),
                         border: Border.all(
-                          color: selected ? AppColors.primaryDark : AppColors.border,
+                          color: selected ? AppColors.cyanDark : AppColors.border,
                         ),
                       ),
                 child: Text(
@@ -150,10 +150,10 @@ class FractionQuantityPicker extends StatelessWidget {
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     color: flat
                         ? (selected
-                              ? AppColors.primaryDark
+                              ? AppColors.cyanDark
                               : AppColors.textPrimary)
                         : (selected
-                              ? AppColors.primaryDark
+                              ? AppColors.cyanDark
                               : AppColors.textSecondary),
                   ),
                 ),
@@ -204,7 +204,7 @@ class FractionQuantityPicker extends StatelessWidget {
             'Total: ${formatNumber(cleanFloat(value))} ${unitLabel(unit, value)}',
             key: const ValueKey('container-total'),
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: flat ? AppColors.primaryDark : AppColors.primaryDark,
+              color: flat ? AppColors.cyanDark : AppColors.cyanDark,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -230,13 +230,13 @@ class _StepperButton extends StatelessWidget {
           width: AppFlat.minTap,
           height: AppFlat.minTap,
           decoration: BoxDecoration(
-            color: enabled ? AppColors.primarySoft : AppColors.surface,
+            color: enabled ? AppColors.cyanSoft : AppColors.surface,
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
             size: 20,
-            color: enabled ? AppColors.primaryDark : AppColors.textSecondary,
+            color: enabled ? AppColors.cyanDark : AppColors.textSecondary,
           ),
         ),
       );
@@ -248,17 +248,17 @@ class _StepperButton extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           color: enabled
-              ? AppColors.primaryDark.withOpacity(0.1)
+              ? AppColors.cyanDark.withOpacity(0.1)
               : AppColors.background,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: enabled ? AppColors.primaryDark : AppColors.border,
+            color: enabled ? AppColors.cyanDark : AppColors.border,
           ),
         ),
         child: Icon(
           icon,
           size: 18,
-          color: enabled ? AppColors.primaryDark : AppColors.textSecondary,
+          color: enabled ? AppColors.cyanDark : AppColors.textSecondary,
         ),
       ),
     );

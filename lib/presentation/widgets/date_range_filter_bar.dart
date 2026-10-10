@@ -25,7 +25,7 @@ Future<DateTime?> pickFilterDate(
     builder: (ctx, child) => Theme(
       data: Theme.of(
         ctx,
-      ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryDark)),
+      ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
       child: child!,
     ),
   );
@@ -64,11 +64,11 @@ class DateFilterChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: active
-              ? AppColors.primaryDark.withValues(alpha: 0.1)
+              ? AppColors.cyanDark.withValues(alpha: 0.1)
               : AppColors.background,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: active ? AppColors.primaryDark : AppColors.border,
+            color: active ? AppColors.cyanDark : AppColors.border,
           ),
         ),
         child: Row(
@@ -77,7 +77,7 @@ class DateFilterChip extends StatelessWidget {
               child: Text(
                 label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: active ? AppColors.primaryDark : AppColors.textSecondary,
+                  color: active ? AppColors.cyanDark : AppColors.textSecondary,
                   fontWeight: active ? FontWeight.w600 : FontWeight.normal,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -90,7 +90,7 @@ class DateFilterChip extends StatelessWidget {
                 child: Icon(
                   Icons.close_rounded,
                   size: 14,
-                  color: active ? AppColors.primaryDark : AppColors.textSecondary,
+                  color: active ? AppColors.cyanDark : AppColors.textSecondary,
                 ),
               ),
             ],
@@ -237,17 +237,17 @@ class _PresetChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primaryDark.withValues(alpha: 0.1)
+              ? AppColors.cyanDark.withValues(alpha: 0.1)
               : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.primaryDark : AppColors.border,
+            color: selected ? AppColors.cyanDark : AppColors.border,
           ),
         ),
         child: Text(
           preset.label,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+            color: selected ? AppColors.cyanDark : AppColors.textSecondary,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),

@@ -132,7 +132,7 @@ class _PeriodPicker extends StatelessWidget {
                 const Icon(
                   Icons.arrow_drop_down_rounded,
                   size: 24,
-                  color: AppColors.primaryDark,
+                  color: AppColors.cyanDark,
                 ),
               ],
             ),
@@ -531,7 +531,7 @@ class _ShortcutButton extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: AppShadows.card,
                 ),
-                child: Icon(item.icon, size: 26, color: AppColors.primaryDark),
+                child: Icon(item.icon, size: 26, color: AppColors.cyanDark),
               ),
               const SizedBox(height: AppSpacing.s8),
               Text(
@@ -678,7 +678,7 @@ class HomeErrorCard extends StatelessWidget {
           TextButton(
             onPressed: onRetry,
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryDark,
+              foregroundColor: AppColors.cyanDark,
               minimumSize: const Size(48, 48),
               shape: const StadiumBorder(),
             ),
@@ -723,8 +723,8 @@ Widget _activityRow(BuildContext context, HomeActivity activity) {
   return AppListRow(
     key: ValueKey('home-activity-${isSale ? 'sale' : 'purchase'}-$id'),
     icon: isSale ? Icons.point_of_sale_rounded : Icons.shopping_bag_rounded,
-    iconColor: isSale ? AppColors.primaryDark : AppColors.chartColor5,
-    iconBackground: isSale ? AppColors.primarySoft : AppColors.steelSoft,
+    iconColor: isSale ? AppColors.cyanDark : AppColors.blue,
+    iconBackground: isSale ? AppColors.cyanSoft : AppColors.blueSoft,
     title: isSale ? 'Venta' : 'Compra',
     subtitle: '${activity.title} · ${formatDate(activity.date)}',
     trailing: Column(

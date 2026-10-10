@@ -45,7 +45,7 @@ class InventarioTabPage extends ConsumerWidget {
                           for (var i = 0; i < cards.length; i++)
                             AppListRow(
                               icon: _iconFor(cards[i]),
-                              iconColor: AppColors.chartColor1,
+                              iconColor: AppColors.cyanDark,
                               title: _labelFor(cards[i]),
                               chevron: true,
                               onTap: () => Navigator.push(
@@ -110,7 +110,11 @@ class ProductsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const FlatStyle(
-    child: ScreenScaffold(title: 'Productos', body: ProductsPage()),
+    child: ScreenScaffold(
+      title: 'Productos',
+      actions: [ProfileButton()],
+      body: ProductsPage(),
+    ),
   );
 }
 
@@ -119,6 +123,10 @@ class CategoriesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const FlatStyle(
-    child: ScreenScaffold(title: 'Categorías', body: CategoriesPage()),
+    child: ScreenScaffold(
+      title: 'Categorías',
+      actions: [ProfileButton()],
+      body: CategoriesPage(),
+    ),
   );
 }

@@ -12,14 +12,17 @@ import '../../models/purchase_model.dart';
 import '../../models/purchase_item_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/purchase_dialog.dart';
-import '../widgets/ios_controls.dart';
-import '../widgets/ios_filters.dart';
-import '../widgets/ios_group.dart';
+import '../widgets/app_group.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/ios_sheet.dart';
-import '../widgets/ios_style.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/app_style.dart';
 import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/profile_button.dart';
+import '../widgets/catalog_filter_bar.dart';
+import '../widgets/filter_panel.dart';
+import '../widgets/catalog_filter_bar.dart' show RecordTimeSwitcher;
 
 class PurchasesPage extends StatelessWidget {
   const PurchasesPage({super.key});
@@ -51,19 +54,32 @@ class PurchasesListBody extends ConsumerWidget {
         suppliers.where((s) => s.id == purchase.supplierId).firstOrNull?.name ??
         'Sin proveedor';
 
+    final fields = <FilterField>[
+      FilterDropdown<PurchaseKind>(
+        label: 'Tipo',
+        options: [
+          for (final k in PurchaseKind.values)
+            FilterOption(k, k == PurchaseKind.all ? 'Ambos tipos' : k.label),
+        ],
+        current: kind,
+        defaultValue: PurchaseKind.all,
+        onApply: (value) =>
+            ref.read(purchaseKindFilterProvider.notifier).state = value,
+      ),
+      FilterDates(
+        current: dates,
+        onApply: (value) =>
+            ref.read(purchaseDateFilterProvider.notifier).state = value,
+      ),
+    ];
+
     return ScreenScaffold.slivers(
       title: 'Compras',
-      actions: [
-        IconButton(
-          tooltip: 'Nueva compra',
-          icon: const Icon(
-            Icons.add_rounded,
-            size: 28,
-            color: AppColors.primaryDark,
-          ),
-          onPressed: () => showPurchaseForm(context),
-        ),
-      ],
+      actions: const [ProfileButton()],
+      floatingActionButton: FlatFab(
+        heroTag: 'purchases_list_fab',
+        onPressed: () => showPurchaseForm(context),
+      ),
       slivers: [
         if (state.isLoading)
           const SliverFillRemaining(
@@ -74,7 +90,7 @@ class PurchasesListBody extends ConsumerWidget {
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: IosEmptyState(
+              child: AppEmptyState(
                 icon: Icons.shopping_bag_rounded,
                 title: 'No se registraron compras',
                 actionLabel: 'Nueva compra',
@@ -84,65 +100,28 @@ class PurchasesListBody extends ConsumerWidget {
           )
         else ...[
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-              child: Row(
-                children: [
-                  IosMenuButton<PurchaseKind>(
-                    label: kind == PurchaseKind.all ? 'Tipo' : kind.label,
-                    active: kind != PurchaseKind.all,
-                    selected: kind,
-                    options: [
-                      for (final k in PurchaseKind.values)
-                        IosMenuOption(
-                          k,
-                          k == PurchaseKind.all ? 'Ambos tipos' : k.label,
-                        ),
-                    ],
-                    onSelected: (value) =>
-                        ref.read(purchaseKindFilterProvider.notifier).state =
-                            value,
-                  ),
-                  const SizedBox(width: AppSpacing.s8),
-                  Expanded(
-                    child: IosSegmented<RecordTimeFilter>(
-                      segments: const [
-                        IosSegment(
-                          RecordTimeFilter.current,
-                          'Compras actuales',
-                        ),
-                        IosSegment(RecordTimeFilter.all, 'Todas'),
-                      ],
-                      selected: timeFilter,
-                      onChanged: (value) {
-                        if (value != null) {
-                          ref.read(purchaseTimeFilterProvider.notifier).state =
-                              value;
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: IosDateRangeFilter(
-              value: dates,
-              onChanged: (value) =>
-                  ref.read(purchaseDateFilterProvider.notifier).state = value,
+            child: Column(
+              children: [
+                RecordTimeSwitcher(
+                  value: timeFilter,
+                  currentLabel: 'Compras actuales',
+                  onChanged: (value) =>
+                      ref.read(purchaseTimeFilterProvider.notifier).state = value,
+                ),
+                FilterArea(fields: fields),
+              ],
             ),
           ),
           if (visible.isEmpty)
             const SliverToBoxAdapter(
-              child: IosEmptyState(
+              child: AppEmptyState(
                 icon: Icons.search_off_rounded,
                 title: 'Sin resultados',
               ),
             )
           else
-            IosSliverGroup(
-              dividerIndent: AppIos.dividerIndentWithTile,
+            AppSliverGroup(
+              dividerIndent: AppMetrics.dividerIndentWithTile,
               itemCount: visible.length,
               itemBuilder: (context, index) {
                 final purchase = visible[index];
@@ -163,7 +142,7 @@ class PurchasesListBody extends ConsumerWidget {
         ],
         SliverToBoxAdapter(
           child: SizedBox(
-            height: AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
+            height: AppFlat.listWithFab.bottom + MediaQuery.paddingOf(context).bottom,
           ),
         ),
       ],
@@ -172,7 +151,7 @@ class PurchasesListBody extends ConsumerWidget {
 }
 
 void showPurchaseForm(BuildContext context, [PurchaseModel? purchase]) {
-  showIosSheet<void>(
+  showAppSheet<void>(
     context,
     heightFactor: 0.94,
     builder: (_) => PurchaseDialog(purchase: purchase),
@@ -184,7 +163,7 @@ void showPurchaseDetail(
   PurchaseModel purchase,
   String supplierName,
 ) {
-  showIosSheet<void>(
+  showAppSheet<void>(
     context,
     heightFactor: 0.92,
     builder: (_) => _PurchaseDetailSheet(
@@ -213,14 +192,14 @@ class _PurchaseRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canceled = purchase.isCanceled;
-    return IosRow(
-      leading: IosTile(
+    return AppRow(
+      leading: AppTile(
         icon: purchase.isMaterial
             ? Icons.shopping_bag_rounded
             : Icons.receipt_long_rounded,
         color: canceled
-            ? AppColors.iosTrack
-            : (purchase.isMaterial ? AppColors.accent : AppColors.navy),
+            ? AppColors.track
+            : (purchase.isMaterial ? AppColors.lime : AppColors.navy),
         iconColor: canceled ? AppColors.textSecondary : null,
       ),
       title: supplierName,
@@ -240,20 +219,20 @@ class _PurchaseRow extends StatelessWidget {
                   ),
               ],
             ),
-            style: IosText.rowSubtitle(context),
+            style: AppText.rowSubtitle(context),
           ),
           if (purchase.description != null && purchase.description!.isNotEmpty)
             Text(
               purchase.description!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: IosText.rowSubtitle(context),
+              style: AppText.rowSubtitle(context),
             ),
         ],
       ),
       trailing: Text(
         'Bs. ${fixed2(purchase.totalAmount)}',
-        style: IosText.rowTitle(
+        style: AppText.rowTitle(
           context,
           color: canceled ? AppColors.textMuted : AppColors.textPrimary,
         ).copyWith(
@@ -331,7 +310,7 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
                   ?.name ??
               '';
 
-    return IosSheetScaffold(
+    return AppSheetScaffold(
       title: 'Detalle de compra',
       leadingLabel: widget.onEdit == null ? null : 'Editar',
       onLeading: () {
@@ -342,33 +321,33 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
       child: ListView(
         padding: const EdgeInsets.only(top: AppSpacing.s8, bottom: AppSpacing.s32),
         children: [
-          IosBigTotal(
+          AppBigTotal(
             label: 'Total',
             value: 'Bs. ${fixed2(purchase.totalAmount)}',
           ),
-          IosSection(
+          AppSection(
             children: [
-              IosValueRow(label: 'Proveedor', value: widget.supplierName),
-              IosValueRow(label: 'Fecha', value: formatDateTime(purchase.date)),
-              IosValueRow(
+              AppValueRow(label: 'Proveedor', value: widget.supplierName),
+              AppValueRow(label: 'Fecha', value: formatDateTime(purchase.date)),
+              AppValueRow(
                 label: 'Tipo',
                 value: purchase.isMaterial
                     ? 'Compra de materiales'
                     : 'Gasto general',
               ),
               if (purchase.locationId != null)
-                IosValueRow(label: 'Ubicación', value: _locationText(location)),
+                AppValueRow(label: 'Ubicación', value: _locationText(location)),
               if (purchase.eventId != null)
-                IosValueRow(label: 'Evento', value: eventName ?? ''),
+                AppValueRow(label: 'Evento', value: eventName ?? ''),
               if (purchase.description != null &&
                   purchase.description!.isNotEmpty)
-                IosValueRow(label: 'Descripción', value: purchase.description!),
+                AppValueRow(label: 'Descripción', value: purchase.description!),
               if (purchase.notes != null && purchase.notes!.isNotEmpty)
-                IosValueRow(label: 'Notas', value: purchase.notes!),
+                AppValueRow(label: 'Notas', value: purchase.notes!),
             ],
           ),
           if (purchase.isMaterial)
-            IosSection(
+            AppSection(
               header: 'Materiales',
               children: [
                 if (_loading)
@@ -378,24 +357,24 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
                   )
                 else
                   for (final item in _items)
-                    IosRow(
+                    AppRow(
                       title: item.materialName,
                       subtitle: Text(
                         '${formatMaterialQuantity(item.quantity, unitType: item.unitType, unitName: item.unitName)} × Bs. ${fixed2(item.unitPrice)}',
-                        style: IosText.rowSubtitle(context),
+                        style: AppText.rowSubtitle(context),
                       ),
                       trailing: Text(
                         'Bs. ${fixed2(item.subtotal)}',
-                        style: IosText.rowTitle(context).copyWith(
+                        style: AppText.rowTitle(context).copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
               ],
             ),
-          IosSection(
+          AppSection(
             children: [
-              IosValueRow(
+              AppValueRow(
                 label: 'Total',
                 value: 'Bs. ${fixed2(purchase.totalAmount)}',
                 bold: true,

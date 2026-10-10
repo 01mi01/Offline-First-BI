@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'ios_style.dart';
+import 'app_style.dart';
 
 // Tarjeta con filas separadas por líneas finas (Actividad reciente y menús).
 class AppListCard extends StatelessWidget {
@@ -107,7 +107,7 @@ class AppListRow extends StatelessWidget {
               ],
               if (chevron) ...[
                 const SizedBox(width: AppSpacing.s4),
-                const IosChevron(),
+                const AppChevron(),
               ],
             ],
           ),

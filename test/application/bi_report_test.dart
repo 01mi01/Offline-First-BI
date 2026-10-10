@@ -45,8 +45,8 @@ void main() {
         AppColors.chartColor5,
       ];
       expect(colors.toSet().length, 5);
-      expect(AppColors.chartColor1, AppColors.primary);
-      expect(AppColors.chartColor4, AppColors.primaryDark);
+      expect(AppColors.chartColor1, AppColors.cyan);
+      expect(AppColors.chartColor4, AppColors.cyanDark);
       // Cada color pertenece a su familia de la paleta: cian, azul marino,
       // verde lima, cian oscuro y azul.
       const hueRanges = [

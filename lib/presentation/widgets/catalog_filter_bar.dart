@@ -1,221 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../application/status_filter.dart';
 import '../../theme/app_theme.dart';
-import 'flat_style.dart';
+import 'app_controls.dart';
 import 'focus_utils.dart';
+import '../../application/date_range_filter.dart' show RecordTimeFilter;
 
-// Piezas reutilizables para buscar y filtrar las vistas de lista y de catálogo
-// (Productos, Categorías).
-
-// Campo de búsqueda redondeado, con botón para borrar el texto.
-class CatalogSearchField extends StatefulWidget {
-  final String initialText;
-  final String hintText;
-  final ValueChanged<String> onChanged;
-
-  const CatalogSearchField({
-    super.key,
-    required this.initialText,
-    required this.hintText,
-    required this.onChanged,
-  });
-
-  @override
-  State<CatalogSearchField> createState() => _CatalogSearchFieldState();
-}
-
-class _CatalogSearchFieldState extends State<CatalogSearchField> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialText);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      onChanged: (value) {
-        setState(() {}); // muestra u oculta el botón de borrar
-        widget.onChanged(value);
-      },
-      textInputAction: TextInputAction.search,
-      // Sin margen extra: si el campo ya está a la vista, escribir no lo
-      // desplaza (ver RevealOnFocus).
-      scrollPadding: EdgeInsets.zero,
-      decoration: InputDecoration(
-        hintText: widget.hintText,
-        isDense: true,
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          color: AppColors.textSecondary,
-          size: 20,
-        ),
-        suffixIcon: _controller.text.isEmpty
-            ? null
-            : IconButton(
-                tooltip: 'Borrar búsqueda',
-                icon: const Icon(
-                  Icons.close_rounded,
-                  color: AppColors.textSecondary,
-                  size: 18,
-                ),
-                onPressed: () {
-                  _controller.clear();
-                  setState(() {});
-                  widget.onChanged('');
-                },
-              ),
-      ),
-    );
-  }
-}
-
-class FilterOption<T> {
-  final T value;
-  final String label;
-
-  const FilterOption(this.value, this.label);
-}
-
-// Chip que abre un menú con las opciones de un filtro. Se resalta cuando el
-// filtro no está en su valor por defecto ([active]).
-class FilterMenuChip<T> extends StatelessWidget {
-  // Sin icono si es null.
-  final IconData? icon;
-  final String label;
-  // Ancho máximo del texto; si no cabe se recorta con puntos suspensivos.
-  final double maxLabelWidth;
-  final bool active;
-  final List<FilterOption<T>> options;
-  final T selected;
-  final ValueChanged<T> onSelected;
-
-  const FilterMenuChip({
-    super.key,
-    this.icon,
-    this.maxLabelWidth = 160,
-    required this.label,
-    required this.options,
-    required this.selected,
-    required this.onSelected,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final flat = FlatStyle.isActive(context);
-    // Estilo plano: píldora neutra sin borde; activa, con tinte cian suave y
-    // texto cian oscuro (el cian base no llega al contraste de texto).
-    final color = flat
-        ? (active ? AppColors.primaryDark : AppColors.textPrimary)
-        : (active ? AppColors.primaryDark : AppColors.textSecondary);
-    return PopupMenuButton<int>(
-      tooltip: label,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      onSelected: (index) => onSelected(options[index].value),
-      itemBuilder: (context) => [
-        for (var i = 0; i < options.length; i++)
-          CheckedPopupMenuItem<int>(
-            value: i,
-            checked: options[i].value == selected,
-            child: Text(options[i].label),
-          ),
-      ],
-      child: _wrapTap(
-        flat,
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s12,
-            vertical: AppSpacing.s8,
-          ),
-          decoration: flat
-              ? BoxDecoration(
-                  color: active ? AppColors.primarySoft : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-                )
-              : BoxDecoration(
-                  color: active
-                      ? AppColors.primaryDark.withOpacity(0.1)
-                      : AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: active ? AppColors.primaryDark : AppColors.border,
-                  ),
-                ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: AppSpacing.s6),
-              ],
-              ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxLabelWidth),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.s2),
-              Icon(Icons.arrow_drop_down, size: 18, color: color),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Estilo plano: el área que responde al toque mide al menos 48 de alto,
-  // aunque la píldora se vea más baja.
-  Widget _wrapTap(bool flat, Widget chip) => flat
-      ? ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: AppFlat.minTap),
-          child: Center(widthFactor: 1, heightFactor: 1, child: chip),
-        )
-      : chip;
-}
-
-// Fila de chips de filtro que se desplaza en horizontal si no caben.
-class FilterChipRow extends StatelessWidget {
-  final List<Widget> chips;
-
-  const FilterChipRow({super.key, required this.chips});
-
-  // Alineados a la derecha, igual que el chip de estado de las demás listas;
-  // si no caben en una línea pasan a la siguiente.
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-        child: Wrap(
-          alignment: WrapAlignment.end,
-          spacing: AppSpacing.s8,
-          runSpacing: AppSpacing.s8,
-          children: chips,
-        ),
-      ),
-    );
-  }
-}
+// Piezas reutilizables para filtrar las listas y el catálogo.
 
 // Envuelve un buscador con resultados debajo (p. ej. el de productos dentro del
 // formulario de venta): al enfocarlo, lleva el buscador al borde de arriba del
@@ -277,90 +68,34 @@ class _RevealOnFocusState extends State<RevealOnFocus>
   }
 }
 
-// Cabecera común de las listas: los filtros arriba, alineados a la derecha
-// (pasan a otra línea si no caben), y debajo el buscador a todo el ancho con,
-// si hay, un botón a su derecha (p. ej. el toggle lista/catálogo). Productos,
-// Categorías, Clientes, Proveedores, Eventos y Ubicaciones la comparten, así
-// que filtros, buscador y botones quedan en las mismas posiciones.
-class CatalogListHeader extends StatelessWidget {
-  final List<Widget> chips;
-  final Widget search;
-  final Widget? trailing;
-  // Se muestra entre los filtros y el buscador (p. ej. el filtro por fechas).
-  final Widget? between;
+// Selector de "registros actuales / todos" para listas con registros futuros,
+// con el mismo control y lugar que el selector de pestañas.
+class RecordTimeSwitcher extends StatelessWidget {
+  final RecordTimeFilter value;
+  final String currentLabel;
+  final ValueChanged<RecordTimeFilter> onChanged;
 
-  const CatalogListHeader({
-    super.key,
-    required this.chips,
-    required this.search,
-    this.trailing,
-    this.between,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (chips.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.s12),
-            child: FilterChipRow(chips: chips),
-          ),
-        ?between,
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.s16,
-            chips.isEmpty && between == null ? AppSpacing.s12 : AppSpacing.s8,
-            AppSpacing.s16,
-            AppSpacing.s8,
-          ),
-          child: Row(
-            children: [
-              Expanded(child: search),
-              if (trailing != null) ...[
-                const SizedBox(width: AppSpacing.s8),
-                trailing!,
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Chip del filtro por estado (Activos / Inactivos / Todos). [feminine] da las
-// etiquetas en femenino (Activas / Inactivas / Todas) para listas como
-// "Ubicaciones".
-class StatusFilterChip extends StatelessWidget {
-  final StatusFilter value;
-  final ValueChanged<StatusFilter> onChanged;
-  final bool feminine;
-
-  const StatusFilterChip({
+  const RecordTimeSwitcher({
     super.key,
     required this.value,
+    required this.currentLabel,
     required this.onChanged,
-    this.feminine = false,
   });
-
-  String _label(StatusFilter f) => switch (f) {
-    StatusFilter.all => feminine ? 'Todas' : 'Todos',
-    StatusFilter.active => feminine ? 'Activas' : 'Activos',
-    StatusFilter.inactive => feminine ? 'Inactivas' : 'Inactivos',
-  };
 
   @override
   Widget build(BuildContext context) {
-    return FilterMenuChip<StatusFilter>(
-      label: _label(value),
-      active: value != StatusFilter.all,
-      selected: value,
-      options: [
-        for (final f in StatusFilter.values) FilterOption(f, _label(f)),
-      ],
-      onSelected: onChanged,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppHeader.sidePadding),
+      child: AppSegmented<RecordTimeFilter>(
+        segments: [
+          AppSegment(RecordTimeFilter.current, currentLabel),
+          const AppSegment(RecordTimeFilter.all, 'Todas'),
+        ],
+        selected: value,
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+      ),
     );
   }
 }

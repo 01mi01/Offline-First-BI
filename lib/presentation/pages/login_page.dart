@@ -52,16 +52,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }) {
     OutlineInputBorder border(Color color, [double width = 1]) =>
         OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppIos.groupRadius),
+          borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
           borderSide: BorderSide(color: color, width: width),
         );
     final enabled = border(AppColors.border);
-    final focused = border(AppColors.primaryDark, 2);
+    final focused = border(AppColors.cyanDark, 2);
     return InputDecoration(
       hintText: hint,
       fillColor: AppColors.surface,
       prefixIcon: Icon(icon),
-      prefixIconColor: AppColors.primaryDark,
+      prefixIconColor: AppColors.cyanDark,
       suffixIcon: suffix,
       border: enabled,
       enabledBorder: enabled,
@@ -164,8 +164,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             autovalidateMode: AutovalidateMode.onUserInteraction,
             controller: _usernameController,
             style: fieldStyle,
-            cursorColor: AppColors.primaryDark,
-            cursorErrorColor: AppColors.primaryDark,
+            cursorColor: AppColors.cyanDark,
+            cursorErrorColor: AppColors.cyanDark,
             autocorrect: false,
             textInputAction: TextInputAction.next,
             decoration: _decoration(
@@ -180,8 +180,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             controller: _passwordController,
             obscureText: _obscurePassword,
             style: fieldStyle,
-            cursorColor: AppColors.primaryDark,
-            cursorErrorColor: AppColors.primaryDark,
+            cursorColor: AppColors.cyanDark,
+            cursorErrorColor: AppColors.cyanDark,
             textInputAction: TextInputAction.done,
             decoration: _decoration(
               hint: 'Tu contraseña',
@@ -233,17 +233,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ElevatedButton(
             onPressed: authState.isLoading ? null : _handleLogin,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryDark,
-              foregroundColor: AppColors.textButtons,
-              disabledBackgroundColor: AppColors.primaryDark,
-              disabledForegroundColor: AppColors.textButtons,
+              backgroundColor: AppColors.cyanDark,
+              foregroundColor: AppColors.onDark,
+              disabledBackgroundColor: AppColors.cyanDark,
+              disabledForegroundColor: AppColors.onDark,
             ),
             child: authState.isLoading
                 ? const SizedBox(
                     height: AppSpacing.s20,
                     width: AppSpacing.s20,
                     child: CircularProgressIndicator(
-                      color: AppColors.textButtons,
+                      color: AppColors.onDark,
                       strokeWidth: 2,
                     ),
                   )
@@ -251,7 +251,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     'Iniciar sesión',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textButtons,
+                      color: AppColors.onDark,
                     ),
                   ),
           ),

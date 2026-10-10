@@ -9,11 +9,12 @@ import '../../application/category_provider.dart';
 import '../../application/material_provider.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/product_dialog.dart';
-import '../widgets/catalog_filter_bar.dart';
 import '../widgets/flat_controls.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/flat_style.dart';
 import '../../config/rounding.dart';
+import '../widgets/app_controls.dart';
+import '../widgets/filter_panel.dart';
 
 // Productos con el estilo plano de Inventario (ver flat_style.dart): filas sin
 // tarjeta separadas por una línea fina, catálogo de baldosas sin sombra y
@@ -36,9 +37,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final setFilter = ref.read(productCatalogFilterProvider.notifier);
     final visible = filter.apply(state.products);
     final priceDisplay = filter.priceDisplay;
-    final selectedCategory = categories
-        .where((c) => c.id == filter.categoryId)
-        .firstOrNull;
 
     return FlatStyle(
       child: Scaffold(
@@ -51,65 +49,56 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         ),
         body: Column(
           children: [
-            // Filtros arriba, alineados a la derecha (pasan a otra línea si no
-            // caben): precio, categoría y estado. Debajo, el buscador a todo el
-            // ancho junto al toggle lista/catálogo. Igual en ambas vistas.
-            CatalogListHeader(
-              chips: [
-                FilterMenuChip<PriceDisplay>(
-                  icon: Icons.sell_rounded,
-                  label: switch (priceDisplay) {
-                    PriceDisplay.both => 'Ambos',
-                    PriceDisplay.a => 'Precio A',
-                    PriceDisplay.b => 'Precio B',
-                    PriceDisplay.none => 'Sin precio',
-                  },
-                  // Resaltado cuando se eligió algo distinto del valor por
-                  // defecto ("Ambos").
-                  active: filter.priceDisplay != PriceDisplay.both,
-                  selected: priceDisplay,
+            ViewModeSwitcher(
+              isGrid: _isGrid,
+              onChanged: (value) => setState(() => _isGrid = value),
+            ),
+            FilterArea(
+              search: AppSearchBar(
+                initialText: filter.query,
+                hintText: 'Buscar producto',
+                onChanged: (value) =>
+                    setFilter.update((f) => f.copyWith(query: value)),
+              ),
+              fields: [
+                FilterDropdown<PriceDisplay>(
+                  label: 'Precio',
                   options: const [
                     FilterOption(PriceDisplay.both, 'Ambos'),
                     FilterOption(PriceDisplay.a, 'Precio A'),
                     FilterOption(PriceDisplay.b, 'Precio B'),
                     FilterOption(PriceDisplay.none, 'Sin precio'),
                   ],
-                  onSelected: (value) =>
+                  current: filter.priceDisplay,
+                  defaultValue: PriceDisplay.both,
+                  onApply: (value) =>
                       setFilter.update((f) => f.copyWith(priceDisplay: value)),
                 ),
-                FilterMenuChip<int?>(
-                  icon: Icons.category_rounded,
-                  maxLabelWidth: 110,
-                  label: selectedCategory?.name ?? 'Categoría',
-                  active: filter.categoryId != null,
-                  selected: filter.categoryId,
+                FilterDropdown<StatusFilter>(
+                  label: 'Estado',
+                  options: statusFilterOptions(),
+                  current: filter.status,
+                  defaultValue: StatusFilter.all,
+                  onApply: (value) =>
+                      setFilter.update((f) => f.copyWith(status: value)),
+                ),
+                FilterDropdown<int?>(
+                  label: 'Categoría',
+                  wide: true,
                   options: [
                     const FilterOption<int?>(null, 'Todas las categorías'),
                     for (final c in categories)
                       FilterOption<int?>(c.id, c.name),
                   ],
-                  onSelected: (id) => setFilter.update(
+                  current: filter.categoryId,
+                  defaultValue: null,
+                  onApply: (id) => setFilter.update(
                     (f) => id == null
                         ? f.copyWith(clearCategory: true)
                         : f.copyWith(categoryId: id),
                   ),
                 ),
-                StatusFilterChip(
-                  value: filter.status,
-                  onChanged: (value) =>
-                      setFilter.update((f) => f.copyWith(status: value)),
-                ),
               ],
-              search: CatalogSearchField(
-                initialText: filter.query,
-                hintText: 'Buscar producto',
-                onChanged: (value) =>
-                    setFilter.update((f) => f.copyWith(query: value)),
-              ),
-              trailing: FlatViewToggle(
-                isGrid: _isGrid,
-                onToggle: (val) => setState(() => _isGrid = val),
-              ),
             ),
             const SizedBox(height: AppSpacing.s8),
             Expanded(
@@ -377,7 +366,7 @@ class _ProductRowState extends ConsumerState<_ProductRow> {
             tooltip: 'Editar',
             icon: const Icon(
               Icons.edit_rounded,
-              color: AppColors.primaryDark,
+              color: AppColors.cyanDark,
               size: 20,
             ),
             onPressed: widget.onEdit,
@@ -541,7 +530,7 @@ class _ProductGridDetail extends StatelessWidget {
       color: AppColors.surface,
       child: const Icon(
         Icons.inventory_2_rounded,
-        color: AppColors.primaryDark,
+        color: AppColors.cyanDark,
         size: 60,
       ),
     );

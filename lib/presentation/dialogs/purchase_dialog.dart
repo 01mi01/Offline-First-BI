@@ -17,11 +17,11 @@ import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
 import '../widgets/focus_utils.dart';
-import '../widgets/ios_controls.dart';
-import '../widgets/ios_group.dart';
-import '../widgets/ios_quantity.dart';
-import '../widgets/ios_sheet.dart';
-import '../widgets/ios_style.dart';
+import '../widgets/app_controls.dart';
+import '../widgets/app_group.dart';
+import '../widgets/app_quantity.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/app_style.dart';
 import '../widgets/searchable_picker.dart' show PickerOption;
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
@@ -164,7 +164,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   void _showAddMaterialItem() {
     dismissKeyboard();
-    showIosSheet<void>(
+    showAppSheet<void>(
       context,
       heightFactor: 0.94,
       builder: (_) => _AddMaterialItemSheet(
@@ -307,7 +307,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       return allUnits.where((u) => u.id == material.unitId).firstOrNull;
     }
 
-    return IosSheetScaffold(
+    return AppSheetScaffold(
       title: isEditing ? 'Editar compra' : 'Nueva compra',
       leadingLabel: 'Cancelar',
       child: Form(
@@ -316,10 +316,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-              child: IosSegmented<bool>(
+              child: AppSegmented<bool>(
                 segments: const [
-                  IosSegment(true, 'Materiales'),
-                  IosSegment(false, 'Gasto general'),
+                  AppSegment(true, 'Materiales'),
+                  AppSegment(false, 'Gasto general'),
                 ],
                 selected: _isMaterial,
                 onChanged: (value) {
@@ -344,9 +344,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    IosSection(
+                    AppSection(
                       children: [
-                        IosPickerRow<int>(
+                        AppPickerRow<int>(
                           label: 'Proveedor',
                           searchHint: 'Buscar proveedor',
                           value: supplierValue,
@@ -367,16 +367,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                             icon: const Icon(
                               Icons.add_business_rounded,
                               size: 22,
-                              color: AppColors.primaryDark,
+                              color: AppColors.cyanDark,
                             ),
                             onPressed: _showAddSupplierSheet,
                           ),
                         ),
                       ],
                     ),
-                    IosSection(
+                    AppSection(
                       children: [
-                        IosPickerRow<int>(
+                        AppPickerRow<int>(
                           label: 'Ubicación',
                           searchHint: 'Buscar ubicación',
                           value: _selectedLocationId,
@@ -395,7 +395,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           onChanged: (val) =>
                               setState(() => _selectedLocationId = val),
                         ),
-                        IosPickerRow<int>(
+                        AppPickerRow<int>(
                           label: 'Evento',
                           searchHint: 'Buscar evento',
                           value: _selectedEventId,
@@ -408,7 +408,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           onChanged: (val) =>
                               setState(() => _selectedEventId = val),
                         ),
-                        IosDateRow(
+                        AppDateRow(
                           date: _date,
                           onChanged: (value) => setState(() {
                             _date = value;
@@ -418,27 +418,27 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       ],
                     ),
                     if (_isMaterial) ...[
-                      IosSection(
+                      AppSection(
                         header: 'Materiales',
                         headerTrailing: TextButton.icon(
                           onPressed: _showAddMaterialItem,
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: const Text('Agregar'),
                           style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primaryDark,
-                            minimumSize: const Size(AppIos.minTap, AppIos.minTap),
+                            foregroundColor: AppColors.cyanDark,
+                            minimumSize: const Size(AppMetrics.minTap, AppMetrics.minTap),
                           ),
                         ),
                         children: [
                           if (_materialItems.isEmpty)
                             ConstrainedBox(
                               constraints: const BoxConstraints(
-                                minHeight: AppIos.rowMinHeight,
+                                minHeight: AppMetrics.rowMinHeight,
                               ),
                               child: Center(
                                 child: Text(
                                   'Sin materiales agregados',
-                                  style: IosText.rowSubtitle(context),
+                                  style: AppText.rowSubtitle(context),
                                 ),
                               ),
                             )
@@ -447,9 +447,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                               _materialRow(context, i, unitOf),
                         ],
                       ),
-                      IosSection(
+                      AppSection(
                         children: [
-                          IosTextFieldRow(
+                          AppTextFieldRow(
                             fieldKey: const ValueKey('purchase-total-materials'),
                             label: 'Total (Bs.)',
                             controller: _totalController,
@@ -480,9 +480,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         ],
                       ),
                     ] else
-                      IosSection(
+                      AppSection(
                         children: [
-                          IosTextAreaRow(
+                          AppTextAreaRow(
                             fieldKey: const ValueKey('purchase-description'),
                             label: 'Descripción del gasto',
                             controller: _descriptionController,
@@ -490,7 +490,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                             validator: (v) =>
                                 v == null || v.isEmpty ? 'Campo requerido' : null,
                           ),
-                          IosTextFieldRow(
+                          AppTextFieldRow(
                             fieldKey: const ValueKey('purchase-total-expense'),
                             label: 'Total (Bs.)',
                             controller: _totalController,
@@ -502,16 +502,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           ),
                         ],
                       ),
-                    IosSection(
+                    AppSection(
                       children: [
-                        IosTextAreaRow(
+                        AppTextAreaRow(
                           label: 'Notas',
                           controller: _notesController,
                           hint: 'Observaciones opcionales',
                         ),
                       ],
                     ),
-                    if (_error != null) IosErrorNote(message: _error!),
+                    if (_error != null) AppErrorNote(message: _error!),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(
                         AppSpacing.s16,
@@ -526,7 +526,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                 height: AppSpacing.s20,
                                 width: AppSpacing.s20,
                                 child: CircularProgressIndicator(
-                                  color: AppColors.textButtons,
+                                  color: AppColors.onDark,
                                   strokeWidth: 2,
                                 ),
                               )
@@ -536,7 +536,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                 style: Theme.of(context).textTheme.headlineLarge
                                     ?.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.textButtons,
+                                      color: AppColors.onDark,
                                     ),
                                 textAlign: TextAlign.center,
                               ),
@@ -591,17 +591,17 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 children: [
                   Text(
                     item['materialName'] as String,
-                    style: IosText.rowTitle(context),
+                    style: AppText.rowTitle(context),
                   ),
                   Text(
                     '${_quantityWithUnit(quantity, unitOf(item['materialId']))}  ·  Bs. ${fixed2(quantity * (item['unitPrice'] as double))}',
-                    style: IosText.rowSubtitle(context),
+                    style: AppText.rowSubtitle(context),
                   ),
                 ],
               ),
             ),
           ),
-          IosStepper(
+          AppStepper(
             onMinus: quantity <= 1
                 ? null
                 : () => setState(() {
@@ -768,7 +768,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
         ? 'Cantidad (${selectedUnit.name})'
         : 'Cantidad';
 
-    return IosSheetScaffold(
+    return AppSheetScaffold(
       title: 'Agregar material',
       leadingLabel: 'Cancelar',
       child: Form(
@@ -781,9 +781,9 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              IosSection(
+              AppSection(
                 children: [
-                  IosPickerRow<int>(
+                  AppPickerRow<int>(
                     label: 'Material',
                     searchHint: 'Buscar material',
                     value: _selectedMaterialId,
@@ -803,13 +803,13 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                       });
                     },
                   ),
-                  IosRow(
+                  AppRow(
                     title: 'Crear nuevo material',
-                    titleColor: AppColors.primaryDark,
+                    titleColor: AppColors.cyanDark,
                     leading: const Icon(
                       Icons.add_circle_rounded,
                       size: 22,
-                      color: AppColors.primaryDark,
+                      color: AppColors.cyanDark,
                     ),
                     onTap: _showCreateMaterialSheet,
                   ),
@@ -823,11 +823,11 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                     AppSpacing.s16,
                     AppSpacing.s16,
                   ),
-                  child: Text(_materialError!, style: IosText.error(context)),
+                  child: Text(_materialError!, style: AppText.error(context)),
                 ),
               if (selectedUnit != null &&
                   isFractionFriendlyUnitType(selectedUnit.type))
-                IosFractionPicker(
+                AppFractionPicker(
                   unit: selectedUnit.name,
                   value: _fractionQuantity,
                   onChanged: (v) => setState(() {
@@ -837,15 +837,15 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                   }),
                 )
               else
-                IosSection(
+                AppSection(
                   children: [
                     if (discrete)
-                      IosWholeNumberRow(
+                      AppWholeNumberRow(
                         controller: _quantityController,
                         label: label,
                       )
                     else
-                      IosTextFieldRow(
+                      AppTextFieldRow(
                         label: label,
                         controller: _quantityController,
                         hint: '0',
@@ -884,14 +884,14 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                     AppSpacing.s16,
                     AppSpacing.s16,
                   ),
-                  child: Text(_quantityError!, style: IosText.error(context)),
+                  child: Text(_quantityError!, style: AppText.error(context)),
                 ),
-              IosSection(
+              AppSection(
                 footer: _isMedida(_selectedMaterialId)
                     ? '$priceInfoMessage $measureUnitInfoMessage'
                     : priceInfoMessage,
                 children: [
-                  IosLinkedPriceRows(
+                  AppLinkedPriceRows(
                     controller: _container,
                     onChanged: () => setState(() {}),
                     priceLabel: 'Precio por unidad (Bs.)',
@@ -908,7 +908,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                     'Agregar',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textButtons,
+                      color: AppColors.onDark,
                     ),
                   ),
                 ),

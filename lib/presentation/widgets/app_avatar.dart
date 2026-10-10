@@ -10,7 +10,7 @@ class AppAvatar extends StatelessWidget {
     super.key,
     required this.name,
     this.size = 56,
-    this.color = AppColors.primaryDark,
+    this.color = AppColors.cyanDark,
   });
 
   @override

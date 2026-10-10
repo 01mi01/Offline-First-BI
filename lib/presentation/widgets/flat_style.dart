@@ -17,7 +17,7 @@ import '../../theme/app_theme.dart';
 //  - flat_style.dart    FlatStyle (este archivo)
 //  - flat_list.dart     FlatListRow, FlatThumb, FlatStatusPill, FlatSectionHeader,
 //                       FlatEmptyState, FlatTile, FlatFab
-//  - flat_controls.dart FlatViewToggle, FlatTabBar
+//  - flat_controls.dart ViewModeSwitcher
 //  - flat_form.dart     LabeledField, FlatFormActions, FlatToggleRow,
 //                       FormErrorBox, FlatPhotoSlot
 class FlatStyle extends StatelessWidget {

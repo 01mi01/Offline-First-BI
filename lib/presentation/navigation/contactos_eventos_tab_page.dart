@@ -42,7 +42,7 @@ class ContactosEventosTabPage extends ConsumerWidget {
                         for (var i = 0; i < cards.length; i++)
                           AppListRow(
                             icon: _iconFor(cards[i]),
-                            iconColor: AppColors.chartColor1,
+                            iconColor: AppColors.cyanDark,
                             title: _labelFor(cards[i]),
                             chevron: true,
                             onTap: () => Navigator.push(

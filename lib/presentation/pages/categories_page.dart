@@ -4,7 +4,6 @@ import 'dart:io';
 import '../../application/category_provider.dart';
 import '../../application/category_catalog_filter.dart';
 import '../../models/category_model.dart';
-import '../widgets/catalog_filter_bar.dart';
 import '../../models/default_records.dart';
 import '../widgets/flat_controls.dart';
 import '../widgets/flat_list.dart';
@@ -12,6 +11,8 @@ import '../widgets/flat_style.dart';
 import '../widgets/protected_record_icon.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/category_dialog.dart';
+import '../widgets/app_controls.dart';
+import '../widgets/filter_panel.dart';
 
 // Categorías con el estilo plano de Inventario (ver flat_style.dart).
 class CategoriesPage extends ConsumerStatefulWidget {
@@ -42,38 +43,31 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
         ),
         body: Column(
           children: [
-            // Igual que Productos: el filtro de estado arriba, alineado a la
-            // derecha; debajo, el buscador a todo el ancho junto al toggle
-            // lista/catálogo. Igual en ambas vistas.
-            CatalogListHeader(
-              chips: [
-                FilterMenuChip<CategoryStatusFilter>(
-                  label: switch (filter.status) {
-                    CategoryStatusFilter.all => 'Todas',
-                    CategoryStatusFilter.active => 'Activas',
-                    CategoryStatusFilter.inactive => 'Inactivas',
-                  },
-                  active: filter.status != CategoryStatusFilter.all,
-                  selected: filter.status,
-                  options: const [
-                    FilterOption(CategoryStatusFilter.all, 'Todas'),
-                    FilterOption(CategoryStatusFilter.active, 'Activas'),
-                    FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
-                  ],
-                  onSelected: (value) =>
-                      setFilter.update((f) => f.copyWith(status: value)),
-                ),
-              ],
-              search: CatalogSearchField(
+            ViewModeSwitcher(
+              isGrid: _isGrid,
+              onChanged: (value) => setState(() => _isGrid = value),
+            ),
+            FilterArea(
+              search: AppSearchBar(
                 initialText: filter.query,
                 hintText: 'Buscar categoría',
                 onChanged: (value) =>
                     setFilter.update((f) => f.copyWith(query: value)),
               ),
-              trailing: FlatViewToggle(
-                isGrid: _isGrid,
-                onToggle: (val) => setState(() => _isGrid = val),
-              ),
+              fields: [
+                FilterDropdown<CategoryStatusFilter>(
+                  label: 'Estado',
+                  options: const [
+                    FilterOption(CategoryStatusFilter.all, 'Todas'),
+                    FilterOption(CategoryStatusFilter.active, 'Activas'),
+                    FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
+                  ],
+                  current: filter.status,
+                  defaultValue: CategoryStatusFilter.all,
+                  onApply: (value) =>
+                      setFilter.update((f) => f.copyWith(status: value)),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.s8),
             Expanded(
@@ -225,7 +219,7 @@ class _CategoryRow extends StatelessWidget {
               tooltip: 'Editar',
               icon: const Icon(
                 Icons.edit_rounded,
-                color: AppColors.primaryDark,
+                color: AppColors.cyanDark,
                 size: 20,
               ),
               onPressed: onEdit,
@@ -333,7 +327,7 @@ class _CategoryDetail extends StatelessWidget {
       color: AppColors.surface,
       child: const Icon(
         Icons.category_rounded,
-        color: AppColors.primaryDark,
+        color: AppColors.cyanDark,
         size: 60,
       ),
     );

@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'ios_style.dart';
+import 'app_style.dart';
 
-class IosSegment<T> {
+class AppSegment<T> {
   final T value;
   final String label;
 
-  const IosSegment(this.value, this.label);
+  const AppSegment(this.value, this.label);
 }
 
-// Control segmentado: pista gris redondeada con una pastilla blanca que se
-// desliza a la opción elegida. Con [allowDeselect], tocar la opción activa la
-// quita (onChanged recibe null).
-class IosSegmented<T> extends StatelessWidget {
-  final List<IosSegment<T>> segments;
+// Control segmentado: pista a todo el ancho con una pastilla que se desliza a
+// la opción elegida. Con [allowDeselect], tocar la opción activa la quita
+// (onChanged recibe null).
+class AppSegmented<T> extends StatelessWidget {
+  final List<AppSegment<T>> segments;
   final T? selected;
   final ValueChanged<T?> onChanged;
   final bool allowDeselect;
 
-  const IosSegmented({
+  const AppSegmented({
     super.key,
     required this.segments,
     required this.selected,
@@ -33,19 +33,19 @@ class IosSegmented<T> extends StatelessWidget {
     final alignX = count <= 1 || index < 0 ? -1.0 : -1 + 2 * index / (count - 1);
 
     return SizedBox(
-      height: AppIos.minTap,
+      height: AppMetrics.minTap,
       child: Stack(
         children: [
           Center(
             child: Container(
-              height: AppIos.segmentedHeight,
+              height: AppMetrics.segmentedHeight,
               padding: const EdgeInsets.all(AppSpacing.s2),
               decoration: BoxDecoration(
-                color: AppColors.iosTrack,
-                borderRadius: BorderRadius.circular(AppIos.controlRadius),
+                color: AppColors.track,
+                borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
               ),
               child: AnimatedAlign(
-                duration: const Duration(milliseconds: 180),
+                duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 alignment: Alignment(alignX, 0),
                 child: FractionallySizedBox(
@@ -57,7 +57,8 @@ class IosSegmented<T> extends StatelessWidget {
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppIos.thumbRadius),
+                        borderRadius: BorderRadius.circular(AppMetrics.thumbRadius),
+                        boxShadow: AppShadows.thumb,
                       ),
                     ),
                   ),
@@ -91,13 +92,15 @@ class IosSegmented<T> extends StatelessWidget {
                               child: Text(
                                 segment.label,
                                 maxLines: 1,
-                                style: IosText.rowSubtitle(
+                                style: AppText.rowSubtitle(
                                   context,
-                                  color: AppColors.textPrimary,
+                                  color: segment.value == selected
+                                      ? AppColors.textPrimary
+                                      : AppColors.textSecondary,
                                 ).copyWith(
-                                  fontSize: AppIos.headerSize + 1,
+                                  fontSize: AppMetrics.headerSize + 1,
                                   fontWeight: segment.value == selected
-                                      ? FontWeight.w600
+                                      ? FontWeight.w700
                                       : FontWeight.w500,
                                 ),
                               ),
@@ -116,95 +119,103 @@ class IosSegmented<T> extends StatelessWidget {
   }
 }
 
-class IosMenuOption<T> {
-  final T value;
-  final String label;
+// Selector de pestañas: el control segmentado conectado al TabController del
+// DefaultTabController más cercano, con el mismo lugar y relleno en cada pantalla.
+class AppTabSwitcher extends StatelessWidget {
+  final List<String> labels;
 
-  const IosMenuOption(this.value, this.label);
-}
-
-// Botón que abre un menú de opciones, con el valor elegido y flechas arriba y
-// abajo.
-class IosMenuButton<T> extends StatelessWidget {
-  final String label;
-  final bool active;
-  final List<IosMenuOption<T>> options;
-  final T selected;
-  final ValueChanged<T> onSelected;
-
-  const IosMenuButton({
-    super.key,
-    required this.label,
-    required this.options,
-    required this.selected,
-    required this.onSelected,
-    this.active = false,
-  });
+  const AppTabSwitcher({super.key, required this.labels});
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<int>(
-      tooltip: label,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppIos.groupRadius),
-      ),
-      onSelected: (i) => onSelected(options[i].value),
-      itemBuilder: (context) => [
-        for (var i = 0; i < options.length; i++)
-          CheckedPopupMenuItem<int>(
-            value: i,
-            checked: options[i].value == selected,
-            child: Text(options[i].label),
-          ),
-      ],
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: AppIos.minTap),
-        child: Center(
-          widthFactor: 1,
-          heightFactor: 1,
-          child: Container(
-            height: AppIos.segmentedHeight,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
-            decoration: BoxDecoration(
-              color: AppColors.iosTrack,
-              borderRadius: BorderRadius.circular(AppIos.controlRadius),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: IosText.rowSubtitle(
-                    context,
-                    color: active ? AppColors.primaryDark : AppColors.textPrimary,
-                  ).copyWith(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(width: AppSpacing.s4),
-                Icon(
-                  Icons.unfold_more_rounded,
-                  size: 18,
-                  color: active ? AppColors.primaryDark : AppColors.textSecondary,
-                ),
-              ],
-            ),
-          ),
+    final controller = DefaultTabController.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppHeader.sidePadding),
+      child: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => AppSegmented<int>(
+          segments: [
+            for (var i = 0; i < labels.length; i++) AppSegment(i, labels[i]),
+          ],
+          selected: controller.index,
+          onChanged: (i) {
+            if (i != null) controller.animateTo(i);
+          },
         ),
       ),
     );
   }
 }
 
-// Barra de búsqueda: campo gris redondeado con lupa y botón para borrar.
-class IosSearchBar extends StatefulWidget {
+// Texto de los controles de filtro (chips, atajos, interruptor, fechas y
+// botones): un solo tamaño. El nombre va regular y gris; el valor, en negrita.
+TextStyle filterNameStyle(BuildContext context) => AppText.rowSubtitle(
+  context,
+  color: AppColors.textSecondary,
+).copyWith(fontSize: AppMetrics.filterTextSize);
+
+TextStyle filterLabelStyle(BuildContext context) => AppText.rowSubtitle(
+  context,
+  color: AppColors.textSecondary,
+).copyWith(fontSize: AppMetrics.filterLabelSize);
+
+TextStyle filterValueStyle(BuildContext context, {bool active = false}) =>
+    AppText.rowSubtitle(
+      context,
+      color: active ? AppColors.cyanDark : AppColors.textSecondary,
+    ).copyWith(
+      fontSize: AppMetrics.filterTextSize,
+      fontWeight: FontWeight.bold,
+    );
+
+// Texto del buscador.
+TextStyle appControlTextStyle(BuildContext context, Color color) =>
+    AppText.rowSubtitle(context, color: color).copyWith(
+      fontSize: AppMetrics.controlTextSize,
+      fontWeight: FontWeight.w500,
+    );
+
+// Aspecto de todos los campos de búsqueda: relleno gris, esquinas como las de
+// los botones y lupa.
+InputDecoration appSearchDecoration(
+  BuildContext context, {
+  required String hintText,
+  String? labelText,
+  Widget? suffixIcon,
+  EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
+}) {
+  OutlineInputBorder border() => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
+    borderSide: BorderSide.none,
+  );
+  return InputDecoration(
+    labelText: labelText,
+    hintText: hintText,
+    hintStyle: appControlTextStyle(context, AppColors.textSecondary),
+    filled: true,
+    fillColor: AppColors.track,
+    isDense: true,
+    contentPadding: contentPadding,
+    border: border(),
+    enabledBorder: border(),
+    focusedBorder: border(),
+    prefixIcon: const Icon(
+      Icons.search_rounded,
+      size: 20,
+      color: AppColors.textSecondary,
+    ),
+    suffixIcon: suffixIcon,
+  );
+}
+
+// Barra de búsqueda: campo gris con lupa y botón para borrar.
+class AppSearchBar extends StatefulWidget {
   final String initialText;
   final String hintText;
   final ValueChanged<String> onChanged;
   final bool autofocus;
 
-  const IosSearchBar({
+  const AppSearchBar({
     super.key,
     required this.hintText,
     required this.onChanged,
@@ -213,10 +224,10 @@ class IosSearchBar extends StatefulWidget {
   });
 
   @override
-  State<IosSearchBar> createState() => _IosSearchBarState();
+  State<AppSearchBar> createState() => _AppSearchBarState();
 }
 
-class _IosSearchBarState extends State<IosSearchBar> {
+class _AppSearchBarState extends State<AppSearchBar> {
   late final TextEditingController _controller;
 
   @override
@@ -234,41 +245,20 @@ class _IosSearchBarState extends State<IosSearchBar> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: AppIos.searchHeight,
+      height: AppMetrics.controlHeight,
       child: TextField(
         controller: _controller,
         autofocus: widget.autofocus,
         textInputAction: TextInputAction.search,
         scrollPadding: EdgeInsets.zero,
-        style: IosText.rowTitle(context),
+        style: appControlTextStyle(context, AppColors.textPrimary),
         onChanged: (value) {
           setState(() {});
           widget.onChanged(value);
         },
-        decoration: InputDecoration(
+        decoration: appSearchDecoration(
+          context,
           hintText: widget.hintText,
-          hintStyle: IosText.rowTitle(context, color: AppColors.textSecondary),
-          filled: true,
-          fillColor: AppColors.iosTrack,
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppIos.controlRadius),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppIos.controlRadius),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppIos.controlRadius),
-            borderSide: BorderSide.none,
-          ),
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            size: 20,
-            color: AppColors.textSecondary,
-          ),
           suffixIcon: _controller.text.isEmpty
               ? null
               : IconButton(
@@ -291,21 +281,21 @@ class _IosSearchBarState extends State<IosSearchBar> {
 }
 
 // Control de cantidad con menos y más.
-class IosStepper extends StatelessWidget {
+class AppStepper extends StatelessWidget {
   final VoidCallback? onMinus;
   final VoidCallback? onPlus;
 
-  const IosStepper({super.key, required this.onMinus, required this.onPlus});
+  const AppStepper({super.key, required this.onMinus, required this.onPlus});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: AppIos.minTap,
+      height: AppMetrics.minTap,
       child: Center(
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.iosTrack,
-            borderRadius: BorderRadius.circular(AppIos.controlRadius),
+            color: AppColors.track,
+            borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -315,7 +305,7 @@ class IosStepper extends StatelessWidget {
                 tooltip: 'Quitar uno',
                 onTap: onMinus,
               ),
-              Container(width: 1, height: 18, color: AppColors.iosSeparator),
+              Container(width: 1, height: 18, color: AppColors.separator),
               _StepperButton(
                 icon: Icons.add_rounded,
                 tooltip: 'Agregar uno',
@@ -346,14 +336,14 @@ class _StepperButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppIos.controlRadius),
+        borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
         child: SizedBox(
-          width: AppIos.minTap,
-          height: AppIos.segmentedHeight,
+          width: AppMetrics.minTap,
+          height: AppMetrics.segmentedHeight,
           child: Icon(
             icon,
             size: 20,
-            color: onTap == null ? AppColors.iosChevron : AppColors.textPrimary,
+            color: onTap == null ? AppColors.chevron : AppColors.textPrimary,
           ),
         ),
       ),

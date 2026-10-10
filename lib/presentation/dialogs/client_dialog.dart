@@ -177,7 +177,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                       Switch(
                         value: _isActive,
                         onChanged: _onToggleActive,
-                        activeColor: AppColors.primaryDark,
+                        activeColor: AppColors.cyanDark,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: AppColors.surface,
                         trackOutlineColor: WidgetStateProperty.all(

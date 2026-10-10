@@ -12,10 +12,12 @@ import '../../theme/app_theme.dart';
 import '../dialogs/event_dialog.dart';
 import '../dialogs/location_dialog.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/catalog_filter_bar.dart';
-import '../widgets/date_range_filter_bar.dart';
 import '../widgets/status_badge.dart';
 import '../../config/date_formatters.dart';
+import '../widgets/app_controls.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/profile_button.dart';
+import '../widgets/filter_panel.dart';
 
 class EventsPage extends ConsumerWidget {
   const EventsPage({super.key});
@@ -26,19 +28,8 @@ class EventsPage extends ConsumerWidget {
       length: 2,
       child: ScreenScaffold(
         title: 'Eventos',
-        bottom: TabBar(
-            labelColor: AppColors.primaryDark,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primaryDark,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: Theme.of(
-              context,
-            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
-            tabs: const [
-              Tab(text: 'Eventos'),
-              Tab(text: 'Ubicaciones'),
-            ],
-          ),
+        actions: const [ProfileButton()],
+        bottom: const AppTabSwitcher(labels: ['Eventos', 'Ubicaciones']),
         body: const TabBarView(children: [_EventsTab(), _LocationsTab()]),
       ),
     );
@@ -67,40 +58,41 @@ class _EventsTab extends ConsumerWidget {
       (e) => e.name,
     );
 
+    final fields = <FilterField>[
+      FilterDropdown<StatusFilter>(
+        label: 'Estado',
+        options: [
+          for (final s in StatusFilter.values)
+            FilterOption(s, statusFilterLabel(s)),
+        ],
+        current: status,
+        defaultValue: StatusFilter.all,
+        onApply: (value) =>
+            ref.read(eventStatusFilterProvider.notifier).state = value,
+      ),
+      FilterDates(
+        current: dates,
+        onApply: (value) =>
+            ref.read(eventDateFilterProvider.notifier).state = value,
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
+      floatingActionButton: FlatFab(
         heroTag: 'events_tab_fab',
-        backgroundColor: AppColors.primaryDark,
-        shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [
-          // El filtro de estado arriba del todo, a la derecha; debajo, el
-          // filtro por fechas (atajos y rango Desde/Hasta) y el buscador.
-          CatalogListHeader(
-            chips: [
-              StatusFilterChip(
-                value: status,
-                onChanged: (value) =>
-                    ref.read(eventStatusFilterProvider.notifier).state = value,
-              ),
-            ],
-            between: DateRangeFilterBar(
-              value: dates,
-              onChanged: (value) =>
-                  ref.read(eventDateFilterProvider.notifier).state = value,
-            ),
-            search: CatalogSearchField(
+          FilterArea(
+            search: AppSearchBar(
               initialText: query,
               hintText: 'Buscar evento',
               onChanged: (value) =>
                   ref.read(eventListQueryProvider.notifier).state = value,
             ),
+            fields: fields,
           ),
           Expanded(
             child: state.isLoading
@@ -181,39 +173,31 @@ class _LocationsTab extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
+      floatingActionButton: FlatFab(
         heroTag: 'locations_tab_fab',
-        backgroundColor: AppColors.primaryDark,
-        shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [
-          CatalogListHeader(
-            chips: [
-              StatusFilterChip(
-                feminine: true,
-                value: status,
-                onChanged: (value) =>
-                    ref.read(locationStatusFilterProvider.notifier).state =
-                        value,
-              ),
-              FilterMenuChip<String?>(
-                label: country ?? 'Todos los países',
-                maxLabelWidth: 130,
-                active: country != null,
-                selected: country,
+          FilterArea(
+            search: AppSearchBar(
+              initialText: query,
+              hintText: 'Buscar ubicación',
+              onChanged: (value) =>
+                  ref.read(locationListQueryProvider.notifier).state = value,
+            ),
+            fields: [
+              FilterDropdown<String?>(
+                label: 'País',
                 options: [
                   const FilterOption<String?>(null, 'Todos los países'),
                   for (final c in countries) FilterOption<String?>(c, c),
                 ],
-                onSelected: (value) {
+                current: country,
+                defaultValue: null,
+                onApply: (value) {
                   ref.read(locationCountryFilterProvider.notifier).state =
                       value;
-                  // La ciudad elegida deja de valer si no es de ese país.
                   if (city != null &&
                       !cityOptions(state.locations, country: value)
                           .contains(city)) {
@@ -221,25 +205,27 @@ class _LocationsTab extends ConsumerWidget {
                   }
                 },
               ),
-              FilterMenuChip<String?>(
-                label: city ?? 'Todas las ciudades',
-                maxLabelWidth: 130,
-                active: city != null,
-                selected: city,
+              FilterDropdown<String?>(
+                label: 'Ciudad',
                 options: [
                   const FilterOption<String?>(null, 'Todas las ciudades'),
                   for (final c in cities) FilterOption<String?>(c, c),
                 ],
-                onSelected: (value) =>
+                current: city,
+                defaultValue: null,
+                onApply: (value) =>
                     ref.read(locationCityFilterProvider.notifier).state = value,
               ),
+              FilterDropdown<StatusFilter>(
+                label: 'Estado',
+                options: statusFilterOptions(feminine: true),
+                current: status,
+                defaultValue: StatusFilter.all,
+                onApply: (value) =>
+                    ref.read(locationStatusFilterProvider.notifier).state =
+                        value,
+              ),
             ],
-            search: CatalogSearchField(
-              initialText: query,
-              hintText: 'Buscar ubicación',
-              onChanged: (value) =>
-                  ref.read(locationListQueryProvider.notifier).state = value,
-            ),
           ),
           Expanded(
             child: state.isLoading
@@ -306,7 +292,7 @@ class _EventCard extends StatelessWidget {
   void _showDetail(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: AppColors.scrim,
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
@@ -388,7 +374,7 @@ class _EventCard extends StatelessWidget {
                               vertical: AppSpacing.s2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryDark.withOpacity(0.1),
+                              color: AppColors.cyanDark.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -396,7 +382,7 @@ class _EventCard extends StatelessWidget {
                               style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primaryDark,
+                                    color: AppColors.cyanDark,
                                   ),
                             ),
                           ),
@@ -469,7 +455,7 @@ class _EventCard extends StatelessWidget {
                         vertical: AppSpacing.s2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryDark.withOpacity(0.1),
+                        color: AppColors.cyanDark.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -477,7 +463,7 @@ class _EventCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.labelSmall
                             ?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primaryDark,
+                              color: AppColors.cyanDark,
                             ),
                       ),
                     ),
@@ -507,7 +493,7 @@ class _EventCard extends StatelessWidget {
             IconButton(
               icon: const Icon(
                 Icons.edit_rounded,
-                color: AppColors.primaryDark,
+                color: AppColors.cyanDark,
                 size: 20,
               ),
               onPressed: onEdit,
@@ -529,7 +515,7 @@ class _LocationCard extends StatelessWidget {
   void _showDetail(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: AppColors.scrim,
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
@@ -674,7 +660,7 @@ inactiveLabel: 'Inactiva',
             IconButton(
               icon: const Icon(
                 Icons.edit_rounded,
-                color: AppColors.primaryDark,
+                color: AppColors.cyanDark,
                 size: 20,
               ),
               onPressed: onEdit,

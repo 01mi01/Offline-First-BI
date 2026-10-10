@@ -12,15 +12,16 @@ import '../../models/product_material_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/material_dialog.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/catalog_filter_bar.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/unit_quantity_input.dart';
-import '../widgets/flat_controls.dart';
 import '../widgets/flat_form.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/flat_style.dart';
 import '../widgets/app_buttons.dart';
+import '../widgets/app_controls.dart';
+import '../widgets/profile_button.dart';
+import '../widgets/filter_panel.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -35,7 +36,8 @@ class MaterialsPage extends ConsumerWidget {
         length: 2,
         child: ScreenScaffold(
           title: 'Materiales',
-          bottom: const FlatTabBar(labels: ['Materiales', 'Registro de uso']),
+          actions: const [ProfileButton()],
+          bottom: const AppTabSwitcher(labels: ['Materiales', 'Registro de uso']),
           body: const TabBarView(
             children: [MaterialsListTab(), MaterialsUsageTab()],
           ),
@@ -73,34 +75,24 @@ class MaterialsListTab extends ConsumerWidget {
         ),
         body: Column(
           children: [
-            // El buscador (por nombre) comparte el ancho con el filtro de estado.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                AppSpacing.s12,
-                AppSpacing.s16,
-                AppSpacing.s8,
+            FilterArea(
+              search: AppSearchBar(
+                initialText: query,
+                hintText: 'Buscar material',
+                onChanged: (value) =>
+                    ref.read(materialListQueryProvider.notifier).state = value,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CatalogSearchField(
-                      initialText: query,
-                      hintText: 'Buscar material',
-                      onChanged: (value) =>
-                          ref.read(materialListQueryProvider.notifier).state =
-                              value,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s8),
-                  StatusFilterChip(
-                    value: status,
-                    onChanged: (value) =>
-                        ref.read(materialStatusFilterProvider.notifier).state =
-                            value,
-                  ),
-                ],
-              ),
+              fields: [
+                FilterDropdown<StatusFilter>(
+                  label: 'Estado',
+                  options: statusFilterOptions(),
+                  current: status,
+                  defaultValue: StatusFilter.all,
+                  onApply: (value) =>
+                      ref.read(materialStatusFilterProvider.notifier).state =
+                          value,
+                ),
+              ],
             ),
             Expanded(
               child: state.isLoading
@@ -245,10 +237,17 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
           children: [
             // Selector de producto: búsqueda por nombre, sin lista hasta escribir.
             Padding(
-              padding: const EdgeInsets.all(AppSpacing.s16),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s12,
+                AppSpacing.s16,
+                AppSpacing.s16,
+              ),
               child: SearchablePickerField<int>(
+                searchStyle: true,
                 label: 'Producto',
-                searchHint: 'Buscar producto',
+                showLabel: false,
+                searchHint: 'Producto',
                 value: _selectedProductId,
                 options: [
                   for (final p in products) PickerOption<int>(p.id, p.name),
@@ -330,7 +329,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                           : IconButton(
                               icon: const Icon(
                                 Icons.edit_rounded,
-                                color: AppColors.primaryDark,
+                                color: AppColors.cyanDark,
                                 size: 20,
                               ),
                               tooltip: 'Editar registro',
@@ -496,6 +495,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
               // Buscar y elegir por nombre, igual que el producto: escala con
               // la cantidad de materiales y no lista nada hasta escribir.
               SearchablePickerField<int>(
+                searchStyle: true,
                 label: 'Material',
                 searchHint: 'Buscar material',
                 value: _selectedMaterialId,
@@ -880,7 +880,7 @@ class _MaterialRow extends StatelessWidget {
             tooltip: 'Editar',
             icon: const Icon(
               Icons.edit_rounded,
-              color: AppColors.primaryDark,
+              color: AppColors.cyanDark,
               size: 20,
             ),
             onPressed: onEdit,

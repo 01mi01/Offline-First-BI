@@ -5,16 +5,16 @@ import '../../application/search_filter.dart';
 import '../../config/date_formatters.dart';
 import '../../theme/app_theme.dart';
 import 'focus_utils.dart';
-import 'ios_controls.dart';
-import 'ios_group.dart';
-import 'ios_style.dart';
+import 'app_controls.dart';
+import 'app_group.dart';
+import 'app_style.dart';
 import 'searchable_picker.dart' show PickerOption;
 import 'transaction_date_field.dart';
 
 // Hoja inferior con esquinas redondeadas arriba, sobre fondo gris agrupado.
 // Con [heightFactor] ocupa esa fracción de la pantalla; sin él, lo que mida su
 // contenido.
-Future<T?> showIosSheet<T>(
+Future<T?> showAppSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   double? heightFactor,
@@ -27,7 +27,7 @@ Future<T?> showIosSheet<T>(
     clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
-        top: Radius.circular(AppIos.sheetRadius),
+        top: Radius.circular(AppMetrics.sheetRadius),
       ),
     ),
     builder: (ctx) {
@@ -54,7 +54,7 @@ Future<T?> showIosSheet<T>(
 
 // Estructura de una hoja: asa, barra con acción a la izquierda, título al
 // centro y acción a la derecha, y el contenido debajo.
-class IosSheetScaffold extends StatelessWidget {
+class AppSheetScaffold extends StatelessWidget {
   final String title;
   final String? leadingLabel;
   final VoidCallback? onLeading;
@@ -63,7 +63,7 @@ class IosSheetScaffold extends StatelessWidget {
   final Widget child;
   final bool expand;
 
-  const IosSheetScaffold({
+  const AppSheetScaffold({
     super.key,
     required this.title,
     required this.child,
@@ -82,15 +82,15 @@ class IosSheetScaffold extends StatelessWidget {
       children: [
         const SizedBox(height: AppSpacing.s8),
         Container(
-          width: AppIos.grabberWidth,
-          height: AppIos.grabberHeight,
+          width: AppMetrics.grabberWidth,
+          height: AppMetrics.grabberHeight,
           decoration: BoxDecoration(
-            color: AppColors.iosSeparator,
-            borderRadius: BorderRadius.circular(AppIos.grabberHeight),
+            color: AppColors.separator,
+            borderRadius: BorderRadius.circular(AppMetrics.grabberHeight),
           ),
         ),
         SizedBox(
-          height: AppIos.navBarHeight + AppSpacing.s4,
+          height: AppMetrics.navBarHeight + AppSpacing.s4,
           child: Row(
             children: [
               SizedBox(
@@ -111,7 +111,7 @@ class IosSheetScaffold extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: IosText.navTitle(context),
+                  style: AppText.navTitle(context),
                 ),
               ),
               SizedBox(
@@ -152,14 +152,14 @@ class _BarButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: AppIos.minTap),
+        constraints: const BoxConstraints(minHeight: AppMetrics.minTap),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
           child: Center(
             widthFactor: 1,
             child: Text(
               label,
-              style: IosText.link(context).copyWith(
+              style: AppText.link(context).copyWith(
                 fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
@@ -172,7 +172,7 @@ class _BarButton extends StatelessWidget {
 
 // Fila de formulario que abre un selector con búsqueda en una hoja inferior.
 // Con la búsqueda vacía solo se lista la opción predeterminada (valor nulo).
-class IosPickerRow<T> extends StatelessWidget {
+class AppPickerRow<T> extends StatelessWidget {
   final String label;
   final T? value;
   final List<PickerOption<T>> options;
@@ -180,7 +180,7 @@ class IosPickerRow<T> extends StatelessWidget {
   final String searchHint;
   final Widget? action;
 
-  const IosPickerRow({
+  const AppPickerRow({
     super.key,
     required this.label,
     required this.value,
@@ -199,10 +199,10 @@ class IosPickerRow<T> extends StatelessWidget {
 
   Future<void> _open(BuildContext context) async {
     dismissKeyboard();
-    final chosen = await showIosSheet<PickerOption<T>>(
+    final chosen = await showAppSheet<PickerOption<T>>(
       context,
       heightFactor: 0.7,
-      builder: (_) => _IosPickerSheet<T>(
+      builder: (_) => _AppPickerSheet<T>(
         title: label,
         searchHint: searchHint,
         options: options,
@@ -214,7 +214,7 @@ class IosPickerRow<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IosRow(
+    return AppRow(
       title: label,
       onTap: () => _open(context),
       chevron: true,
@@ -227,7 +227,7 @@ class IosPickerRow<T> extends StatelessWidget {
               _valueLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: IosText.rowTitle(context, color: AppColors.textSecondary),
+              style: AppText.rowTitle(context, color: AppColors.textSecondary),
             ),
           ),
           ?action,
@@ -237,13 +237,13 @@ class IosPickerRow<T> extends StatelessWidget {
   }
 }
 
-class _IosPickerSheet<T> extends StatefulWidget {
+class _AppPickerSheet<T> extends StatefulWidget {
   final String title;
   final String searchHint;
   final List<PickerOption<T>> options;
   final T? value;
 
-  const _IosPickerSheet({
+  const _AppPickerSheet({
     required this.title,
     required this.searchHint,
     required this.options,
@@ -251,10 +251,10 @@ class _IosPickerSheet<T> extends StatefulWidget {
   });
 
   @override
-  State<_IosPickerSheet<T>> createState() => _IosPickerSheetState<T>();
+  State<_AppPickerSheet<T>> createState() => _AppPickerSheetState<T>();
 }
 
-class _IosPickerSheetState<T> extends State<_IosPickerSheet<T>> {
+class _AppPickerSheetState<T> extends State<_AppPickerSheet<T>> {
   String _query = '';
 
   @override
@@ -268,7 +268,7 @@ class _IosPickerSheetState<T> extends State<_IosPickerSheet<T>> {
           )
         : widget.options.where((o) => o.value == null).toList();
 
-    return IosSheetScaffold(
+    return AppSheetScaffold(
       title: widget.title,
       trailingLabel: 'Listo',
       child: Column(
@@ -280,7 +280,7 @@ class _IosPickerSheetState<T> extends State<_IosPickerSheet<T>> {
               AppSpacing.s16,
               AppSpacing.s8,
             ),
-            child: IosSearchBar(
+            child: AppSearchBar(
               hintText: widget.searchHint,
               autofocus: true,
               onChanged: (value) => setState(() => _query = value),
@@ -291,22 +291,22 @@ class _IosPickerSheetState<T> extends State<_IosPickerSheet<T>> {
               padding: const EdgeInsets.only(top: AppSpacing.s8),
               children: [
                 if (visible.isNotEmpty)
-                  IosSection(
+                  AppSection(
                     children: [
                       for (final option in visible)
-                        IosRow(
+                        AppRow(
                           title: option.label,
                           subtitle: option.subtitle == null
                               ? null
                               : Text(
                                   option.subtitle!,
-                                  style: IosText.rowSubtitle(context),
+                                  style: AppText.rowSubtitle(context),
                                 ),
                           trailing: option.value == widget.value
                               ? const Icon(
                                   Icons.check_rounded,
                                   size: 22,
-                                  color: AppColors.primaryDark,
+                                  color: AppColors.cyanDark,
                                 )
                               : null,
                           onTap: () => Navigator.pop(context, option),
@@ -320,7 +320,7 @@ class _IosPickerSheetState<T> extends State<_IosPickerSheet<T>> {
                       child: Text(
                         'Escribe para buscar',
                         key: const ValueKey('picker-type-to-search'),
-                        style: IosText.rowSubtitle(context),
+                        style: AppText.rowSubtitle(context),
                       ),
                     ),
                   )
@@ -330,7 +330,7 @@ class _IosPickerSheetState<T> extends State<_IosPickerSheet<T>> {
                     child: Center(
                       child: Text(
                         'Sin resultados',
-                        style: IosText.rowSubtitle(context),
+                        style: AppText.rowSubtitle(context),
                       ),
                     ),
                   ),
@@ -345,12 +345,12 @@ class _IosPickerSheetState<T> extends State<_IosPickerSheet<T>> {
 
 // Fila de formulario con una fecha, que abre el selector de fecha de ventas y
 // compras (sin límite: pasada, hoy o futura).
-class IosDateRow extends StatelessWidget {
+class AppDateRow extends StatelessWidget {
   final String label;
   final DateTime date;
   final ValueChanged<DateTime> onChanged;
 
-  const IosDateRow({
+  const AppDateRow({
     super.key,
     required this.date,
     required this.onChanged,
@@ -367,7 +367,7 @@ class IosDateRow extends StatelessWidget {
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryDark)),
+        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
         child: child!,
       ),
     );
@@ -376,13 +376,13 @@ class IosDateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IosRow(
+    return AppRow(
       title: label,
       chevron: true,
       onTap: () => _pick(context),
       trailing: Text(
         formatDate(date),
-        style: IosText.rowTitle(context, color: AppColors.textSecondary),
+        style: AppText.rowTitle(context, color: AppColors.textSecondary),
       ),
     );
   }

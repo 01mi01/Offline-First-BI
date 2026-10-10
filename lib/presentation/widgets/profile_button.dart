@@ -12,7 +12,7 @@ class ProfileButton extends StatelessWidget {
     return IconButton(
       icon: const Icon(
         Icons.settings_rounded,
-        color: AppColors.primaryDark,
+        color: AppColors.cyanDark,
         size: 26,
       ),
       tooltip: 'Ajustes',

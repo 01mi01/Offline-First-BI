@@ -277,7 +277,7 @@ class _Bubble extends StatelessWidget {
           border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x1F000000),
+              color: AppColors.shadowNeutral,
               blurRadius: 8,
               offset: Offset(0, 2),
             ),
@@ -687,7 +687,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
                     icon: const Icon(Icons.zoom_out_map_rounded, size: 16),
                     label: const Text('Restablecer vista'),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primaryDark,
+                      foregroundColor: AppColors.cyanDark,
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.s8,
                       ),

@@ -170,7 +170,7 @@ class HomePage extends ConsumerWidget {
             label: 'Ventas ${period.ofLabel}',
             value: formatMoney(report.summary.ingresos),
             icon: Icons.trending_up_rounded,
-            color: AppColors.chartColor1,
+            color: AppColors.cyanDark,
           ),
         if (access.purchases)
           HomeKpi(
@@ -195,7 +195,7 @@ class HomePage extends ConsumerWidget {
             label: 'Margen de ganancia',
             value: marginText(report.summary.ingresos, report.summary.balance),
             icon: Icons.percent_rounded,
-            color: AppColors.chartColor5,
+            color: AppColors.blue,
           ),
       ];
       if (kpis.isNotEmpty) {

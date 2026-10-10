@@ -61,7 +61,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryDark)),
+        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
         child: child!,
       ),
     );
@@ -84,7 +84,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
       builder: (ctx, child) => Theme(
         data: Theme.of(
           ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryDark)),
+        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
         child: child!,
       ),
     );
@@ -204,6 +204,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
               // Búsqueda en línea, como la de producto. El botón va en la fila
               // del campo: los resultados se abren debajo.
               SearchablePickerField<int>(
+                searchStyle: true,
                 label: 'Ubicación',
                 searchHint: 'Buscar ubicación',
                 value: _selectedLocationId,
@@ -225,12 +226,12 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.s12),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryDark.withOpacity(0.1),
+                      color: AppColors.cyanDark.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.add_location_rounded,
-                      color: AppColors.primaryDark,
+                      color: AppColors.cyanDark,
                       size: 22,
                     ),
                   ),
@@ -379,7 +380,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       Switch(
                         value: _isActive,
                         onChanged: _onToggleActive,
-                        activeColor: AppColors.primaryDark,
+                        activeColor: AppColors.cyanDark,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: AppColors.surface,
                         trackOutlineColor: MaterialStateProperty.all(

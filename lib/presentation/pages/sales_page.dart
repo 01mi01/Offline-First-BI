@@ -11,14 +11,17 @@ import '../../models/sale_model.dart';
 import '../../models/sale_item_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/sale_dialog.dart';
-import '../widgets/ios_controls.dart';
-import '../widgets/ios_filters.dart';
-import '../widgets/ios_group.dart';
+import '../widgets/app_group.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/ios_sheet.dart';
-import '../widgets/ios_style.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/app_style.dart';
 import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/profile_button.dart';
+import '../widgets/catalog_filter_bar.dart';
+import '../widgets/filter_panel.dart';
+import '../widgets/catalog_filter_bar.dart' show RecordTimeSwitcher;
 
 class SalesPage extends StatelessWidget {
   const SalesPage({super.key});
@@ -44,19 +47,21 @@ class SalesListBody extends ConsumerWidget {
         clients.where((c) => c.id == sale.clientId).firstOrNull?.name ??
         'Sin nombre';
 
+    final fields = <FilterField>[
+      FilterDates(
+        current: dates,
+        onApply: (value) =>
+            ref.read(saleDateFilterProvider.notifier).state = value,
+      ),
+    ];
+
     return ScreenScaffold.slivers(
       title: 'Ventas',
-      actions: [
-        IconButton(
-          tooltip: 'Nueva venta',
-          icon: const Icon(
-            Icons.add_rounded,
-            size: 28,
-            color: AppColors.primaryDark,
-          ),
-          onPressed: () => showSaleForm(context),
-        ),
-      ],
+      actions: const [ProfileButton()],
+      floatingActionButton: FlatFab(
+        heroTag: 'sales_list_fab',
+        onPressed: () => showSaleForm(context),
+      ),
       slivers: [
         if (state.isLoading)
           const SliverFillRemaining(
@@ -67,7 +72,7 @@ class SalesListBody extends ConsumerWidget {
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: IosEmptyState(
+              child: AppEmptyState(
                 icon: Icons.point_of_sale_rounded,
                 title: 'No se registraron ventas',
                 actionLabel: 'Nueva venta',
@@ -77,44 +82,28 @@ class SalesListBody extends ConsumerWidget {
           )
         else ...[
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                0,
-                AppSpacing.s16,
-                0,
-              ),
-              child: IosSegmented<RecordTimeFilter>(
-                segments: const [
-                  IosSegment(RecordTimeFilter.current, 'Ventas actuales'),
-                  IosSegment(RecordTimeFilter.all, 'Todas'),
-                ],
-                selected: timeFilter,
-                onChanged: (value) {
-                  if (value != null) {
-                    ref.read(saleTimeFilterProvider.notifier).state = value;
-                  }
-                },
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: IosDateRangeFilter(
-              value: dates,
-              onChanged: (value) =>
-                  ref.read(saleDateFilterProvider.notifier).state = value,
+            child: Column(
+              children: [
+                RecordTimeSwitcher(
+                  value: timeFilter,
+                  currentLabel: 'Ventas actuales',
+                  onChanged: (value) =>
+                      ref.read(saleTimeFilterProvider.notifier).state = value,
+                ),
+                FilterArea(fields: fields),
+              ],
             ),
           ),
           if (visible.isEmpty)
             const SliverToBoxAdapter(
-              child: IosEmptyState(
+              child: AppEmptyState(
                 icon: Icons.search_off_rounded,
                 title: 'Sin resultados',
               ),
             )
           else
-            IosSliverGroup(
-              dividerIndent: AppIos.dividerIndentWithTile,
+            AppSliverGroup(
+              dividerIndent: AppMetrics.dividerIndentWithTile,
               itemCount: visible.length,
               itemBuilder: (context, index) {
                 final sale = visible[index];
@@ -132,7 +121,7 @@ class SalesListBody extends ConsumerWidget {
         ],
         SliverToBoxAdapter(
           child: SizedBox(
-            height: AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
+            height: AppFlat.listWithFab.bottom + MediaQuery.paddingOf(context).bottom,
           ),
         ),
       ],
@@ -141,7 +130,7 @@ class SalesListBody extends ConsumerWidget {
 }
 
 void showSaleForm(BuildContext context, [SaleModel? sale]) {
-  showIosSheet<void>(
+  showAppSheet<void>(
     context,
     heightFactor: 0.94,
     builder: (_) => SaleDialog(sale: sale),
@@ -149,7 +138,7 @@ void showSaleForm(BuildContext context, [SaleModel? sale]) {
 }
 
 void showSaleReceipt(BuildContext context, SaleModel sale, String clientName) {
-  showIosSheet<void>(
+  showAppSheet<void>(
     context,
     heightFactor: 0.92,
     builder: (_) => _SaleReceiptSheet(
@@ -176,10 +165,10 @@ class _SaleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canceled = sale.isCanceled;
-    return IosRow(
-      leading: IosTile(
+    return AppRow(
+      leading: AppTile(
         icon: Icons.point_of_sale_rounded,
-        color: canceled ? AppColors.iosTrack : AppColors.primaryDark,
+        color: canceled ? AppColors.track : AppColors.cyanDark,
         iconColor: canceled ? AppColors.textSecondary : null,
       ),
       title: clientName,
@@ -198,18 +187,18 @@ class _SaleRow extends StatelessWidget {
                   ),
               ],
             ),
-            style: IosText.rowSubtitle(context),
+            style: AppText.rowSubtitle(context),
           ),
           if (sale.discount > 0)
             Text(
               'Desc. Bs. ${fixed2(sale.discount)}',
-              style: IosText.rowSubtitle(context),
+              style: AppText.rowSubtitle(context),
             ),
         ],
       ),
       trailing: Text(
         'Bs. ${fixed2(sale.finalAmount)}',
-        style: IosText.rowTitle(
+        style: AppText.rowTitle(
           context,
           color: canceled ? AppColors.textMuted : AppColors.textPrimary,
         ).copyWith(
@@ -282,7 +271,7 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
                   ?.name ??
               '';
 
-    return IosSheetScaffold(
+    return AppSheetScaffold(
       title: 'Recibo de venta',
       leadingLabel: widget.onEdit == null ? null : 'Editar',
       onLeading: () {
@@ -293,26 +282,26 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
       child: ListView(
         padding: const EdgeInsets.only(top: AppSpacing.s8, bottom: AppSpacing.s32),
         children: [
-          IosBigTotal(
+          AppBigTotal(
             label: 'Total',
             value: 'Bs. ${fixed2(sale.finalAmount)}',
             note: sale.isCanceled
                 ? 'Venta cancelada: su stock fue devuelto al inventario.'
                 : null,
           ),
-          IosSection(
+          AppSection(
             children: [
-              IosValueRow(label: 'Cliente', value: widget.clientName),
-              IosValueRow(label: 'Fecha', value: formatDateTime(sale.date)),
+              AppValueRow(label: 'Cliente', value: widget.clientName),
+              AppValueRow(label: 'Fecha', value: formatDateTime(sale.date)),
               if (sale.locationId != null)
-                IosValueRow(label: 'Ubicación', value: _locationText(location)),
+                AppValueRow(label: 'Ubicación', value: _locationText(location)),
               if (sale.eventId != null)
-                IosValueRow(label: 'Evento', value: eventName ?? ''),
+                AppValueRow(label: 'Evento', value: eventName ?? ''),
               if (sale.notes != null && sale.notes!.isNotEmpty)
-                IosValueRow(label: 'Notas', value: sale.notes!),
+                AppValueRow(label: 'Notas', value: sale.notes!),
             ],
           ),
-          IosSection(
+          AppSection(
             header: 'Productos',
             children: [
               if (_loading)
@@ -322,35 +311,35 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
                 )
               else
                 for (final item in _items)
-                  IosRow(
+                  AppRow(
                     title: item.productName,
                     subtitle: Text(
                       '${item.quantity} × Bs. ${fixed2(item.unitPrice)} (Precio ${item.priceType})',
-                      style: IosText.rowSubtitle(context),
+                      style: AppText.rowSubtitle(context),
                     ),
                     trailing: Text(
                       'Bs. ${fixed2(item.subtotal)}',
-                      style: IosText.rowTitle(context).copyWith(
+                      style: AppText.rowTitle(context).copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
             ],
           ),
-          IosSection(
+          AppSection(
             children: [
-              IosValueRow(
+              AppValueRow(
                 label: 'Subtotal',
                 value: 'Bs. ${fixed2(sale.totalAmount)}',
               ),
-              IosValueRow(
+              AppValueRow(
                 label: 'Descuento',
                 value: sale.discount > 0
                     ? '- Bs. ${fixed2(sale.discount)}'
                     : 'Bs. 0.00',
                 valueColor: sale.discount > 0 ? AppColors.error : null,
               ),
-              IosValueRow(
+              AppValueRow(
                 label: 'Total',
                 value: 'Bs. ${fixed2(sale.finalAmount)}',
                 bold: true,

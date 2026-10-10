@@ -15,10 +15,10 @@ import '../../models/sale_model.dart';
 import '../../theme/app_theme.dart';
 import 'client_dialog.dart';
 import '../widgets/focus_utils.dart';
-import '../widgets/ios_controls.dart';
-import '../widgets/ios_group.dart';
-import '../widgets/ios_sheet.dart';
-import '../widgets/ios_style.dart';
+import '../widgets/app_controls.dart';
+import '../widgets/app_group.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/app_style.dart';
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
@@ -271,7 +271,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         ? filterByQuery<ProductModel>(products, _productQuery, (p) => p.name)
         : const <ProductModel>[];
 
-    return IosSheetScaffold(
+    return AppSheetScaffold(
       title: isEditing ? 'Editar venta' : 'Nueva venta',
       leadingLabel: 'Cancelar',
       child: Form(
@@ -284,9 +284,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              IosSection(
+              AppSection(
                 children: [
-                  IosPickerRow<int>(
+                  AppPickerRow<int>(
                     label: 'Cliente',
                     searchHint: 'Buscar cliente',
                     value: clientValue,
@@ -303,16 +303,16 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                       icon: const Icon(
                         Icons.person_add_rounded,
                         size: 22,
-                        color: AppColors.primaryDark,
+                        color: AppColors.cyanDark,
                       ),
                       onPressed: _showAddClientSheet,
                     ),
                   ),
                 ],
               ),
-              IosSection(
+              AppSection(
                 children: [
-                  IosPickerRow<int>(
+                  AppPickerRow<int>(
                     label: 'Ubicación',
                     searchHint: 'Buscar ubicación',
                     value: _selectedLocationId,
@@ -330,7 +330,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     onChanged: (val) =>
                         setState(() => _selectedLocationId = val),
                   ),
-                  IosPickerRow<int>(
+                  AppPickerRow<int>(
                     label: 'Evento',
                     searchHint: 'Buscar evento',
                     value: _selectedEventId,
@@ -342,7 +342,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     ],
                     onChanged: (val) => setState(() => _selectedEventId = val),
                   ),
-                  IosDateRow(
+                  AppDateRow(
                     date: _date,
                     onChanged: (value) => setState(() {
                       _date = value;
@@ -358,7 +358,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   AppSpacing.s16,
                   AppSpacing.s6,
                 ),
-                child: Text('Productos', style: IosText.header(context)),
+                child: Text('Productos', style: AppText.header(context)),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -371,7 +371,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      IosSearchBar(
+                      AppSearchBar(
                         initialText: _productQuery,
                         hintText: 'Buscar producto',
                         onChanged: (value) =>
@@ -385,7 +385,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(
-                            AppIos.groupRadius,
+                            AppMetrics.groupRadius,
                           ),
                         ),
                         child: visibleProducts.isEmpty
@@ -394,7 +394,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                   searchingProducts
                                       ? 'Sin resultados'
                                       : 'Escribe para buscar un producto',
-                                  style: IosText.rowSubtitle(context),
+                                  style: AppText.rowSubtitle(context),
                                 ),
                               )
                             : ListView.separated(
@@ -403,25 +403,25 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                 separatorBuilder: (_, _) => const Divider(
                                   height: 1,
                                   thickness: 1,
-                                  indent: AppIos.dividerIndent,
-                                  color: AppColors.iosSeparator,
+                                  indent: AppMetrics.dividerIndent,
+                                  color: AppColors.separator,
                                 ),
                                 itemBuilder: (context, index) {
                                   final p = visibleProducts[index];
                                   final inCart = _cartItems.containsKey(p.id);
-                                  return IosRow(
+                                  return AppRow(
                                     title: p.name,
                                     subtitle: Text(
                                       'A: Bs. ${fixed2(p.priceA)}  •  B: Bs. ${fixed2(p.priceB)}  •  Stock: ${_availableStock(p)}',
-                                      style: IosText.rowSubtitle(context),
+                                      style: AppText.rowSubtitle(context),
                                     ),
                                     trailing: Icon(
                                       inCart
                                           ? Icons.check_circle_rounded
                                           : Icons.add_circle_rounded,
                                       color: inCart
-                                          ? AppColors.primaryDark
-                                          : AppColors.iosChevron,
+                                          ? AppColors.cyanDark
+                                          : AppColors.chevron,
                                     ),
                                     onTap: () => setState(() {
                                       _error = null;
@@ -442,16 +442,16 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 ),
               ),
               if (_cartItems.isNotEmpty)
-                IosSection(
+                AppSection(
                   header: 'Carrito',
                   children: [
                     for (final entry in _cartItems.entries)
                       _cartRow(context, entry, products),
                   ],
                 ),
-              IosSection(
+              AppSection(
                 children: [
-                  IosTextFieldRow(
+                  AppTextFieldRow(
                     label: 'Descuento (Bs.)',
                     controller: _discountController,
                     hint: '0',
@@ -480,27 +480,27 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         ),
                     onChanged: (_) => setState(() => _error = null),
                   ),
-                  IosTextAreaRow(
+                  AppTextAreaRow(
                     label: 'Notas',
                     controller: _notesController,
                     hint: 'Observaciones opcionales',
                   ),
                 ],
               ),
-              IosSection(
+              AppSection(
                 children: [
-                  IosValueRow(
+                  AppValueRow(
                     label: 'Subtotal',
                     value: 'Bs. ${fixed2(_subtotal)}',
                   ),
-                  IosValueRow(
+                  AppValueRow(
                     label: 'Descuento',
                     value: _discount > 0
                         ? '- Bs. ${fixed2(_discount)}'
                         : 'Bs. 0.00',
                     valueColor: _discount > 0 ? AppColors.error : null,
                   ),
-                  IosValueRow(
+                  AppValueRow(
                     label: 'Total',
                     value: 'Bs. ${fixed2(_total)}',
                     bold: true,
@@ -508,7 +508,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   ),
                 ],
               ),
-              if (_error != null) IosErrorNote(message: _error!),
+              if (_error != null) AppErrorNote(message: _error!),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.s16,
@@ -523,7 +523,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                           height: AppSpacing.s20,
                           width: AppSpacing.s20,
                           child: CircularProgressIndicator(
-                            color: AppColors.textButtons,
+                            color: AppColors.onDark,
                             strokeWidth: 2,
                           ),
                         )
@@ -532,7 +532,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                           style: Theme.of(context).textTheme.headlineLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textButtons,
+                                color: AppColors.onDark,
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -577,12 +577,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(product.name, style: IosText.rowTitle(context)),
+                    Text(product.name, style: AppText.rowTitle(context)),
                     Text(
                       'Bs. ${fixed2(linePrice * entry.value)}',
-                      style: IosText.rowSubtitle(
+                      style: AppText.rowSubtitle(
                         context,
-                        color: AppColors.primaryDark,
+                        color: AppColors.cyanDark,
                       ),
                     ),
                   ],
@@ -590,12 +590,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
               ),
               Text(
                 '${entry.value}',
-                style: IosText.rowTitle(context).copyWith(
+                style: AppText.rowTitle(context).copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: AppSpacing.s8),
-              IosStepper(
+              AppStepper(
                 onMinus: () => setState(() {
                   _error = null;
                   if (entry.value <= 1) {
@@ -615,10 +615,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
           ),
           SizedBox(
             width: 220,
-            child: IosSegmented<String>(
+            child: AppSegmented<String>(
               segments: const [
-                IosSegment('A', 'Precio A'),
-                IosSegment('B', 'Precio B'),
+                AppSegment('A', 'Precio A'),
+                AppSegment('B', 'Precio B'),
               ],
               selected: priceType,
               onChanged: (type) {

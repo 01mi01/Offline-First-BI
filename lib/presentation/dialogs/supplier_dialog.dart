@@ -177,7 +177,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
                       Switch(
                         value: _isActive,
                         onChanged: _onToggleActive,
-                        activeColor: AppColors.primaryDark,
+                        activeColor: AppColors.cyanDark,
                         inactiveTrackColor: AppColors.border,
                         inactiveThumbColor: AppColors.surface,
                         trackOutlineColor: WidgetStateProperty.all(

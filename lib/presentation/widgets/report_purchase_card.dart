@@ -69,7 +69,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                                   ? 'Material'
                                   : 'Gasto',
                               color: widget.purchase.isMaterial
-                                  ? AppColors.primaryDark
+                                  ? AppColors.cyanDark
                                   : AppColors.textPrimary,
                             ),
                           ],
@@ -103,7 +103,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                             if (widget.locationName != null)
                               _MiniPill(
                                 label: widget.locationName!,
-                                color: AppColors.primaryDark,
+                                color: AppColors.cyanDark,
                               ),
                             if (widget.eventName != null)
                               _MiniPill(
@@ -170,7 +170,7 @@ class _ReportPurchaseCardState extends ConsumerState<ReportPurchaseCard> {
                                     'Bs. ${fixed2(item.subtotal)}',
                                     style: Theme.of(context).textTheme
                                         .labelMedium?.copyWith(
-                                          color: AppColors.primaryDark,
+                                          color: AppColors.cyanDark,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),

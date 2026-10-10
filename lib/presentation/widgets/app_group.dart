@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
-import 'ios_style.dart';
+import 'app_style.dart';
 
 // Sección agrupada: encabezado gris arriba, filas dentro de un bloque blanco
 // redondeado con separadores finos con sangría, y nota al pie.
-class IosSection extends StatelessWidget {
+class AppSection extends StatelessWidget {
   final String? header;
   final Widget? headerTrailing;
   final String? footer;
   final List<Widget> children;
   final double dividerIndent;
 
-  const IosSection({
+  const AppSection({
     super.key,
     required this.children,
     this.header,
     this.headerTrailing,
     this.footer,
-    this.dividerIndent = AppIos.dividerIndent,
+    this.dividerIndent = AppMetrics.dividerIndent,
   });
 
   @override
@@ -44,7 +44,7 @@ class IosSection extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(header ?? '', style: IosText.header(context)),
+                    child: Text(header ?? '', style: AppText.header(context)),
                   ),
                   ?headerTrailing,
                 ],
@@ -55,7 +55,7 @@ class IosSection extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppIos.groupRadius),
+              borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
             ),
             child: Column(
               children: [
@@ -65,7 +65,7 @@ class IosSection extends StatelessWidget {
                       height: 1,
                       thickness: 1,
                       indent: dividerIndent,
-                      color: AppColors.iosSeparator,
+                      color: AppColors.separator,
                     ),
                   children[i],
                 ],
@@ -80,7 +80,7 @@ class IosSection extends StatelessWidget {
                 AppSpacing.s16,
                 0,
               ),
-              child: Text(footer!, style: IosText.footnote(context)),
+              child: Text(footer!, style: AppText.footnote(context)),
             ),
         ],
       ),
@@ -88,27 +88,27 @@ class IosSection extends StatelessWidget {
   }
 }
 
-// Icono pequeño en un cuadrado redondeado de color, como en Ajustes de iOS.
-class IosTile extends StatelessWidget {
+// Icono pequeño en un cuadrado redondeado de color.
+class AppTile extends StatelessWidget {
   final IconData icon;
   final Color color;
   final Color? iconColor;
 
-  const IosTile({
+  const AppTile({
     super.key,
     required this.icon,
-    this.color = AppColors.primaryDark,
+    this.color = AppColors.cyanDark,
     this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: AppIos.tileSize,
-      height: AppIos.tileSize,
+      width: AppMetrics.tileSize,
+      height: AppMetrics.tileSize,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(AppIos.tileRadius),
+        borderRadius: BorderRadius.circular(AppMetrics.tileRadius),
       ),
       child: Icon(icon, size: 18, color: iconColor ?? onColorOf(color)),
     );
@@ -116,23 +116,25 @@ class IosTile extends StatelessWidget {
 }
 
 // Fila de lista: icono, título, línea gris debajo, valor a la derecha y flecha.
-class IosRow extends StatelessWidget {
+class AppRow extends StatelessWidget {
   final Widget? leading;
   final String title;
   final Color? titleColor;
   final Widget? subtitle;
   final Widget? trailing;
+  final int? trailingFlex;
   final bool chevron;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
-  const IosRow({
+  const AppRow({
     super.key,
     required this.title,
     this.leading,
     this.titleColor,
     this.subtitle,
     this.trailing,
+    this.trailingFlex,
     this.chevron = false,
     this.onTap,
     this.onLongPress,
@@ -144,7 +146,7 @@ class IosRow extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: AppIos.rowMinHeight),
+        constraints: const BoxConstraints(minHeight: AppMetrics.rowMinHeight),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.s16,
@@ -162,7 +164,7 @@ class IosRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: IosText.rowTitle(context, color: titleColor),
+                      style: AppText.rowTitle(context, color: titleColor),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: AppSpacing.s2),
@@ -173,11 +175,18 @@ class IosRow extends StatelessWidget {
               ),
               if (trailing != null) ...[
                 const SizedBox(width: AppSpacing.s8),
-                trailing!,
+                if (trailingFlex != null)
+                  Flexible(
+                    flex: trailingFlex!,
+                    fit: FlexFit.tight,
+                    child: trailing!,
+                  )
+                else
+                  trailing!,
               ],
               if (chevron) ...[
                 const SizedBox(width: AppSpacing.s4),
-                const IosChevron(),
+                const AppChevron(),
               ],
             ],
           ),
@@ -188,13 +197,13 @@ class IosRow extends StatelessWidget {
 }
 
 // Fila de solo lectura: etiqueta a la izquierda y valor gris a la derecha.
-class IosValueRow extends StatelessWidget {
+class AppValueRow extends StatelessWidget {
   final String label;
   final String value;
   final bool bold;
   final Color? valueColor;
 
-  const IosValueRow({
+  const AppValueRow({
     super.key,
     required this.label,
     required this.value,
@@ -205,7 +214,7 @@ class IosValueRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: AppIos.rowMinHeight),
+      constraints: const BoxConstraints(minHeight: AppMetrics.rowMinHeight),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.s16,
@@ -216,7 +225,7 @@ class IosValueRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: IosText.rowTitle(context).copyWith(
+              style: AppText.rowTitle(context).copyWith(
                 fontWeight: bold ? FontWeight.w700 : null,
               ),
             ),
@@ -225,7 +234,7 @@ class IosValueRow extends StatelessWidget {
               child: Text(
                 value,
                 textAlign: TextAlign.end,
-                style: IosText.rowTitle(
+                style: AppText.rowTitle(
                   context,
                   color: valueColor ?? AppColors.textSecondary,
                 ).copyWith(fontWeight: bold ? FontWeight.w700 : null),
@@ -240,7 +249,7 @@ class IosValueRow extends StatelessWidget {
 
 // Fila de formulario con un campo de texto: etiqueta a la izquierda y el campo
 // alineado a la derecha, sin borde.
-class IosTextFieldRow extends StatelessWidget {
+class AppTextFieldRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String? hint;
@@ -252,7 +261,7 @@ class IosTextFieldRow extends StatelessWidget {
   final Widget? suffix;
   final Key? fieldKey;
 
-  const IosTextFieldRow({
+  const AppTextFieldRow({
     super.key,
     required this.label,
     required this.controller,
@@ -275,7 +284,7 @@ class IosTextFieldRow extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.s16),
-            child: Text(label, style: IosText.rowTitle(context)),
+            child: Text(label, style: AppText.rowTitle(context)),
           ),
           const SizedBox(width: AppSpacing.s16),
           Expanded(
@@ -286,10 +295,10 @@ class IosTextFieldRow extends StatelessWidget {
               keyboardType: keyboardType,
               inputFormatters: inputFormatters,
               textAlign: TextAlign.end,
-              style: IosText.rowTitle(context),
+              style: AppText.rowTitle(context),
               validator: validator,
               onChanged: onChanged,
-              decoration: iosFieldDecoration(
+              decoration: appFieldDecoration(
                 context,
                 hint: hint,
                 helper: helper,
@@ -304,14 +313,14 @@ class IosTextFieldRow extends StatelessWidget {
 }
 
 // Campo de varias líneas: la etiqueta arriba y el texto debajo.
-class IosTextAreaRow extends StatelessWidget {
+class AppTextAreaRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String? hint;
   final String? Function(String?)? validator;
   final Key? fieldKey;
 
-  const IosTextAreaRow({
+  const AppTextAreaRow({
     super.key,
     required this.label,
     required this.controller,
@@ -332,16 +341,16 @@ class IosTextAreaRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: IosText.rowTitle(context)),
+          Text(label, style: AppText.rowTitle(context)),
           TextFormField(
             key: fieldKey,
             controller: controller,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             minLines: 2,
             maxLines: 4,
-            style: IosText.rowTitle(context),
+            style: AppText.rowTitle(context),
             validator: validator,
-            decoration: iosFieldDecoration(context, hint: hint).copyWith(
+            decoration: appFieldDecoration(context, hint: hint).copyWith(
               contentPadding: const EdgeInsets.only(top: AppSpacing.s6),
             ),
           ),
@@ -352,10 +361,10 @@ class IosTextAreaRow extends StatelessWidget {
 }
 
 // Aviso de error de un formulario.
-class IosErrorNote extends StatelessWidget {
+class AppErrorNote extends StatelessWidget {
   final String message;
 
-  const IosErrorNote({super.key, required this.message});
+  const AppErrorNote({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -371,7 +380,7 @@ class IosErrorNote extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.s12),
         decoration: BoxDecoration(
           color: AppColors.errorSoft,
-          borderRadius: BorderRadius.circular(AppIos.groupRadius),
+          borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
         ),
         child: Row(
           children: [
@@ -380,7 +389,7 @@ class IosErrorNote extends StatelessWidget {
             Expanded(
               child: Text(
                 message,
-                style: IosText.rowSubtitle(
+                style: AppText.rowSubtitle(
                   context,
                   color: AppColors.textPrimary,
                 ),
@@ -394,14 +403,14 @@ class IosErrorNote extends StatelessWidget {
 }
 
 // Estado vacío: icono gris, línea en negrita, línea gris y la acción principal.
-class IosEmptyState extends StatelessWidget {
+class AppEmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
 
-  const IosEmptyState({
+  const AppEmptyState({
     super.key,
     required this.icon,
     required this.title,
@@ -417,12 +426,12 @@ class IosEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 52, color: AppColors.iosChevron),
+          Icon(icon, size: 52, color: AppColors.chevron),
           const SizedBox(height: AppSpacing.s12),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: IosText.rowTitle(context).copyWith(
+            style: AppText.rowTitle(context).copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -431,19 +440,19 @@ class IosEmptyState extends StatelessWidget {
             Text(
               message!,
               textAlign: TextAlign.center,
-              style: IosText.rowSubtitle(context),
+              style: AppText.rowSubtitle(context),
             ),
           ],
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: AppSpacing.s20),
             ElevatedButton(
               onPressed: onAction,
-              style: ElevatedButton.styleFrom(minimumSize: const Size(200, AppIos.minTap)),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, AppMetrics.minTap)),
               child: Text(
                 actionLabel!,
-                style: IosText.rowTitle(
+                style: AppText.rowTitle(
                   context,
-                  color: AppColors.textButtons,
+                  color: AppColors.onDark,
                 ).copyWith(fontWeight: FontWeight.w600),
               ),
             ),
@@ -456,21 +465,21 @@ class IosEmptyState extends StatelessWidget {
 
 // Lista larga dentro de un bloque agrupado: las filas se construyen al
 // desplazarse; la primera y la última redondean las esquinas del bloque.
-class IosSliverGroup extends StatelessWidget {
+class AppSliverGroup extends StatelessWidget {
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
   final double dividerIndent;
 
-  const IosSliverGroup({
+  const AppSliverGroup({
     super.key,
     required this.itemCount,
     required this.itemBuilder,
-    this.dividerIndent = AppIos.dividerIndent,
+    this.dividerIndent = AppMetrics.dividerIndent,
   });
 
   @override
   Widget build(BuildContext context) {
-    const radius = Radius.circular(AppIos.groupRadius);
+    const radius = Radius.circular(AppMetrics.groupRadius);
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
       sliver: SliverList(
@@ -492,7 +501,7 @@ class IosSliverGroup extends StatelessWidget {
                       height: 1,
                       thickness: 1,
                       indent: dividerIndent,
-                      color: AppColors.iosSeparator,
+                      color: AppColors.separator,
                     ),
                 ],
               ),
@@ -504,13 +513,13 @@ class IosSliverGroup extends StatelessWidget {
   }
 }
 
-// Total grande arriba de un detalle, como el resumen de Cartera o Salud en iOS.
-class IosBigTotal extends StatelessWidget {
+// Total grande arriba de un detalle.
+class AppBigTotal extends StatelessWidget {
   final String label;
   final String value;
   final String? note;
 
-  const IosBigTotal({
+  const AppBigTotal({
     super.key,
     required this.label,
     required this.value,
@@ -528,14 +537,14 @@ class IosBigTotal extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(label, style: IosText.rowSubtitle(context)),
+          Text(label, style: AppText.rowSubtitle(context)),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: IosText.largeTitle(
+              style: AppText.largeTitle(
                 context,
-              ).copyWith(fontSize: AppIos.bigNumberSize),
+              ).copyWith(fontSize: AppMetrics.bigNumberSize),
             ),
           ),
           if (note != null) ...[
@@ -543,7 +552,7 @@ class IosBigTotal extends StatelessWidget {
             Text(
               note!,
               textAlign: TextAlign.center,
-              style: IosText.error(context),
+              style: AppText.error(context),
             ),
           ],
         ],

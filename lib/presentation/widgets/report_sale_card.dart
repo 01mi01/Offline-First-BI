@@ -71,7 +71,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                     Text(
                       'Bs. ${fixed2(line.subtotal)}',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.primaryDark,
+                        color: AppColors.cyanDark,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -131,7 +131,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                               if (widget.row.locationName != null)
                                 _MiniPill(
                                   label: widget.row.locationName!,
-                                  color: AppColors.primaryDark,
+                                  color: AppColors.cyanDark,
                                 ),
                               if (widget.row.eventName != null)
                                 _MiniPill(
@@ -151,7 +151,7 @@ class _ReportSaleCardState extends ConsumerState<ReportSaleCard> {
                         style: Theme.of(context).textTheme.labelLarge
                             ?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primaryDark,
+                              color: AppColors.cyanDark,
                             ),
                       ),
                       if (widget.row.discountAmount > 0)

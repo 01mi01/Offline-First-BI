@@ -83,12 +83,12 @@ class BiChartTypePicker extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: type == selected
-                        ? AppColors.primaryDark.withValues(alpha: 0.1)
+                        ? AppColors.cyanDark.withValues(alpha: 0.1)
                         : AppColors.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: type == selected
-                          ? AppColors.primaryDark
+                          ? AppColors.cyanDark
                           : AppColors.border,
                     ),
                   ),
@@ -97,7 +97,7 @@ class BiChartTypePicker extends StatelessWidget {
                     size: 18,
                     semanticLabel: type.label,
                     color: type == selected
-                        ? AppColors.primaryDark
+                        ? AppColors.cyanDark
                         : AppColors.textSecondary,
                   ),
                 ),
@@ -661,18 +661,18 @@ class BiMetricToggle extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: i == selected
-                    ? AppColors.primaryDark.withValues(alpha: 0.1)
+                    ? AppColors.cyanDark.withValues(alpha: 0.1)
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: i == selected ? AppColors.primaryDark : AppColors.border,
+                  color: i == selected ? AppColors.cyanDark : AppColors.border,
                 ),
               ),
               child: Text(
                 labels[i],
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: i == selected
-                      ? AppColors.primaryDark
+                      ? AppColors.cyanDark
                       : AppColors.textSecondary,
                   fontWeight: i == selected
                       ? FontWeight.w600
@@ -1152,7 +1152,7 @@ List<TouchedSpotIndicatorData?> biSpotIndicators(
         FlDotData(
           getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
             radius: 5,
-            color: bar.color ?? AppColors.primaryDark,
+            color: bar.color ?? AppColors.cyanDark,
             strokeWidth: 2,
             strokeColor: AppColors.surface,
           ),

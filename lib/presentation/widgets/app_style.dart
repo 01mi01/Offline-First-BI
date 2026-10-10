@@ -1,57 +1,57 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-// Estilos de texto del tema iOS (módulo Ventas y Compras).
-class IosText {
+// Estilos de texto de las listas agrupadas y las hojas.
+class AppText {
   static TextStyle _base(BuildContext context) =>
       Theme.of(context).textTheme.bodyLarge ?? const TextStyle();
 
   static TextStyle rowTitle(BuildContext context, {Color? color}) =>
       _base(context).copyWith(
-        fontSize: AppIos.rowTitleSize,
+        fontSize: AppMetrics.rowTitleSize,
         color: color ?? AppColors.textPrimary,
         height: 1.25,
       );
 
   static TextStyle rowSubtitle(BuildContext context, {Color? color}) =>
       _base(context).copyWith(
-        fontSize: AppIos.rowSubtitleSize,
+        fontSize: AppMetrics.rowSubtitleSize,
         color: color ?? AppColors.textSecondary,
         height: 1.25,
       );
 
   static TextStyle header(BuildContext context) => _base(context).copyWith(
-    fontSize: AppIos.headerSize,
+    fontSize: AppMetrics.headerSize,
     color: AppColors.textSecondary,
   );
 
   static TextStyle footnote(BuildContext context) => header(context);
 
   static TextStyle link(BuildContext context) => _base(context).copyWith(
-    fontSize: AppIos.rowTitleSize,
-    color: AppColors.primaryDark,
+    fontSize: AppMetrics.rowTitleSize,
+    color: AppColors.cyanDark,
   );
 
   static TextStyle navTitle(BuildContext context) => _base(context).copyWith(
-    fontSize: AppIos.navTitleSize,
+    fontSize: AppMetrics.navTitleSize,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
   static TextStyle largeTitle(BuildContext context) => _base(context).copyWith(
-    fontSize: AppIos.largeTitleSize,
+    fontSize: AppMetrics.largeTitleSize,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
   );
 
   static TextStyle error(BuildContext context) => _base(context).copyWith(
-    fontSize: AppIos.headerSize,
+    fontSize: AppMetrics.headerSize,
     color: AppColors.error,
   );
 }
 
 // Campo de texto sin borde ni relleno, para dentro de una fila de formulario.
-InputDecoration iosFieldDecoration(
+InputDecoration appFieldDecoration(
   BuildContext context, {
   String? hint,
   String? helper,
@@ -73,22 +73,22 @@ InputDecoration iosFieldDecoration(
     focusedErrorBorder: none,
     disabledBorder: none,
     contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
-    hintStyle: IosText.rowTitle(context, color: AppColors.textSecondary),
-    helperStyle: IosText.footnote(context),
-    errorStyle: IosText.error(context),
+    hintStyle: AppText.rowTitle(context, color: AppColors.textSecondary),
+    helperStyle: AppText.footnote(context),
+    errorStyle: AppText.error(context),
     suffixIcon: suffix,
   );
 }
 
-class IosChevron extends StatelessWidget {
-  const IosChevron({super.key});
+class AppChevron extends StatelessWidget {
+  const AppChevron({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const Icon(
       Icons.chevron_right_rounded,
       size: 22,
-      color: AppColors.iosChevron,
+      color: AppColors.chevron,
     );
   }
 }

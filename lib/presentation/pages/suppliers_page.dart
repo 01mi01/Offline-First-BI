@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/search_filter.dart';
 import '../../application/status_filter.dart';
-import '../widgets/catalog_filter_bar.dart';
 import '../../models/default_records.dart';
 import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
 import '../widgets/screen_header.dart';
 import 'clients_page.dart' show ContactCard;
+import '../widgets/app_controls.dart';
+import '../widgets/flat_list.dart';
+import '../widgets/profile_button.dart';
+import '../widgets/filter_panel.dart';
 
 // Página de Proveedores, con su propio módulo de permisos ("proveedores"),
 // independiente de Clientes.
@@ -18,7 +21,11 @@ class SuppliersPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ScreenScaffold(title: 'Proveedores', body: const SuppliersListBody());
+    return ScreenScaffold(
+      title: 'Proveedores',
+      actions: const [ProfileButton()],
+      body: const SuppliersListBody(),
+    );
   }
 }
 
@@ -40,31 +47,29 @@ class SuppliersListBody extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
+      floatingActionButton: FlatFab(
         heroTag: 'suppliers_list_body_fab',
-        backgroundColor: AppColors.primaryDark,
-        shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [
-          CatalogListHeader(
-            chips: [
-              StatusFilterChip(
-                value: status,
-                onChanged: (value) =>
-                    ref.read(supplierStatusFilterProvider.notifier).state = value,
-              ),
-            ],
-            search: CatalogSearchField(
+          FilterArea(
+            search: AppSearchBar(
               initialText: query,
               hintText: 'Buscar proveedor',
               onChanged: (value) =>
                   ref.read(supplierListQueryProvider.notifier).state = value,
             ),
+            fields: [
+              FilterDropdown<StatusFilter>(
+                label: 'Estado',
+                options: statusFilterOptions(),
+                current: status,
+                defaultValue: StatusFilter.all,
+                onApply: (value) =>
+                    ref.read(supplierStatusFilterProvider.notifier).state = value,
+              ),
+            ],
           ),
           Expanded(
             child: state.isLoading

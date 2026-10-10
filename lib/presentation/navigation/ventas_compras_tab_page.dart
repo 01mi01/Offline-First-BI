@@ -4,7 +4,7 @@ import '../../application/module_permission_provider.dart';
 import '../../theme/app_theme.dart';
 import '../pages/purchases_page.dart';
 import '../pages/sales_page.dart';
-import '../widgets/ios_group.dart';
+import '../widgets/app_group.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/profile_button.dart';
 import 'nav_resolver.dart';
@@ -25,7 +25,7 @@ class VentasComprasTabPage extends ConsumerWidget {
           title: 'Ventas y Compras',
           actions: const [ProfileButton()],
           body: cards.isEmpty
-              ? const IosEmptyState(
+              ? const AppEmptyState(
                   icon: Icons.point_of_sale_rounded,
                   title: 'No tienes acceso a ventas ni compras',
                 )
@@ -37,7 +37,7 @@ class VentasComprasTabPage extends ConsumerWidget {
                         for (var i = 0; i < cards.length; i++)
                           AppListRow(
                             icon: _iconFor(cards[i]),
-                            iconColor: AppColors.chartColor1,
+                            iconColor: AppColors.cyanDark,
                             title: _labelFor(cards[i]),
                             chevron: true,
                             onTap: () => Navigator.push(
