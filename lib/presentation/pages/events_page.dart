@@ -11,7 +11,7 @@ import '../../models/location_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/event_dialog.dart';
 import '../dialogs/location_dialog.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/date_range_filter_bar.dart';
 import '../widgets/status_badge.dart';
@@ -24,12 +24,9 @@ class EventsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: CustomAppBar(
-          title: 'Eventos',
-          showBack: true,
-          bottom: TabBar(
+      child: ScreenScaffold(
+        title: 'Eventos',
+        bottom: TabBar(
             labelColor: AppColors.primaryDark,
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primaryDark,
@@ -42,7 +39,6 @@ class EventsPage extends ConsumerWidget {
               Tab(text: 'Ubicaciones'),
             ],
           ),
-        ),
         body: const TabBarView(children: [_EventsTab(), _LocationsTab()]),
       ),
     );
@@ -80,7 +76,7 @@ class _EventsTab extends ConsumerWidget {
         backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
+        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [
@@ -192,7 +188,7 @@ class _LocationsTab extends ConsumerWidget {
         backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
+        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [
@@ -353,7 +349,7 @@ class _EventCard extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.close,
+                            Icons.close_rounded,
                             color: AppColors.textSecondary,
                             size: 18,
                           ),
@@ -510,7 +506,7 @@ class _EventCard extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(
-                Icons.edit_outlined,
+                Icons.edit_rounded,
                 color: AppColors.primaryDark,
                 size: 20,
               ),
@@ -576,7 +572,7 @@ class _LocationCard extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.close,
+                            Icons.close_rounded,
                             color: AppColors.textSecondary,
                             size: 18,
                           ),
@@ -677,7 +673,7 @@ inactiveLabel: 'Inactiva',
             ),
             IconButton(
               icon: const Icon(
-                Icons.edit_outlined,
+                Icons.edit_rounded,
                 color: AppColors.primaryDark,
                 size: 20,
               ),

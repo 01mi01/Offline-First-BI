@@ -5,9 +5,10 @@ import '../../theme/app_theme.dart';
 import '../pages/purchases_page.dart';
 import '../pages/sales_page.dart';
 import '../widgets/ios_group.dart';
-import '../widgets/ios_scaffold.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/profile_button.dart';
 import 'nav_resolver.dart';
+import '../widgets/app_list_row.dart';
 
 class VentasComprasTabPage extends ConsumerWidget {
   const VentasComprasTabPage({super.key});
@@ -20,44 +21,36 @@ class VentasComprasTabPage extends ConsumerWidget {
       data: (modules) {
         final cards = resolveVentasComprasCards(modules);
 
-        return IosLargeTitleScaffold(
+        return ScreenScaffold(
           title: 'Ventas y Compras',
           actions: const [ProfileButton()],
-          slivers: [
-            SliverToBoxAdapter(
-              child: cards.isEmpty
-                  ? const IosEmptyState(
-                      icon: Icons.point_of_sale_outlined,
-                      title: 'No tienes acceso a ventas ni compras',
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.s8),
-                      child: IosSection(
-                        dividerIndent: AppIos.dividerIndentWithTile,
-                        children: [
-                          for (final card in cards)
-                            IosRow(
-                              leading: IosTile(
-                                icon: _iconFor(card),
-                                color: _colorFor(card),
-                                iconColor: card == VentasComprasCard.compras
-                                    ? AppColors.onPrimary
-                                    : AppColors.surface,
-                              ),
-                              title: _labelFor(card),
-                              chevron: true,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => _pageFor(card),
-                                ),
+          body: cards.isEmpty
+              ? const IosEmptyState(
+                  icon: Icons.point_of_sale_rounded,
+                  title: 'No tienes acceso a ventas ni compras',
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),
+                  children: [
+                    AppListCard(
+                      children: [
+                        for (var i = 0; i < cards.length; i++)
+                          AppListRow(
+                            icon: _iconFor(cards[i]),
+                            iconColor: AppColors.chartColor1,
+                            title: _labelFor(cards[i]),
+                            chevron: true,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => _pageFor(cards[i]),
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
-            ),
-          ],
+                  ],
+                ),
         );
       },
       loading: () => const Scaffold(
@@ -82,18 +75,9 @@ String _labelFor(VentasComprasCard card) {
 IconData _iconFor(VentasComprasCard card) {
   switch (card) {
     case VentasComprasCard.ventas:
-      return Icons.point_of_sale_outlined;
+      return Icons.point_of_sale_rounded;
     case VentasComprasCard.compras:
-      return Icons.shopping_bag_outlined;
-  }
-}
-
-Color _colorFor(VentasComprasCard card) {
-  switch (card) {
-    case VentasComprasCard.ventas:
-      return AppColors.primaryDark;
-    case VentasComprasCard.compras:
-      return AppColors.accent;
+      return Icons.shopping_bag_rounded;
   }
 }
 

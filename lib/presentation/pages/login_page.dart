@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../navigation/main_navigation_page.dart';
+import 'dart:math' as math;
 
 const double _maxContentWidth = 420;
 const double _cardRadius = AppSpacing.s28;
@@ -79,15 +80,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: LayoutBuilder(
+      body: LayoutBuilder(
           builder: (context, constraints) {
-            const padding = AppSpacing.s24;
+            final insets = MediaQuery.paddingOf(context);
+            final vertical = math.max(insets.top, insets.bottom) + AppSpacing.s24;
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(padding),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.s24,
+                vertical: vertical,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: (constraints.maxHeight - 2 * padding).clamp(
+                  minHeight: (constraints.maxHeight - 2 * vertical).clamp(
                     0.0,
                     double.infinity,
                   ),
@@ -142,7 +146,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             );
           },
-        ),
       ),
     );
   }
@@ -167,7 +170,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             textInputAction: TextInputAction.next,
             decoration: _decoration(
               hint: 'Nombre de usuario',
-              icon: Icons.person_outline,
+              icon: Icons.person_rounded,
             ),
             validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
           ),
@@ -182,7 +185,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             textInputAction: TextInputAction.done,
             decoration: _decoration(
               hint: 'Tu contraseña',
-              icon: Icons.lock_outline,
+              icon: Icons.lock_rounded,
               suffix: Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.s4),
                 child: IconButton(
@@ -193,7 +196,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     _obscurePassword
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined,
-                    color: AppColors.primaryDark,
+                    color: AppColors.textMuted,
                   ),
                   onPressed: () =>
                       setState(() => _obscurePassword = !_obscurePassword),

@@ -131,7 +131,7 @@ class _DrillSheet extends ConsumerWidget {
                     child: const Padding(
                       padding: EdgeInsets.all(AppSpacing.s4),
                       child: Icon(
-                        Icons.close,
+                        Icons.close_rounded,
                         size: 22,
                         color: AppColors.textSecondary,
                         semanticLabel: 'Cerrar',

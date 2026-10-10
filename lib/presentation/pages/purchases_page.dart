@@ -15,7 +15,7 @@ import '../dialogs/purchase_dialog.dart';
 import '../widgets/ios_controls.dart';
 import '../widgets/ios_filters.dart';
 import '../widgets/ios_group.dart';
-import '../widgets/ios_scaffold.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/ios_sheet.dart';
 import '../widgets/ios_style.dart';
 import '../../config/date_formatters.dart';
@@ -51,9 +51,8 @@ class PurchasesListBody extends ConsumerWidget {
         suppliers.where((s) => s.id == purchase.supplierId).firstOrNull?.name ??
         'Sin proveedor';
 
-    return IosLargeTitleScaffold(
+    return ScreenScaffold.slivers(
       title: 'Compras',
-      backLabel: 'Ventas y Compras',
       actions: [
         IconButton(
           tooltip: 'Nueva compra',
@@ -76,7 +75,7 @@ class PurchasesListBody extends ConsumerWidget {
             hasScrollBody: false,
             child: Center(
               child: IosEmptyState(
-                icon: Icons.shopping_bag_outlined,
+                icon: Icons.shopping_bag_rounded,
                 title: 'No se registraron compras',
                 actionLabel: 'Nueva compra',
                 onAction: () => showPurchaseForm(context),
@@ -137,7 +136,7 @@ class PurchasesListBody extends ConsumerWidget {
           if (visible.isEmpty)
             const SliverToBoxAdapter(
               child: IosEmptyState(
-                icon: Icons.search_off_outlined,
+                icon: Icons.search_off_rounded,
                 title: 'Sin resultados',
               ),
             )
@@ -217,14 +216,12 @@ class _PurchaseRow extends StatelessWidget {
     return IosRow(
       leading: IosTile(
         icon: purchase.isMaterial
-            ? Icons.shopping_bag_outlined
-            : Icons.receipt_long_outlined,
+            ? Icons.shopping_bag_rounded
+            : Icons.receipt_long_rounded,
         color: canceled
             ? AppColors.iosTrack
             : (purchase.isMaterial ? AppColors.accent : AppColors.navy),
-        iconColor: canceled
-            ? AppColors.textSecondary
-            : (purchase.isMaterial ? AppColors.onPrimary : AppColors.surface),
+        iconColor: canceled ? AppColors.textSecondary : null,
       ),
       title: supplierName,
       titleColor: canceled ? AppColors.textSecondary : null,
@@ -258,10 +255,11 @@ class _PurchaseRow extends StatelessWidget {
         'Bs. ${fixed2(purchase.totalAmount)}',
         style: IosText.rowTitle(
           context,
-          color: canceled ? AppColors.textSecondary : AppColors.textPrimary,
+          color: canceled ? AppColors.textMuted : AppColors.textPrimary,
         ).copyWith(
           fontWeight: FontWeight.w600,
           decoration: canceled ? TextDecoration.lineThrough : null,
+          decorationColor: AppColors.textMuted,
         ),
       ),
       chevron: true,

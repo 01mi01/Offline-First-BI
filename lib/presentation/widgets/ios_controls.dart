@@ -265,7 +265,7 @@ class _IosSearchBarState extends State<IosSearchBar> {
             borderSide: BorderSide.none,
           ),
           prefixIcon: const Icon(
-            Icons.search,
+            Icons.search_rounded,
             size: 20,
             color: AppColors.textSecondary,
           ),
@@ -274,7 +274,7 @@ class _IosSearchBarState extends State<IosSearchBar> {
               : IconButton(
                   tooltip: 'Borrar búsqueda',
                   icon: const Icon(
-                    Icons.cancel,
+                    Icons.cancel_rounded,
                     size: 18,
                     color: AppColors.textSecondary,
                   ),
@@ -311,13 +311,13 @@ class IosStepper extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _StepperButton(
-                icon: Icons.remove,
+                icon: Icons.remove_rounded,
                 tooltip: 'Quitar uno',
                 onTap: onMinus,
               ),
               Container(width: 1, height: 18, color: AppColors.iosSeparator),
               _StepperButton(
-                icon: Icons.add,
+                icon: Icons.add_rounded,
                 tooltip: 'Agregar uno',
                 onTap: onPlus,
               ),

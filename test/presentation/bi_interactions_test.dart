@@ -1232,7 +1232,7 @@ void main() {
     );
 
     testWidgets(
-      'pellizcar acerca, el eje de abajo sigue la ventana y se puede restablecer',
+      'dos dedos acercan, el eje de abajo sigue la ventana y se puede restablecer',
       (tester) async {
         await pumpSeries(tester);
         await pinch(tester, from: 60, to: 180);

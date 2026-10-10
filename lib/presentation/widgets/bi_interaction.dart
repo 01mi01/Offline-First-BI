@@ -471,7 +471,7 @@ const double kBiMoneyAxisReserved = 40;
 typedef BiZoomChartBuilder =
     Widget Function(BuildContext context, double minX, double maxX);
 
-// Un gráfico de líneas sobre el tiempo con pellizco para acercar y arrastre
+// Un gráfico de líneas sobre el tiempo con zoom de dos dedos y arrastre
 // horizontal para moverse. fl_chart 0.68 no trae zoom, así que la ventana
 // visible del eje X (minX–maxX) la controla este widget con los punteros en
 // bruto: esos eventos no entran en la competencia de gestos, de modo que el
@@ -520,7 +520,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
   final Map<int, Offset> _pointers = {};
   double _plotWidth = 1;
 
-  // Pellizco: distancia y ventana al empezar, y el valor de X bajo los dedos.
+  // Dos dedos: distancia y ventana al empezar, y el valor de X bajo los dedos.
   double _pinchStartDistance = 1;
   double _pinchStartSpan = 1;
   double _pinchFocalValue = 0;
@@ -631,10 +631,6 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
 
   @override
   Widget build(BuildContext context) {
-    final hintStyle = Theme.of(
-      context,
-    ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -688,7 +684,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
                 ? TextButton.icon(
                     key: const ValueKey('bi-zoom-reset'),
                     onPressed: reset,
-                    icon: const Icon(Icons.zoom_out_map, size: 16),
+                    icon: const Icon(Icons.zoom_out_map_rounded, size: 16),
                     label: const Text('Restablecer vista'),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.primaryDark,
@@ -697,13 +693,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
                       ),
                     ),
                   )
-                : (_zoomable
-                      ? Text(
-                          'Pellizca para acercar y arrastra para moverte',
-                          key: const ValueKey('bi-zoom-hint'),
-                          style: hintStyle,
-                        )
-                      : const SizedBox.shrink()),
+                : const SizedBox.shrink(),
           ),
         ),
       ],

@@ -249,7 +249,7 @@ class _ReportFiltersWidgetState extends ConsumerState<ReportFiltersWidget> {
                       contentPadding: EdgeInsets.zero,
                       title: item.child,
                       trailing: item.value == value
-                          ? Icon(Icons.check, color: AppColors.primaryDark)
+                          ? Icon(Icons.check_rounded, color: AppColors.primaryDark)
                           : null,
                       onTap: () {
                         onSelect(item.value);
@@ -720,7 +720,7 @@ class _DropChip<T> extends StatelessWidget {
               GestureDetector(
                 onTap: onClear,
                 child: const Icon(
-                  Icons.close,
+                  Icons.close_rounded,
                   size: 14,
                   color: AppColors.primaryDark,
                 ),

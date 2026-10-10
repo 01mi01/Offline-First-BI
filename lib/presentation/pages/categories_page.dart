@@ -81,14 +81,14 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                   ? const Center(child: CircularProgressIndicator())
                   : state.categories.isEmpty
                   ? FlatEmptyState(
-                      icon: Icons.category_outlined,
+                      icon: Icons.category_rounded,
                       message: 'No se registraron categorías',
                       actionLabel: 'Nueva categoría',
                       onAction: () => _showDialog(context, ref, null),
                     )
                   : visible.isEmpty
                   ? const FlatEmptyState(
-                      icon: Icons.search_off_outlined,
+                      icon: Icons.search_off_rounded,
                       message: 'Sin resultados',
                     )
                   : _isGrid
@@ -172,7 +172,7 @@ class _GridView extends StatelessWidget {
         final cat = active[index];
         return FlatTile(
           imagePath: cat.image,
-          icon: Icons.category_outlined,
+          icon: Icons.category_rounded,
           title: cat.name,
           onTap: () => _showDetail(context, cat),
         );
@@ -202,7 +202,7 @@ class _CategoryRow extends StatelessWidget {
       onTap: category.isDefault ? null : onEdit,
       leading: FlatThumb(
         imagePath: category.image,
-        icon: Icons.category_outlined,
+        icon: Icons.category_rounded,
       ),
       title: category.name,
       details: [
@@ -224,7 +224,7 @@ class _CategoryRow extends StatelessWidget {
           : IconButton(
               tooltip: 'Editar',
               icon: const Icon(
-                Icons.edit_outlined,
+                Icons.edit_rounded,
                 color: AppColors.primaryDark,
                 size: 20,
               ),
@@ -281,7 +281,7 @@ class _CategoryDetail extends StatelessWidget {
                         child: const Padding(
                           padding: EdgeInsets.all(AppSpacing.s8),
                           child: Icon(
-                            Icons.close,
+                            Icons.close_rounded,
                             color: AppColors.textPrimary,
                             size: 18,
                           ),
@@ -332,7 +332,7 @@ class _CategoryDetail extends StatelessWidget {
       height: 260,
       color: AppColors.surface,
       child: const Icon(
-        Icons.category_outlined,
+        Icons.category_rounded,
         color: AppColors.primaryDark,
         size: 60,
       ),

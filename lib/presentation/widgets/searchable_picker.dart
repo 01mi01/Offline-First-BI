@@ -200,7 +200,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
               labelText: labelText,
               hintText: widget.searchHint,
               prefixIcon: const Icon(
-                Icons.search,
+                Icons.search_rounded,
                 color: AppColors.textSecondary,
                 size: 20,
               ),
@@ -208,7 +208,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
                   ? IconButton(
                       tooltip: 'Borrar búsqueda',
                       icon: const Icon(
-                        Icons.close,
+                        Icons.close_rounded,
                         color: AppColors.textSecondary,
                         size: 18,
                       ),
@@ -292,7 +292,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
               ),
             ),
       trailing: isSelected
-          ? const Icon(Icons.check, color: AppColors.primaryDark)
+          ? const Icon(Icons.check_rounded, color: AppColors.primaryDark)
           : null,
       onTap: () => _choose(option),
     );

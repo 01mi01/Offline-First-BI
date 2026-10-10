@@ -5,11 +5,12 @@ import '../../theme/app_theme.dart';
 import '../pages/categories_page.dart';
 import '../pages/materials_page.dart';
 import '../pages/products_page.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/flat_style.dart';
 import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
+import '../widgets/app_list_row.dart';
 
 // Tab "Inventario" de la navegación inferior: pantalla de aterrizaje con
 // tarjetas (Productos, Categorías, Materiales), mostrando solo las que el
@@ -28,36 +29,34 @@ class InventarioTabPage extends ConsumerWidget {
         final cards = resolveInventarioCards(modules);
 
         return FlatStyle(
-          child: Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: const CustomAppBar(
-              title: 'Inventario',
-              actions: [ProfileButton()],
-            ),
+          child: ScreenScaffold(
+            title: 'Inventario',
+            actions: const [ProfileButton()],
             body: cards.isEmpty
                 ? const FlatEmptyState(
-                    icon: Icons.inventory_2_outlined,
+                    icon: Icons.inventory_2_rounded,
                     message: 'No tienes acceso a ningún módulo de inventario',
                   )
                 : ListView(
-                    padding: const EdgeInsets.only(top: AppSpacing.s8),
+                    padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),
                     children: [
-                      for (final card in cards)
-                        FlatListRow(
-                          leading: FlatThumb(icon: _iconFor(card)),
-                          title: _labelFor(card),
-                          trailing: const Padding(
-                            padding: EdgeInsets.only(top: AppSpacing.s14),
-                            child: Icon(
-                              Icons.chevron_right,
-                              color: AppColors.textSecondary,
+                      AppListCard(
+                        children: [
+                          for (var i = 0; i < cards.length; i++)
+                            AppListRow(
+                              icon: _iconFor(cards[i]),
+                              iconColor: AppColors.chartColor1,
+                              title: _labelFor(cards[i]),
+                              chevron: true,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => _pageFor(cards[i]),
+                                ),
+                              ),
                             ),
-                          ),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => _pageFor(card)),
-                          ),
-                        ),
+                        ],
+                      ),
                     ],
                   ),
           ),
@@ -87,36 +86,39 @@ String _labelFor(InventarioCard card) {
 IconData _iconFor(InventarioCard card) {
   switch (card) {
     case InventarioCard.productos:
-      return Icons.inventory_2_outlined;
+      return Icons.inventory_2_rounded;
     case InventarioCard.categorias:
-      return Icons.category_outlined;
+      return Icons.category_rounded;
     case InventarioCard.materiales:
-      return Icons.palette_outlined;
+      return Icons.palette_rounded;
   }
 }
 
-// Productos y Categorías son cuerpos "desnudos" (sin AppBar propia) porque
-// también se usan embebidos en InventarioPage; aquí se les da su propia
-// AppBar con back, igual que a Materiales.
 Widget _pageFor(InventarioCard card) {
   switch (card) {
     case InventarioCard.productos:
-      return const FlatStyle(
-        child: Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: CustomAppBar(title: 'Productos', showBack: true),
-          body: ProductsPage(),
-        ),
-      );
+      return const ProductsScreen();
     case InventarioCard.categorias:
-      return const FlatStyle(
-        child: Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: CustomAppBar(title: 'Categorías', showBack: true),
-          body: CategoriesPage(),
-        ),
-      );
+      return const CategoriesScreen();
     case InventarioCard.materiales:
       return const MaterialsPage();
   }
+}
+
+class ProductsScreen extends StatelessWidget {
+  const ProductsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const FlatStyle(
+    child: ScreenScaffold(title: 'Productos', body: ProductsPage()),
+  );
+}
+
+class CategoriesScreen extends StatelessWidget {
+  const CategoriesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const FlatStyle(
+    child: ScreenScaffold(title: 'Categorías', body: CategoriesPage()),
+  );
 }

@@ -4,6 +4,7 @@ import '../../application/client_provider.dart';
 import '../../models/client_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/app_buttons.dart';
 
 class ClientDialog extends ConsumerStatefulWidget {
   final ClientModel? client;
@@ -199,7 +200,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.error_outline,
+                        Icons.error_rounded,
                         color: AppColors.error,
                         size: 16,
                       ),
@@ -223,37 +224,18 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
               const SizedBox(height: AppSpacing.s24),
 
               // Botones cancelar y guardar
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppIos.groupRadius),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  ElevatedButton(
+                    onPressed: _save,
+                    child: Text(isEditing ? 'Guardar' : 'Crear'),
                   ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(
-                        isEditing ? 'Guardar' : 'Crear',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  const SizedBox(height: AppButtons.stackGap),
+                  AppActionButton(
+                    label: 'Cancelar',
+                    kind: AppButtonKind.neutral,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),

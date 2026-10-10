@@ -17,7 +17,7 @@ class ProtectedRecordIcon extends StatelessWidget {
         message: message,
         triggerMode: TooltipTriggerMode.tap,
         child: const Icon(
-          Icons.lock_outline,
+          Icons.lock_rounded,
           color: AppColors.textSecondary,
           size: 20,
         ),

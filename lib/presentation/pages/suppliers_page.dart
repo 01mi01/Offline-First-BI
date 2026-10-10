@@ -8,7 +8,7 @@ import '../../models/default_records.dart';
 import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import 'clients_page.dart' show ContactCard;
 
 // Página de Proveedores, con su propio módulo de permisos ("proveedores"),
@@ -18,11 +18,7 @@ class SuppliersPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: 'Proveedores', showBack: true),
-      body: const SuppliersListBody(),
-    );
+    return ScreenScaffold(title: 'Proveedores', body: const SuppliersListBody());
   }
 }
 
@@ -51,7 +47,7 @@ class SuppliersListBody extends ConsumerWidget {
         backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
+        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [

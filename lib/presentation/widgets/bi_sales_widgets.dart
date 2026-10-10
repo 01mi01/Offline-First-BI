@@ -612,7 +612,7 @@ class BiTicketSection extends StatelessWidget {
 // Línea de un valor por intervalo (los mismos intervalos que Evolución en el
 // tiempo). Los intervalos sin valor (null) no llevan punto; una línea punteada
 // marca [average] si se indica. Se dibuja sola al aparecer, tocar un punto
-// muestra su detalle y admite pellizco para acercar y arrastre para moverse en
+// muestra su detalle y admite acercar con dos dedos y arrastre para moverse en
 // el tiempo.
 class _TrendLine extends StatefulWidget {
   final BiTimeSeries series;

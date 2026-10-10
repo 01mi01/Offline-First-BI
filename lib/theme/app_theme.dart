@@ -9,6 +9,12 @@ const SystemUiOverlayStyle appSystemOverlayStyle = SystemUiOverlayStyle(
   systemStatusBarContrastEnforced: false,
 );
 
+// Color del texto o ícono que va sobre un relleno de color.
+Color onColorOf(Color fill) =>
+    fill == AppColors.primary || fill == AppColors.accent
+    ? AppColors.onPrimary
+    : AppColors.textButtons;
+
 // Colores principales de la aplicación
 class AppColors {
   // Acento principal (cian).
@@ -17,6 +23,7 @@ class AppColors {
   static const primaryDark = Color(0xFF05959C);
   // Cian al 12 % sobre blanco: círculo suave detrás de íconos y accesos.
   static const primarySoft = Color(0xFFE1F6F7);
+  static const steelSoft = Color(0xFFE6EEF3);
   // Azul marino, color del texto principal y del texto sobre el acento.
   static const navy = Color(0xFF112444);
   // Verde lima, acento secundario solo para fondos y detalles.
@@ -40,6 +47,8 @@ class AppColors {
   static const textSecondaryDark = Color(0xFF10314F);
   static const textSecondary = Color(0xFF5B6B82);
   static const textButtons = Color(0xFFFFFFFF);
+  static const neutralButton = Color(0xFFE6E9EF);
+  static const textMuted = Color(0xFF9AA6B8);
   static const border = Color(0xFFE2EBEE);
   // Sombra suave de tarjetas elevadas (navy al 8 %).
   static const shadow = Color(0x14112444);
@@ -98,6 +107,33 @@ class AppCards {
   );
 }
 
+// Medidas de la cabecera común de todas las pantallas.
+class AppHeader {
+  static const double rowHeight = 48;
+  static const double sidePadding = AppSpacing.s16;
+  static const double backStartPadding = AppSpacing.s8;
+  static const double actionsEndPadding = AppSpacing.s4;
+  static const double titleTopPadding = 0;
+  static const double titleBottomPadding = AppSpacing.s14;
+  static const double titleLineHeight = 1.2;
+  static const double iconSize = 26;
+  static const double backIconSize = 32;
+  static const double backLabelMaxWidth = 120;
+}
+
+// Medidas comunes de todos los botones.
+class AppButtons {
+  static const double radius = AppIos.groupRadius;
+  static const double height = AppIos.minTap;
+  static const double stackGap = AppSpacing.s12;
+  static const EdgeInsets formPadding = EdgeInsets.fromLTRB(
+    AppSpacing.s16,
+    0,
+    AppSpacing.s16,
+    AppSpacing.s24,
+  );
+}
+
 // Medidas del estilo iOS (módulo de Ventas y Compras).
 class AppIos {
   static const double groupRadius = 14;
@@ -117,7 +153,6 @@ class AppIos {
   static const double rowSubtitleSize = 15;
   static const double headerSize = 13;
   static const double bigNumberSize = 40;
-  static const double largeTitleExtent = 52;
   static const double navBarHeight = 44;
   static const double grabberWidth = 36;
   static const double grabberHeight = 5;
@@ -322,9 +357,9 @@ final lightTheme = ThemeData(
       foregroundColor: AppColors.textButtons,
       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       overlayColor: AppColors.pressedOverlay,
-      minimumSize: const Size(double.infinity, AppIos.minTap),
+      minimumSize: const Size(double.infinity, AppButtons.height),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppIos.groupRadius),
+        borderRadius: BorderRadius.circular(AppButtons.radius),
       ),
       elevation: 0,
     ),
@@ -345,6 +380,11 @@ final lightTheme = ThemeData(
   dialogTheme: DialogThemeData(
     backgroundColor: AppColors.surface,
     surfaceTintColor: Colors.transparent,
+    titleTextStyle: const TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textPrimary,
+    ),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppIos.groupRadius),
     ),
@@ -367,4 +407,14 @@ final lightTheme = ThemeData(
     backgroundColor: AppColors.surface,
     surfaceTintColor: Colors.transparent,
   ),
+);
+
+final ButtonStyle destructiveButtonStyle = ElevatedButton.styleFrom(
+  backgroundColor: AppColors.error,
+  foregroundColor: AppColors.textButtons,
+);
+
+final ButtonStyle neutralButtonStyle = ElevatedButton.styleFrom(
+  backgroundColor: AppColors.neutralButton,
+  foregroundColor: AppColors.textPrimary,
 );

@@ -26,6 +26,8 @@ import '../widgets/searchable_picker.dart' show PickerOption;
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
+import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/app_buttons.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
   final PurchaseModel? purchase;
@@ -259,7 +261,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   // Cancelar no borra; si algún material ya se usó, el error se muestra aquí.
   Future<void> _cancelPurchase() async {
-    final confirmed = await showIosConfirm(
+    final confirmed = await confirmCancellation(
       context,
       title: '¿Cancelar compra?',
       message: widget.purchase!.isMaterial
@@ -363,7 +365,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           action: IconButton(
                             tooltip: 'Nuevo proveedor',
                             icon: const Icon(
-                              Icons.add_business_outlined,
+                              Icons.add_business_rounded,
                               size: 22,
                               color: AppColors.primaryDark,
                             ),
@@ -420,7 +422,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         header: 'Materiales',
                         headerTrailing: TextButton.icon(
                           onPressed: _showAddMaterialItem,
-                          icon: const Icon(Icons.add, size: 18),
+                          icon: const Icon(Icons.add_rounded, size: 18),
                           label: const Text('Agregar'),
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.primaryDark,
@@ -460,7 +462,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                 ? IconButton(
                                     tooltip: 'Usar el total calculado',
                                     icon: const Icon(
-                                      Icons.restart_alt,
+                                      Icons.restart_alt_rounded,
                                       color: AppColors.textSecondary,
                                     ),
                                     onPressed: () => setState(() {
@@ -541,10 +543,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       ),
                     ),
                     if (isEditing && !widget.purchase!.isCanceled)
-                      IosDestructiveGroup(
-                        label: 'Cancelar compra',
-                        onTap: _isLoading ? null : _cancelPurchase,
-                      ),
+                      AppActionButton(
+        label: 'Cancelar compra',
+        kind: AppButtonKind.destructive,
+        padding: AppButtons.formPadding,
+        onPressed: _isLoading ? null : _cancelPurchase,
+      ),
                   ],
                 ),
               ),
@@ -569,7 +573,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
           IconButton(
             tooltip: 'Quitar material',
             icon: const Icon(
-              Icons.remove_circle,
+              Icons.remove_circle_rounded,
               size: 24,
               color: AppColors.error,
             ),
@@ -803,7 +807,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                     title: 'Crear nuevo material',
                     titleColor: AppColors.primaryDark,
                     leading: const Icon(
-                      Icons.add_circle_outline,
+                      Icons.add_circle_rounded,
                       size: 22,
                       color: AppColors.primaryDark,
                     ),

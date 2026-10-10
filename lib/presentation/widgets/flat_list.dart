@@ -418,7 +418,7 @@ class FlatFab extends StatelessWidget {
       highlightElevation: 0,
       shape: const CircleBorder(),
       onPressed: onPressed,
-      child: const Icon(Icons.add, color: AppColors.textButtons),
+      child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
     );
   }
 }

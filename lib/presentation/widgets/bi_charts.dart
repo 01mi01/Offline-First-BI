@@ -7,7 +7,7 @@ import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
-import 'ios_sheet.dart';
+import 'info_hint.dart';
 import 'bi_interaction.dart';
 
 // Widgets de los gráficos de Business Intelligence. Todos los colores de las
@@ -39,15 +39,15 @@ const TextStyle _axisStyle = TextStyle(
 
 // Muestra el texto de ayuda de un indicador: qué muestra y para qué sirve.
 Future<void> showBiInfo(BuildContext context, String title, String info) =>
-    showIosInfo(context, title: title, message: info);
+    showInfoDialog(context, title: title, message: info);
 
 IconData _chartTypeIcon(BiChartType type) => switch (type) {
-  BiChartType.bar => Icons.bar_chart,
-  BiChartType.pie => Icons.pie_chart_outline,
-  BiChartType.line => Icons.show_chart,
-  BiChartType.list => Icons.format_list_bulleted,
-  BiChartType.cards => Icons.view_agenda_outlined,
-  BiChartType.radar => Icons.radar,
+  BiChartType.bar => Icons.bar_chart_rounded,
+  BiChartType.pie => Icons.pie_chart_rounded,
+  BiChartType.line => Icons.show_chart_rounded,
+  BiChartType.list => Icons.format_list_bulleted_rounded,
+  BiChartType.cards => Icons.view_agenda_rounded,
+  BiChartType.radar => Icons.radar_rounded,
 };
 
 // Selector del tipo de gráfico de un indicador (solo si ofrece más de uno).
@@ -161,9 +161,9 @@ class BiSectionCard extends StatelessWidget {
                   child: const Padding(
                     padding: EdgeInsets.all(AppSpacing.s4),
                     child: Icon(
-                      Icons.info_outline,
+                      Icons.info_outline_rounded,
                       size: 20,
-                      color: AppColors.primaryDark,
+                      color: AppColors.textSecondary,
                       semanticLabel: 'Información',
                     ),
                   ),
@@ -1170,7 +1170,7 @@ bool biIsZoomed(double min, double max, double fullMax) =>
 // gastos punteada) o barras agrupadas. Las líneas se dibujan solas al aparecer
 // y las barras crecen; tocar un intervalo muestra el detalle de ambas series;
 // la leyenda oculta o muestra cada serie (siempre queda una visible); y las
-// líneas admiten pellizco para acercar y arrastre para moverse en el tiempo.
+// líneas admiten acercar con dos dedos y arrastre para moverse en el tiempo.
 class BiTimeSeriesChart extends StatefulWidget {
   final BiTimeSeries series;
   final bool asBars;

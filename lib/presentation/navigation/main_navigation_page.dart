@@ -27,15 +27,15 @@ String labelForGroup(NavGroupId group) {
 IconData iconForGroup(NavGroupId group) {
   switch (group) {
     case NavGroupId.home:
-      return Icons.home_outlined;
+      return Icons.home_rounded;
     case NavGroupId.inventario:
-      return Icons.inventory_2_outlined;
+      return Icons.inventory_2_rounded;
     case NavGroupId.ventasCompras:
-      return Icons.shopping_cart_outlined;
+      return Icons.shopping_cart_rounded;
     case NavGroupId.contactos:
-      return Icons.people_outline;
+      return Icons.people_rounded;
     case NavGroupId.reportes:
-      return Icons.bar_chart_outlined;
+      return Icons.bar_chart_rounded;
   }
 }
 
@@ -67,17 +67,18 @@ class MainNavigationPage extends ConsumerStatefulWidget {
       _MainNavigationPageState();
 }
 
-class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
-  int _selectedIndex = 0;
+final mainTabIndexProvider = StateProvider.autoDispose<int>((ref) => 0);
 
+class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   @override
   Widget build(BuildContext context) {
     final readableModulesAsync = ref.watch(readableModulesProvider);
+    final selectedIndex = ref.watch(mainTabIndexProvider);
 
     return readableModulesAsync.when(
       data: (readableModules) {
         final groups = resolveVisibleGroups(readableModules);
-        final index = _selectedIndex >= groups.length ? 0 : _selectedIndex;
+        final index = selectedIndex >= groups.length ? 0 : selectedIndex;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -93,10 +94,11 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
             index: index,
             children: groups.map(bodyForGroup).toList(),
           ),
-          bottomNavigationBar: _AdaptiveBottomBar(
+          bottomNavigationBar: MainBottomBar(
             groups: groups,
             selectedIndex: index,
-            onSelect: (i) => setState(() => _selectedIndex = i),
+            onSelect: (i) =>
+                ref.read(mainTabIndexProvider.notifier).state = i,
           ),
         );
       },
@@ -110,12 +112,13 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   }
 }
 
-class _AdaptiveBottomBar extends StatelessWidget {
+class MainBottomBar extends StatelessWidget {
   final List<NavGroupId> groups;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
-  const _AdaptiveBottomBar({
+  const MainBottomBar({
+    super.key,
     required this.groups,
     required this.selectedIndex,
     required this.onSelect,
@@ -155,7 +158,7 @@ class _AdaptiveBottomBar extends StatelessWidget {
               Expanded(
                 child: _NavTabButton(
                   label: 'Más',
-                  icon: Icons.more_horiz,
+                  icon: Icons.more_horiz_rounded,
                   selected: overflowGroups.contains(groups[selectedIndex]),
                   onTap: () => _showOverflowSheet(context, overflowGroups),
                 ),

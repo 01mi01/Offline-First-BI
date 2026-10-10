@@ -11,7 +11,7 @@ import '../../models/bi_config.dart';
 import '../../models/purchase_kind.dart';
 import '../../models/report_filters.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/bi_charts.dart';
 import '../widgets/bi_config_view.dart';
 import '../widgets/bi_drilldown.dart';
@@ -64,9 +64,8 @@ class _BusinessIntelligencePageState
         saleItemsMap.isLoading ||
         purchaseItemsMap.isLoading;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'Business Intelligence', showBack: true),
+    return ScreenScaffold(
+      title: 'Business Intelligence',
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : _showDashboard
@@ -382,7 +381,7 @@ class _DashboardHeader extends StatelessWidget {
           OutlinedButton.icon(
             key: const ValueKey('bi-configure'),
             onPressed: onConfigure,
-            icon: const Icon(Icons.tune, size: 16),
+            icon: const Icon(Icons.tune_rounded, size: 16),
             label: const Text('Configurar'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 44),

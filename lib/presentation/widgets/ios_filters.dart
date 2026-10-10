@@ -146,7 +146,7 @@ class _DateCell extends StatelessWidget {
                   tooltip: 'Quitar $label',
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(
-                    Icons.cancel,
+                    Icons.cancel_rounded,
                     size: 18,
                     color: AppColors.iosChevron,
                   ),

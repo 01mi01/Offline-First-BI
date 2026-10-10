@@ -4,8 +4,8 @@ import '../../application/module_permission_provider.dart';
 import '../../theme/app_theme.dart';
 import '../pages/business_intelligence_page.dart';
 import '../pages/reports_page.dart';
-import '../widgets/app_bar_widget.dart';
-import '../widgets/landing_card.dart';
+import '../widgets/screen_header.dart';
+import '../widgets/app_list_row.dart';
 import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
 
@@ -23,12 +23,9 @@ class ReportesBiTabPage extends ConsumerWidget {
       data: (modules) {
         final cards = resolveReportesCards(modules);
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(
-            title: 'Reportes',
-            actions: [ProfileButton()],
-          ),
+        return ScreenScaffold(
+          title: 'Reportes y Business Intelligence',
+          actions: const [ProfileButton()],
           body: cards.isEmpty
               ? Center(
                   child: Text(
@@ -36,29 +33,27 @@ class ReportesBiTabPage extends ConsumerWidget {
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 )
-              : Padding(
-                  padding: const EdgeInsets.all(AppSpacing.s16),
-                  child: Column(
-                    children: cards
-                        .map(
-                          (card) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.s12,
-                            ),
-                            child: LandingCard(
-                              label: _labelFor(card),
-                              icon: _iconFor(card),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => _pageFor(card),
-                                ),
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),
+                  children: [
+                    AppListCard(
+                      children: [
+                        for (var i = 0; i < cards.length; i++)
+                          AppListRow(
+                            icon: _iconFor(cards[i]),
+                            iconColor: AppColors.chartColor1,
+                            title: _labelFor(cards[i]),
+                            chevron: true,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => _pageFor(cards[i]),
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
         );
       },
@@ -84,9 +79,9 @@ String _labelFor(ReportesCard card) {
 IconData _iconFor(ReportesCard card) {
   switch (card) {
     case ReportesCard.reportes:
-      return Icons.bar_chart_outlined;
+      return Icons.bar_chart_rounded;
     case ReportesCard.businessIntelligence:
-      return Icons.insights_outlined;
+      return Icons.insights_rounded;
   }
 }
 

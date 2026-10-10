@@ -18,7 +18,7 @@ import 'package:offline_first_bi/presentation/pages/purchases_page.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
 import 'package:offline_first_bi/presentation/pages/sales_page.dart';
 import 'package:offline_first_bi/presentation/pages/suppliers_page.dart';
-import 'package:offline_first_bi/presentation/widgets/landing_card.dart';
+import 'package:offline_first_bi/presentation/widgets/app_list_row.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 Future<AppDatabase> _openDb() async {
@@ -169,7 +169,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // "Ventas" también aparece en el título del AppBar de esta pantalla.
-      await tester.tap(find.widgetWithText(LandingCard, 'Ventas'));
+      await tester.tap(find.widgetWithText(AppListRow, 'Ventas'));
       await tester.pumpAndSettle();
       expect(find.byType(SalesPage), findsOneWidget);
 
@@ -179,7 +179,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.arrow_back_ios));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(LandingCard, 'Compras'));
+      await tester.tap(find.widgetWithText(AppListRow, 'Compras'));
       await tester.pumpAndSettle();
       expect(find.byType(PurchasesPage), findsOneWidget);
     });
@@ -318,7 +318,7 @@ void main() {
 
       // "Reportes" también aparece en el título del AppBar de esta pantalla,
       // así que se apunta específicamente a la tarjeta, no al texto suelto.
-      await tester.tap(find.widgetWithText(LandingCard, 'Reportes'));
+      await tester.tap(find.widgetWithText(AppListRow, 'Reportes'));
       await tester.pumpAndSettle();
       expect(find.byType(ReportsPage), findsOneWidget);
     });
@@ -366,8 +366,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.shopping_cart_outlined));
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(LandingCard, 'Ventas'), findsOneWidget);
-      expect(find.widgetWithText(LandingCard, 'Compras'), findsOneWidget);
+      expect(find.widgetWithText(AppListRow, 'Ventas'), findsOneWidget);
+      expect(find.widgetWithText(AppListRow, 'Compras'), findsOneWidget);
     });
 
     testWidgets('zero module access shows only the Inicio tab', (tester) async {

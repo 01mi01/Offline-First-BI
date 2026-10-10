@@ -9,7 +9,7 @@ import '../../models/client_model.dart';
 import '../../models/default_records.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/client_dialog.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/protected_record_icon.dart';
 import '../widgets/status_badge.dart';
 
@@ -20,11 +20,7 @@ class ClientsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: 'Clientes', showBack: true),
-      body: const ClientsListBody(),
-    );
+    return ScreenScaffold(title: 'Clientes', body: const ClientsListBody());
   }
 }
 
@@ -53,7 +49,7 @@ class ClientsListBody extends ConsumerWidget {
         backgroundColor: AppColors.primaryDark,
         shape: const CircleBorder(),
         onPressed: () => _showDialog(context, null),
-        child: const Icon(Icons.add, color: AppColors.surface),
+        child: const Icon(Icons.add_rounded, color: AppColors.textButtons),
       ),
       body: Column(
         children: [
@@ -198,7 +194,7 @@ class _ContactCardState extends State<ContactCard> {
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.close,
+                            Icons.close_rounded,
                             color: AppColors.textSecondary,
                             size: 18,
                           ),
@@ -269,7 +265,7 @@ class _ContactCardState extends State<ContactCard> {
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
-                                      Icons.copy_outlined,
+                                      Icons.copy_rounded,
                                       color: AppColors.primaryDark,
                                       size: 18,
                                     ),
@@ -346,7 +342,7 @@ inactiveLabel: 'Inactivo',
             else
               IconButton(
                 icon: const Icon(
-                  Icons.edit_outlined,
+                  Icons.edit_rounded,
                   color: AppColors.primaryDark,
                   size: 20,
                 ),

@@ -88,7 +88,7 @@ class DateFilterChip extends StatelessWidget {
               GestureDetector(
                 onTap: onClear,
                 child: Icon(
-                  Icons.close,
+                  Icons.close_rounded,
                   size: 14,
                   color: active ? AppColors.primaryDark : AppColors.textSecondary,
                 ),

@@ -11,7 +11,7 @@ import '../../models/material_model.dart';
 import '../../models/product_material_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/material_dialog.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/confirm_cancel_dialog.dart';
@@ -20,6 +20,7 @@ import '../widgets/flat_controls.dart';
 import '../widgets/flat_form.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/flat_style.dart';
+import '../widgets/app_buttons.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -32,13 +33,9 @@ class MaterialsPage extends ConsumerWidget {
     return FlatStyle(
       child: DefaultTabController(
         length: 2,
-        child: Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: const CustomAppBar(
-            title: 'Materiales',
-            showBack: true,
-            bottom: FlatTabBar(labels: ['Materiales', 'Registro de uso']),
-          ),
+        child: ScreenScaffold(
+          title: 'Materiales',
+          bottom: const FlatTabBar(labels: ['Materiales', 'Registro de uso']),
           body: const TabBarView(
             children: [MaterialsListTab(), MaterialsUsageTab()],
           ),
@@ -110,14 +107,14 @@ class MaterialsListTab extends ConsumerWidget {
                   ? const Center(child: CircularProgressIndicator())
                   : state.materials.isEmpty
                   ? FlatEmptyState(
-                      icon: Icons.palette_outlined,
+                      icon: Icons.palette_rounded,
                       message: 'No se registraron materiales',
                       actionLabel: 'Nuevo material',
                       onAction: () => _showDialog(context, null),
                     )
                   : visible.isEmpty
                   ? const FlatEmptyState(
-                      icon: Icons.search_off_outlined,
+                      icon: Icons.search_off_rounded,
                       message: 'Sin resultados',
                     )
                   : ListView.builder(
@@ -269,7 +266,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
             if (_selectedProductId == null)
               const Expanded(
                 child: FlatEmptyState(
-                  icon: Icons.palette_outlined,
+                  icon: Icons.palette_rounded,
                   message:
                       'Selecciona un producto para ver\nel registro de uso de materiales',
                 ),
@@ -279,7 +276,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
             else if (_usageLog.isEmpty)
               const Expanded(
                 child: FlatEmptyState(
-                  icon: Icons.history_outlined,
+                  icon: Icons.history_rounded,
                   message: 'Sin registros de uso',
                 ),
               )
@@ -291,7 +288,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                   itemBuilder: (context, index) {
                     final entry = _usageLog[index];
                     return FlatListRow(
-                      leading: const FlatThumb(icon: Icons.palette_outlined),
+                      leading: const FlatThumb(icon: Icons.palette_rounded),
                       title: entry.materialName,
                       titleColor: entry.isCanceled
                           ? AppColors.textSecondary
@@ -332,7 +329,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                           ? null
                           : IconButton(
                               icon: const Icon(
-                                Icons.edit_outlined,
+                                Icons.edit_rounded,
                                 color: AppColors.primaryDark,
                                 size: 20,
                               ),
@@ -821,24 +818,10 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
 
               // Cancelar el registro: solo aquí, al final del formulario.
               const SizedBox(height: AppSpacing.s12),
-              TextButton.icon(
+              AppActionButton(
+                label: 'Cancelar registro',
+                kind: AppButtonKind.destructive,
                 onPressed: _cancelUsage,
-                icon: const Icon(
-                  Icons.cancel_outlined,
-                  color: AppColors.error,
-                  size: 20,
-                ),
-                label: const Text(
-                  'Cancelar registro',
-                  style: TextStyle(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
               ),
             ],
           ),
@@ -867,7 +850,7 @@ class _MaterialRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return FlatListRow(
       onTap: onEdit,
-      leading: const FlatThumb(icon: Icons.palette_outlined),
+      leading: const FlatThumb(icon: Icons.palette_rounded),
       title: material.name,
       details: [
         if (material.description != null && material.description!.isNotEmpty)
@@ -896,7 +879,7 @@ class _MaterialRow extends StatelessWidget {
           IconButton(
             tooltip: 'Editar',
             icon: const Icon(
-              Icons.edit_outlined,
+              Icons.edit_rounded,
               color: AppColors.primaryDark,
               size: 20,
             ),

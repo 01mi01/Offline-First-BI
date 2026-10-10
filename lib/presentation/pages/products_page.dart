@@ -57,7 +57,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             CatalogListHeader(
               chips: [
                 FilterMenuChip<PriceDisplay>(
-                  icon: Icons.sell_outlined,
+                  icon: Icons.sell_rounded,
                   label: switch (priceDisplay) {
                     PriceDisplay.both => 'Ambos',
                     PriceDisplay.a => 'Precio A',
@@ -78,7 +78,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                       setFilter.update((f) => f.copyWith(priceDisplay: value)),
                 ),
                 FilterMenuChip<int?>(
-                  icon: Icons.category_outlined,
+                  icon: Icons.category_rounded,
                   maxLabelWidth: 110,
                   label: selectedCategory?.name ?? 'Categoría',
                   active: filter.categoryId != null,
@@ -117,14 +117,14 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   ? const Center(child: CircularProgressIndicator())
                   : state.products.isEmpty
                   ? FlatEmptyState(
-                      icon: Icons.inventory_2_outlined,
+                      icon: Icons.inventory_2_rounded,
                       message: 'No se registraron productos',
                       actionLabel: 'Nuevo producto',
                       onAction: () => _showDialog(context, null),
                     )
                   : visible.isEmpty
                   ? const FlatEmptyState(
-                      icon: Icons.search_off_outlined,
+                      icon: Icons.search_off_rounded,
                       message: 'Sin resultados',
                     )
                   : _isGrid
@@ -232,7 +232,7 @@ class _GridView extends StatelessWidget {
         final p = active[index];
         return FlatTile(
           imagePath: p.image,
-          icon: Icons.inventory_2_outlined,
+          icon: Icons.inventory_2_rounded,
           title: p.name,
           lines: _catalogPriceLines(p, priceDisplay),
           onTap: () => _showDetail(context, p),
@@ -334,7 +334,7 @@ class _ProductRowState extends ConsumerState<_ProductRow> {
 
     return FlatListRow(
       onTap: widget.onEdit,
-      leading: FlatThumb(imagePath: p.image, icon: Icons.inventory_2_outlined),
+      leading: FlatThumb(imagePath: p.image, icon: Icons.inventory_2_rounded),
       title: p.name,
       details: [
         FlatMutedText(widget.categoryName),
@@ -376,7 +376,7 @@ class _ProductRowState extends ConsumerState<_ProductRow> {
           IconButton(
             tooltip: 'Editar',
             icon: const Icon(
-              Icons.edit_outlined,
+              Icons.edit_rounded,
               color: AppColors.primaryDark,
               size: 20,
             ),
@@ -480,7 +480,7 @@ class _ProductGridDetail extends StatelessWidget {
                         child: const Padding(
                           padding: EdgeInsets.all(AppSpacing.s8),
                           child: Icon(
-                            Icons.close,
+                            Icons.close_rounded,
                             color: AppColors.textPrimary,
                             size: 18,
                           ),
@@ -540,7 +540,7 @@ class _ProductGridDetail extends StatelessWidget {
       height: 260,
       color: AppColors.surface,
       child: const Icon(
-        Icons.inventory_2_outlined,
+        Icons.inventory_2_rounded,
         color: AppColors.primaryDark,
         size: 60,
       ),

@@ -199,9 +199,9 @@ class _IndicatorTile extends StatelessWidget {
               key: ValueKey('bi-config-info-${indicator.name}'),
               tooltip: 'Información',
               icon: const Icon(
-                Icons.info_outline,
+                Icons.info_outline_rounded,
                 size: 20,
-                color: AppColors.primaryDark,
+                color: AppColors.textSecondary,
               ),
               onPressed: () => showBiInfo(context, indicator.title, indicator.info),
             ),

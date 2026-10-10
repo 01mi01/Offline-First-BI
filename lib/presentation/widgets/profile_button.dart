@@ -11,8 +11,8 @@ class ProfileButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       icon: const Icon(
-        Icons.settings_outlined,
-        color: AppColors.textPrimary,
+        Icons.settings_rounded,
+        color: AppColors.primaryDark,
         size: 26,
       ),
       tooltip: 'Ajustes',

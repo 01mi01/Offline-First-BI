@@ -92,13 +92,13 @@ class IosSection extends StatelessWidget {
 class IosTile extends StatelessWidget {
   final IconData icon;
   final Color color;
-  final Color iconColor;
+  final Color? iconColor;
 
   const IosTile({
     super.key,
     required this.icon,
     this.color = AppColors.primaryDark,
-    this.iconColor = AppColors.surface,
+    this.iconColor,
   });
 
   @override
@@ -110,7 +110,7 @@ class IosTile extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(AppIos.tileRadius),
       ),
-      child: Icon(icon, size: 18, color: iconColor),
+      child: Icon(icon, size: 18, color: iconColor ?? onColorOf(color)),
     );
   }
 }
@@ -351,34 +351,6 @@ class IosTextAreaRow extends StatelessWidget {
   }
 }
 
-// Grupo con una sola acción destructiva centrada, como "Cerrar sesión".
-class IosDestructiveGroup extends StatelessWidget {
-  final String label;
-  final VoidCallback? onTap;
-
-  const IosDestructiveGroup({super.key, required this.label, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return IosSection(
-      children: [
-        InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: AppIos.rowMinHeight),
-            child: Center(
-              child: Text(
-                label,
-                style: IosText.rowTitle(context, color: AppColors.error),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // Aviso de error de un formulario.
 class IosErrorNote extends StatelessWidget {
   final String message;
@@ -403,7 +375,7 @@ class IosErrorNote extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, size: 18, color: AppColors.error),
+            const Icon(Icons.error_rounded, size: 18, color: AppColors.error),
             const SizedBox(width: AppSpacing.s8),
             Expanded(
               child: Text(

@@ -14,25 +14,21 @@ import '../dialogs/sale_dialog.dart';
 import '../widgets/ios_controls.dart';
 import '../widgets/ios_filters.dart';
 import '../widgets/ios_group.dart';
-import '../widgets/ios_scaffold.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/ios_sheet.dart';
 import '../widgets/ios_style.dart';
 import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
 
 class SalesPage extends StatelessWidget {
-  final String backLabel;
-
-  const SalesPage({super.key, this.backLabel = 'Ventas y Compras'});
+  const SalesPage({super.key});
 
   @override
-  Widget build(BuildContext context) => SalesListBody(backLabel: backLabel);
+  Widget build(BuildContext context) => const SalesListBody();
 }
 
 class SalesListBody extends ConsumerWidget {
-  final String backLabel;
-
-  const SalesListBody({super.key, this.backLabel = 'Ventas y Compras'});
+  const SalesListBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,9 +44,8 @@ class SalesListBody extends ConsumerWidget {
         clients.where((c) => c.id == sale.clientId).firstOrNull?.name ??
         'Sin nombre';
 
-    return IosLargeTitleScaffold(
+    return ScreenScaffold.slivers(
       title: 'Ventas',
-      backLabel: backLabel,
       actions: [
         IconButton(
           tooltip: 'Nueva venta',
@@ -73,7 +68,7 @@ class SalesListBody extends ConsumerWidget {
             hasScrollBody: false,
             child: Center(
               child: IosEmptyState(
-                icon: Icons.point_of_sale_outlined,
+                icon: Icons.point_of_sale_rounded,
                 title: 'No se registraron ventas',
                 actionLabel: 'Nueva venta',
                 onAction: () => showSaleForm(context),
@@ -113,7 +108,7 @@ class SalesListBody extends ConsumerWidget {
           if (visible.isEmpty)
             const SliverToBoxAdapter(
               child: IosEmptyState(
-                icon: Icons.search_off_outlined,
+                icon: Icons.search_off_rounded,
                 title: 'Sin resultados',
               ),
             )
@@ -183,9 +178,9 @@ class _SaleRow extends StatelessWidget {
     final canceled = sale.isCanceled;
     return IosRow(
       leading: IosTile(
-        icon: Icons.point_of_sale_outlined,
+        icon: Icons.point_of_sale_rounded,
         color: canceled ? AppColors.iosTrack : AppColors.primaryDark,
-        iconColor: canceled ? AppColors.textSecondary : AppColors.surface,
+        iconColor: canceled ? AppColors.textSecondary : null,
       ),
       title: clientName,
       titleColor: canceled ? AppColors.textSecondary : null,
@@ -216,10 +211,11 @@ class _SaleRow extends StatelessWidget {
         'Bs. ${fixed2(sale.finalAmount)}',
         style: IosText.rowTitle(
           context,
-          color: canceled ? AppColors.textSecondary : AppColors.textPrimary,
+          color: canceled ? AppColors.textMuted : AppColors.textPrimary,
         ).copyWith(
           fontWeight: FontWeight.w600,
           decoration: canceled ? TextDecoration.lineThrough : null,
+          decorationColor: AppColors.textMuted,
         ),
       ),
       chevron: true,

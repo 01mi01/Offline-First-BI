@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'flat_style.dart';
+import 'app_buttons.dart';
 
 // Piezas de los formularios con estilo plano. Fuera de [FlatStyle] cada una se
 // ve como antes, para poder usarlas también en formularios que todavía no
@@ -68,42 +69,15 @@ class FlatFormActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flat = FlatStyle.isActive(context);
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: onSecondary,
-            style: flat
-                ? null
-                : OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppIos.groupRadius),
-                    ),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-            child: Text(
-              secondaryLabel,
-              style: TextStyle(
-                color: flat ? AppColors.textPrimary : AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s12),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: onPrimary,
-            child: Text(
-              primaryLabel,
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textButtons,
-              ),
-            ),
-          ),
+        ElevatedButton(onPressed: onPrimary, child: Text(primaryLabel)),
+        const SizedBox(height: AppButtons.stackGap),
+        AppActionButton(
+          label: secondaryLabel,
+          kind: AppButtonKind.neutral,
+          onPressed: onSecondary,
         ),
       ],
     );
@@ -199,7 +173,7 @@ class FormErrorBox extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+          const Icon(Icons.error_rounded, color: AppColors.error, size: 18),
           const SizedBox(width: AppSpacing.s8),
           Expanded(
             child: Text(
@@ -231,7 +205,7 @@ class FlatPhotoSlot extends StatelessWidget {
     height: size,
     color: AppColors.surface,
     child: const Icon(
-      Icons.add_a_photo_outlined,
+      Icons.add_a_photo_rounded,
       color: AppColors.primaryDark,
       size: 32,
     ),

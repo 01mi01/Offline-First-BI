@@ -4,7 +4,8 @@ import '../../config/date_formatters.dart';
 import '../../theme/app_theme.dart';
 import 'bi_charts.dart' show formatMoney;
 import 'home_profit_chart.dart';
-import 'profile_button.dart';
+import 'screen_header.dart';
+import 'app_list_row.dart';
 
 const Duration _entranceDuration = Duration(milliseconds: 300);
 
@@ -59,41 +60,17 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top;
     final side = homeSidePadding(context);
-    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        ScreenTitle('Hola, $userName', horizontal: side),
         Padding(
-          padding: EdgeInsets.fromLTRB(
-            side,
-            top + AppSpacing.s8,
-            side - AppSpacing.s8,
-            0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Hola, $userName',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  const ProfileButton(),
-                ],
-              ),
-              _PeriodPicker(period: period, onChanged: onPeriodChanged),
-            ],
+          padding: EdgeInsets.symmetric(horizontal: side),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _PeriodPicker(period: period, onChanged: onPeriodChanged),
           ),
         ),
         if (hero != null)
@@ -688,7 +665,7 @@ class HomeErrorCard extends StatelessWidget {
       decoration: AppCards.decoration,
       child: Column(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 28),
+          const Icon(Icons.error_rounded, color: AppColors.error, size: 28),
           const SizedBox(height: AppSpacing.s8),
           Text(
             'No se pudo cargar la información',
@@ -719,138 +696,56 @@ class HomeErrorCard extends StatelessWidget {
 
 class HomeActivityCard extends StatelessWidget {
   final List<HomeActivity> activities;
-  final void Function(HomeActivity) onTap;
 
-  const HomeActivityCard({
-    super.key,
-    required this.activities,
-    required this.onTap,
-  });
+  const HomeActivityCard({super.key, required this.activities});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppListCard(
       key: const ValueKey('home-activity'),
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s16,
-        AppSpacing.s16,
-        AppSpacing.s16,
-        AppSpacing.s8,
-      ),
-      decoration: AppCards.decoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const HomeSectionTitle('Actividad reciente'),
-          const SizedBox(height: AppSpacing.s8),
-          if (activities.isEmpty)
-            const HomeEmptyMessage('Aún no hay movimientos')
-          else
-            for (var i = 0; i < activities.length; i++) ...[
-              if (i > 0)
-                const Divider(height: 1, color: AppColors.border),
-              _ActivityRow(
-                activity: activities[i],
-                onTap: () => onTap(activities[i]),
-              ),
-            ],
-        ],
-      ),
+      children: [
+        if (activities.isEmpty)
+          const HomeEmptyMessage('Aún no hay movimientos')
+        else
+          for (final activity in activities) _activityRow(context, activity),
+      ],
     );
   }
 }
 
-class _ActivityRow extends StatelessWidget {
-  final HomeActivity activity;
-  final VoidCallback onTap;
+Widget _activityRow(BuildContext context, HomeActivity activity) {
+  final textTheme = Theme.of(context).textTheme;
+  final isSale = activity.isSale;
+  final canceled = activity.isCanceled;
+  final id = isSale ? activity.sale!.id : activity.purchase!.id;
+  final amountText = '${isSale ? '+' : '-'} ${formatMoney(activity.amount)}';
 
-  const _ActivityRow({required this.activity, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final isSale = activity.isSale;
-    final canceled = activity.isCanceled;
-    final id = isSale ? activity.sale!.id : activity.purchase!.id;
-    final amountText =
-        '${isSale ? '+' : '-'} ${formatMoney(activity.amount)}';
-
-    return InkWell(
-      key: ValueKey('home-activity-${isSale ? 'sale' : 'purchase'}-$id'),
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.s16),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 64),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isSale ? AppColors.primarySoft : AppColors.successSoft,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isSale
-                      ? Icons.point_of_sale_outlined
-                      : Icons.shopping_bag_outlined,
-                  size: 22,
-                  color: isSale ? AppColors.primaryDark : AppColors.successDark,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isSale ? 'Venta' : 'Compra',
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      '${activity.title} · ${formatDate(activity.date)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.labelMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.s8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    amountText,
-                    style: textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: canceled
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
-                      decoration: canceled ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
-                  if (canceled) ...[
-                    const SizedBox(height: AppSpacing.s4),
-                    const _CanceledPill(),
-                  ],
-                ],
-              ),
-            ],
+  return AppListRow(
+    key: ValueKey('home-activity-${isSale ? 'sale' : 'purchase'}-$id'),
+    icon: isSale ? Icons.point_of_sale_rounded : Icons.shopping_bag_rounded,
+    iconColor: isSale ? AppColors.primaryDark : AppColors.chartColor5,
+    iconBackground: isSale ? AppColors.primarySoft : AppColors.steelSoft,
+    title: isSale ? 'Venta' : 'Compra',
+    subtitle: '${activity.title} · ${formatDate(activity.date)}',
+    trailing: Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          amountText,
+          style: textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: canceled ? AppColors.textMuted : AppColors.textPrimary,
+            decoration: canceled ? TextDecoration.lineThrough : null,
+            decorationColor: AppColors.textMuted,
           ),
         ),
-      ),
-    );
-  }
+        if (canceled) ...[
+          const SizedBox(height: AppSpacing.s4),
+          const _CanceledPill(),
+        ],
+      ],
+    ),
+  );
 }
 
 class _CanceledPill extends StatelessWidget {
@@ -871,7 +766,7 @@ class _CanceledPill extends StatelessWidget {
         'Cancelada',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: AppColors.error,
         ),
       ),
     );

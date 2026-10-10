@@ -4,7 +4,7 @@ import '../../application/report_provider.dart';
 import '../../models/report_models.dart';
 import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/report_sale_card.dart';
 import '../widgets/report_purchase_card.dart';
 import '../../config/rounding.dart';
@@ -100,13 +100,11 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
-        title: widget.title,
-        showBack: true,
-        actions: [
+    return ScreenScaffold(
+      title: widget.title,
+      actions: [
           PopupMenuButton<String>(
+            iconSize: AppHeader.iconSize,
             icon: _isExporting
                 ? const SizedBox(
                     width: 20,
@@ -116,7 +114,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                       color: AppColors.primaryDark,
                     ),
                   )
-                : const Icon(Icons.download_outlined, color: AppColors.primaryDark),
+                : const Icon(Icons.download_rounded, color: AppColors.primaryDark),
             onSelected: (v) {
               if (v == 'pdf') _exportPDF();
               if (v == 'excel') _exportExcel();
@@ -127,7 +125,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.picture_as_pdf_outlined,
+                      Icons.picture_as_pdf_rounded,
                       color: AppColors.error,
                       size: 20,
                     ),
@@ -141,7 +139,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.table_chart_outlined,
+                      Icons.table_chart_rounded,
                       color: AppColors.success,
                       size: 20,
                     ),
@@ -153,7 +151,6 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
             ],
           ),
         ],
-      ),
       body: widget.type == ReportType.sales
           ? _SalesDetailList(rows: widget.saleRows)
           : _PurchasesDetailList(purchases: widget.purchases),

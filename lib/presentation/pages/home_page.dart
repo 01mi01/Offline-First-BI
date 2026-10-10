@@ -18,13 +18,16 @@ import '../../models/purchase_model.dart';
 import '../../models/report_filters.dart';
 import '../../models/sale_model.dart';
 import '../../theme/app_theme.dart';
+import '../navigation/inventario_tab_page.dart';
+import '../navigation/nav_resolver.dart';
+import '../navigation/shell_page.dart';
+import '../widgets/profile_button.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/bi_charts.dart';
 import '../widgets/bi_drilldown.dart';
 import '../widgets/bi_insight_widgets.dart' show BiGroupedBars;
 import '../widgets/home_widgets.dart';
 import 'business_intelligence_page.dart';
-import 'inventario_page.dart';
-import 'purchases_page.dart';
 import 'reports_page.dart';
 import 'sales_page.dart';
 
@@ -183,7 +186,7 @@ class HomePage extends ConsumerWidget {
             key: 'cantidad',
             label: 'Cantidad de ventas',
             value: '${report.ticket.salesCount}',
-            icon: Icons.receipt_long_outlined,
+            icon: Icons.receipt_long_rounded,
             color: AppColors.success,
           ),
         if (access.profit)
@@ -196,7 +199,22 @@ class HomePage extends ConsumerWidget {
           ),
       ];
       if (kpis.isNotEmpty) {
-        sections.add((_) => padded(HomeEntrance(child: HomeKpiGrid(items: kpis))));
+        sections.add(
+          (_) => padded(
+            HomeEntrance(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: AppSpacing.s8),
+                    child: HomeSectionTitle('Resumen'),
+                  ),
+                  HomeKpiGrid(items: kpis),
+                ],
+              ),
+            ),
+          ),
+        );
       }
     }
 
@@ -206,6 +224,15 @@ class HomePage extends ConsumerWidget {
           (report.summary.ingresos == 0 && report.summary.gastos == 0);
       final noMovementsText = 'Aún no hay movimientos ${period.duringLabel}';
       final noSalesText = 'Aún no hay ventas ${period.duringLabel}';
+
+      if (access.profit || access.sales) {
+        sections.add(
+          (_) => padded(
+            const HomeSectionTitle('Análisis'),
+            bottom: AppSpacing.s8,
+          ),
+        );
+      }
 
       if (access.profit) {
         if (period != HomePeriod.today) {
@@ -317,25 +344,24 @@ class HomePage extends ConsumerWidget {
             );
       if (!loading && !failed) {
         sections.add(
-          (ctx) => padded(
-            HomeActivityCard(
-              activities: activities,
-              onTap: (activity) {
-                if (activity.isSale) {
-                  showSaleReceipt(ctx, activity.sale!, activity.title);
-                } else {
-                  showPurchaseDetail(ctx, activity.purchase!, activity.title);
-                }
-              },
-            ),
+          (_) => padded(
+            const HomeSectionTitle('Actividad reciente'),
+            bottom: AppSpacing.s8,
           ),
+        );
+        sections.add(
+          (_) => padded(HomeActivityCard(activities: activities)),
         );
       }
     }
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: Column(
+        children: [
+          const ScreenTopBar(actions: [ProfileButton()]),
+          Expanded(
+            child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
             child: HomeHeader(
@@ -359,30 +385,40 @@ class HomePage extends ConsumerWidget {
             ),
           ),
         ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   IconData _iconFor(HomeShortcut shortcut) => switch (shortcut) {
-    HomeShortcut.products => Icons.inventory_2_outlined,
-    HomeShortcut.sales => Icons.point_of_sale_outlined,
-    HomeShortcut.reports => Icons.bar_chart_outlined,
-    HomeShortcut.businessIntelligence => Icons.insights_outlined,
+    HomeShortcut.products => Icons.inventory_2_rounded,
+    HomeShortcut.sales => Icons.point_of_sale_rounded,
+    HomeShortcut.reports => Icons.bar_chart_rounded,
+    HomeShortcut.businessIntelligence => Icons.insights_rounded,
   };
 
   void _open(BuildContext context, HomeShortcut shortcut) {
     switch (shortcut) {
       case HomeShortcut.products:
-        _push(context, const InventarioPage());
+        _push(context, NavGroupId.inventario, const ProductsScreen());
       case HomeShortcut.sales:
-        _push(context, const SalesPage(backLabel: 'Inicio'));
+        _push(context, NavGroupId.ventasCompras, const SalesPage());
       case HomeShortcut.reports:
-        _push(context, const ReportsPage());
+        _push(context, NavGroupId.reportes, const ReportsPage());
       case HomeShortcut.businessIntelligence:
-        _push(context, const BusinessIntelligencePage());
+        _push(
+          context,
+          NavGroupId.reportes,
+          const BusinessIntelligencePage(),
+        );
     }
   }
 
-  void _push(BuildContext context, Widget page) =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  void _push(BuildContext context, NavGroupId group, Widget page) =>
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ShellPage(group: group, child: page)),
+      );
 }

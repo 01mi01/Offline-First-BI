@@ -3,16 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/ios_group.dart';
-import '../widgets/ios_scaffold.dart';
-import '../widgets/ios_sheet.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/ios_style.dart';
 import 'login_page.dart';
+import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/app_buttons.dart';
+import '../widgets/app_avatar.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showIosConfirm(
+    final confirmed = await confirmCancellation(
       context,
       title: '¿Cerrar sesión?',
       confirmLabel: 'Cerrar sesión',
@@ -37,19 +39,16 @@ class SettingsPage extends ConsumerWidget {
     final email = user?.email ?? '';
     final role = user?.role ?? '';
 
-    return IosLargeTitleScaffold(
+    return ScreenScaffold.slivers(
       title: 'Ajustes',
-      backLabel: 'Atrás',
       slivers: [
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.s8),
-            child: Column(
+          child: Column(
               children: [
                 IosSection(
                   children: [
                     IosRow(
-                      leading: _Avatar(name: username),
+                      leading: AppAvatar(name: username),
                       title: username,
                       subtitle: role.isEmpty
                           ? null
@@ -66,18 +65,16 @@ class SettingsPage extends ConsumerWidget {
                   children: [
                     _valueRow(
                       context,
-                      icon: Icons.person_outline_rounded,
-                      color: AppColors.primaryDark,
-                      iconColor: AppColors.surface,
+                      icon: Icons.person_rounded,
+                      color: AppColors.primary,
                       title: 'Usuario',
                       value: username,
                     ),
                     if (email.isNotEmpty)
                       _valueRow(
                         context,
-                        icon: Icons.mail_outline_rounded,
+                        icon: Icons.mail_rounded,
                         color: AppColors.chartColor5,
-                        iconColor: AppColors.surface,
                         title: 'Correo',
                         value: email,
                       ),
@@ -89,9 +86,9 @@ class SettingsPage extends ConsumerWidget {
                   children: [
                     IosRow(
                       leading: const IosTile(
-                        icon: Icons.dark_mode_outlined,
+                        icon: Icons.dark_mode_rounded,
                         color: AppColors.navy,
-                        iconColor: AppColors.surface,
+                        iconColor: AppColors.textButtons,
                       ),
                       title: 'Tema oscuro',
                       titleColor: AppColors.textSecondary,
@@ -109,13 +106,14 @@ class SettingsPage extends ConsumerWidget {
                     ),
                   ],
                 ),
-                IosDestructiveGroup(
+                AppActionButton(
                   label: 'Cerrar sesión',
-                  onTap: () => _logout(context, ref),
+                  kind: AppButtonKind.destructive,
+                  padding: AppButtons.formPadding,
+                  onPressed: () => _logout(context, ref),
                 ),
               ],
             ),
-          ),
         ),
         SliverToBoxAdapter(
           child: SizedBox(
@@ -130,19 +128,26 @@ class SettingsPage extends ConsumerWidget {
     BuildContext context, {
     required IconData icon,
     required Color color,
-    required Color iconColor,
     required String title,
     required String value,
   }) {
     return IosRow(
-      leading: IosTile(icon: icon, color: color, iconColor: iconColor),
+      leading: IosTile(
+        icon: icon,
+        color: color,
+        iconColor: AppColors.textButtons,
+      ),
       title: title,
       trailing: Flexible(
-        child: Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: IosText.rowSubtitle(context),
+        child: Padding(
+          padding: const EdgeInsets.only(right: AppSpacing.s4),
+          child: Text(
+            value,
+            maxLines: 1,
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+            style: IosText.rowSubtitle(context),
+          ),
         ),
       ),
     );
@@ -150,32 +155,4 @@ class SettingsPage extends ConsumerWidget {
 
   static String _capitalize(String value) =>
       value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
-}
-
-class _Avatar extends StatelessWidget {
-  final String name;
-
-  const _Avatar({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 56,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.primaryDark,
-        shape: BoxShape.circle,
-      ),
-      child: name.isEmpty
-          ? const Icon(Icons.person_rounded, color: AppColors.surface)
-          : Text(
-              name[0].toUpperCase(),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.surface,
-              ),
-            ),
-    );
-  }
 }

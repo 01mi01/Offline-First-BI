@@ -4,6 +4,7 @@ import '../../application/location_provider.dart';
 import '../../models/location_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/app_buttons.dart';
 
 class LocationDialog extends ConsumerStatefulWidget {
   final LocationModel? location;
@@ -214,7 +215,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline,
+                      const Icon(Icons.error_rounded,
                           color: AppColors.error, size: 16),
                       const SizedBox(width: AppSpacing.s8),
                       Expanded(
@@ -234,33 +235,18 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
               const SizedBox(height: AppSpacing.s24),
 
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppIos.groupRadius)),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text('Cancelar',
-                          style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600)),
-                    ),
+                  ElevatedButton(
+                    onPressed: _save,
+                    child: Text(isEditing ? 'Guardar' : 'Crear'),
                   ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(
-                        isEditing ? 'Guardar' : 'Crear',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  const SizedBox(height: AppButtons.stackGap),
+                  AppActionButton(
+                    label: 'Cancelar',
+                    kind: AppButtonKind.neutral,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),

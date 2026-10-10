@@ -57,7 +57,7 @@ class _CatalogSearchFieldState extends State<CatalogSearchField> {
         hintText: widget.hintText,
         isDense: true,
         prefixIcon: const Icon(
-          Icons.search,
+          Icons.search_rounded,
           color: AppColors.textSecondary,
           size: 20,
         ),
@@ -66,7 +66,7 @@ class _CatalogSearchFieldState extends State<CatalogSearchField> {
             : IconButton(
                 tooltip: 'Borrar búsqueda',
                 icon: const Icon(
-                  Icons.close,
+                  Icons.close_rounded,
                   color: AppColors.textSecondary,
                   size: 18,
                 ),

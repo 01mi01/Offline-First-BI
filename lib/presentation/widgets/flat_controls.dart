@@ -24,7 +24,7 @@ class FlatViewToggle extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _Segment(
-            icon: Icons.list,
+            icon: Icons.list_rounded,
             tooltip: 'Vista de lista',
             active: !isGrid,
             onTap: () => onToggle(false),

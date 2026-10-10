@@ -22,6 +22,8 @@ import '../widgets/ios_style.dart';
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
+import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/app_buttons.dart';
 
 class SaleDialog extends ConsumerStatefulWidget {
   final SaleModel? sale;
@@ -229,7 +231,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
   // Cancelar no borra: devuelve el stock y deja la venta marcada como cancelada.
   Future<void> _cancelSale() async {
-    final confirmed = await showIosConfirm(
+    final confirmed = await confirmCancellation(
       context,
       title: '¿Cancelar venta?',
       message:
@@ -299,7 +301,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                     action: IconButton(
                       tooltip: 'Nuevo cliente',
                       icon: const Icon(
-                        Icons.person_add_outlined,
+                        Icons.person_add_rounded,
                         size: 22,
                         color: AppColors.primaryDark,
                       ),
@@ -415,8 +417,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                     ),
                                     trailing: Icon(
                                       inCart
-                                          ? Icons.check_circle
-                                          : Icons.add_circle_outline,
+                                          ? Icons.check_circle_rounded
+                                          : Icons.add_circle_rounded,
                                       color: inCart
                                           ? AppColors.primaryDark
                                           : AppColors.iosChevron,
@@ -537,10 +539,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 ),
               ),
               if (isEditing && !widget.sale!.isCanceled)
-                IosDestructiveGroup(
-                  label: 'Cancelar venta',
-                  onTap: _isLoading ? null : _cancelSale,
-                ),
+                AppActionButton(
+        label: 'Cancelar venta',
+        kind: AppButtonKind.destructive,
+        padding: AppButtons.formPadding,
+        onPressed: _isLoading ? null : _cancelSale,
+      ),
             ],
           ),
         ),

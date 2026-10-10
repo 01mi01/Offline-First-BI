@@ -12,6 +12,7 @@ import '../widgets/focus_utils.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/transaction_date_field.dart';
 import '../../config/app_clock.dart';
+import '../widgets/app_buttons.dart';
 
 class EventDialog extends ConsumerStatefulWidget {
   final EventModel? event;
@@ -228,7 +229,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
-                      Icons.add_location_outlined,
+                      Icons.add_location_rounded,
                       color: AppColors.primaryDark,
                       size: 22,
                     ),
@@ -253,7 +254,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.calendar_today_outlined,
+                        Icons.calendar_today_rounded,
                         color: AppColors.textSecondary,
                         size: 18,
                       ),
@@ -293,7 +294,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                       Row(
                         children: [
                           const Icon(
-                            Icons.calendar_month_outlined,
+                            Icons.calendar_month_rounded,
                             color: AppColors.textSecondary,
                             size: 18,
                           ),
@@ -316,7 +317,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                             setState(() => _endDate = null);
                           },
                           child: const Icon(
-                            Icons.close,
+                            Icons.close_rounded,
                             color: AppColors.textSecondary,
                             size: 16,
                           ),
@@ -401,7 +402,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.error_outline,
+                        Icons.error_rounded,
                         color: AppColors.error,
                         size: 16,
                       ),
@@ -423,37 +424,18 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
               const SizedBox(height: AppSpacing.s24),
 
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppIos.groupRadius),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  ElevatedButton(
+                    onPressed: _save,
+                    child: Text(isEditing ? 'Guardar' : 'Crear'),
                   ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(
-                        isEditing ? 'Guardar' : 'Crear',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  const SizedBox(height: AppButtons.stackGap),
+                  AppActionButton(
+                    label: 'Cancelar',
+                    kind: AppButtonKind.neutral,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),

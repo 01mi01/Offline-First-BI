@@ -63,7 +63,7 @@ class TransactionDateField extends StatelessWidget {
         child: Row(
           children: [
             const Icon(
-              Icons.calendar_today_outlined,
+              Icons.calendar_today_rounded,
               color: AppColors.textSecondary,
               size: 18,
             ),

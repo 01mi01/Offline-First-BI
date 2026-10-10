@@ -1469,7 +1469,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
       controls: OutlinedButton.icon(
         key: const ValueKey('bi-radar-pick'),
         onPressed: () => _pickProducts(context),
-        icon: const Icon(Icons.tune, size: 16),
+        icon: const Icon(Icons.tune_rounded, size: 16),
         label: const Text('Elegir productos'),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryDark,

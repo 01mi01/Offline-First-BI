@@ -7,7 +7,7 @@ import '../../models/report_filters.dart';
 import '../../models/report_models.dart';
 import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/app_bar_widget.dart';
+import '../widgets/screen_header.dart';
 import '../widgets/report_filters_widget.dart';
 import '../widgets/report_sale_card.dart';
 import '../widgets/report_purchase_card.dart';
@@ -19,11 +19,7 @@ class ReportsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: 'Reportes', showBack: true),
-      body: const ReportsBody(),
-    );
+    return const ScreenScaffold(title: 'Reportes', body: ReportsBody());
   }
 }
 
@@ -376,7 +372,7 @@ class _ViewFullReportButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: enabled ? onTap : null,
-      icon: const Icon(Icons.open_in_new, size: 16),
+      icon: const Icon(Icons.open_in_new_rounded, size: 16),
       label: const Text('Ver reporte completo y exportar'),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 44),

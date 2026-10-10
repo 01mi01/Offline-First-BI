@@ -175,7 +175,7 @@ class FractionQuantityPicker extends StatelessWidget {
             ),
             _StepperButton(
               key: const ValueKey('container-whole-minus'),
-              icon: Icons.remove,
+              icon: Icons.remove_rounded,
               onTap: whole > 0
                   ? () => onChanged(combineContainerQuantity(whole - 1, fractionPart))
                   : null,
@@ -193,7 +193,7 @@ class FractionQuantityPicker extends StatelessWidget {
             ),
             _StepperButton(
               key: const ValueKey('container-whole-plus'),
-              icon: Icons.add,
+              icon: Icons.add_rounded,
               onTap: () => onChanged(combineContainerQuantity(whole + 1, fractionPart)),
             ),
           ],
