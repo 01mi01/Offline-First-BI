@@ -22,6 +22,8 @@ import '../widgets/profile_button.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/catalog_filter_bar.dart' show RecordTimeSwitcher;
+import '../../application/record_search.dart';
+import '../widgets/app_controls.dart' show AppSearchBar;
 
 class SalesPage extends StatelessWidget {
   const SalesPage({super.key});
@@ -39,8 +41,15 @@ class SalesListBody extends ConsumerWidget {
     final clients = ref.watch(clientProvider).clients;
     final dates = ref.watch(saleDateFilterProvider);
     final timeFilter = ref.watch(saleTimeFilterProvider);
+    final query = ref.watch(saleListQueryProvider);
+    final searchText = ref.watch(saleSearchTextProvider);
     final visible = state.sales
-        .where((s) => dates.matches(s.date) && timeFilter.includes(s.date))
+        .where(
+          (s) =>
+              dates.matches(s.date) &&
+              timeFilter.includes(s.date) &&
+              matchesAllWords(searchText[s.id] ?? '', query),
+        )
         .toList();
 
     String clientName(SaleModel sale) =>
@@ -90,7 +99,15 @@ class SalesListBody extends ConsumerWidget {
                   onChanged: (value) =>
                       ref.read(saleTimeFilterProvider.notifier).state = value,
                 ),
-                FilterArea(fields: fields),
+                FilterArea(
+                  search: AppSearchBar(
+                    initialText: query,
+                    hintText: 'Buscar por producto o cliente',
+                    onChanged: (value) =>
+                        ref.read(saleListQueryProvider.notifier).state = value,
+                  ),
+                  fields: fields,
+                ),
               ],
             ),
           ),

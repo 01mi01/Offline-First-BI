@@ -23,6 +23,8 @@ import '../widgets/profile_button.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/catalog_filter_bar.dart' show RecordTimeSwitcher;
+import '../../application/record_search.dart';
+import '../widgets/app_controls.dart' show AppSearchBar;
 
 class PurchasesPage extends StatelessWidget {
   const PurchasesPage({super.key});
@@ -41,12 +43,15 @@ class PurchasesListBody extends ConsumerWidget {
     final kind = ref.watch(purchaseKindFilterProvider);
     final dates = ref.watch(purchaseDateFilterProvider);
     final timeFilter = ref.watch(purchaseTimeFilterProvider);
+    final query = ref.watch(purchaseListQueryProvider);
+    final searchText = ref.watch(purchaseSearchTextProvider);
     final visible = state.purchases
         .where(
           (p) =>
               kind.includes(p) &&
               dates.matches(p.date) &&
-              timeFilter.includes(p.date),
+              timeFilter.includes(p.date) &&
+              matchesAllWords(searchText[p.id] ?? '', query),
         )
         .toList();
 
@@ -108,7 +113,16 @@ class PurchasesListBody extends ConsumerWidget {
                   onChanged: (value) =>
                       ref.read(purchaseTimeFilterProvider.notifier).state = value,
                 ),
-                FilterArea(fields: fields),
+                FilterArea(
+                  search: AppSearchBar(
+                    initialText: query,
+                    hintText: 'Buscar por material o proveedor',
+                    onChanged: (value) =>
+                        ref.read(purchaseListQueryProvider.notifier).state =
+                            value,
+                  ),
+                  fields: fields,
+                ),
               ],
             ),
           ),

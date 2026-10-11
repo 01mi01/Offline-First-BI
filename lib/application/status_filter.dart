@@ -37,6 +37,12 @@ final locationCountryFilterProvider =
 final locationCityFilterProvider =
     StateProvider.autoDispose<String?>((ref) => null);
 
+// Filtros "País" y "Ciudad" de Eventos: se aplican a la ubicación del evento.
+final eventCountryFilterProvider =
+    StateProvider.autoDispose<String?>((ref) => null);
+final eventCityFilterProvider =
+    StateProvider.autoDispose<String?>((ref) => null);
+
 // Texto de los buscadores de Clientes, Proveedores, Eventos y Ubicaciones.
 final clientListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 final supplierListQueryProvider = StateProvider.autoDispose<String>((ref) => '');

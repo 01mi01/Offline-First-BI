@@ -46,17 +46,29 @@ class _EventsTab extends ConsumerWidget {
     final locations = ref.watch(locationProvider).locations;
     final status = ref.watch(eventStatusFilterProvider);
     final dates = ref.watch(eventDateFilterProvider);
+    final country = ref.watch(eventCountryFilterProvider);
+    final city = ref.watch(eventCityFilterProvider);
     final query = ref.watch(eventListQueryProvider);
+    final locationById = {for (final l in locations) l.id: l};
     // Un evento de varios días entra si alguno de sus días cae en el rango.
+    // País y ciudad se miden contra la ubicación del evento.
     // Búsqueda por nombre (sin distinguir tildes).
     final visible = filterByQuery<EventModel>(
       state.events.where(
         (e) =>
-            status.matches(e.isActive) && dates.overlaps(e.startDate, e.endDate),
+            status.matches(e.isActive) &&
+            dates.overlaps(e.startDate, e.endDate) &&
+            locationMatches(
+              locationById[e.locationId],
+              country: country,
+              city: city,
+            ),
       ),
       query,
       (e) => e.name,
     );
+    final countries = countryOptions(locations);
+    final cities = cityOptions(locations, country: country);
 
     final fields = <FilterField>[
       FilterDropdown<StatusFilter>(
@@ -69,6 +81,33 @@ class _EventsTab extends ConsumerWidget {
         defaultValue: StatusFilter.all,
         onApply: (value) =>
             ref.read(eventStatusFilterProvider.notifier).state = value,
+      ),
+      FilterDropdown<String?>(
+        label: 'País',
+        options: [
+          const FilterOption<String?>(null, 'Todos los países'),
+          for (final c in countries) FilterOption<String?>(c, c),
+        ],
+        current: country,
+        defaultValue: null,
+        onApply: (value) {
+          ref.read(eventCountryFilterProvider.notifier).state = value;
+          if (city != null &&
+              !cityOptions(locations, country: value).contains(city)) {
+            ref.read(eventCityFilterProvider.notifier).state = null;
+          }
+        },
+      ),
+      FilterDropdown<String?>(
+        label: 'Ciudad',
+        options: [
+          const FilterOption<String?>(null, 'Todas las ciudades'),
+          for (final c in cities) FilterOption<String?>(c, c),
+        ],
+        current: city,
+        defaultValue: null,
+        onApply: (value) =>
+            ref.read(eventCityFilterProvider.notifier).state = value,
       ),
       FilterDates(
         current: dates,
