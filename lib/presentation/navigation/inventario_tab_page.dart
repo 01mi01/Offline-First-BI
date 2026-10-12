@@ -6,8 +6,7 @@ import '../pages/categories_page.dart';
 import '../pages/materials_page.dart';
 import '../pages/products_page.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/flat_list.dart';
-import '../widgets/flat_style.dart';
+import '../widgets/app_group.dart';
 import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/app_list_row.dart';
@@ -28,14 +27,13 @@ class InventarioTabPage extends ConsumerWidget {
       data: (modules) {
         final cards = resolveInventarioCards(modules);
 
-        return FlatStyle(
-          child: ScreenScaffold(
+        return ScreenScaffold(
             title: 'Inventario',
             actions: const [ProfileButton()],
             body: cards.isEmpty
-                ? const FlatEmptyState(
+                ? const AppEmptyState(
                     icon: Icons.inventory_2_rounded,
-                    message: 'No tienes acceso a ningún módulo de inventario',
+                    title: 'No tienes acceso a ningún módulo de inventario',
                   )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),
@@ -59,7 +57,6 @@ class InventarioTabPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-          ),
         );
       },
       loading: () => const Scaffold(
@@ -109,12 +106,10 @@ class ProductsScreen extends StatelessWidget {
   const ProductsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const FlatStyle(
-    child: ScreenScaffold(
-      title: 'Productos',
-      actions: [ProfileButton()],
-      body: ProductsPage(),
-    ),
+  Widget build(BuildContext context) => const ScreenScaffold(
+    title: 'Productos',
+    actions: [ProfileButton()],
+    body: ProductsPage(),
   );
 }
 
@@ -122,11 +117,9 @@ class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const FlatStyle(
-    child: ScreenScaffold(
-      title: 'Categorías',
-      actions: [ProfileButton()],
-      body: CategoriesPage(),
-    ),
+  Widget build(BuildContext context) => const ScreenScaffold(
+    title: 'Categorías',
+    actions: [ProfileButton()],
+    body: CategoriesPage(),
   );
 }

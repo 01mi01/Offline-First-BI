@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-// Etiqueta de estado de un registro: "Activo"/"Inactivo" (o su forma
-// femenina) y "Cancelada"/"Cancelado". Un solo widget para toda la app, con
-// colores de texto oscuros (error/successDark) que cumplen el contraste
-// mínimo sobre su fondo tenue.
+// Pastilla de estado de un registro: "Activo"/"Inactivo" (o su forma femenina) y
+// "Cancelada"/"Cancelado". Un solo widget para todas las listas, detalles y
+// formularios, con el aspecto de la pastilla de Inicio: activo en verde sobre
+// verde suave; inactivo y cancelado en rojo sobre rojo suave. Los colores de
+// texto oscuros (error/successDark) cumplen el contraste mínimo sobre su fondo.
 class StatusBadge extends StatelessWidget {
   final String label;
   final bool positive;
@@ -43,12 +44,12 @@ class StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s8,
-        vertical: AppSpacing.s2,
+        horizontal: AppSpacing.s10,
+        vertical: AppSpacing.s4,
       ),
       decoration: BoxDecoration(
         color: backgroundColor(positive),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Text(
         label,

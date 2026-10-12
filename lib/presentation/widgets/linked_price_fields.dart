@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../application/form_validation.dart';
 import '../../application/material_pricing.dart';
 import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
-import 'flat_form.dart';
+import 'form_widgets.dart';
 
 // Precio de un material, para TODOS los tipos de unidad (contenedor, medida y
 // otros): dos campos siempre visibles y enlazados, "Precio por unidad" y
@@ -150,9 +151,7 @@ class LinkedPriceFields extends StatelessWidget {
             },
             validator: (v) {
               if (controller.source != PriceSource.perUnit) return null;
-              if (v == null || v.isEmpty) return 'Campo requerido';
-              if ((double.tryParse(v) ?? 0) <= 0) return 'Precio inválido';
-              return null;
+              return validateAmountField(v);
             },
           ),
         ),
@@ -171,10 +170,8 @@ class LinkedPriceFields extends StatelessWidget {
             },
             validator: (v) {
               if (controller.source != PriceSource.total) return null;
-              if (v == null || v.isEmpty) return 'Campo requerido';
-              if ((double.tryParse(v) ?? 0) <= 0) {
-                return 'Ingresa lo que pagaste';
-              }
+              final error = validateAmountField(v);
+              if (error != null) return error;
               if (controller.quantity <= 0) {
                 return 'Indica la cantidad para calcular el precio';
               }

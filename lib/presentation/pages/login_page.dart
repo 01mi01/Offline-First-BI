@@ -5,6 +5,7 @@ import '../../application/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../navigation/main_navigation_page.dart';
 import 'dart:math' as math;
+import '../widgets/form_style.dart';
 
 const double _maxContentWidth = 420;
 const double _cardRadius = AppSpacing.s28;
@@ -50,27 +51,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     required IconData icon,
     Widget? suffix,
   }) {
-    OutlineInputBorder border(Color color, [double width = 1]) =>
-        OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
-          borderSide: BorderSide(color: color, width: width),
-        );
-    final enabled = border(AppColors.border);
-    final focused = border(AppColors.cyanDark, 2);
+    // Bordes, relleno y estilo del error vienen de [AppFormTheme], los mismos
+    // que usan todos los formularios de la app.
     return InputDecoration(
       hintText: hint,
-      fillColor: AppColors.surface,
       prefixIcon: Icon(icon),
       prefixIconColor: AppColors.cyanDark,
       suffixIcon: suffix,
-      border: enabled,
-      enabledBorder: enabled,
-      errorBorder: enabled,
-      focusedBorder: focused,
-      focusedErrorBorder: focused,
-      errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: AppColors.error,
-      ),
     );
   }
 
@@ -78,7 +65,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    return Scaffold(
+    return AppFormTheme(
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: LayoutBuilder(
           builder: (context, constraints) {
@@ -146,6 +134,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             );
           },
+      ),
       ),
     );
   }

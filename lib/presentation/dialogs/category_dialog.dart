@@ -7,7 +7,11 @@ import '../../application/category_provider.dart';
 import '../../models/category_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/confirm_cancel_dialog.dart';
-import '../widgets/flat_form.dart';
+import '../../application/form_validation.dart';
+import '../../models/default_records.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/form_style.dart';
+import '../widgets/form_widgets.dart';
 
 class CategoryDialog extends ConsumerStatefulWidget {
   final CategoryModel? category;
@@ -83,6 +87,26 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
     if (path != null) _imageStorage.deleteIfManaged(path);
   }
 
+  // Nombre obligatorio, distinto del reservado del sistema y sin repetirse con
+  // otra categoría (sin distinguir mayúsculas ni tildes).
+  String? _validateName(String? value) {
+    final error = validateName(value);
+    if (error != null) return error;
+    if (DefaultRecords.isCategory(value)) {
+      return DefaultRecords.reservedNameMessage;
+    }
+    final others = ref
+        .read(categoryProvider)
+        .categories
+        .where((c) => c.id != widget.category?.id)
+        .map((c) => c.name);
+    return validateUniqueName(
+      value,
+      others,
+      message: 'Ya existe una categoría con ese nombre',
+    );
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -141,93 +165,59 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   Widget build(BuildContext context) {
     final isEditing = widget.category != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.s24,
-        right: AppSpacing.s24,
-        top: AppSpacing.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Título
-              Text(
-                isEditing ? 'Editar categoría' : 'Nueva categoría',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s24),
+    return FormSheet(
+      title: isEditing ? 'Editar categoría' : 'Nueva categoría',
+      formKey: _formKey,
+      children: [
+        // Selector de imagen
+        AppPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
+        const SizedBox(height: AppSpacing.s20),
 
-              // Selector de imagen
-              FlatPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Nombre
-              LabeledField(
-                label: 'Nombre',
-                builder: (labelText) => TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: labelText,
-                  hintText: 'Nombre de la categoría',
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Campo requerido' : null,
-              ),
-              ),
-              const SizedBox(height: AppSpacing.s16),
-
-              // Descripción
-              LabeledField(
-                label: 'Descripción',
-                builder: (labelText) => TextFormField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                controller: _descController,
-                decoration: InputDecoration(
-                  labelText: labelText,
-                  hintText: 'Descripción opcional',
-                ),
-                maxLines: 2,
-              ),
-              ),
-              const SizedBox(height: AppSpacing.s20),
-
-              // Toggle activo/inactivo solo en edición
-              if (isEditing)
-                FlatToggleRow(
-                  title: 'Categoría activa',
-                  subtitle: _isActive
-                      ? 'Visible en el sistema'
-                      : 'Oculta en el sistema',
-                  value: _isActive,
-                  onChanged: _onToggleActive,
-                ),
-              // Error al guardar
-              if (_saveError != null) ...[
-                const SizedBox(height: AppSpacing.s12),
-                FormErrorBox(message: _saveError!),
-                const SizedBox(height: AppSpacing.s12),
-              ],
-              const SizedBox(height: AppSpacing.s24),
-
-              // Botones
-              FlatFormActions(
-                onSecondary: () => Navigator.pop(context),
-                primaryLabel: isEditing ? 'Guardar' : 'Crear',
-                onPrimary: _save,
-              ),
-            ],
+        // Nombre
+        LabeledField(
+          label: 'Nombre',
+          builder: (_) => TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _nameController,
+            decoration: const InputDecoration(hintText: 'Nombre de la categoría'),
+            validator: _validateName,
           ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.s16),
+
+        // Descripción
+        LabeledField(
+          label: 'Descripción',
+          builder: (_) => TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _descController,
+            decoration: const InputDecoration(hintText: 'Descripción opcional'),
+            maxLines: 2,
+            validator: validateOptionalText,
+          ),
+        ),
+
+        // Estado: solo al editar
+        if (isEditing) ...[
+          const SizedBox(height: AppSpacing.s20),
+          AppToggleRow(
+            title: 'Categoría activa',
+            subtitle: _isActive ? 'Visible en el sistema' : 'Oculta en el sistema',
+            value: _isActive,
+            onChanged: _onToggleActive,
+          ),
+        ],
+        // Error al guardar
+        if (_saveError != null) FormErrorText(_saveError!),
+        const SizedBox(height: AppSpacing.s24),
+
+        // Botones
+        FormActions(
+          onSecondary: () => Navigator.pop(context),
+          primaryLabel: isEditing ? 'Guardar' : 'Crear',
+          onPrimary: _save,
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import 'app_style.dart';
 
@@ -11,6 +10,7 @@ class AppSection extends StatelessWidget {
   final String? footer;
   final List<Widget> children;
   final double dividerIndent;
+  final EdgeInsetsGeometry padding;
 
   const AppSection({
     super.key,
@@ -19,17 +19,18 @@ class AppSection extends StatelessWidget {
     this.headerTrailing,
     this.footer,
     this.dividerIndent = AppMetrics.dividerIndent,
+    this.padding = const EdgeInsets.fromLTRB(
+      AppSpacing.s16,
+      0,
+      AppSpacing.s16,
+      AppSpacing.s24,
+    ),
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s16,
-        0,
-        AppSpacing.s16,
-        AppSpacing.s24,
-      ),
+      padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -202,6 +203,8 @@ class AppValueRow extends StatelessWidget {
   final String value;
   final bool bold;
   final Color? valueColor;
+  // Acción pequeña a la derecha del valor (p. ej. copiar).
+  final Widget? trailing;
 
   const AppValueRow({
     super.key,
@@ -209,6 +212,7 @@ class AppValueRow extends StatelessWidget {
     required this.value,
     this.bold = false,
     this.valueColor,
+    this.trailing,
   });
 
   @override
@@ -240,161 +244,7 @@ class AppValueRow extends StatelessWidget {
                 ).copyWith(fontWeight: bold ? FontWeight.w700 : null),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Fila de formulario con un campo de texto: etiqueta a la izquierda y el campo
-// alineado a la derecha, sin borde.
-class AppTextFieldRow extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? hint;
-  final String? helper;
-  final TextInputType? keyboardType;
-  final List<TextInputFormatter>? inputFormatters;
-  final String? Function(String?)? validator;
-  final ValueChanged<String>? onChanged;
-  final Widget? suffix;
-  final Key? fieldKey;
-
-  const AppTextFieldRow({
-    super.key,
-    required this.label,
-    required this.controller,
-    this.hint,
-    this.helper,
-    this.keyboardType,
-    this.inputFormatters,
-    this.validator,
-    this.onChanged,
-    this.suffix,
-    this.fieldKey,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.s16),
-            child: Text(label, style: AppText.rowTitle(context)),
-          ),
-          const SizedBox(width: AppSpacing.s16),
-          Expanded(
-            child: TextFormField(
-              key: fieldKey,
-              controller: controller,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              keyboardType: keyboardType,
-              inputFormatters: inputFormatters,
-              textAlign: TextAlign.end,
-              style: AppText.rowTitle(context),
-              validator: validator,
-              onChanged: onChanged,
-              decoration: appFieldDecoration(
-                context,
-                hint: hint,
-                helper: helper,
-                suffix: suffix,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Campo de varias líneas: la etiqueta arriba y el texto debajo.
-class AppTextAreaRow extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? hint;
-  final String? Function(String?)? validator;
-  final Key? fieldKey;
-
-  const AppTextAreaRow({
-    super.key,
-    required this.label,
-    required this.controller,
-    this.hint,
-    this.validator,
-    this.fieldKey,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s16,
-        AppSpacing.s12,
-        AppSpacing.s16,
-        AppSpacing.s4,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: AppText.rowTitle(context)),
-          TextFormField(
-            key: fieldKey,
-            controller: controller,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            minLines: 2,
-            maxLines: 4,
-            style: AppText.rowTitle(context),
-            validator: validator,
-            decoration: appFieldDecoration(context, hint: hint).copyWith(
-              contentPadding: const EdgeInsets.only(top: AppSpacing.s6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Aviso de error de un formulario.
-class AppErrorNote extends StatelessWidget {
-  final String message;
-
-  const AppErrorNote({super.key, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s16,
-        0,
-        AppSpacing.s16,
-        AppSpacing.s16,
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.s12),
-        decoration: BoxDecoration(
-          color: AppColors.errorSoft,
-          borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.error_rounded, size: 18, color: AppColors.error),
-            const SizedBox(width: AppSpacing.s8),
-            Expanded(
-              child: Text(
-                message,
-                style: AppText.rowSubtitle(
-                  context,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
+            ?trailing,
           ],
         ),
       ),
@@ -463,6 +313,38 @@ class AppEmptyState extends StatelessWidget {
   }
 }
 
+// Una fila de una lista agrupada: fondo del bloque, esquinas redondeadas en la
+// primera y la última, y una línea fina (con sangría) entre filas.
+Widget _groupItem(
+  Widget row, {
+  required bool first,
+  required bool last,
+  required double dividerIndent,
+}) {
+  const radius = Radius.circular(AppMetrics.groupRadius);
+  return ClipRRect(
+    borderRadius: BorderRadius.vertical(
+      top: first ? radius : Radius.zero,
+      bottom: last ? radius : Radius.zero,
+    ),
+    child: ColoredBox(
+      color: AppColors.surface,
+      child: Column(
+        children: [
+          row,
+          if (!last)
+            Divider(
+              height: 1,
+              thickness: 1,
+              indent: dividerIndent,
+              color: AppColors.separator,
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
 // Lista larga dentro de un bloque agrupado: las filas se construyen al
 // desplazarse; la primera y la última redondean las esquinas del bloque.
 class AppSliverGroup extends StatelessWidget {
@@ -479,35 +361,52 @@ class AppSliverGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const radius = Radius.circular(AppMetrics.groupRadius);
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final first = index == 0;
-          final last = index == itemCount - 1;
-          return ClipRRect(
-            borderRadius: BorderRadius.vertical(
-              top: first ? radius : Radius.zero,
-              bottom: last ? radius : Radius.zero,
-            ),
-            child: ColoredBox(
-              color: AppColors.surface,
-              child: Column(
-                children: [
-                  itemBuilder(context, index),
-                  if (!last)
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      indent: dividerIndent,
-                      color: AppColors.separator,
-                    ),
-                ],
-              ),
-            ),
-          );
-        }, childCount: itemCount),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => _groupItem(
+            itemBuilder(context, index),
+            first: index == 0,
+            last: index == itemCount - 1,
+            dividerIndent: dividerIndent,
+          ),
+          childCount: itemCount,
+        ),
+      ),
+    );
+  }
+}
+
+// Lo mismo que [AppSliverGroup] para una pantalla que no usa slivers: una lista
+// con el bloque agrupado y espacio abajo para el botón flotante.
+class AppGroupListView extends StatelessWidget {
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+  final double dividerIndent;
+
+  const AppGroupListView({
+    super.key,
+    required this.itemCount,
+    required this.itemBuilder,
+    this.dividerIndent = AppMetrics.dividerIndent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s8,
+        AppSpacing.s16,
+        AppFlat.listWithFab.bottom + MediaQuery.paddingOf(context).bottom,
+      ),
+      itemCount: itemCount,
+      itemBuilder: (context, index) => _groupItem(
+        itemBuilder(context, index),
+        first: index == 0,
+        last: index == itemCount - 1,
+        dividerIndent: dividerIndent,
       ),
     );
   }
@@ -518,12 +417,15 @@ class AppBigTotal extends StatelessWidget {
   final String label;
   final String value;
   final String? note;
+  // Pastilla de estado bajo el total (p. ej. "Cancelada").
+  final Widget? pill;
 
   const AppBigTotal({
     super.key,
     required this.label,
     required this.value,
     this.note,
+    this.pill,
   });
 
   @override
@@ -547,12 +449,16 @@ class AppBigTotal extends StatelessWidget {
               ).copyWith(fontSize: AppMetrics.bigNumberSize),
             ),
           ),
+          if (pill != null) ...[
+            const SizedBox(height: AppSpacing.s8),
+            pill!,
+          ],
           if (note != null) ...[
             const SizedBox(height: AppSpacing.s8),
             Text(
               note!,
               textAlign: TextAlign.center,
-              style: AppText.error(context),
+              style: AppText.rowSubtitle(context),
             ),
           ],
         ],

@@ -12,17 +12,24 @@ import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
 import '../dialogs/material_dialog.dart';
 import '../widgets/linked_price_fields.dart'
-    show LinkedPriceController, measureUnitInfoMessage, priceInfoMessage;
+    show
+        LinkedPriceController,
+        LinkedPriceFields,
+        measureUnitInfoMessage,
+        priceInfoMessage;
 import '../widgets/unit_quantity_input.dart';
 import '../../application/location_provider.dart';
 import '../../application/event_provider.dart';
 import '../widgets/focus_utils.dart';
 import '../widgets/app_controls.dart';
-import '../widgets/app_group.dart';
-import '../widgets/app_quantity.dart';
+import '../../application/form_validation.dart';
+import '../../config/date_formatters.dart';
+import '../widgets/form_style.dart';
+import '../widgets/form_widgets.dart';
+import '../widgets/searchable_picker.dart';
+import '../widgets/transaction_date_field.dart';
 import '../widgets/app_sheet.dart';
 import '../widgets/app_style.dart';
-import '../widgets/searchable_picker.dart' show PickerOption;
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
@@ -50,6 +57,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   int? _selectedEventId;
   final List<Map<String, dynamic>> _materialItems = [];
   bool _isLoading = false;
+  // Error de la lista de materiales (vacía) y error general al registrar.
+  String? _itemsError;
   String? _error;
   // Un total escrito a mano manda sobre el calculado de los ítems (solo el monto).
   bool _totalOverridden = false;
@@ -143,14 +152,8 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   void _showAddSupplierSheet() {
     dismissKeyboard();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showAppSheet<void>(
+      context,
       builder: (_) => SupplierDialog(
         onSaved: (supplierId) {
           setState(() {
@@ -168,17 +171,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       context,
       heightFactor: 0.94,
       builder: (_) => _AddMaterialItemSheet(
+        // Un material ya agregado no se repite: se quita de la lista o se
+        // cambia su cantidad con + y −.
+        existingMaterialIds: {
+          for (final item in _materialItems) item['materialId'] as int,
+        },
         onAdded: (item) {
           setState(() {
             _error = null;
-            final index = _materialItems.indexWhere(
-              (i) => i['materialId'] == item['materialId'],
-            );
-            if (index >= 0) {
-              _materialItems[index] = item;
-            } else {
-              _materialItems.add(item);
-            }
+            _itemsError = null;
+            _materialItems.add(item);
             _recalcTotal();
           });
         },
@@ -186,12 +188,28 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     );
   }
 
+  Future<void> _pickDate() async {
+    final picked = await pickTransactionDate(context, _date);
+    if (picked != null) {
+      setState(() {
+        _date = picked;
+        _dateChanged = true;
+      });
+    }
+  }
+
+  // Total: obligatorio en un gasto; en una compra de materiales puede quedar
+  // vacío (se calcula de los materiales). Mayor a 0 y con dos decimales.
+  String? _validateTotal(String? value) =>
+      validateAmountField(value, required: !_isMaterial);
+
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    final valid = _formKey.currentState!.validate();
     if (_isMaterial && _materialItems.isEmpty) {
-      setState(() => _error = 'Agrega al menos un material');
+      setState(() => _itemsError = 'Agrega al menos un material');
       return;
     }
+    if (!valid) return;
 
     var total = round2(double.tryParse(_totalController.text.trim()) ?? 0);
     if (_isMaterial && _totalController.text.trim().isEmpty) {
@@ -326,6 +344,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   if (value == null || value == _isMaterial) return;
                   setState(() {
                     _error = null;
+                    _itemsError = null;
                     _isMaterial = value;
                     _totalOverridden = false;
                     _materialItems.clear();
@@ -337,128 +356,136 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(
-                  top: AppSpacing.s8,
-                  bottom: AppSpacing.s32,
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s8,
+                  AppSpacing.s16,
+                  AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppSection(
-                      children: [
-                        AppPickerRow<int>(
-                          label: 'Proveedor',
-                          searchHint: 'Buscar proveedor',
-                          value: supplierValue,
-                          options: [
-                            const PickerOption<int>(
-                              null,
-                              DefaultRecords.supplier,
-                            ),
-                            for (final s in suppliers)
-                              PickerOption<int>(s.id, s.name),
-                          ],
-                          onChanged: (val) => setState(() {
-                            _selectedSupplierId = val;
-                            _error = null;
-                          }),
-                          action: IconButton(
-                            tooltip: 'Nuevo proveedor',
-                            icon: const Icon(
-                              Icons.add_business_rounded,
-                              size: 22,
-                              color: AppColors.cyanDark,
-                            ),
-                            onPressed: _showAddSupplierSheet,
-                          ),
-                        ),
+                    SearchablePickerField<int>(
+                      label: 'Proveedor',
+                      searchHint: 'Buscar proveedor',
+                      value: supplierValue,
+                      options: [
+                        const PickerOption<int>(null, DefaultRecords.supplier),
+                        for (final s in suppliers)
+                          PickerOption<int>(s.id, s.name),
                       ],
+                      onChanged: (val) => setState(() {
+                        _selectedSupplierId = val;
+                        _error = null;
+                      }),
+                      trailing: AppFieldAction(
+                        icon: Icons.add_business_rounded,
+                        tooltip: 'Nuevo proveedor',
+                        onPressed: _showAddSupplierSheet,
+                      ),
                     ),
-                    AppSection(
-                      children: [
-                        AppPickerRow<int>(
-                          label: 'Ubicación',
-                          searchHint: 'Buscar ubicación',
-                          value: _selectedLocationId,
-                          options: [
-                            const PickerOption<int>(null, 'Sin ubicación'),
-                            for (final l
-                                in ref.watch(locationProvider).locations)
-                              if (l.isActive || l.id == _selectedLocationId)
-                                PickerOption<int>(
-                                  l.id,
-                                  locationLabel(l),
-                                  subtitle: locationZone(l),
-                                  selectedLabel: locationLabelWithZone(l),
-                                ),
-                          ],
-                          onChanged: (val) =>
-                              setState(() => _selectedLocationId = val),
-                        ),
-                        AppPickerRow<int>(
-                          label: 'Evento',
-                          searchHint: 'Buscar evento',
-                          value: _selectedEventId,
-                          options: [
-                            const PickerOption<int>(null, 'Sin evento'),
-                            for (final e in ref.watch(eventProvider).events)
-                              if (e.isActive || e.id == _selectedEventId)
-                                PickerOption<int>(e.id, e.name),
-                          ],
-                          onChanged: (val) =>
-                              setState(() => _selectedEventId = val),
-                        ),
-                        AppDateRow(
-                          date: _date,
-                          onChanged: (value) => setState(() {
-                            _date = value;
-                            _dateChanged = true;
-                          }),
-                        ),
+                    const SizedBox(height: AppSpacing.s16),
+                    SearchablePickerField<int>(
+                      label: 'Ubicación',
+                      searchHint: 'Buscar ubicación',
+                      value: _selectedLocationId,
+                      options: [
+                        const PickerOption<int>(null, 'Sin ubicación'),
+                        for (final l in ref.watch(locationProvider).locations)
+                          if (l.isActive || l.id == _selectedLocationId)
+                            PickerOption<int>(
+                              l.id,
+                              locationLabel(l),
+                              subtitle: locationZone(l),
+                              selectedLabel: locationLabelWithZone(l),
+                            ),
                       ],
+                      onChanged: (val) =>
+                          setState(() => _selectedLocationId = val),
                     ),
+                    const SizedBox(height: AppSpacing.s16),
+                    SearchablePickerField<int>(
+                      label: 'Evento',
+                      searchHint: 'Buscar evento',
+                      value: _selectedEventId,
+                      options: [
+                        const PickerOption<int>(null, 'Sin evento'),
+                        for (final e in ref.watch(eventProvider).events)
+                          if (e.isActive || e.id == _selectedEventId)
+                            PickerOption<int>(e.id, e.name),
+                      ],
+                      onChanged: (val) =>
+                          setState(() => _selectedEventId = val),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+                    AppDateField(
+                      label: 'Fecha',
+                      valueText: formatDate(_date),
+                      onTap: _pickDate,
+                    ),
+                    const SizedBox(height: AppSpacing.s24),
                     if (_isMaterial) ...[
-                      AppSection(
-                        header: 'Materiales',
-                        headerTrailing: TextButton.icon(
-                          onPressed: _showAddMaterialItem,
-                          icon: const Icon(Icons.add_rounded, size: 18),
-                          label: const Text('Agregar'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.cyanDark,
-                            minimumSize: const Size(AppMetrics.minTap, AppMetrics.minTap),
-                          ),
-                        ),
+                      Row(
                         children: [
-                          if (_materialItems.isEmpty)
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minHeight: AppMetrics.rowMinHeight,
+                          const Expanded(child: FormSectionLabel('Materiales')),
+                          TextButton.icon(
+                            onPressed: _showAddMaterialItem,
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: const Text('Agregar'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.cyanDark,
+                              minimumSize: const Size(
+                                AppMetrics.minTap,
+                                AppMetrics.minTap,
                               ),
-                              child: Center(
-                                child: Text(
-                                  'Sin materiales agregados',
-                                  style: AppText.rowSubtitle(context),
-                                ),
-                              ),
-                            )
-                          else
-                            for (var i = 0; i < _materialItems.length; i++)
-                              _materialRow(context, i, unitOf),
+                            ),
+                          ),
                         ],
                       ),
-                      AppSection(
-                        children: [
-                          AppTextFieldRow(
-                            fieldKey: const ValueKey('purchase-total-materials'),
-                            label: 'Total (Bs.)',
-                            controller: _totalController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [_amountFormatter()],
-                            helper: _totalOverridden
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(
+                            AppMetrics.groupRadius,
+                          ),
+                        ),
+                        child: _materialItems.isEmpty
+                            ? ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minHeight: AppMetrics.rowMinHeight,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Sin materiales agregados',
+                                    style: AppText.rowSubtitle(context),
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  for (var i = 0; i < _materialItems.length; i++)
+                                    _materialRow(context, i, unitOf),
+                                ],
+                              ),
+                      ),
+                      if (_itemsError != null) FormErrorText(_itemsError!),
+                      const SizedBox(height: AppSpacing.s16),
+                      LabeledField(
+                        label: 'Total (Bs.)',
+                        builder: (_) => TextFormField(
+                          key: const ValueKey('purchase-total-materials'),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          controller: _totalController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [_amountFormatter()],
+                          validator: _validateTotal,
+                          decoration: InputDecoration(
+                            helperText: _totalOverridden
                                 ? 'Total escrito a mano'
                                 : 'Calculado de los materiales; puedes editarlo',
-                            suffix: _totalOverridden
+                            suffixIcon: _totalOverridden
                                 ? IconButton(
                                     tooltip: 'Usar el total calculado',
                                     icon: const Icon(
@@ -471,84 +498,95 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                                     }),
                                   )
                                 : null,
-                            onChanged: (_) {
-                              if (!_totalOverridden) {
-                                setState(() => _totalOverridden = true);
-                              }
-                            },
                           ),
-                        ],
-                      ),
-                    ] else
-                      AppSection(
-                        children: [
-                          AppTextAreaRow(
-                            fieldKey: const ValueKey('purchase-description'),
-                            label: 'Descripción del gasto',
-                            controller: _descriptionController,
-                            hint: 'Ej: transporte, entradas a eventos, etc.',
-                            validator: (v) =>
-                                v == null || v.isEmpty ? 'Campo requerido' : null,
-                          ),
-                          AppTextFieldRow(
-                            fieldKey: const ValueKey('purchase-total-expense'),
-                            label: 'Total (Bs.)',
-                            controller: _totalController,
-                            hint: '0',
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [_amountFormatter()],
-                            validator: (v) =>
-                                v == null || v.isEmpty ? 'Campo requerido' : null,
-                          ),
-                        ],
-                      ),
-                    AppSection(
-                      children: [
-                        AppTextAreaRow(
-                          label: 'Notas',
-                          controller: _notesController,
-                          hint: 'Observaciones opcionales',
+                          onChanged: (_) {
+                            if (!_totalOverridden) {
+                              setState(() => _totalOverridden = true);
+                            }
+                          },
                         ),
-                      ],
-                    ),
-                    if (_error != null) AppErrorNote(message: _error!),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.s16,
-                        0,
-                        AppSpacing.s16,
-                        AppSpacing.s24,
                       ),
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _save,
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: AppSpacing.s20,
-                                width: AppSpacing.s20,
-                                child: CircularProgressIndicator(
-                                  color: AppColors.onDark,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                isEditing ? 'Guardar' : 'Registrar compra',
-                                maxLines: 1,
-                                style: Theme.of(context).textTheme.headlineLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.onDark,
-                                    ),
-                                textAlign: TextAlign.center,
+                    ] else ...[
+                      LabeledField(
+                        label: 'Descripción del gasto',
+                        builder: (_) => TextFormField(
+                          key: const ValueKey('purchase-description'),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          controller: _descriptionController,
+                          minLines: 2,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            hintText: 'Ej: transporte, entradas a eventos, etc.',
+                          ),
+                          validator: (v) =>
+                              validateRequired(v) ?? validateOptionalText(v),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s16),
+                      LabeledField(
+                        label: 'Total (Bs.)',
+                        builder: (_) => TextFormField(
+                          key: const ValueKey('purchase-total-expense'),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          controller: _totalController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [_amountFormatter()],
+                          decoration: const InputDecoration(hintText: '0'),
+                          validator: _validateTotal,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.s16),
+                    LabeledField(
+                      label: 'Notas',
+                      builder: (_) => TextFormField(
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        controller: _notesController,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          hintText: 'Observaciones opcionales',
+                        ),
+                        validator: validateOptionalText,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s24),
+                    if (_error != null) ...[
+                      FormErrorText(_error!),
+                      const SizedBox(height: AppSpacing.s16),
+                    ],
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _save,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: AppSpacing.s20,
+                              width: AppSpacing.s20,
+                              child: CircularProgressIndicator(
+                                color: AppColors.onDark,
+                                strokeWidth: 2,
                               ),
-                      ),
+                            )
+                          : Text(
+                              isEditing ? 'Guardar' : 'Registrar compra',
+                              maxLines: 1,
+                              style: Theme.of(context).textTheme.headlineLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.onDark,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
                     ),
-                    if (isEditing && !widget.purchase!.isCanceled)
+                    if (isEditing && !widget.purchase!.isCanceled) ...[
+                      const SizedBox(height: AppButtons.stackGap),
                       AppActionButton(
-        label: 'Cancelar compra',
-        kind: AppButtonKind.destructive,
-        padding: AppButtons.formPadding,
-        onPressed: _isLoading ? null : _cancelPurchase,
-      ),
+                        label: 'Cancelar compra',
+                        kind: AppButtonKind.destructive,
+                        onPressed: _isLoading ? null : _cancelPurchase,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -623,8 +661,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
 class _AddMaterialItemSheet extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onAdded;
+  final Set<int> existingMaterialIds;
 
-  const _AddMaterialItemSheet({required this.onAdded});
+  const _AddMaterialItemSheet({
+    required this.onAdded,
+    required this.existingMaterialIds,
+  });
 
   @override
   ConsumerState<_AddMaterialItemSheet> createState() =>
@@ -695,22 +737,23 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
     _container.setPrice(pricePerUnit);
   }
 
+  // Elegir un material que ya está en la compra se avisa al instante.
+  String? _duplicateError(int? materialId) =>
+      materialId != null && widget.existingMaterialIds.contains(materialId)
+      ? 'Ese material ya está en la compra. Quítalo de la lista o cambia su cantidad con + y −.'
+      : null;
+
   void _showCreateMaterialSheet() {
     dismissKeyboard();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showAppSheet<void>(
+      context,
       builder: (_) => MaterialDialog(
         onSaved: (materialId, materialName, pricePerUnit, _) {
           if (mounted) {
             setState(() {
               _selectedMaterialId = materialId;
               _selectedMaterialName = materialName;
+              _materialError = _duplicateError(materialId);
               _resetFor(pricePerUnit);
               // El stock inicial del material ya quedó como su propia compra.
               _quantityController.clear();
@@ -725,6 +768,11 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
     final valid = _formKey.currentState!.validate();
     if (_selectedMaterialId == null) {
       setState(() => _materialError = 'Selecciona un material');
+      return;
+    }
+    final duplicate = _duplicateError(_selectedMaterialId);
+    if (duplicate != null) {
+      setState(() => _materialError = duplicate);
       return;
     }
     final container = _isContainer(_selectedMaterialId);
@@ -774,60 +822,42 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            top: AppSpacing.s8,
-            bottom: AppSpacing.s32,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            AppSpacing.s8,
+            AppSpacing.s16,
+            AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppSection(
-                children: [
-                  AppPickerRow<int>(
-                    label: 'Material',
-                    searchHint: 'Buscar material',
-                    value: _selectedMaterialId,
-                    options: [
-                      for (final m in materials)
-                        PickerOption<int>(m.id, m.name),
-                    ],
-                    onChanged: (val) {
-                      final mat = materials
-                          .where((m) => m.id == val)
-                          .firstOrNull;
-                      setState(() {
-                        _selectedMaterialId = val;
-                        _selectedMaterialName = mat?.name;
-                        _materialError = null;
-                        _resetFor(mat?.pricePerUnit);
-                      });
-                    },
-                  ),
-                  AppRow(
-                    title: 'Crear nuevo material',
-                    titleColor: AppColors.cyanDark,
-                    leading: const Icon(
-                      Icons.add_circle_rounded,
-                      size: 22,
-                      color: AppColors.cyanDark,
-                    ),
-                    onTap: _showCreateMaterialSheet,
-                  ),
+              SearchablePickerField<int>(
+                label: 'Material',
+                searchHint: 'Buscar material',
+                value: _selectedMaterialId,
+                options: [
+                  for (final m in materials) PickerOption<int>(m.id, m.name),
                 ],
-              ),
-              if (_materialError != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s32,
-                    0,
-                    AppSpacing.s16,
-                    AppSpacing.s16,
-                  ),
-                  child: Text(_materialError!, style: AppText.error(context)),
+                onChanged: (val) {
+                  final mat = materials.where((m) => m.id == val).firstOrNull;
+                  setState(() {
+                    _selectedMaterialId = val;
+                    _selectedMaterialName = mat?.name;
+                    _materialError = _duplicateError(val);
+                    _resetFor(mat?.pricePerUnit);
+                  });
+                },
+                trailing: AppFieldAction(
+                  icon: Icons.add_rounded,
+                  tooltip: 'Crear nuevo material',
+                  onPressed: _showCreateMaterialSheet,
                 ),
+              ),
+              if (_materialError != null) FormErrorText(_materialError!),
+              const SizedBox(height: AppSpacing.s16),
               if (selectedUnit != null &&
                   isFractionFriendlyUnitType(selectedUnit.type))
-                AppFractionPicker(
+                FractionQuantityPicker(
                   unit: selectedUnit.name,
                   value: _fractionQuantity,
                   onChanged: (v) => setState(() {
@@ -836,80 +866,70 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                     _container.setQuantity(v);
                   }),
                 )
+              else if (discrete)
+                WholeNumberQuantityField(
+                  controller: _quantityController,
+                  labelText: label,
+                  extraValidator: (qty) =>
+                      qty > maxQuantity ? 'El valor es demasiado grande' : null,
+                )
               else
-                AppSection(
-                  children: [
-                    if (discrete)
-                      AppWholeNumberRow(
-                        controller: _quantityController,
-                        label: label,
-                      )
-                    else
-                      AppTextFieldRow(
-                        label: label,
-                        controller: _quantityController,
-                        hint: '0',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [
-                          TextInputFormatter.withFunction((oldValue, newValue) {
-                            if (newValue.text.isEmpty) return newValue;
-                            if (newValue.text == '0') return newValue;
-                            if (newValue.text.startsWith('0') &&
-                                !newValue.text.startsWith('0.')) {
-                              return oldValue;
-                            }
-                            if (double.tryParse(newValue.text) == null &&
-                                newValue.text != '.') {
-                              return oldValue;
-                            }
-                            return newValue;
-                          }),
-                        ],
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Campo requerido';
-                          final qty = double.tryParse(v);
-                          if (qty == null || qty <= 0) return 'Cantidad inválida';
-                          return null;
-                        },
-                      ),
-                  ],
-                ),
-              if (_quantityError != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s32,
-                    0,
-                    AppSpacing.s16,
-                    AppSpacing.s16,
+                LabeledField(
+                  label: label,
+                  builder: (_) => TextFormField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    controller: _quantityController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(hintText: '0'),
+                    inputFormatters: [
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        if (newValue.text.isEmpty) return newValue;
+                        if (newValue.text == '0') return newValue;
+                        if (newValue.text.startsWith('0') &&
+                            !newValue.text.startsWith('0.')) {
+                          return oldValue;
+                        }
+                        if (double.tryParse(newValue.text) == null &&
+                            newValue.text != '.') {
+                          return oldValue;
+                        }
+                        return newValue;
+                      }),
+                    ],
+                    validator: (v) =>
+                        validateDecimal(v, maxDecimals: 2, max: maxQuantity),
                   ),
-                  child: Text(_quantityError!, style: AppText.error(context)),
                 ),
-              AppSection(
-                footer: _isMedida(_selectedMaterialId)
-                    ? '$priceInfoMessage $measureUnitInfoMessage'
-                    : priceInfoMessage,
-                children: [
-                  AppLinkedPriceRows(
-                    controller: _container,
-                    onChanged: () => setState(() {}),
-                    priceLabel: 'Precio por unidad (Bs.)',
-                  ),
-                ],
+              if (_quantityError != null) FormErrorText(_quantityError!),
+              const SizedBox(height: AppSpacing.s16),
+              LinkedPriceFields(
+                controller: _container,
+                onChanged: () => setState(() {}),
+                priceLabel: 'Precio por unidad (Bs.)',
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s16,
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s4,
+                  AppSpacing.s8,
+                  AppSpacing.s4,
+                  AppSpacing.s24,
                 ),
-                child: ElevatedButton(
-                  onPressed: _add,
-                  child: Text(
-                    'Agregar',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.onDark,
-                    ),
+                child: Text(
+                  _isMedida(_selectedMaterialId)
+                      ? '$priceInfoMessage $measureUnitInfoMessage'
+                      : priceInfoMessage,
+                  style: AppText.footnote(context),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: _add,
+                child: Text(
+                  'Agregar',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onDark,
                   ),
                 ),
               ),

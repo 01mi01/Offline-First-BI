@@ -16,6 +16,10 @@ import '../widgets/status_badge.dart';
 import '../../config/date_formatters.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/flat_list.dart';
+import '../widgets/app_group.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/record_detail.dart';
+import '../widgets/record_list.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
 
@@ -138,27 +142,28 @@ class _EventsTab extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.events.isEmpty
                 ? Center(
-                    child: Text(
-                      'No se registraron eventos',
-                      style: TextStyle(color: AppColors.textSecondary),
+                    child: AppEmptyState(
+                      icon: Icons.event_rounded,
+                      title: 'No se registraron eventos',
+                      actionLabel: 'Nuevo evento',
+                      onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
-                ? Center(
-                    child: Text(
-                      'Sin resultados',
-                      style: TextStyle(color: AppColors.textSecondary),
+                ? const SingleChildScrollView(
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Sin resultados',
                     ),
                   )
-                : ListView.builder(
-                    padding: AppSpacing.listWithFab,
+                : AppGroupListView(
                     itemCount: visible.length,
                     itemBuilder: (context, index) {
                       final event = visible[index];
                       final location = locations
                           .where((l) => l.id == event.locationId)
                           .firstOrNull;
-                      return _EventCard(
+                      return _EventRow(
                         event: event,
                         location: location,
                         onEdit: () => _showDialog(context, event),
@@ -172,16 +177,7 @@ class _EventsTab extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, EventModel? event) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => EventDialog(event: event),
-    );
+    showAppSheet<void>(context, builder: (_) => EventDialog(event: event));
   }
 }
 
@@ -271,24 +267,25 @@ class _LocationsTab extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.locations.isEmpty
                 ? Center(
-                    child: Text(
-                      'No se registraron ubicaciones',
-                      style: TextStyle(color: AppColors.textSecondary),
+                    child: AppEmptyState(
+                      icon: Icons.place_rounded,
+                      title: 'No se registraron ubicaciones',
+                      actionLabel: 'Nueva ubicación',
+                      onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
-                ? Center(
-                    child: Text(
-                      'Sin resultados',
-                      style: TextStyle(color: AppColors.textSecondary),
+                ? const SingleChildScrollView(
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Sin resultados',
                     ),
                   )
-                : ListView.builder(
-                    padding: AppSpacing.listWithFab,
+                : AppGroupListView(
                     itemCount: visible.length,
                     itemBuilder: (context, index) {
                       final loc = visible[index];
-                      return _LocationCard(
+                      return _LocationRow(
                         location: loc,
                         onEdit: () => _showDialog(context, loc),
                       );
@@ -301,412 +298,122 @@ class _LocationsTab extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, LocationModel? location) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => LocationDialog(location: location),
-    );
+    showAppSheet<void>(context, builder: (_) => LocationDialog(location: location));
   }
 }
 
-// Tarjeta de evento
-class _EventCard extends StatelessWidget {
+// Fecha de un evento: un día, o el rango de inicio a fin.
+String _eventDates(EventModel event) => event.endDate != null
+    ? '${formatDate(event.startDate)} — ${formatDate(event.endDate!)}'
+    : formatDate(event.startDate);
+
+// Fila de evento
+class _EventRow extends StatelessWidget {
   final EventModel event;
   final LocationModel? location;
   final VoidCallback onEdit;
 
-  const _EventCard({
+  const _EventRow({
     required this.event,
     required this.location,
     required this.onEdit,
   });
 
-  String _formatDate(DateTime date) => formatDate(date);
-
   void _showDetail(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierColor: AppColors.scrim,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            color: AppColors.surface,
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s24,
-                    AppSpacing.s24,
-                    AppSpacing.s24,
-                    0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          event.name,
-                          style: Theme.of(context).textTheme.displayLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.s6),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textSecondary,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s16),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.s24,
-                      0,
-                      AppSpacing.s24,
-                      AppSpacing.s24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event.endDate != null
-                              ? '${_formatDate(event.startDate)} — ${_formatDate(event.endDate!)}'
-                              : _formatDate(event.startDate),
-                          style: Theme.of(
-                            context,
-                          ).textTheme.displaySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        if (location != null) ...[
-                          const SizedBox(height: AppSpacing.s8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.s8,
-                              vertical: AppSpacing.s2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.cyanDark.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              locationLabelWithZone(location!),
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.cyanDark,
-                                  ),
-                            ),
-                          ),
-                        ],
-                        if (event.notes != null && event.notes!.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.s12),
-                          Text(
-                            event.notes!,
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(
-                                  color: AppColors.textSecondary,
-                                  height: 1.6,
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    final loc = location;
+    final notes = event.notes;
+    showAppSheet<void>(
+      context,
+      builder: (_) => RecordDetailSheet(
+        title: 'Detalle del evento',
+        onEdit: onEdit,
+        children: [
+          RecordHeadline(
+            title: event.name,
+            pill: StatusBadge.forState(isActive: event.isActive),
           ),
-        ),
+          AppSection(
+            children: [
+              AppValueRow(label: 'Fecha', value: _eventDates(event)),
+              if (loc != null)
+                AppValueRow(
+                  label: 'Ubicación',
+                  value: locationLabelWithZone(loc),
+                ),
+              if (notes != null && notes.isNotEmpty)
+                AppValueRow(label: 'Notas', value: notes),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final loc = location;
+    final notes = event.notes;
+    return RecordRow(
+      title: event.name,
+      details: [
+        RecordLine(_eventDates(event)),
+        if (loc != null) RecordLine(locationLabelWithZone(loc)),
+        if (notes != null && notes.isNotEmpty) RecordLine(notes, maxLines: 1),
+      ],
+      pill: StatusBadge.forState(isActive: event.isActive),
       onTap: () => _showDetail(context),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
-        padding: const EdgeInsets.all(AppSpacing.s16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.name,
-                    style: Theme.of(context).textTheme.headlineLarge
-                        ?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.s4),
-                  Text(
-                    event.endDate != null
-                        ? '${_formatDate(event.startDate)} — ${_formatDate(event.endDate!)}'
-                        : _formatDate(event.startDate),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (location != null) ...[
-                    const SizedBox(height: AppSpacing.s4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s8,
-                        vertical: AppSpacing.s2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.cyanDark.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        locationLabelWithZone(location!),
-                        style: Theme.of(context).textTheme.labelSmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.cyanDark,
-                            ),
-                      ),
-                    ),
-                  ],
-                  if (event.notes != null && event.notes!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.s4),
-                    Text(
-                      event.notes!,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.s4),
-                  StatusBadge.forState(
-                    isActive: event.isActive,
-                    activeLabel: 'Activo',
-                    inactiveLabel: 'Inactivo',
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.edit_rounded,
-                color: AppColors.cyanDark,
-                size: 20,
-              ),
-              onPressed: onEdit,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
 
-// Tarjeta de ubicación
-class _LocationCard extends StatelessWidget {
+// Fila de ubicación
+class _LocationRow extends StatelessWidget {
   final LocationModel location;
   final VoidCallback onEdit;
 
-  const _LocationCard({required this.location, required this.onEdit});
+  const _LocationRow({required this.location, required this.onEdit});
 
   void _showDetail(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierColor: AppColors.scrim,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            color: AppColors.surface,
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.5,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s24,
-                    AppSpacing.s24,
-                    AppSpacing.s24,
-                    0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${location.city}, ${location.country}',
-                          style: Theme.of(context).textTheme.displayLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.s6),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textSecondary,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s16),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.s24,
-                      0,
-                      AppSpacing.s24,
-                      AppSpacing.s24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        StatusBadge.forState(
-isActive: location.isActive,
-activeLabel: 'Activa',
-inactiveLabel: 'Inactiva',
-),
-                        if (location.description != null &&
-                            location.description!.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.s12),
-                          Text(
-                            location.description!,
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(
-                                  color: AppColors.textSecondary,
-                                  height: 1.6,
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+    final zone = location.description;
+    showAppSheet<void>(
+      context,
+      builder: (_) => RecordDetailSheet(
+        title: 'Detalle de la ubicación',
+        onEdit: onEdit,
+        children: [
+          RecordHeadline(
+            title: locationLabel(location),
+            pill: StatusBadge.forState(
+              isActive: location.isActive,
+              activeLabel: 'Activa',
+              inactiveLabel: 'Inactiva',
             ),
           ),
-        ),
+          AppSection(
+            children: [
+              AppValueRow(label: 'Ciudad', value: location.city),
+              AppValueRow(label: 'País', value: location.country),
+              if (zone != null && zone.isNotEmpty)
+                AppValueRow(label: 'Descripción', value: zone),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showDetail(context),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
-        padding: const EdgeInsets.all(AppSpacing.s16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${location.city}, ${location.country}',
-                    style: Theme.of(context).textTheme.headlineLarge
-                        ?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                  ),
-                  if (location.description != null &&
-                      location.description!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      location.description!,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.displaySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.s4),
-                  StatusBadge.forState(
-isActive: location.isActive,
-activeLabel: 'Activa',
-inactiveLabel: 'Inactiva',
-),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.edit_rounded,
-                color: AppColors.cyanDark,
-                size: 20,
-              ),
-              onPressed: onEdit,
-            ),
-          ],
-        ),
+    final zone = location.description;
+    return RecordRow(
+      title: locationLabel(location),
+      details: [if (zone != null && zone.isNotEmpty) RecordLine(zone, maxLines: 1)],
+      pill: StatusBadge.forState(
+        isActive: location.isActive,
+        activeLabel: 'Activa',
+        inactiveLabel: 'Inactiva',
       ),
+      onTap: () => _showDetail(context),
     );
   }
 }

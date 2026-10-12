@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offline_first_bi/models/product_model.dart';
-import 'dart:io';
 import '../../application/product_provider.dart';
 import '../../application/product_catalog_filter.dart';
 import '../../application/status_filter.dart';
 import '../../application/category_provider.dart';
 import '../../application/material_provider.dart';
+import '../../models/category_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/product_dialog.dart';
+import '../widgets/app_group.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/app_style.dart';
 import '../widgets/flat_controls.dart';
 import '../widgets/flat_list.dart';
-import '../widgets/flat_style.dart';
+import '../widgets/record_detail.dart';
+import '../widgets/record_list.dart';
+import '../widgets/status_badge.dart';
 import '../../config/rounding.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/filter_panel.dart';
 
-// Productos con el estilo plano de Inventario (ver flat_style.dart): filas sin
-// tarjeta separadas por una línea fina, catálogo de baldosas sin sombra y
-// formularios con campos neutros.
+// Productos: lista y catálogo de baldosas. Tocar un producto abre su detalle.
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
 
@@ -38,149 +41,150 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final visible = filter.apply(state.products);
     final priceDisplay = filter.priceDisplay;
 
-    return FlatStyle(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        floatingActionButton: FlatFab(
-          // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-          // conviven montadas a la vez bajo el shell de navegación inferior.
-          heroTag: 'products_page_fab',
-          onPressed: () => _showDialog(context, null),
-        ),
-        body: Column(
-          children: [
-            ViewModeSwitcher(
-              isGrid: _isGrid,
-              onChanged: (value) => setState(() => _isGrid = value),
-            ),
-            FilterArea(
-              search: AppSearchBar(
-                initialText: filter.query,
-                hintText: 'Buscar producto',
-                onChanged: (value) =>
-                    setFilter.update((f) => f.copyWith(query: value)),
-              ),
-              fields: [
-                FilterDropdown<PriceDisplay>(
-                  label: 'Precio',
-                  options: const [
-                    FilterOption(PriceDisplay.both, 'Ambos'),
-                    FilterOption(PriceDisplay.a, 'Precio A'),
-                    FilterOption(PriceDisplay.b, 'Precio B'),
-                    FilterOption(PriceDisplay.none, 'Sin precio'),
-                  ],
-                  current: filter.priceDisplay,
-                  defaultValue: PriceDisplay.both,
-                  onApply: (value) =>
-                      setFilter.update((f) => f.copyWith(priceDisplay: value)),
-                ),
-                FilterDropdown<StatusFilter>(
-                  label: 'Estado',
-                  options: statusFilterOptions(),
-                  current: filter.status,
-                  defaultValue: StatusFilter.all,
-                  onApply: (value) =>
-                      setFilter.update((f) => f.copyWith(status: value)),
-                ),
-                FilterDropdown<int?>(
-                  label: 'Categoría',
-                  wide: true,
-                  options: [
-                    const FilterOption<int?>(null, 'Todas las categorías'),
-                    for (final c in categories)
-                      FilterOption<int?>(c.id, c.name),
-                  ],
-                  current: filter.categoryId,
-                  defaultValue: null,
-                  onApply: (id) => setFilter.update(
-                    (f) => id == null
-                        ? f.copyWith(clearCategory: true)
-                        : f.copyWith(categoryId: id),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s8),
-            Expanded(
-              child: state.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : state.products.isEmpty
-                  ? FlatEmptyState(
-                      icon: Icons.inventory_2_rounded,
-                      message: 'No se registraron productos',
-                      actionLabel: 'Nuevo producto',
-                      onAction: () => _showDialog(context, null),
-                    )
-                  : visible.isEmpty
-                  ? const FlatEmptyState(
-                      icon: Icons.search_off_rounded,
-                      message: 'Sin resultados',
-                    )
-                  : _isGrid
-                  ? _GridView(
-                      products: visible,
-                      priceDisplay: priceDisplay,
-                      showInactive: filter.status == StatusFilter.inactive,
-                    )
-                  : _ListViewWidget(
-                      products: visible,
-                      priceDisplay: priceDisplay,
-                      onEdit: (p) => _showDialog(context, p),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDialog(BuildContext context, ProductModel? product) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+    return Scaffold(
       backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      floatingActionButton: FlatFab(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'products_page_fab',
+        onPressed: () => _showForm(context, null),
       ),
-      builder: (_) => FlatStyle(child: ProductDialog(product: product)),
+      body: Column(
+        children: [
+          ViewModeSwitcher(
+            isGrid: _isGrid,
+            onChanged: (value) => setState(() => _isGrid = value),
+          ),
+          FilterArea(
+            search: AppSearchBar(
+              initialText: filter.query,
+              hintText: 'Buscar producto',
+              onChanged: (value) =>
+                  setFilter.update((f) => f.copyWith(query: value)),
+            ),
+            fields: [
+              FilterDropdown<PriceDisplay>(
+                label: 'Precio',
+                options: const [
+                  FilterOption(PriceDisplay.both, 'Ambos'),
+                  FilterOption(PriceDisplay.a, 'Precio A'),
+                  FilterOption(PriceDisplay.b, 'Precio B'),
+                  FilterOption(PriceDisplay.none, 'Sin precio'),
+                ],
+                current: filter.priceDisplay,
+                defaultValue: PriceDisplay.both,
+                onApply: (value) =>
+                    setFilter.update((f) => f.copyWith(priceDisplay: value)),
+              ),
+              FilterDropdown<StatusFilter>(
+                label: 'Estado',
+                options: statusFilterOptions(),
+                current: filter.status,
+                defaultValue: StatusFilter.all,
+                onApply: (value) =>
+                    setFilter.update((f) => f.copyWith(status: value)),
+              ),
+              FilterDropdown<int?>(
+                label: 'Categoría',
+                wide: true,
+                options: [
+                  const FilterOption<int?>(null, 'Todas las categorías'),
+                  for (final c in categories) FilterOption<int?>(c.id, c.name),
+                ],
+                current: filter.categoryId,
+                defaultValue: null,
+                onApply: (id) => setFilter.update(
+                  (f) => id == null
+                      ? f.copyWith(clearCategory: true)
+                      : f.copyWith(categoryId: id),
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.products.isEmpty
+                ? Center(
+                    child: AppEmptyState(
+                      icon: Icons.inventory_2_rounded,
+                      title: 'No se registraron productos',
+                      actionLabel: 'Nuevo producto',
+                      onAction: () => _showForm(context, null),
+                    ),
+                  )
+                : visible.isEmpty
+                ? const SingleChildScrollView(
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Sin resultados',
+                    ),
+                  )
+                : _isGrid
+                ? _GridView(
+                    products: visible,
+                    priceDisplay: priceDisplay,
+                    showInactive: filter.status == StatusFilter.inactive,
+                  )
+                : _ListViewWidget(products: visible, priceDisplay: priceDisplay),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// Vista de lista — muestra todos los campos incluyendo materiales
+void _showForm(BuildContext context, ProductModel? product) {
+  showAppSheet<void>(context, builder: (_) => ProductDialog(product: product));
+}
+
+void _showDetail(
+  BuildContext context,
+  ProductModel product,
+  String categoryName,
+  PriceDisplay priceDisplay,
+) {
+  showAppSheet<void>(
+    context,
+    builder: (_) => _ProductDetailSheet(
+      product: product,
+      categoryName: categoryName,
+      priceDisplay: priceDisplay,
+      onEdit: () => _showForm(context, product),
+    ),
+  );
+}
+
+// Nombre de la categoría de un producto ("Sin categoría" si no se encuentra).
+String _categoryNameOf(List<CategoryModel> categories, ProductModel p) =>
+    categories
+        .where((c) => c.id == p.categoryId)
+        .map((c) => c.name)
+        .firstOrNull ??
+    'Sin categoría';
+
+// Vista de lista
 class _ListViewWidget extends ConsumerWidget {
   final List<ProductModel> products;
-  final ValueChanged<ProductModel> onEdit;
   // Qué precios muestra cada fila (mismo filtro que el catálogo).
   final PriceDisplay priceDisplay;
 
-  const _ListViewWidget({
-    required this.products,
-    required this.onEdit,
-    required this.priceDisplay,
-  });
+  const _ListViewWidget({required this.products, required this.priceDisplay});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categories = ref.watch(categoryProvider).categories;
-
-    return ListView.builder(
-      padding: AppFlat.listWithFab,
+    return AppGroupListView(
+      dividerIndent: AppMetrics.dividerIndentWithThumb,
       itemCount: products.length,
       itemBuilder: (context, index) {
         final p = products[index];
-        final categoryName =
-            categories
-                .where((c) => c.id == p.categoryId)
-                .map((c) => c.name)
-                .firstOrNull ??
-            'Sin categoría';
+        final categoryName = _categoryNameOf(categories, p);
         return _ProductRow(
           product: p,
           categoryName: categoryName,
           priceDisplay: priceDisplay,
-          onEdit: () => onEdit(p),
+          onTap: () => _showDetail(context, p, categoryName, priceDisplay),
         );
       },
     );
@@ -188,7 +192,7 @@ class _ListViewWidget extends ConsumerWidget {
 }
 
 // Vista de catálogo — solo activos, imagen, nombre, precio
-class _GridView extends StatelessWidget {
+class _GridView extends ConsumerWidget {
   final List<ProductModel> products;
   // Qué precio muestran las baldosas (y el detalle) de todo el catálogo.
   final PriceDisplay priceDisplay;
@@ -203,7 +207,8 @@ class _GridView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categories = ref.watch(categoryProvider).categories;
     final active = showInactive
         ? products
         : products.where((p) => p.isActive).toList();
@@ -224,33 +229,19 @@ class _GridView extends StatelessWidget {
           icon: Icons.inventory_2_rounded,
           title: p.name,
           lines: _catalogPriceLines(p, priceDisplay),
-          onTap: () => _showDetail(context, p),
+          onTap: () =>
+              _showDetail(context, p, _categoryNameOf(categories, p), priceDisplay),
         );
       },
-    );
-  }
-
-  void _showDetail(BuildContext context, ProductModel p) {
-    showDialog(
-      context: context,
-      barrierColor: AppColors.textPrimary.withValues(alpha: 0.5),
-      builder: (_) => _ProductGridDetail(
-        product: p,
-        priceLines: _catalogPriceLines(p, priceDisplay, detailed: true),
-      ),
     );
   }
 }
 
 // Líneas de precio del catálogo según el filtro de precio. Con un solo precio
 // elegido la línea es solo "Precio: Bs. X", sin A/B; con "Ambos" hace falta
-// distinguirlos, así que llevan etiqueta ("A:"/"B:" en la baldosa, "Precio
-// A:"/"Precio B:" en el detalle). Con "Sin precio" no hay líneas.
-List<String> _catalogPriceLines(
-  ProductModel p,
-  PriceDisplay display, {
-  bool detailed = false,
-}) {
+// distinguirlos, así que llevan etiqueta ("A:"/"B:"). Con "Sin precio" no hay
+// líneas.
+List<String> _catalogPriceLines(ProductModel p, PriceDisplay display) {
   String bs(double v) => 'Bs. ${fixed2(v)}';
   switch (display) {
     case PriceDisplay.a:
@@ -258,9 +249,7 @@ List<String> _catalogPriceLines(
     case PriceDisplay.b:
       return ['Precio: ${bs(p.priceB)}'];
     case PriceDisplay.both:
-      final a = detailed ? 'Precio A' : 'A';
-      final b = detailed ? 'Precio B' : 'B';
-      return ['$a: ${bs(p.priceA)}', '$b: ${bs(p.priceB)}'];
+      return ['A: ${bs(p.priceA)}', 'B: ${bs(p.priceB)}'];
     case PriceDisplay.none:
       return const [];
   }
@@ -271,13 +260,13 @@ class _ProductRow extends ConsumerStatefulWidget {
   final ProductModel product;
   final String categoryName;
   final PriceDisplay priceDisplay;
-  final VoidCallback onEdit;
+  final VoidCallback onTap;
 
   const _ProductRow({
     required this.product,
     required this.categoryName,
     required this.priceDisplay,
-    required this.onEdit,
+    required this.onTap,
   });
 
   @override
@@ -321,58 +310,29 @@ class _ProductRowState extends ConsumerState<_ProductRow> {
         'B: Bs. ${fixed2(p.priceB)}',
     ];
 
-    return FlatListRow(
-      onTap: widget.onEdit,
-      leading: FlatThumb(imagePath: p.image, icon: Icons.inventory_2_rounded),
+    return RecordRow(
+      onTap: widget.onTap,
+      thumb: RecordThumb(imagePath: p.image, icon: Icons.inventory_2_rounded),
       title: p.name,
       details: [
-        FlatMutedText(widget.categoryName),
+        RecordLine(widget.categoryName),
         if (p.description != null && p.description!.isNotEmpty)
-          FlatMutedText(p.description!, maxLines: 2),
-        Wrap(
-          spacing: AppSpacing.s12,
-          children: [
+          RecordLine(p.description!, maxLines: 2),
+        RecordLine(
+          [
             if (p.productionCost != null)
-              FlatMutedText(
-                'Costo: Bs. ${fixed2(p.productionCost!)}',
-              ),
-            FlatMutedText('Stock: ${p.stock}'),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.s2),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FlatStatusPill.forState(
-              isActive: p.isActive,
-              activeLabel: 'Activo',
-              inactiveLabel: 'Inactivo',
-            ),
-          ),
+              'Costo: Bs. ${fixed2(p.productionCost!)}',
+            'Stock: ${p.stock}',
+          ].join('   '),
         ),
       ],
-      trailing: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (prices.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.s2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [for (final price in prices) FlatValueText(price)],
-              ),
+      pill: StatusBadge.forState(isActive: p.isActive),
+      trailing: prices.isEmpty
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [for (final price in prices) RecordValue(price)],
             ),
-          IconButton(
-            tooltip: 'Editar',
-            icon: const Icon(
-              Icons.edit_rounded,
-              color: AppColors.cyanDark,
-              size: 20,
-            ),
-            onPressed: widget.onEdit,
-          ),
-        ],
-      ),
       below: _loadingMaterials
           ? const SizedBox(
               height: 16,
@@ -381,158 +341,150 @@ class _ProductRowState extends ConsumerState<_ProductRow> {
             )
           : _materials.isEmpty
           ? null
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const FlatSectionHeader('Materiales'),
-                const SizedBox(height: AppSpacing.s8),
-                // Lista de materiales con nombre y precio
-                for (final m in _materials)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.s6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // El nombre cede espacio (y se recorta) antes de que el
-                        // precio con su unidad se desborde.
-                        Expanded(
-                          child: Text(
-                            m['name'] as String,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.s8),
-                        Text(
-                          'Bs. ${fixed2((m['price'] as double))} / ${m['unit']}',
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+          : _MaterialsList(materials: _materials),
     );
   }
 }
 
-// Detalle simple para la vista de catálogo, sin materiales
-class _ProductGridDetail extends StatelessWidget {
-  final ProductModel product;
-  final List<String> priceLines;
+// Materiales de un producto con su precio por unidad (en la fila y el detalle).
+class _MaterialsList extends StatelessWidget {
+  final List<Map<String, dynamic>> materials;
 
-  const _ProductGridDetail({required this.product, required this.priceLines});
+  const _MaterialsList({required this.materials});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Container(
-          color: AppColors.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                children: [
-                  if (product.image != null)
-                    Image.file(
-                      File(product.image!),
-                      width: double.infinity,
-                      height: 260,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
-                    )
-                  else
-                    _placeholder(),
-                  Positioned(
-                    top: AppSpacing.s12,
-                    right: AppSpacing.s12,
-                    child: Material(
-                      color: AppColors.surface,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => Navigator.pop(context),
-                        child: const Padding(
-                          padding: EdgeInsets.all(AppSpacing.s8),
-                          child: Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textPrimary,
-                            size: 18,
-                          ),
-                        ),
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Materiales', style: AppText.header(context)),
+        const SizedBox(height: AppSpacing.s6),
+        for (final m in materials)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.s4),
+            child: Row(
+              children: [
+                // El nombre cede espacio (y se recorta) antes de que el precio
+                // con su unidad se desborde.
+                Expanded(
+                  child: Text(
+                    m['name'] as String,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.rowSubtitle(
+                      context,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.s20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    if (product.description != null &&
-                        product.description!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.s4),
-                      Text(
-                        product.description!,
-                        style: textTheme.displayMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                    if (priceLines.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.s12),
-                      for (final line in priceLines)
-                        Text(
-                          line,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                    ],
-                  ],
                 ),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.s8),
+                Text(
+                  'Bs. ${fixed2((m['price'] as double))} / ${m['unit']}',
+                  style: AppText.rowSubtitle(context),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+      ],
     );
   }
+}
 
-  Widget _placeholder() {
-    return Container(
-      width: double.infinity,
-      height: 260,
-      color: AppColors.surface,
-      child: const Icon(
-        Icons.inventory_2_rounded,
-        color: AppColors.cyanDark,
-        size: 60,
-      ),
+// Detalle de un producto: imagen, datos y materiales vinculados.
+class _ProductDetailSheet extends ConsumerStatefulWidget {
+  final ProductModel product;
+  final String categoryName;
+  final PriceDisplay priceDisplay;
+  final VoidCallback onEdit;
+
+  const _ProductDetailSheet({
+    required this.product,
+    required this.categoryName,
+    required this.priceDisplay,
+    required this.onEdit,
+  });
+
+  @override
+  ConsumerState<_ProductDetailSheet> createState() =>
+      _ProductDetailSheetState();
+}
+
+class _ProductDetailSheetState extends ConsumerState<_ProductDetailSheet> {
+  List<Map<String, dynamic>> _materials = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final materials = await ref
+        .read(materialProvider.notifier)
+        .getMaterialsWithPriceForProduct(widget.product.id);
+    if (mounted) {
+      setState(() {
+        _materials = materials;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.product;
+    final display = widget.priceDisplay;
+    String bs(double v) => 'Bs. ${fixed2(v)}';
+    return RecordDetailSheet(
+      title: 'Detalle del producto',
+      onEdit: widget.onEdit,
+      children: [
+        RecordHeadline(
+          title: p.name,
+          thumb: RecordThumb(
+            imagePath: p.image,
+            icon: Icons.inventory_2_rounded,
+            size: 120,
+          ),
+          pill: StatusBadge.forState(isActive: p.isActive),
+        ),
+        AppSection(
+          children: [
+            AppValueRow(label: 'Categoría', value: widget.categoryName),
+            if (p.description != null && p.description!.isNotEmpty)
+              AppValueRow(label: 'Descripción', value: p.description!),
+            if (display == PriceDisplay.a || display == PriceDisplay.both)
+              AppValueRow(label: 'Precio A', value: bs(p.priceA)),
+            if (display == PriceDisplay.b || display == PriceDisplay.both)
+              AppValueRow(label: 'Precio B', value: bs(p.priceB)),
+            if (p.productionCost != null)
+              AppValueRow(
+                label: 'Costo de producción',
+                value: bs(p.productionCost!),
+              ),
+            AppValueRow(label: 'Stock', value: '${p.stock}'),
+          ],
+        ),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.s16),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_materials.isNotEmpty)
+          AppSection(
+            header: 'Materiales',
+            children: [
+              for (final m in _materials)
+                AppRow(
+                  title: m['name'] as String,
+                  trailing: Text(
+                    '${bs(m['price'] as double)} / ${m['unit']}',
+                    style: AppText.rowSubtitle(context),
+                  ),
+                ),
+            ],
+          ),
+      ],
     );
   }
 }

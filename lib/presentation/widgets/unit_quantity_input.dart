@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
-import 'flat_form.dart';
-import 'flat_style.dart';
+import 'form_widgets.dart';
 
 // Clasificación del comportamiento de entrada de cantidad según el tipo de
 // unidad (Units.type, ver app_database.dart): "contenedor" (contenedor, paquete, rollo, tira)
@@ -97,18 +96,21 @@ class FractionQuantityPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flat = FlatStyle.isActive(context);
     final parts = splitContainerQuantity(value);
     final whole = parts.whole;
     final fractionPart = parts.fraction;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$label ($unit)',
-          style: Theme.of(
-            context,
-          ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.s4),
+          child: Text(
+            '$label ($unit)',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         const SizedBox(height: AppSpacing.s8),
         Wrap(
@@ -128,33 +130,15 @@ class FractionQuantityPicker extends StatelessWidget {
                   horizontal: AppSpacing.s14,
                   vertical: AppSpacing.s10,
                 ),
-                decoration: flat
-                    ? BoxDecoration(
-                        color: selected
-                            ? AppColors.cyanSoft
-                            : AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-                      )
-                    : BoxDecoration(
-                        color: selected
-                            ? AppColors.cyanDark.withOpacity(0.1)
-                            : AppColors.background,
-                        borderRadius: BorderRadius.circular(50),
-                        border: Border.all(
-                          color: selected ? AppColors.cyanDark : AppColors.border,
-                        ),
-                      ),
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.cyanSoft : AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
+                ),
                 child: Text(
                   presetLabel,
                   style: TextStyle(
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: flat
-                        ? (selected
-                              ? AppColors.cyanDark
-                              : AppColors.textPrimary)
-                        : (selected
-                              ? AppColors.cyanDark
-                              : AppColors.textSecondary),
+                    color: selected ? AppColors.cyanDark : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -166,10 +150,14 @@ class FractionQuantityPicker extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
-                'Envases completos',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.textSecondary,
+              child: Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.s4),
+                child: Text(
+                  'Envases completos',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -204,7 +192,7 @@ class FractionQuantityPicker extends StatelessWidget {
             'Total: ${formatNumber(cleanFloat(value))} ${unitLabel(unit, value)}',
             key: const ValueKey('container-total'),
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: flat ? AppColors.cyanDark : AppColors.cyanDark,
+              color: AppColors.cyanDark,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -223,41 +211,18 @@ class _StepperButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    if (FlatStyle.isActive(context)) {
-      return GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: AppFlat.minTap,
-          height: AppFlat.minTap,
-          decoration: BoxDecoration(
-            color: enabled ? AppColors.cyanSoft : AppColors.surface,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: enabled ? AppColors.cyanDark : AppColors.textSecondary,
-          ),
-        ),
-      );
-    }
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 36,
+        width: AppFlat.minTap,
+        height: AppFlat.minTap,
         decoration: BoxDecoration(
-          color: enabled
-              ? AppColors.cyanDark.withOpacity(0.1)
-              : AppColors.background,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: enabled ? AppColors.cyanDark : AppColors.border,
-          ),
+          color: enabled ? AppColors.cyanSoft : AppColors.surface,
+          shape: BoxShape.circle,
         ),
         child: Icon(
           icon,
-          size: 18,
+          size: 20,
           color: enabled ? AppColors.cyanDark : AppColors.textSecondary,
         ),
       ),

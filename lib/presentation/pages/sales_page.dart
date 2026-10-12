@@ -18,6 +18,9 @@ import '../widgets/app_style.dart';
 import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
 import '../widgets/flat_list.dart';
+import '../widgets/record_detail.dart';
+import '../widgets/record_list.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/filter_panel.dart';
@@ -120,7 +123,6 @@ class SalesListBody extends ConsumerWidget {
             )
           else
             AppSliverGroup(
-              dividerIndent: AppMetrics.dividerIndentWithTile,
               itemCount: visible.length,
               itemBuilder: (context, index) {
                 final sale = visible[index];
@@ -129,9 +131,6 @@ class SalesListBody extends ConsumerWidget {
                   clientName: clientName(sale),
                   onTap: () =>
                       showSaleReceipt(context, sale, clientName(sale)),
-                  onEdit: sale.isCanceled
-                      ? null
-                      : () => showSaleForm(context, sale),
                 );
               },
             ),
@@ -157,7 +156,6 @@ void showSaleForm(BuildContext context, [SaleModel? sale]) {
 void showSaleReceipt(BuildContext context, SaleModel sale, String clientName) {
   showAppSheet<void>(
     context,
-    heightFactor: 0.92,
     builder: (_) => _SaleReceiptSheet(
       sale: sale,
       clientName: clientName,
@@ -170,63 +168,29 @@ class _SaleRow extends StatelessWidget {
   final SaleModel sale;
   final String clientName;
   final VoidCallback onTap;
-  final VoidCallback? onEdit;
 
   const _SaleRow({
     required this.sale,
     required this.clientName,
     required this.onTap,
-    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
     final canceled = sale.isCanceled;
-    return AppRow(
-      leading: AppTile(
-        icon: Icons.point_of_sale_rounded,
-        color: canceled ? AppColors.track : AppColors.cyanDark,
-        iconColor: canceled ? AppColors.textSecondary : null,
-      ),
+    return RecordRow(
       title: clientName,
       titleColor: canceled ? AppColors.textSecondary : null,
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text.rich(
-            TextSpan(
-              text: formatDateTime(sale.date),
-              children: [
-                if (canceled)
-                  const TextSpan(
-                    text: '  Cancelada',
-                    style: TextStyle(color: AppColors.error),
-                  ),
-              ],
-            ),
-            style: AppText.rowSubtitle(context),
-          ),
-          if (sale.discount > 0)
-            Text(
-              'Desc. Bs. ${fixed2(sale.discount)}',
-              style: AppText.rowSubtitle(context),
-            ),
-        ],
-      ),
-      trailing: Text(
+      details: [
+        RecordLine(formatDateTime(sale.date)),
+        if (sale.discount > 0) RecordLine('Desc. Bs. ${fixed2(sale.discount)}'),
+      ],
+      pill: canceled ? const StatusBadge.canceled() : null,
+      trailing: RecordValue(
         'Bs. ${fixed2(sale.finalAmount)}',
-        style: AppText.rowTitle(
-          context,
-          color: canceled ? AppColors.textMuted : AppColors.textPrimary,
-        ).copyWith(
-          fontWeight: FontWeight.w600,
-          decoration: canceled ? TextDecoration.lineThrough : null,
-          decorationColor: AppColors.textMuted,
-        ),
+        canceled: canceled,
       ),
-      chevron: true,
       onTap: onTap,
-      onLongPress: onEdit,
     );
   }
 }
@@ -288,22 +252,16 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
                   ?.name ??
               '';
 
-    return AppSheetScaffold(
+    return RecordDetailSheet(
       title: 'Recibo de venta',
-      leadingLabel: widget.onEdit == null ? null : 'Editar',
-      onLeading: () {
-        Navigator.pop(context);
-        widget.onEdit?.call();
-      },
-      trailingLabel: 'Cerrar',
-      child: ListView(
-        padding: const EdgeInsets.only(top: AppSpacing.s8, bottom: AppSpacing.s32),
-        children: [
+      onEdit: widget.onEdit,
+      children: [
           AppBigTotal(
             label: 'Total',
             value: 'Bs. ${fixed2(sale.finalAmount)}',
+            pill: sale.isCanceled ? const StatusBadge.canceled() : null,
             note: sale.isCanceled
-                ? 'Venta cancelada: su stock fue devuelto al inventario.'
+                ? 'Su stock fue devuelto al inventario.'
                 : null,
           ),
           AppSection(
@@ -364,8 +322,7 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
               ),
             ],
           ),
-        ],
-      ),
+      ],
     );
   }
 }

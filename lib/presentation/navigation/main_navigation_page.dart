@@ -174,7 +174,9 @@ class MainBottomBar extends StatelessWidget {
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppMetrics.sheetRadius),
+        ),
       ),
       builder: (sheetContext) => SafeArea(
         child: Column(

@@ -8,7 +8,9 @@ import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/supplier_dialog.dart';
 import '../widgets/screen_header.dart';
-import 'clients_page.dart' show ContactCard;
+import '../widgets/app_group.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/contact_record.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/profile_button.dart';
@@ -76,31 +78,41 @@ class SuppliersListBody extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.suppliers.isEmpty
                 ? Center(
-                    child: Text(
-                      'No se registraron proveedores',
-                      style: TextStyle(color: AppColors.textSecondary),
+                    child: AppEmptyState(
+                      icon: Icons.local_shipping_rounded,
+                      title: 'No se registraron proveedores',
+                      actionLabel: 'Nuevo proveedor',
+                      onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
-                ? Center(
-                    child: Text(
-                      'Sin resultados',
-                      style: TextStyle(color: AppColors.textSecondary),
+                ? const SingleChildScrollView(
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Sin resultados',
                     ),
                   )
-                : ListView.builder(
-                    padding: AppSpacing.listWithFab,
+                : AppGroupListView(
                     itemCount: visible.length,
                     itemBuilder: (context, index) {
                       final s = visible[index];
-                      return ContactCard(
+                      final protected = s.isDefault
+                          ? DefaultRecords.protectedSupplierMessage
+                          : null;
+                      return ContactRow(
                         name: s.name,
                         contactInfo: s.contactInfo,
                         isActive: s.isActive,
-                        protectedMessage: s.isDefault
-                            ? DefaultRecords.protectedSupplierMessage
-                            : null,
-                        onEdit: () => _showDialog(context, s),
+                        protectedMessage: protected,
+                        onTap: () => showContactDetail(
+                          context,
+                          title: 'Detalle del proveedor',
+                          name: s.name,
+                          contactInfo: s.contactInfo,
+                          isActive: s.isActive,
+                          protectedMessage: protected,
+                          onEdit: () => _showDialog(context, s),
+                        ),
                       );
                     },
                   ),
@@ -111,14 +123,8 @@ class SuppliersListBody extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, SupplierModel? supplier) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showAppSheet<void>(
+      context,
       builder: (_) => SupplierDialog(supplier: supplier),
     );
   }

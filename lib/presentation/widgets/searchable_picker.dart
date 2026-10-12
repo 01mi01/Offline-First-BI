@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../application/search_filter.dart';
 import '../../theme/app_theme.dart';
-import 'flat_form.dart';
-import 'flat_style.dart';
+import 'form_style.dart';
+import 'form_widgets.dart';
 import 'focus_utils.dart';
 import 'app_controls.dart';
 
@@ -260,10 +260,13 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             // los resultados aparecen, aumentan o disminuyen.
             Container(
               height: maxResultsHeight,
-              decoration: FlatStyle.isActive(context)
+              decoration: AppFormTheme.isActive(context)
                   ? BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppFlat.tileRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppMetrics.groupRadius,
+                      ),
+                      border: Border.all(color: AppColors.border),
                     )
                   : BoxDecoration(
                       color: AppColors.background,

@@ -19,6 +19,28 @@ DateTime withDayOf(DateTime picked, DateTime base) => DateTime(
   base.second,
 );
 
+// Abre el selector de fecha de una venta o compra y devuelve la fecha elegida
+// (con la hora de [current]), o null si se cierra sin elegir.
+Future<DateTime?> pickTransactionDate(
+  BuildContext context,
+  DateTime current,
+) async {
+  dismissKeyboard();
+  final picked = await showDatePicker(
+    context: context,
+    initialDate: current,
+    firstDate: transactionFirstDate,
+    lastDate: transactionLastDate,
+    builder: (ctx, child) => Theme(
+      data: Theme.of(
+        ctx,
+      ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
+      child: child!,
+    ),
+  );
+  return picked == null ? null : withDayOf(picked, current);
+}
+
 class TransactionDateField extends StatelessWidget {
   final DateTime date;
   final ValueChanged<DateTime> onChanged;

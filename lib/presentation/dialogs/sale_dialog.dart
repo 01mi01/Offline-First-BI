@@ -5,7 +5,6 @@ import '../../application/sale_provider.dart';
 import '../../application/location_options.dart';
 import '../../application/search_filter.dart';
 import '../widgets/catalog_filter_bar.dart' show RevealOnFocus;
-import '../widgets/searchable_picker.dart' show PickerOption;
 import '../../application/client_provider.dart';
 import '../../application/product_provider.dart';
 import '../../application/location_provider.dart';
@@ -18,6 +17,12 @@ import '../widgets/focus_utils.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/app_group.dart';
 import '../widgets/app_sheet.dart';
+import '../widgets/form_style.dart';
+import '../widgets/form_widgets.dart';
+import '../widgets/searchable_picker.dart';
+import '../widgets/transaction_date_field.dart';
+import '../../application/form_validation.dart';
+import '../../config/date_formatters.dart';
 import '../widgets/app_style.dart';
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
@@ -48,7 +53,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   bool _isLoading = false;
   int? _selectedLocationId;
   int? _selectedEventId;
+  // Error de los productos (carrito vacío, sin stock) y error general al
+  // registrar.
+  String? _cartError;
   String? _error;
+  final _discountKey = GlobalKey<FormFieldState<String>>();
   late DateTime _date = widget.sale?.date ?? appNow();
   bool _dateChanged = false;
 
@@ -118,14 +127,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
   void _showAddClientSheet() {
     dismissKeyboard();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showAppSheet<void>(
+      context,
       builder: (_) => ClientDialog(
         onSaved: (clientId) {
           setState(() => _selectedClientId = clientId);
@@ -134,12 +137,45 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     );
   }
 
+  Future<void> _pickDate() async {
+    final picked = await pickTransactionDate(context, _date);
+    if (picked != null) {
+      setState(() {
+        _date = picked;
+        _dateChanged = true;
+      });
+    }
+  }
+
+  // El carrito cambió: se limpian sus avisos y se revisa de nuevo el descuento
+  // (puede haber quedado por encima del subtotal).
+  void _cartChanged() {
+    _cartError = null;
+    _error = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _discountController.text.trim().isNotEmpty) {
+        _discountKey.currentState?.validate();
+      }
+    });
+  }
+
+  // El descuento es opcional: no negativo, con hasta dos decimales y sin pasar
+  // del subtotal.
+  String? _validateDiscount(String? value) {
+    final error = validateDecimal(value, required: false, allowZero: true);
+    if (error != null) return error;
+    return ref
+        .read(saleRepositoryProvider)
+        .validateDiscount(round2(parseNumber(value) ?? 0), _subtotal);
+  }
+
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    final valid = _formKey.currentState!.validate();
     if (_cartItems.isEmpty) {
-      setState(() => _error = 'Agrega al menos un producto');
+      setState(() => _cartError = 'Agrega al menos un producto');
       return;
     }
+    if (!valid) return;
 
     final discount = _discount;
     final discountError = ref
@@ -166,7 +202,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         if (entry.value > availableStock) {
           setState(() {
             _isLoading = false;
-            _error =
+            _cartError =
                 'Stock insuficiente para ${product.name}. Disponible: $availableStock';
           });
           return;
@@ -277,97 +313,74 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            top: AppSpacing.s8,
-            bottom: AppSpacing.s32,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            AppSpacing.s8,
+            AppSpacing.s16,
+            AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppSection(
-                children: [
-                  AppPickerRow<int>(
-                    label: 'Cliente',
-                    searchHint: 'Buscar cliente',
-                    value: clientValue,
-                    options: [
-                      const PickerOption<int>(null, DefaultRecords.client),
-                      for (final c in clients) PickerOption<int>(c.id, c.name),
-                    ],
-                    onChanged: (val) => setState(() {
-                      _selectedClientId = val;
-                      _error = null;
-                    }),
-                    action: IconButton(
-                      tooltip: 'Nuevo cliente',
-                      icon: const Icon(
-                        Icons.person_add_rounded,
-                        size: 22,
-                        color: AppColors.cyanDark,
+              SearchablePickerField<int>(
+                label: 'Cliente',
+                searchHint: 'Buscar cliente',
+                value: clientValue,
+                options: [
+                  const PickerOption<int>(null, DefaultRecords.client),
+                  for (final c in clients) PickerOption<int>(c.id, c.name),
+                ],
+                onChanged: (val) => setState(() {
+                  _selectedClientId = val;
+                  _error = null;
+                }),
+                trailing: AppFieldAction(
+                  icon: Icons.person_add_rounded,
+                  tooltip: 'Nuevo cliente',
+                  onPressed: _showAddClientSheet,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s16),
+              SearchablePickerField<int>(
+                label: 'Ubicación',
+                searchHint: 'Buscar ubicación',
+                value: _selectedLocationId,
+                options: [
+                  const PickerOption<int>(null, 'Sin ubicación'),
+                  for (final l in ref.watch(locationProvider).locations)
+                    if (l.isActive || l.id == _selectedLocationId)
+                      PickerOption<int>(
+                        l.id,
+                        locationLabel(l),
+                        subtitle: locationZone(l),
+                        selectedLabel: locationLabelWithZone(l),
                       ),
-                      onPressed: _showAddClientSheet,
-                    ),
-                  ),
                 ],
+                onChanged: (val) => setState(() => _selectedLocationId = val),
               ),
-              AppSection(
-                children: [
-                  AppPickerRow<int>(
-                    label: 'Ubicación',
-                    searchHint: 'Buscar ubicación',
-                    value: _selectedLocationId,
-                    options: [
-                      const PickerOption<int>(null, 'Sin ubicación'),
-                      for (final l in ref.watch(locationProvider).locations)
-                        if (l.isActive || l.id == _selectedLocationId)
-                          PickerOption<int>(
-                            l.id,
-                            locationLabel(l),
-                            subtitle: locationZone(l),
-                            selectedLabel: locationLabelWithZone(l),
-                          ),
-                    ],
-                    onChanged: (val) =>
-                        setState(() => _selectedLocationId = val),
-                  ),
-                  AppPickerRow<int>(
-                    label: 'Evento',
-                    searchHint: 'Buscar evento',
-                    value: _selectedEventId,
-                    options: [
-                      const PickerOption<int>(null, 'Sin evento'),
-                      for (final e in ref.watch(eventProvider).events)
-                        if (e.isActive || e.id == _selectedEventId)
-                          PickerOption<int>(e.id, e.name),
-                    ],
-                    onChanged: (val) => setState(() => _selectedEventId = val),
-                  ),
-                  AppDateRow(
-                    date: _date,
-                    onChanged: (value) => setState(() {
-                      _date = value;
-                      _dateChanged = true;
-                    }),
-                  ),
+              const SizedBox(height: AppSpacing.s16),
+              SearchablePickerField<int>(
+                label: 'Evento',
+                searchHint: 'Buscar evento',
+                value: _selectedEventId,
+                options: [
+                  const PickerOption<int>(null, 'Sin evento'),
+                  for (final e in ref.watch(eventProvider).events)
+                    if (e.isActive || e.id == _selectedEventId)
+                      PickerOption<int>(e.id, e.name),
                 ],
+                onChanged: (val) => setState(() => _selectedEventId = val),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s32,
-                  0,
-                  AppSpacing.s16,
-                  AppSpacing.s6,
-                ),
-                child: Text('Productos', style: AppText.header(context)),
+              const SizedBox(height: AppSpacing.s16),
+              AppDateField(
+                label: 'Fecha',
+                valueText: formatDate(_date),
+                onTap: _pickDate,
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  0,
-                  AppSpacing.s16,
-                  AppSpacing.s24,
-                ),
-                child: RevealOnFocus(
+              const SizedBox(height: AppSpacing.s24),
+              LabeledField(
+                label: 'Productos',
+                builder: (_) => RevealOnFocus(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -424,10 +437,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                           : AppColors.chevron,
                                     ),
                                     onTap: () => setState(() {
-                                      _error = null;
+                                      _cartChanged();
                                       if (inCart) {
                                         _cartItems.remove(p.id);
                                         _cartPriceTypes.remove(p.id);
+                                      } else if (_availableStock(p) < 1) {
+                                        _cartError =
+                                            'No hay stock disponible de ${p.name}';
                                       } else {
                                         _cartItems[p.id] = 1;
                                         _cartPriceTypes[p.id] = 'A';
@@ -441,53 +457,72 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   ),
                 ),
               ),
-              if (_cartItems.isNotEmpty)
-                AppSection(
-                  header: 'Carrito',
-                  children: [
-                    for (final entry in _cartItems.entries)
-                      _cartRow(context, entry, products),
-                  ],
-                ),
-              AppSection(
-                children: [
-                  AppTextFieldRow(
-                    label: 'Descuento (Bs.)',
-                    controller: _discountController,
-                    hint: '0',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                      TextInputFormatter.withFunction((oldValue, newValue) {
-                        if (newValue.text.isEmpty) return newValue;
-                        if (newValue.text == '0') return newValue;
-                        if (newValue.text.startsWith('0') &&
-                            !newValue.text.startsWith('0.')) {
-                          return oldValue;
-                        }
-                        if (double.tryParse(newValue.text) == null &&
-                            newValue.text != '.') {
-                          return oldValue;
-                        }
-                        return newValue;
-                      }),
+              if (_cartError != null) FormErrorText(_cartError!),
+              const SizedBox(height: AppSpacing.s16),
+              if (_cartItems.isNotEmpty) ...[
+                const FormSectionLabel('Carrito'),
+                const SizedBox(height: AppSpacing.s6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
+                  ),
+                  child: Column(
+                    children: [
+                      for (final entry in _cartItems.entries)
+                        _cartRow(context, entry, products),
                     ],
-                    validator: (v) => ref
-                        .read(saleRepositoryProvider)
-                        .validateDiscount(
-                          double.tryParse((v ?? '').trim()) ?? 0,
-                          double.infinity,
-                        ),
-                    onChanged: (_) => setState(() => _error = null),
                   ),
-                  AppTextAreaRow(
-                    label: 'Notas',
-                    controller: _notesController,
-                    hint: 'Observaciones opcionales',
+                ),
+                const SizedBox(height: AppSpacing.s16),
+              ],
+              LabeledField(
+                label: 'Descuento (Bs.)',
+                builder: (_) => TextFormField(
+                  key: _discountKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _discountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
-                ],
+                  decoration: const InputDecoration(hintText: '0'),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+                      if (newValue.text == '0') return newValue;
+                      if (newValue.text.startsWith('0') &&
+                          !newValue.text.startsWith('0.')) {
+                        return oldValue;
+                      }
+                      if (double.tryParse(newValue.text) == null &&
+                          newValue.text != '.') {
+                        return oldValue;
+                      }
+                      return newValue;
+                    }),
+                  ],
+                  validator: _validateDiscount,
+                  onChanged: (_) => setState(() => _error = null),
+                ),
               ),
+              const SizedBox(height: AppSpacing.s16),
+              LabeledField(
+                label: 'Notas',
+                builder: (_) => TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    hintText: 'Observaciones opcionales',
+                  ),
+                  minLines: 2,
+                  maxLines: 4,
+                  validator: validateOptionalText,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s24),
               AppSection(
+                padding: const EdgeInsets.only(bottom: AppSpacing.s16),
                 children: [
                   AppValueRow(
                     label: 'Subtotal',
@@ -508,43 +543,39 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   ),
                 ],
               ),
-              if (_error != null) AppErrorNote(message: _error!),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  0,
-                  AppSpacing.s16,
-                  AppSpacing.s24,
-                ),
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _save,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: AppSpacing.s20,
-                          width: AppSpacing.s20,
-                          child: CircularProgressIndicator(
-                            color: AppColors.onDark,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          isEditing ? 'Guardar' : 'Registrar venta',
-                          style: Theme.of(context).textTheme.headlineLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.onDark,
-                              ),
-                          textAlign: TextAlign.center,
+              if (_error != null) ...[
+                FormErrorText(_error!),
+                const SizedBox(height: AppSpacing.s16),
+              ],
+              ElevatedButton(
+                onPressed: _isLoading ? null : _save,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: AppSpacing.s20,
+                        width: AppSpacing.s20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.onDark,
+                          strokeWidth: 2,
                         ),
-                ),
+                      )
+                    : Text(
+                        isEditing ? 'Guardar' : 'Registrar venta',
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.onDark,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
               ),
-              if (isEditing && !widget.sale!.isCanceled)
+              if (isEditing && !widget.sale!.isCanceled) ...[
+                const SizedBox(height: AppButtons.stackGap),
                 AppActionButton(
-        label: 'Cancelar venta',
-        kind: AppButtonKind.destructive,
-        padding: AppButtons.formPadding,
-        onPressed: _isLoading ? null : _cancelSale,
-      ),
+                  label: 'Cancelar venta',
+                  kind: AppButtonKind.destructive,
+                  onPressed: _isLoading ? null : _cancelSale,
+                ),
+              ],
             ],
           ),
         ),
@@ -561,10 +592,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     if (product == null) return const SizedBox();
     final priceType = _cartPriceTypes[entry.key] ?? 'A';
     final linePrice = (priceType == 'B' ? product.priceB : product.priceA);
+    final available = _availableStock(product);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.s16,
-        AppSpacing.s4,
+        AppSpacing.s8,
         AppSpacing.s8,
         AppSpacing.s8,
       ),
@@ -585,6 +617,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                         color: AppColors.cyanDark,
                       ),
                     ),
+                    if (entry.value >= available)
+                      Text(
+                        'Máximo disponible: $available',
+                        style: AppText.rowSubtitle(context),
+                      ),
                   ],
                 ),
               ),
@@ -597,17 +634,17 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
               const SizedBox(width: AppSpacing.s8),
               AppStepper(
                 onMinus: () => setState(() {
-                  _error = null;
+                  _cartChanged();
                   if (entry.value <= 1) {
                     _cartItems.remove(entry.key);
                   } else {
                     _cartItems[entry.key] = entry.value - 1;
                   }
                 }),
-                onPlus: entry.value >= _availableStock(product)
+                onPlus: entry.value >= available
                     ? null
                     : () => setState(() {
-                        _error = null;
+                        _cartChanged();
                         _cartItems[entry.key] = entry.value + 1;
                       }),
               ),
@@ -624,7 +661,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
               onChanged: (type) {
                 if (type == null) return;
                 setState(() {
-                  _error = null;
+                  _cartChanged();
                   _cartPriceTypes[entry.key] = type;
                 });
               },

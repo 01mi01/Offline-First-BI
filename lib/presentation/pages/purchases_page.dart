@@ -19,6 +19,9 @@ import '../widgets/app_style.dart';
 import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
 import '../widgets/flat_list.dart';
+import '../widgets/record_detail.dart';
+import '../widgets/record_list.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/catalog_filter_bar.dart';
 import '../widgets/filter_panel.dart';
@@ -135,7 +138,6 @@ class PurchasesListBody extends ConsumerWidget {
             )
           else
             AppSliverGroup(
-              dividerIndent: AppMetrics.dividerIndentWithTile,
               itemCount: visible.length,
               itemBuilder: (context, index) {
                 final purchase = visible[index];
@@ -147,9 +149,6 @@ class PurchasesListBody extends ConsumerWidget {
                     purchase,
                     supplierName(purchase),
                   ),
-                  onEdit: purchase.isCanceled
-                      ? null
-                      : () => showPurchaseForm(context, purchase),
                 );
               },
             ),
@@ -179,7 +178,6 @@ void showPurchaseDetail(
 ) {
   showAppSheet<void>(
     context,
-    heightFactor: 0.92,
     builder: (_) => _PurchaseDetailSheet(
       purchase: purchase,
       supplierName: supplierName,
@@ -194,70 +192,32 @@ class _PurchaseRow extends StatelessWidget {
   final PurchaseModel purchase;
   final String supplierName;
   final VoidCallback onTap;
-  final VoidCallback? onEdit;
 
   const _PurchaseRow({
     required this.purchase,
     required this.supplierName,
     required this.onTap,
-    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
     final canceled = purchase.isCanceled;
-    return AppRow(
-      leading: AppTile(
-        icon: purchase.isMaterial
-            ? Icons.shopping_bag_rounded
-            : Icons.receipt_long_rounded,
-        color: canceled
-            ? AppColors.track
-            : (purchase.isMaterial ? AppColors.lime : AppColors.navy),
-        iconColor: canceled ? AppColors.textSecondary : null,
-      ),
+    return RecordRow(
       title: supplierName,
       titleColor: canceled ? AppColors.textSecondary : null,
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text.rich(
-            TextSpan(
-              text:
-                  '${formatDateTime(purchase.date)}  ${purchase.isMaterial ? 'Material' : 'Gasto'}',
-              children: [
-                if (canceled)
-                  const TextSpan(
-                    text: '  Cancelada',
-                    style: TextStyle(color: AppColors.error),
-                  ),
-              ],
-            ),
-            style: AppText.rowSubtitle(context),
-          ),
-          if (purchase.description != null && purchase.description!.isNotEmpty)
-            Text(
-              purchase.description!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppText.rowSubtitle(context),
-            ),
-        ],
-      ),
-      trailing: Text(
-        'Bs. ${fixed2(purchase.totalAmount)}',
-        style: AppText.rowTitle(
-          context,
-          color: canceled ? AppColors.textMuted : AppColors.textPrimary,
-        ).copyWith(
-          fontWeight: FontWeight.w600,
-          decoration: canceled ? TextDecoration.lineThrough : null,
-          decorationColor: AppColors.textMuted,
+      details: [
+        RecordLine(
+          '${formatDateTime(purchase.date)}  ${purchase.isMaterial ? 'Material' : 'Gasto'}',
         ),
+        if (purchase.description != null && purchase.description!.isNotEmpty)
+          RecordLine(purchase.description!, maxLines: 1),
+      ],
+      pill: canceled ? const StatusBadge.canceled() : null,
+      trailing: RecordValue(
+        'Bs. ${fixed2(purchase.totalAmount)}',
+        canceled: canceled,
       ),
-      chevron: true,
       onTap: onTap,
-      onLongPress: onEdit,
     );
   }
 }
@@ -324,20 +284,14 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
                   ?.name ??
               '';
 
-    return AppSheetScaffold(
+    return RecordDetailSheet(
       title: 'Detalle de compra',
-      leadingLabel: widget.onEdit == null ? null : 'Editar',
-      onLeading: () {
-        Navigator.pop(context);
-        widget.onEdit?.call();
-      },
-      trailingLabel: 'Cerrar',
-      child: ListView(
-        padding: const EdgeInsets.only(top: AppSpacing.s8, bottom: AppSpacing.s32),
-        children: [
+      onEdit: widget.onEdit,
+      children: [
           AppBigTotal(
             label: 'Total',
             value: 'Bs. ${fixed2(purchase.totalAmount)}',
+            pill: purchase.isCanceled ? const StatusBadge.canceled() : null,
           ),
           AppSection(
             children: [
@@ -396,8 +350,7 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
               ),
             ],
           ),
-        ],
-      ),
+      ],
     );
   }
 }

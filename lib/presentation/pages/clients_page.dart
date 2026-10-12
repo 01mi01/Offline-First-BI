@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
 import '../../application/search_filter.dart';
@@ -9,8 +8,9 @@ import '../../models/default_records.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/client_dialog.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/protected_record_icon.dart';
-import '../widgets/status_badge.dart';
+import '../widgets/app_group.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/contact_record.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/profile_button.dart';
@@ -78,31 +78,41 @@ class ClientsListBody extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.clients.isEmpty
                 ? Center(
-                    child: Text(
-                      'No se registraron clientes',
-                      style: TextStyle(color: AppColors.textSecondary),
+                    child: AppEmptyState(
+                      icon: Icons.person_rounded,
+                      title: 'No se registraron clientes',
+                      actionLabel: 'Nuevo cliente',
+                      onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
-                ? Center(
-                    child: Text(
-                      'Sin resultados',
-                      style: TextStyle(color: AppColors.textSecondary),
+                ? const SingleChildScrollView(
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Sin resultados',
                     ),
                   )
-                : ListView.builder(
-                    padding: AppSpacing.listWithFab,
+                : AppGroupListView(
                     itemCount: visible.length,
                     itemBuilder: (context, index) {
                       final c = visible[index];
-                      return ContactCard(
+                      final protected = c.isDefault
+                          ? DefaultRecords.protectedClientMessage
+                          : null;
+                      return ContactRow(
                         name: c.name,
                         contactInfo: c.contactInfo,
                         isActive: c.isActive,
-                        protectedMessage: c.isDefault
-                            ? DefaultRecords.protectedClientMessage
-                            : null,
-                        onEdit: () => _showDialog(context, c),
+                        protectedMessage: protected,
+                        onTap: () => showContactDetail(
+                          context,
+                          title: 'Detalle del cliente',
+                          name: c.name,
+                          contactInfo: c.contactInfo,
+                          isActive: c.isActive,
+                          protectedMessage: protected,
+                          onEdit: () => _showDialog(context, c),
+                        ),
                       );
                     },
                   ),
@@ -113,249 +123,7 @@ class ClientsListBody extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, ClientModel? client) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => ClientDialog(client: client),
-    );
+    showAppSheet<void>(context, builder: (_) => ClientDialog(client: client));
   }
 }
 
-// Tarjeta reutilizable para clientes y proveedores (misma presentación en
-// ambas páginas).
-class ContactCard extends StatefulWidget {
-  final String name;
-  final String? contactInfo;
-  final bool isActive;
-  // Registro predeterminado del sistema: si [protectedMessage] no es nulo, se
-  // muestra con candado (y ese texto como ayuda) en lugar del botón de editar.
-  final String? protectedMessage;
-  final VoidCallback onEdit;
-
-  const ContactCard({
-    super.key,
-    required this.name,
-    required this.contactInfo,
-    required this.isActive,
-    this.protectedMessage,
-    required this.onEdit,
-  });
-
-  @override
-  State<ContactCard> createState() => _ContactCardState();
-}
-
-class _ContactCardState extends State<ContactCard> {
-  void _showDetail(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierColor: AppColors.scrim,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            color: AppColors.surface,
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Encabezado con nombre y botón cerrar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s24,
-                    AppSpacing.s24,
-                    AppSpacing.s24,
-                    0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.name,
-                          style: Theme.of(context).textTheme.displayLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.s6),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textSecondary,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s16),
-
-                // Contenido scrollable
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.s24,
-                      0,
-                      AppSpacing.s24,
-                      AppSpacing.s24,
-                    ),
-                    child:
-                        widget.contactInfo != null &&
-                            widget.contactInfo!.isNotEmpty
-                        ? Stack(
-                            children: [
-                              // Texto de contacto
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  right: AppSpacing.s40,
-                                ),
-                                child: Text(
-                                  widget.contactInfo!,
-                                  style: Theme.of(context).textTheme
-                                      .displayMedium?.copyWith(
-                                        color: AppColors.textSecondary,
-                                        height: 1.6,
-                                      ),
-                                ),
-                              ),
-                              // Botón copiar
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    Clipboard.setData(
-                                      ClipboardData(text: widget.contactInfo!),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text(
-                                          'Copiado al portapapeles',
-                                        ),
-                                        backgroundColor: AppColors.cyanDark,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(AppSpacing.s6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.cyanDark.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.copy_rounded,
-                                      color: AppColors.cyanDark,
-                                      size: 18,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            'Sin información de contacto',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showDetail(context),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.s12),
-        padding: const EdgeInsets.all(AppSpacing.s16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.name,
-                    style: Theme.of(context).textTheme.headlineLarge
-                        ?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                  ),
-                  if (widget.contactInfo != null &&
-                      widget.contactInfo!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      widget.contactInfo!,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.displaySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.s4),
-                  StatusBadge.forState(
-isActive: widget.isActive,
-activeLabel: 'Activo',
-inactiveLabel: 'Inactivo',
-),
-                ],
-              ),
-            ),
-            if (widget.protectedMessage != null)
-              ProtectedRecordIcon(message: widget.protectedMessage!)
-            else
-              IconButton(
-                icon: const Icon(
-                  Icons.edit_rounded,
-                  color: AppColors.cyanDark,
-                  size: 20,
-                ),
-                onPressed: widget.onEdit,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}

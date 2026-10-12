@@ -165,7 +165,8 @@ class AppButtons {
 // Listas agrupadas, hojas, controles y títulos.
 class AppMetrics {
   static const double groupRadius = 14;
-  static const double sheetRadius = 14;
+  // Radio estándar de las hojas inferiores.
+  static const double sheetRadius = 28;
   static const double controlRadius = groupRadius;
   static const double thumbRadius = controlRadius - AppSpacing.s2;
   static const double rowMinHeight = 52;
@@ -175,6 +176,9 @@ class AppMetrics {
   static const double dividerIndent = AppSpacing.s16;
   static const double dividerIndentWithTile =
       AppSpacing.s16 + tileSize + AppSpacing.s12;
+  // Con una imagen a la izquierda, la línea de abajo empieza donde el texto.
+  static const double dividerIndentWithThumb =
+      AppSpacing.s16 + AppFlat.thumbSize + AppSpacing.s12;
   static const double largeTitleSize = 34;
   static const double navTitleSize = 17;
   static const double rowTitleSize = 17;
@@ -182,8 +186,6 @@ class AppMetrics {
   static const double headerSize = 13;
   static const double bigNumberSize = 40;
   static const double navBarHeight = 44;
-  static const double grabberWidth = 36;
-  static const double grabberHeight = 5;
   static const double segmentedHeight = 40;
   static const double controlHeight = 48;
   static const double controlTextSize = 15;
@@ -241,67 +243,6 @@ final ButtonStyle neutralButtonStyle = ElevatedButton.styleFrom(
   backgroundColor: AppColors.neutralButton,
   foregroundColor: AppColors.textPrimary,
 );
-
-// Tema de las pantallas de Inventario: campos sin borde (con aro al enfocar),
-// botones secundarios redondeados y líneas divisorias finas.
-ThemeData flatThemeOf(ThemeData base) {
-  OutlineInputBorder border([BorderSide side = BorderSide.none]) =>
-      OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-        borderSide: side,
-      );
-  return base.copyWith(
-    scaffoldBackgroundColor: AppColors.background,
-    appBarTheme: base.appBarTheme.copyWith(
-      backgroundColor: AppColors.background,
-    ),
-    dividerTheme: const DividerThemeData(
-      color: AppColors.hairline,
-      thickness: 1,
-      space: 1,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.surface,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s20,
-        vertical: AppSpacing.s14,
-      ),
-      hintStyle: const TextStyle(color: AppColors.textSecondary),
-      helperStyle: const TextStyle(color: AppColors.textSecondary),
-      prefixIconColor: AppColors.textSecondary,
-      suffixIconColor: AppColors.textSecondary,
-      border: border(),
-      enabledBorder: border(),
-      disabledBorder: border(),
-      focusedBorder: border(
-        const BorderSide(color: AppColors.cyanDark, width: 2),
-      ),
-      errorBorder: border(const BorderSide(color: AppColors.error)),
-      focusedErrorBorder: border(
-        const BorderSide(color: AppColors.error, width: 2),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        minimumSize: const Size(double.infinity, AppMetrics.minTap),
-        side: BorderSide.none,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
-        ),
-      ),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.cyanDark,
-        minimumSize: const Size(AppFlat.minTap, AppFlat.minTap),
-        shape: const StadiumBorder(),
-      ),
-    ),
-  );
-}
 
 final lightTheme = ThemeData(
   useMaterial3: true,

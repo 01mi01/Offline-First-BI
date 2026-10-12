@@ -10,7 +10,9 @@ import '../../theme/app_theme.dart';
 import '../../config/rounding.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../widgets/confirm_cancel_dialog.dart';
-import '../widgets/flat_form.dart';
+import '../../application/form_validation.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/form_widgets.dart';
 import '../../models/default_records.dart';
 
 class ProductDialog extends ConsumerStatefulWidget {
@@ -145,14 +147,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   }
 
   // Solo uno de los dos precios es obligatorio: si este está vacío, basta con
-  // que el otro (de [other]) tenga valor.
+  // que el otro (de [other]) tenga valor. Lo escrito debe ser un importe válido
+  // (mayor a 0, hasta dos decimales).
   String? _validatePrice(String? v, TextEditingController other) {
     final text = (v ?? '').trim();
     if (text.isEmpty) {
       return other.text.trim().isEmpty ? 'Indica al menos un precio' : null;
     }
-    if (double.tryParse(text) == null) return 'Valor inválido';
-    return null;
+    return validateAmountField(text);
   }
 
   // Al escribir en un precio se revalida el otro (ya no hace falta si este se
@@ -163,9 +165,10 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   }
 
   String? _validateCost(String? v) {
-    if (v == null || v.isEmpty) return null;
-    final cost = double.tryParse(v);
-    if (cost == null) return 'Valor inválido';
+    if (v == null || v.trim().isEmpty) return null;
+    final invalid = validateAmountField(v, allowZero: true);
+    if (invalid != null) return invalid;
+    final cost = double.parse(v.trim());
     // El costo debe ser menor que ambos precios de venta. Si solo hay uno
     // escrito, ese es también el valor del otro.
     final typedA = double.tryParse(_priceAController.text.trim());
@@ -212,188 +215,122 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         ? _selectedCategoryId
         : null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.s24,
-        right: AppSpacing.s24,
-        top: AppSpacing.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Título (fijo: no se desplaza con el formulario)
-            Text(
-              isEditing ? 'Editar producto' : 'Nuevo producto',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s24),
+    return FormSheet(
+      title: isEditing ? 'Editar producto' : 'Nuevo producto',
+      formKey: _formKey,
+      children: [
+        // Selector de imagen
+        AppPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
+        const SizedBox(height: AppSpacing.s20),
 
-            // El formulario se desplaza bajo el título; los botones van al
-            // final del contenido.
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: AppSpacing.s4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Selector de imagen
-                    FlatPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
-                    const SizedBox(height: AppSpacing.s20),
-
-                    // Nombre
-                    LabeledField(
-                      label: 'Nombre',
-                      builder: (labelText) => TextFormField(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: labelText,
-                        hintText: 'Nombre del producto',
-                      ),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Campo requerido' : null,
-                    ),
-                    ),
-                    const SizedBox(height: AppSpacing.s16),
-
-                    // Categoría
-                    LabeledField(
-                      label: 'Categoría',
-                      builder: (labelText) => DropdownButtonFormField<int>(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      value: categoryValue,
-                      decoration: InputDecoration(labelText: labelText),
-                      items: [
-                        const DropdownMenuItem<int>(
-                          value: null,
-                          child: Text(DefaultRecords.category),
-                        ),
-                        ...categories.map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        setState(() => _selectedCategoryId = val);
-                      },
-                    ),
-                    ),
-                    const SizedBox(height: AppSpacing.s16),
-
-                    // Descripción
-                    LabeledField(
-                      label: 'Descripción',
-                      builder: (labelText) => TextFormField(
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      controller: _descController,
-                      decoration: InputDecoration(
-                        labelText: labelText,
-                        hintText: 'Descripción opcional',
-                      ),
-                      maxLines: 2,
-                    ),
-                    ),
-                    const SizedBox(height: AppSpacing.s16),
-
-                    // Precios de venta (A y B, independientes) y costo de producción
-                    LabeledField(
-                      label: 'Precio A',
-                      builder: (labelText) => TextFormField(
-                      key: _priceAKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      controller: _priceAController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: labelText,
-                        hintText: '0.00',
-                      ),
-                      validator: (v) => _validatePrice(v, _priceBController),
-                      onChanged: (_) => _onPriceChanged(_priceBKey),
-                    ),
-                    ),
-                    const SizedBox(height: AppSpacing.s16),
-                    LabeledField(
-                      label: 'Precio B',
-                      builder: (labelText) => TextFormField(
-                      key: _priceBKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      controller: _priceBController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: labelText,
-                        hintText: '0.00',
-                      ),
-                      validator: (v) => _validatePrice(v, _priceAController),
-                      onChanged: (_) => _onPriceChanged(_priceAKey),
-                    ),
-                    ),
-                    const SizedBox(height: AppSpacing.s16),
-                    LabeledField(
-                      label: 'Costo de producción',
-                      builder: (labelText) => TextFormField(
-                      key: _costKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      controller: _costController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: labelText,
-                        hintText: '0.00',
-                      ),
-                      validator: _validateCost,
-                    ),
-                    ),
-                    const SizedBox(height: AppSpacing.s16),
-
-                    // Stock: siempre un número entero (un "." se rechaza con aviso en
-                    // vez de descartarse o guardarse como 0).
-                    WholeNumberQuantityField(
-                      controller: _stockController,
-                      labelText: 'Stock',
-                      allowZero: true,
-                    ),
-                    const SizedBox(height: AppSpacing.s20),
-
-                    // Toggle activo/inactivo solo en edición
-                    if (isEditing)
-                      FlatToggleRow(
-                        title: 'Producto activo',
-                        subtitle: _isActive
-                            ? 'Disponible para ventas'
-                            : 'No disponible para ventas',
-                        value: _isActive,
-                        onChanged: _onToggleActive,
-                      ),
-                    const SizedBox(height: AppSpacing.s24),
-
-                    // Botones cancelar y guardar (al final del contenido)
-                    FlatFormActions(
-                      onSecondary: () => Navigator.pop(context),
-                      primaryLabel: isEditing ? 'Guardar' : 'Crear',
-                      onPrimary: _save,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        // Nombre
+        LabeledField(
+          label: 'Nombre',
+          builder: (_) => TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _nameController,
+            decoration: const InputDecoration(hintText: 'Nombre del producto'),
+            validator: validateName,
+          ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.s16),
+
+        // Categoría
+        AppDropdownField<int>(
+          label: 'Categoría',
+          value: categoryValue,
+          options: [
+            const DropdownOption<int>(null, DefaultRecords.category),
+            for (final c in categories) DropdownOption<int>(c.id, c.name),
+          ],
+          onChanged: (val) => setState(() => _selectedCategoryId = val),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+
+        // Descripción
+        LabeledField(
+          label: 'Descripción',
+          builder: (_) => TextFormField(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _descController,
+            decoration: const InputDecoration(hintText: 'Descripción opcional'),
+            maxLines: 2,
+            validator: validateOptionalText,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+
+        // Precios de venta (A y B, independientes) y costo de producción
+        LabeledField(
+          label: 'Precio A',
+          builder: (_) => TextFormField(
+            key: _priceAKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _priceAController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(hintText: '0.00'),
+            validator: (v) => _validatePrice(v, _priceBController),
+            onChanged: (_) => _onPriceChanged(_priceBKey),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        LabeledField(
+          label: 'Precio B',
+          builder: (_) => TextFormField(
+            key: _priceBKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _priceBController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(hintText: '0.00'),
+            validator: (v) => _validatePrice(v, _priceAController),
+            onChanged: (_) => _onPriceChanged(_priceAKey),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        LabeledField(
+          label: 'Costo de producción',
+          builder: (_) => TextFormField(
+            key: _costKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            controller: _costController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(hintText: '0.00'),
+            validator: _validateCost,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+
+        // Stock: siempre un número entero (un "." se rechaza con aviso en
+        // vez de descartarse o guardarse como 0).
+        WholeNumberQuantityField(
+          controller: _stockController,
+          labelText: 'Stock',
+          allowZero: true,
+          extraValidator: (qty) =>
+              qty > maxQuantity ? 'El valor es demasiado grande' : null,
+        ),
+
+        // Estado: solo al editar
+        if (isEditing) ...[
+          const SizedBox(height: AppSpacing.s20),
+          AppToggleRow(
+            title: 'Producto activo',
+            subtitle: _isActive
+                ? 'Disponible para ventas'
+                : 'No disponible para ventas',
+            value: _isActive,
+            onChanged: _onToggleActive,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.s24),
+
+        // Botones cancelar y guardar (al final del contenido)
+        FormActions(
+          onSecondary: () => Navigator.pop(context),
+          primaryLabel: isEditing ? 'Guardar' : 'Crear',
+          onPrimary: _save,
+        ),
+      ],
     );
   }
 }

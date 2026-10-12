@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io';
 import '../../application/category_provider.dart';
 import '../../application/category_catalog_filter.dart';
 import '../../models/category_model.dart';
 import '../../models/default_records.dart';
+import '../widgets/app_group.dart';
+import '../widgets/app_sheet.dart';
 import '../widgets/flat_controls.dart';
 import '../widgets/flat_list.dart';
-import '../widgets/flat_style.dart';
 import '../widgets/protected_record_icon.dart';
+import '../widgets/record_detail.dart';
+import '../widgets/record_list.dart';
+import '../widgets/status_badge.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/category_dialog.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/filter_panel.dart';
 
-// Categorías con el estilo plano de Inventario (ver flat_style.dart).
+// Categorías: lista y catálogo de baldosas. Tocar una categoría abre su detalle.
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
 
@@ -32,108 +35,140 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     final setFilter = ref.read(categoryCatalogFilterProvider.notifier);
     final visible = filter.apply(state.categories);
 
-    return FlatStyle(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        floatingActionButton: FlatFab(
-          // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-          // conviven montadas a la vez bajo el shell de navegación inferior.
-          heroTag: 'categories_page_fab',
-          onPressed: () => _showDialog(context, ref, null),
-        ),
-        body: Column(
-          children: [
-            ViewModeSwitcher(
-              isGrid: _isGrid,
-              onChanged: (value) => setState(() => _isGrid = value),
-            ),
-            FilterArea(
-              search: AppSearchBar(
-                initialText: filter.query,
-                hintText: 'Buscar categoría',
-                onChanged: (value) =>
-                    setFilter.update((f) => f.copyWith(query: value)),
-              ),
-              fields: [
-                FilterDropdown<CategoryStatusFilter>(
-                  label: 'Estado',
-                  options: const [
-                    FilterOption(CategoryStatusFilter.all, 'Todas'),
-                    FilterOption(CategoryStatusFilter.active, 'Activas'),
-                    FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
-                  ],
-                  current: filter.status,
-                  defaultValue: CategoryStatusFilter.all,
-                  onApply: (value) =>
-                      setFilter.update((f) => f.copyWith(status: value)),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s8),
-            Expanded(
-              child: state.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : state.categories.isEmpty
-                  ? FlatEmptyState(
-                      icon: Icons.category_rounded,
-                      message: 'No se registraron categorías',
-                      actionLabel: 'Nueva categoría',
-                      onAction: () => _showDialog(context, ref, null),
-                    )
-                  : visible.isEmpty
-                  ? const FlatEmptyState(
-                      icon: Icons.search_off_rounded,
-                      message: 'Sin resultados',
-                    )
-                  : _isGrid
-                  ? _GridView(
-                      categories: visible,
-                      showInactive:
-                          filter.status == CategoryStatusFilter.inactive,
-                    )
-                  : _ListViewWidget(
-                      categories: visible,
-                      onEdit: (cat) => _showDialog(context, ref, cat),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDialog(
-    BuildContext context,
-    WidgetRef ref,
-    CategoryModel? category,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+    return Scaffold(
       backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      floatingActionButton: FlatFab(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'categories_page_fab',
+        onPressed: () => _showForm(context, null),
       ),
-      builder: (_) => FlatStyle(child: CategoryDialog(category: category)),
+      body: Column(
+        children: [
+          ViewModeSwitcher(
+            isGrid: _isGrid,
+            onChanged: (value) => setState(() => _isGrid = value),
+          ),
+          FilterArea(
+            search: AppSearchBar(
+              initialText: filter.query,
+              hintText: 'Buscar categoría',
+              onChanged: (value) =>
+                  setFilter.update((f) => f.copyWith(query: value)),
+            ),
+            fields: [
+              FilterDropdown<CategoryStatusFilter>(
+                label: 'Estado',
+                options: const [
+                  FilterOption(CategoryStatusFilter.all, 'Todas'),
+                  FilterOption(CategoryStatusFilter.active, 'Activas'),
+                  FilterOption(CategoryStatusFilter.inactive, 'Inactivas'),
+                ],
+                current: filter.status,
+                defaultValue: CategoryStatusFilter.all,
+                onApply: (value) =>
+                    setFilter.update((f) => f.copyWith(status: value)),
+              ),
+            ],
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.categories.isEmpty
+                ? Center(
+                    child: AppEmptyState(
+                      icon: Icons.category_rounded,
+                      title: 'No se registraron categorías',
+                      actionLabel: 'Nueva categoría',
+                      onAction: () => _showForm(context, null),
+                    ),
+                  )
+                : visible.isEmpty
+                ? const SingleChildScrollView(
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Sin resultados',
+                    ),
+                  )
+                : _isGrid
+                ? _GridView(
+                    categories: visible,
+                    showInactive:
+                        filter.status == CategoryStatusFilter.inactive,
+                  )
+                : _ListViewWidget(categories: visible),
+          ),
+        ],
+      ),
     );
   }
 }
 
+void _showForm(BuildContext context, CategoryModel? category) {
+  showAppSheet<void>(
+    context,
+    builder: (_) => CategoryDialog(category: category),
+  );
+}
+
+void _showDetail(BuildContext context, CategoryModel category) {
+  final description = category.description;
+  showAppSheet<void>(
+    context,
+    builder: (_) => RecordDetailSheet(
+      title: 'Detalle de la categoría',
+      // La categoría predeterminada no se edita: solo "Cerrar".
+      onEdit: category.isDefault ? null : () => _showForm(context, category),
+      children: [
+        RecordHeadline(
+          title: category.name,
+          thumb: RecordThumb(
+            imagePath: category.image,
+            icon: Icons.category_rounded,
+            size: 120,
+          ),
+          pill: _pill(category),
+          note: category.isDefault
+              ? DefaultRecords.protectedCategoryMessage
+              : null,
+        ),
+        AppSection(
+          children: [
+            AppValueRow(
+              label: 'Descripción',
+              value: description == null || description.isEmpty
+                  ? 'Sin descripción'
+                  : description,
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+StatusBadge _pill(CategoryModel category) => StatusBadge.forState(
+  isActive: category.isActive,
+  activeLabel: 'Activa',
+  inactiveLabel: 'Inactiva',
+);
+
 class _ListViewWidget extends StatelessWidget {
   final List<CategoryModel> categories;
-  final ValueChanged<CategoryModel> onEdit;
 
-  const _ListViewWidget({required this.categories, required this.onEdit});
+  const _ListViewWidget({required this.categories});
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: AppFlat.listWithFab,
+    return AppGroupListView(
+      dividerIndent: AppMetrics.dividerIndentWithThumb,
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final cat = categories[index];
-        return _CategoryRow(category: cat, onEdit: () => onEdit(cat));
+        return _CategoryRow(
+          category: cat,
+          onTap: () => _showDetail(context, cat),
+        );
       },
     );
   }
@@ -173,163 +208,35 @@ class _GridView extends StatelessWidget {
       },
     );
   }
-
-  void _showDetail(BuildContext context, CategoryModel cat) {
-    showDialog(
-      context: context,
-      barrierColor: AppColors.textPrimary.withValues(alpha: 0.5),
-      builder: (_) => _CategoryDetail(category: cat),
-    );
-  }
 }
 
 class _CategoryRow extends StatelessWidget {
   final CategoryModel category;
-  final VoidCallback onEdit;
+  final VoidCallback onTap;
 
-  const _CategoryRow({required this.category, required this.onEdit});
+  const _CategoryRow({required this.category, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return FlatListRow(
-      // La categoría predeterminada no se edita: sin acción al tocar.
-      onTap: category.isDefault ? null : onEdit,
-      leading: FlatThumb(
+    final description = category.description;
+    return RecordRow(
+      onTap: onTap,
+      thumb: RecordThumb(
         imagePath: category.image,
         icon: Icons.category_rounded,
       ),
       title: category.name,
       details: [
-        if (category.description != null && category.description!.isNotEmpty)
-          FlatMutedText(category.description!, maxLines: 2),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FlatStatusPill.forState(
-            isActive: category.isActive,
-            activeLabel: 'Activa',
-            inactiveLabel: 'Inactiva',
-          ),
-        ),
+        if (description != null && description.isNotEmpty)
+          RecordLine(description, maxLines: 2),
       ],
+      pill: _pill(category),
+      // La categoría predeterminada no se edita: lleva un candado.
       trailing: category.isDefault
           ? const ProtectedRecordIcon(
               message: DefaultRecords.protectedCategoryMessage,
             )
-          : IconButton(
-              tooltip: 'Editar',
-              icon: const Icon(
-                Icons.edit_rounded,
-                color: AppColors.cyanDark,
-                size: 20,
-              ),
-              onPressed: onEdit,
-            ),
-    );
-  }
-}
-
-// Detalle de la categoría
-class _CategoryDetail extends StatelessWidget {
-  final CategoryModel category;
-
-  const _CategoryDetail({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Container(
-          color: AppColors.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Imagen o placeholder
-              Stack(
-                children: [
-                  if (category.image != null)
-                    Image.file(
-                      File(category.image!),
-                      width: double.infinity,
-                      height: 260,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
-                    )
-                  else
-                    _placeholder(),
-
-                  // Botón cerrar en la esquina superior derecha
-                  Positioned(
-                    top: AppSpacing.s12,
-                    right: AppSpacing.s12,
-                    child: Material(
-                      color: AppColors.surface,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => Navigator.pop(context),
-                        child: const Padding(
-                          padding: EdgeInsets.all(AppSpacing.s8),
-                          child: Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textPrimary,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Nombre y descripción
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.s20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category.name,
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    if (category.description != null &&
-                        category.description!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.s8),
-                      Text(
-                        category.description!,
-                        style: textTheme.displayMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _placeholder() {
-    return Container(
-      width: double.infinity,
-      height: 260,
-      color: AppColors.surface,
-      child: const Icon(
-        Icons.category_rounded,
-        color: AppColors.cyanDark,
-        size: 60,
-      ),
+          : null,
     );
   }
 }

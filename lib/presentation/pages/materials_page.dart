@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
 import '../../config/rounding.dart';
@@ -15,13 +14,19 @@ import '../widgets/screen_header.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/unit_quantity_input.dart';
-import '../widgets/flat_form.dart';
 import '../widgets/flat_list.dart';
-import '../widgets/flat_style.dart';
+import '../widgets/app_group.dart';
+import '../widgets/app_sheet.dart';
+import '../widgets/form_style.dart';
+import '../widgets/form_widgets.dart';
+import '../widgets/record_detail.dart';
+import '../widgets/record_list.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
+import '../../application/form_validation.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -31,16 +36,14 @@ class MaterialsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FlatStyle(
-      child: DefaultTabController(
-        length: 2,
-        child: ScreenScaffold(
-          title: 'Materiales',
-          actions: const [ProfileButton()],
-          bottom: const AppTabSwitcher(labels: ['Materiales', 'Registro de uso']),
-          body: const TabBarView(
-            children: [MaterialsListTab(), MaterialsUsageTab()],
-          ),
+    return DefaultTabController(
+      length: 2,
+      child: ScreenScaffold(
+        title: 'Materiales',
+        actions: const [ProfileButton()],
+        bottom: const AppTabSwitcher(labels: ['Materiales', 'Registro de uso']),
+        body: const TabBarView(
+          children: [MaterialsListTab(), MaterialsUsageTab()],
         ),
       ),
     );
@@ -64,87 +67,79 @@ class MaterialsListTab extends ConsumerWidget {
       (m) => m.name,
     );
 
-    return FlatStyle(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        floatingActionButton: FlatFab(
-          // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-          // conviven montadas a la vez bajo el shell de navegación inferior.
-          heroTag: 'materials_list_tab_fab',
-          onPressed: () => _showDialog(context, null),
-        ),
-        body: Column(
-          children: [
-            FilterArea(
-              search: AppSearchBar(
-                initialText: query,
-                hintText: 'Buscar material',
-                onChanged: (value) =>
-                    ref.read(materialListQueryProvider.notifier).state = value,
-              ),
-              fields: [
-                FilterDropdown<StatusFilter>(
-                  label: 'Estado',
-                  options: statusFilterOptions(),
-                  current: status,
-                  defaultValue: StatusFilter.all,
-                  onApply: (value) =>
-                      ref.read(materialStatusFilterProvider.notifier).state =
-                          value,
-                ),
-              ],
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      floatingActionButton: FlatFab(
+        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
+        // conviven montadas a la vez bajo el shell de navegación inferior.
+        heroTag: 'materials_list_tab_fab',
+        onPressed: () => _showDialog(context, null),
+      ),
+      body: Column(
+        children: [
+          FilterArea(
+            search: AppSearchBar(
+              initialText: query,
+              hintText: 'Buscar material',
+              onChanged: (value) =>
+                  ref.read(materialListQueryProvider.notifier).state = value,
             ),
-            Expanded(
-              child: state.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : state.materials.isEmpty
-                  ? FlatEmptyState(
+            fields: [
+              FilterDropdown<StatusFilter>(
+                label: 'Estado',
+                options: statusFilterOptions(),
+                current: status,
+                defaultValue: StatusFilter.all,
+                onApply: (value) =>
+                    ref.read(materialStatusFilterProvider.notifier).state =
+                        value,
+              ),
+            ],
+          ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.materials.isEmpty
+                ? Center(
+                    child: AppEmptyState(
                       icon: Icons.palette_rounded,
-                      message: 'No se registraron materiales',
+                      title: 'No se registraron materiales',
                       actionLabel: 'Nuevo material',
                       onAction: () => _showDialog(context, null),
-                    )
-                  : visible.isEmpty
-                  ? const FlatEmptyState(
-                      icon: Icons.search_off_rounded,
-                      message: 'Sin resultados',
-                    )
-                  : ListView.builder(
-                      padding: AppFlat.listWithFab,
-                      itemCount: visible.length,
-                      itemBuilder: (context, index) {
-                        final m = visible[index];
-                        return _MaterialRow(
-                          material: m,
-                          unitName: units
-                              .where((u) => u.id == m.unitId)
-                              .firstOrNull
-                              ?.name,
-                          unitType: units
-                              .where((u) => u.id == m.unitId)
-                              .firstOrNull
-                              ?.type,
-                          onEdit: () => _showDialog(context, m),
-                        );
-                      },
                     ),
-            ),
-          ],
-        ),
+                  )
+                : visible.isEmpty
+                ? const SingleChildScrollView(
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Sin resultados',
+                    ),
+                  )
+                : AppGroupListView(
+                    itemCount: visible.length,
+                    itemBuilder: (context, index) {
+                      final m = visible[index];
+                      final unit = units
+                          .where((u) => u.id == m.unitId)
+                          .firstOrNull;
+                      return _MaterialRow(
+                        material: m,
+                        unitName: unit?.name,
+                        unitType: unit?.type,
+                        onEdit: () => _showDialog(context, m),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
 
   void _showDialog(BuildContext context, MaterialModel? material) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => FlatStyle(child: MaterialDialog(material: material)),
+    showAppSheet<void>(
+      context,
+      builder: (_) => MaterialDialog(material: material),
     );
   }
 }
@@ -178,37 +173,56 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
 
   void _showRegisterSheet() {
     if (_selectedProductId == null) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => FlatStyle(
-        child: _RegisterUsageSheet(
-          productId: _selectedProductId!,
-          onRegistered: () => _loadUsageLog(_selectedProductId!),
-        ),
+    showAppSheet<void>(
+      context,
+      builder: (_) => _RegisterUsageSheet(
+        productId: _selectedProductId!,
+        onRegistered: () => _loadUsageLog(_selectedProductId!),
       ),
     );
   }
 
   void _showEditSheet(ProductMaterialModel entry) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    showAppSheet<void>(
+      context,
+      builder: (_) => _EditUsageSheet(
+        entry: entry,
+        onEdited: () => _loadUsageLog(_selectedProductId!),
       ),
-      builder: (_) => FlatStyle(
-        child: _EditUsageSheet(
-          entry: entry,
-          onEdited: () => _loadUsageLog(_selectedProductId!),
-        ),
+    );
+  }
+
+  // Detalle de un registro de uso. Uno cancelado es solo historial: sin
+  // "Editar".
+  void _showUsageDetail(ProductMaterialModel entry) {
+    final quantity =
+        '${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}';
+    showAppSheet<void>(
+      context,
+      builder: (_) => RecordDetailSheet(
+        title: 'Detalle del registro de uso',
+        onEdit: entry.isCanceled ? null : () => _showEditSheet(entry),
+        children: [
+          RecordHeadline(
+            title: entry.materialName,
+            pill: entry.isCanceled
+                ? const StatusBadge.canceled(label: 'Cancelado')
+                : null,
+            note: entry.isCanceled
+                ? 'La cantidad ya volvió al stock del material.'
+                : null,
+          ),
+          AppSection(
+            children: [
+              AppValueRow(label: 'Cantidad', value: quantity),
+              AppValueRow(
+                label: 'Precio por unidad',
+                value:
+                    'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -221,126 +235,95 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
         .where((p) => p.isActive)
         .toList();
 
-    return FlatStyle(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        floatingActionButton: _selectedProductId != null
-            ? FlatFab(
-                // Tag único: evita colisiones de Hero cuando varias pestañas
-                // con FAB conviven montadas a la vez bajo el shell de
-                // navegación inferior.
-                heroTag: 'materials_usage_tab_fab',
-                onPressed: _showRegisterSheet,
-              )
-            : null,
-        body: Column(
-          children: [
-            // Selector de producto: búsqueda por nombre, sin lista hasta escribir.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                AppSpacing.s12,
-                AppSpacing.s16,
-                AppSpacing.s16,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      floatingActionButton: _selectedProductId != null
+          ? FlatFab(
+              // Tag único: evita colisiones de Hero cuando varias pestañas
+              // con FAB conviven montadas a la vez bajo el shell de
+              // navegación inferior.
+              heroTag: 'materials_usage_tab_fab',
+              onPressed: _showRegisterSheet,
+            )
+          : null,
+      body: Column(
+        children: [
+          // Selector de producto: búsqueda por nombre, sin lista hasta escribir.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s12,
+              AppSpacing.s16,
+              AppSpacing.s16,
+            ),
+            child: SearchablePickerField<int>(
+              searchStyle: true,
+              label: 'Producto',
+              showLabel: false,
+              searchHint: 'Producto',
+              value: _selectedProductId,
+              options: [
+                for (final p in products) PickerOption<int>(p.id, p.name),
+              ],
+              onChanged: (val) {
+                setState(() {
+                  _selectedProductId = val;
+                  _usageLog = [];
+                });
+                if (val != null) _loadUsageLog(val);
+              },
+            ),
+          ),
+
+          if (_selectedProductId == null)
+            const Expanded(
+              child: Center(
+                child: AppEmptyState(
+                  icon: Icons.palette_rounded,
+                  title: 'Selecciona un producto',
+                  message: 'para ver el registro de uso de materiales',
+                ),
               ),
-              child: SearchablePickerField<int>(
-                searchStyle: true,
-                label: 'Producto',
-                showLabel: false,
-                searchHint: 'Producto',
-                value: _selectedProductId,
-                options: [
-                  for (final p in products) PickerOption<int>(p.id, p.name),
-                ],
-                onChanged: (val) {
-                  setState(() {
-                    _selectedProductId = val;
-                    _usageLog = [];
-                  });
-                  if (val != null) _loadUsageLog(val);
+            )
+          else if (_loading)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (_usageLog.isEmpty)
+            const Expanded(
+              child: Center(
+                child: AppEmptyState(
+                  icon: Icons.history_rounded,
+                  title: 'Sin registros de uso',
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: AppGroupListView(
+                itemCount: _usageLog.length,
+                itemBuilder: (context, index) {
+                  final entry = _usageLog[index];
+                  return RecordRow(
+                    title: entry.materialName,
+                    titleColor: entry.isCanceled
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
+                    details: [
+                      RecordLine(
+                        'Cantidad: ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
+                      ),
+                      RecordLine(
+                        'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
+                      ),
+                    ],
+                    pill: entry.isCanceled
+                        ? const StatusBadge.canceled(label: 'Cancelado')
+                        : null,
+                    onTap: () => _showUsageDetail(entry),
+                  );
                 },
               ),
             ),
-
-            if (_selectedProductId == null)
-              const Expanded(
-                child: FlatEmptyState(
-                  icon: Icons.palette_rounded,
-                  message:
-                      'Selecciona un producto para ver\nel registro de uso de materiales',
-                ),
-              )
-            else if (_loading)
-              const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (_usageLog.isEmpty)
-              const Expanded(
-                child: FlatEmptyState(
-                  icon: Icons.history_rounded,
-                  message: 'Sin registros de uso',
-                ),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  padding: AppFlat.listWithFab,
-                  itemCount: _usageLog.length,
-                  itemBuilder: (context, index) {
-                    final entry = _usageLog[index];
-                    return FlatListRow(
-                      leading: const FlatThumb(icon: Icons.palette_rounded),
-                      title: entry.materialName,
-                      titleColor: entry.isCanceled
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
-                      details: [
-                        // Cantidad y precio son dos piezas que no se parten por
-                        // dentro: si no caben juntas, el precio completo pasa a
-                        // la línea de abajo.
-                        Wrap(
-                          spacing: AppSpacing.s16,
-                          children: [
-                            for (final piece in [
-                              'Cantidad: ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
-                              'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
-                            ])
-                              Text(
-                                piece,
-                                softWrap: false,
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.textSecondary),
-                              ),
-                          ],
-                        ),
-                        if (entry.isCanceled)
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: FlatStatusPill(
-                              label: 'Cancelado',
-                              status: FlatStatus.canceled,
-                            ),
-                          ),
-                      ],
-                      // Un registro cancelado es solo historial: sin acciones.
-                      onTap: entry.isCanceled
-                          ? null
-                          : () => _showEditSheet(entry),
-                      trailing: entry.isCanceled
-                          ? null
-                          : IconButton(
-                              icon: const Icon(
-                                Icons.edit_rounded,
-                                color: AppColors.cyanDark,
-                                size: 20,
-                              ),
-                              tooltip: 'Editar registro',
-                              onPressed: () => _showEditSheet(entry),
-                            ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -366,6 +349,10 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
   final _quantityController = TextEditingController();
   int? _selectedMaterialId;
   double _fractionQuantity = 0;
+  // Errores del formulario: del material, de la cantidad elegida con las
+  // fracciones y los del registro (p. ej. stock insuficiente).
+  String? _materialError;
+  String? _quantityError;
   String? _error;
 
   @override
@@ -374,10 +361,15 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
     _quantityController.addListener(_clearError);
   }
 
-  // Un aviso de error (p. ej. "Selecciona una cantidad") desaparece en cuanto
-  // la persona cambia la cantidad o el material.
+  // Un aviso de error desaparece en cuanto la persona cambia la cantidad o el
+  // material.
   void _clearError() {
-    if (_error != null) setState(() => _error = null);
+    if (_error != null || _quantityError != null) {
+      setState(() {
+        _error = null;
+        _quantityError = null;
+      });
+    }
   }
 
   @override
@@ -402,7 +394,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
     final usesFractions = unit != null && isFractionFriendlyUnitType(unit.type);
 
     if (_selectedMaterialId == null) {
-      setState(() => _error = 'Selecciona un material');
+      setState(() => _materialError = 'Selecciona un material');
       return;
     }
     if (!usesFractions && !_formKey.currentState!.validate()) return;
@@ -417,7 +409,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
     );
 
     if (quantity <= 0) {
-      setState(() => _error = 'Selecciona una cantidad');
+      setState(() => _quantityError = 'Selecciona una cantidad');
       return;
     }
     // Se compara el stock ya redondeado: el ruido no bloquea ni deja pasar.
@@ -425,13 +417,16 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         quantity >
             roundQuantity(material.stock, unitType: unit?.type ?? 'medida')) {
       setState(
-        () => _error =
+        () => _quantityError =
             'Cantidad máxima disponible: ${_qty(material.stock, unit?.type, unit?.name)}',
       );
       return;
     }
 
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _quantityError = null;
+    });
 
     final error = await ref
         .read(materialProvider.notifier)
@@ -467,123 +462,113 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
     final selectedUnit = selectedMaterial != null
         ? units.where((u) => u.id == selectedMaterial.unitId).firstOrNull
         : null;
+    final availableText = selectedMaterial == null
+        ? ''
+        : _qty(selectedMaterial.stock, selectedUnit?.type, selectedUnit?.name);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.s24,
-        right: AppSpacing.s24,
-        top: AppSpacing.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Registrar el uso de un material',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s24),
-
-              // Selector de material con stock visible
-              // Buscar y elegir por nombre, igual que el producto: escala con
-              // la cantidad de materiales y no lista nada hasta escribir.
-              SearchablePickerField<int>(
-                searchStyle: true,
-                label: 'Material',
-                searchHint: 'Buscar material',
-                value: _selectedMaterialId,
-                options: [
-                  for (final m in materials) PickerOption<int>(m.id, m.name),
-                ],
-                onChanged: (val) => setState(() {
-                  _selectedMaterialId = val;
-                  _error = null;
-                }),
-              ),
-              // Muestra el stock disponible del material seleccionado
-              if (selectedMaterial != null) ...[
-                const SizedBox(height: AppSpacing.s6),
-                Padding(
-                  padding: const EdgeInsets.only(left: AppSpacing.s4),
-                  child: Text(
-                    'Stock disponible: ${_qty(selectedMaterial.stock, selectedUnit?.type, selectedUnit?.name)}${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.s16),
-
-              // Cantidad: para unidades tipo envase (contenedor, paquete, rollo, tira) se
-              // ofrecen fracciones simples en vez de pedir un decimal exacto;
-              // para unidades "por pieza" (unidad genérica) se exige un entero.
-              if (selectedUnit != null &&
-                  isFractionFriendlyUnitType(selectedUnit.type))
-                FractionQuantityPicker(
-                  unit: selectedUnit.name,
-                  value: _fractionQuantity,
-                  onChanged: (v) => setState(() {
-                    _fractionQuantity = v;
-                    _error = null;
-                  }),
-                  label: 'Cantidad utilizada',
-                )
-              else if (selectedUnit != null &&
-                  isDiscreteUnit(selectedUnit.type, selectedUnit.name))
-                WholeNumberQuantityField(
-                  controller: _quantityController,
-                  labelText: 'Cantidad utilizada (${selectedUnit.name})',
-                )
-              else
-                LabeledField(
-                  label: selectedUnit != null
-                      ? 'Cantidad utilizada (${selectedUnit.name})'
-                      : 'Cantidad utilizada',
-                  builder: (labelText) => TextFormField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _quantityController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: labelText,
-                      hintText: '0',
-                    ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Campo requerido';
-                      final qty = double.tryParse(v);
-                      if (qty == null || qty <= 0) return 'Cantidad inválida';
-                      return null;
-                    },
-                  ),
-                ),
-              const SizedBox(height: AppSpacing.s12),
-
-              // Error del servidor
-              if (_error != null) FormErrorBox(message: _error!),
-
-              const SizedBox(height: AppSpacing.s24),
-
-              // Botones cancelar y registrar
-              FlatFormActions(
-                onSecondary: () => Navigator.pop(context),
-                primaryLabel: 'Registrar',
-                onPrimary: _register,
-              ),
-            ],
-          ),
+    return FormSheet(
+      title: 'Registrar uso de material',
+      formKey: _formKey,
+      children: [
+        // Selector de material: buscar y elegir por nombre, igual que el
+        // producto; escala con la cantidad de materiales y no lista nada hasta
+        // escribir.
+        SearchablePickerField<int>(
+          label: 'Material',
+          searchHint: 'Buscar material',
+          value: _selectedMaterialId,
+          options: [
+            for (final m in materials) PickerOption<int>(m.id, m.name),
+          ],
+          onChanged: (val) => setState(() {
+            _selectedMaterialId = val;
+            _materialError = null;
+            _quantityError = null;
+            _error = null;
+          }),
         ),
-      ),
+        if (_materialError != null) FormErrorText(_materialError!),
+        // Muestra el stock disponible del material seleccionado
+        if (selectedMaterial != null) ...[
+          const SizedBox(height: AppSpacing.s6),
+          Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.s4),
+            child: Text(
+              'Stock disponible: $availableText${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.s16),
+
+        // Cantidad: para unidades tipo envase (contenedor, paquete, rollo, tira)
+        // se ofrecen fracciones simples en vez de pedir un decimal exacto; para
+        // unidades "por pieza" (unidad genérica) se exige un entero.
+        if (selectedUnit != null && isFractionFriendlyUnitType(selectedUnit.type))
+          FractionQuantityPicker(
+            unit: selectedUnit.name,
+            value: _fractionQuantity,
+            onChanged: (v) => setState(() {
+              _fractionQuantity = v;
+              _quantityError = null;
+              _error = null;
+            }),
+            label: 'Cantidad utilizada',
+          )
+        else if (selectedUnit != null &&
+            isDiscreteUnit(selectedUnit.type, selectedUnit.name))
+          WholeNumberQuantityField(
+            controller: _quantityController,
+            labelText: 'Cantidad utilizada (${selectedUnit.name})',
+            extraValidator: (qty) => selectedMaterial != null &&
+                    qty > selectedMaterial.stock
+                ? 'Cantidad máxima disponible: $availableText'
+                : null,
+          )
+        else
+          LabeledField(
+            label: selectedUnit != null
+                ? 'Cantidad utilizada (${selectedUnit.name})'
+                : 'Cantidad utilizada',
+            builder: (_) => TextFormField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              controller: _quantityController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(hintText: '0'),
+              validator: (v) {
+                final error = validateDecimal(
+                  v,
+                  maxDecimals: 2,
+                  max: maxQuantity,
+                );
+                if (error != null) return error;
+                if (selectedMaterial != null &&
+                    parseNumber(v)! >
+                        roundQuantity(
+                          selectedMaterial.stock,
+                          unitType: selectedUnit?.type ?? 'medida',
+                        )) {
+                  return 'Cantidad máxima disponible: $availableText';
+                }
+                return null;
+              },
+            ),
+          ),
+        if (_quantityError != null) FormErrorText(_quantityError!),
+
+        // Error del registro
+        if (_error != null) FormErrorText(_error!),
+        const SizedBox(height: AppSpacing.s24),
+
+        // Botones cancelar y registrar
+        FormActions(
+          onSecondary: () => Navigator.pop(context),
+          primaryLabel: 'Registrar',
+          onPrimary: _register,
+        ),
+      ],
     );
   }
 }
@@ -676,6 +661,25 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
       setState(() => _error = 'Selecciona una cantidad');
       return;
     }
+    // Se compara el stock ya redondeado, como al registrar.
+    final available = roundQuantity(
+      (ref
+                  .read(materialProvider)
+                  .materials
+                  .where((m) => m.id == widget.entry.materialId)
+                  .firstOrNull
+                  ?.stock ??
+              0) +
+          widget.entry.quantityUsed,
+      unitType: widget.entry.materialUnitType,
+    );
+    if (_usesFractions && newQuantity > available) {
+      setState(
+        () => _error =
+            'Máximo disponible: ${_qty(available, widget.entry.materialUnitType, widget.entry.materialUnitName)}',
+      );
+      return;
+    }
 
     setState(() => _error = null);
 
@@ -714,119 +718,98 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
       widget.entry.materialUnitName,
     );
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.s24,
-        right: AppSpacing.s24,
-        top: AppSpacing.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s32,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Editar registro de uso',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s8),
-              // Muestra el material que se está editando
-              Text(
-                widget.entry.materialName,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.s24),
-
-              // Campo de cantidad: fracciones simples para unidades tipo
-              // envase, número decimal para el resto.
-              if (_usesFractions) ...[
-                FractionQuantityPicker(
-                  unit: widget.entry.materialUnitName,
-                  value: _fractionQuantity,
-                  onChanged: (v) {
-                    setState(() {
-                      _fractionQuantity = v;
-                      _error = null;
-                    });
-                  },
-                  label: 'Nueva cantidad',
-                ),
-                const SizedBox(height: AppSpacing.s6),
-                Text(
-                  'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
-                ),
-              ] else if (_isDiscrete)
-                WholeNumberQuantityField(
-                  controller: _quantityController,
-                  labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
-                  helperText:
-                      'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
-                  extraValidator: (qty) => qty > availableStock
-                      ? 'Máximo: $availableText'
-                      : null,
-                )
-              else
-                LabeledField(
-                  label: 'Nueva cantidad (${widget.entry.materialUnitName})',
-                  builder: (labelText) => TextFormField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _quantityController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: labelText,
-                      hintText: '0',
-                      helperText:
-                          'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
-                    ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Campo requerido';
-                      final qty = double.tryParse(v);
-                      if (qty == null || qty <= 0) return 'Cantidad inválida';
-                      if (qty > availableStock) {
-                        return 'Máximo: $availableText';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              const SizedBox(height: AppSpacing.s12),
-
-              // Error del servidor
-              if (_error != null) FormErrorBox(message: _error!),
-
-              const SizedBox(height: AppSpacing.s24),
-
-              // Botones cancelar y guardar
-              FlatFormActions(
-                onSecondary: () => Navigator.pop(context),
-                primaryLabel: 'Guardar',
-                onPrimary: _save,
-              ),
-
-              // Cancelar el registro: solo aquí, al final del formulario.
-              const SizedBox(height: AppSpacing.s12),
-              AppActionButton(
-                label: 'Cancelar registro',
-                kind: AppButtonKind.destructive,
-                onPressed: _cancelUsage,
-              ),
-            ],
+    return FormSheet(
+      title: 'Editar registro de uso',
+      formKey: _formKey,
+      children: [
+        // Muestra el material que se está editando
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.s4),
+          child: Text(
+            widget.entry.materialName,
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
           ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.s16),
+
+        // Campo de cantidad: fracciones simples para unidades tipo envase,
+        // número decimal para el resto.
+        if (_usesFractions) ...[
+          FractionQuantityPicker(
+            unit: widget.entry.materialUnitName,
+            value: _fractionQuantity,
+            onChanged: (v) {
+              setState(() {
+                _fractionQuantity = v;
+                _error = null;
+              });
+            },
+            label: 'Nueva cantidad',
+          ),
+          const SizedBox(height: AppSpacing.s6),
+          Text(
+            'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+        ] else if (_isDiscrete)
+          WholeNumberQuantityField(
+            controller: _quantityController,
+            labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
+            helperText:
+                'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+            extraValidator: (qty) =>
+                qty > availableStock ? 'Máximo: $availableText' : null,
+          )
+        else
+          LabeledField(
+            label: 'Nueva cantidad (${widget.entry.materialUnitName})',
+            builder: (_) => TextFormField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              controller: _quantityController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                hintText: '0',
+                helperText:
+                    'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+              ),
+              validator: (v) {
+                final error = validateDecimal(
+                  v,
+                  maxDecimals: 2,
+                  max: maxQuantity,
+                );
+                if (error != null) return error;
+                if (parseNumber(v)! > availableStock) {
+                  return 'Máximo: $availableText';
+                }
+                return null;
+              },
+            ),
+          ),
+
+        // Error del registro
+        if (_error != null) FormErrorText(_error!),
+        const SizedBox(height: AppSpacing.s24),
+
+        // Botones cancelar y guardar
+        FormActions(
+          onSecondary: () => Navigator.pop(context),
+          primaryLabel: 'Guardar',
+          onPrimary: _save,
+        ),
+
+        // Cancelar el registro: solo aquí, al final del formulario.
+        const SizedBox(height: AppSpacing.s12),
+        AppActionButton(
+          label: 'Cancelar registro',
+          kind: AppButtonKind.destructive,
+          onPressed: _cancelUsage,
+        ),
+      ],
     );
   }
 }
@@ -846,47 +829,52 @@ class _MaterialRow extends StatelessWidget {
     required this.onEdit,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return FlatListRow(
-      onTap: onEdit,
-      leading: const FlatThumb(icon: Icons.palette_rounded),
-      title: material.name,
-      details: [
-        if (material.description != null && material.description!.isNotEmpty)
-          FlatMutedText(material.description!, maxLines: 2),
-        FlatMutedText(
-          'Bs. ${fixed2(material.pricePerUnit)}${unitName != null ? ' / $unitName' : ''}',
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FlatStatusPill.forState(
-            isActive: material.isActive,
-            activeLabel: 'Activo',
-            inactiveLabel: 'Inactivo',
-          ),
-        ),
-      ],
-      trailing: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  String get _stockText =>
+      '${_qty(material.stock, unitType, unitName)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}';
+
+  String get _priceText =>
+      'Bs. ${fixed2(material.pricePerUnit)}${unitName != null ? ' / $unitName' : ''}';
+
+  void _showDetail(BuildContext context) {
+    final description = material.description;
+    showAppSheet<void>(
+      context,
+      builder: (_) => RecordDetailSheet(
+        title: 'Detalle del material',
+        onEdit: onEdit,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.s2),
-            child: FlatValueText(
-              'Stock: ${_qty(material.stock, unitType, unitName)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}',
-            ),
+          RecordHeadline(
+            title: material.name,
+            pill: StatusBadge.forState(isActive: material.isActive),
           ),
-          IconButton(
-            tooltip: 'Editar',
-            icon: const Icon(
-              Icons.edit_rounded,
-              color: AppColors.cyanDark,
-              size: 20,
-            ),
-            onPressed: onEdit,
+          AppSection(
+            children: [
+              if (description != null && description.isNotEmpty)
+                AppValueRow(label: 'Descripción', value: description),
+              if (unitName != null)
+                AppValueRow(label: 'Unidad', value: unitName!),
+              AppValueRow(label: 'Precio por unidad', value: _priceText),
+              AppValueRow(label: 'Stock', value: _stockText),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final description = material.description;
+    return RecordRow(
+      onTap: () => _showDetail(context),
+      title: material.name,
+      details: [
+        if (description != null && description.isNotEmpty)
+          RecordLine(description, maxLines: 2),
+        RecordLine(_priceText),
+        RecordLine('Stock: $_stockText'),
+      ],
+      pill: StatusBadge.forState(isActive: material.isActive),
     );
   }
 }
