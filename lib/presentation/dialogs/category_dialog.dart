@@ -152,7 +152,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
       final confirm = await confirmCancellation(
         context,
         title: '¿Desactivar categoría?',
-        message: 'La categoría "${_nameController.text.trim()}" no estará disponible para nuevos productos.',
+        message: 'La categoría no estará disponible para nuevos productos.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -168,10 +168,15 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
     return FormSheet(
       title: isEditing ? 'Editar categoría' : 'Nueva categoría',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: isEditing ? 'Guardar' : 'Crear',
+        onPrimary: _save,
+      ),
       children: [
         // Selector de imagen
         AppPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
-        const SizedBox(height: AppSpacing.s20),
+        const SizedBox(height: AppSpacing.s16),
 
         // Nombre
         LabeledField(
@@ -199,7 +204,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
         // Estado: solo al editar
         if (isEditing) ...[
-          const SizedBox(height: AppSpacing.s20),
+          const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Categoría activa',
             subtitle: _isActive ? 'Visible en el sistema' : 'Oculta en el sistema',
@@ -209,14 +214,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
         ],
         // Error al guardar
         if (_saveError != null) FormErrorText(_saveError!),
-        const SizedBox(height: AppSpacing.s24),
-
-        // Botones
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: isEditing ? 'Guardar' : 'Crear',
-          onPrimary: _save,
-        ),
       ],
     );
   }

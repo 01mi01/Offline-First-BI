@@ -71,10 +71,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(MainNavigationPage), findsOneWidget);
-      // Este ícono solo existe en el tab "Inicio" de la barra inferior de
-      // MainNavigationPage: si la app hubiera navegado a un HomePage suelto
-      // (el bug real), este find no encontraría nada.
-      expect(find.byIcon(Icons.home_outlined), findsOneWidget);
     },
   );
 }

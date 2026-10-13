@@ -16,6 +16,7 @@ import '../../theme/app_theme.dart';
 import '../dialogs/category_dialog.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/filter_panel.dart';
+import '../widgets/empty_state.dart';
 
 // Categorías: lista y catálogo de baldosas. Tocar una categoría abre su detalle.
 class CategoriesPage extends ConsumerStatefulWidget {
@@ -76,19 +77,16 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                 ? const Center(child: CircularProgressIndicator())
                 : state.categories.isEmpty
                 ? Center(
-                    child: AppEmptyState(
+                    child: AppEmptyState.list(
+                      plural: 'categorías',
                       icon: Icons.category_rounded,
-                      title: 'No se registraron categorías',
                       actionLabel: 'Nueva categoría',
                       onAction: () => _showForm(context, null),
                     ),
                   )
                 : visible.isEmpty
                 ? const SingleChildScrollView(
-                    child: AppEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'Sin resultados',
-                    ),
+                    child: AppEmptyState.noMatch(),
                   )
                 : _isGrid
                 ? _GridView(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../config/date_formatters.dart';
 import '../../theme/app_theme.dart';
 import 'focus_utils.dart';
 
@@ -39,64 +38,4 @@ Future<DateTime?> pickTransactionDate(
     ),
   );
   return picked == null ? null : withDayOf(picked, current);
-}
-
-class TransactionDateField extends StatelessWidget {
-  final DateTime date;
-  final ValueChanged<DateTime> onChanged;
-
-  const TransactionDateField({
-    super.key,
-    required this.date,
-    required this.onChanged,
-  });
-
-  Future<void> _pick(BuildContext context) async {
-    dismissKeyboard();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: date,
-      firstDate: transactionFirstDate,
-      lastDate: transactionLastDate,
-      builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
-        child: child!,
-      ),
-    );
-    if (picked != null) onChanged(withDayOf(picked, date));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _pick(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s16,
-          vertical: AppSpacing.s14,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.calendar_today_rounded,
-              color: AppColors.textSecondary,
-              size: 18,
-            ),
-            const SizedBox(width: AppSpacing.s12),
-            Text(
-              'Fecha: ${formatDate(date)}',
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

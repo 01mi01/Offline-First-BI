@@ -4,11 +4,11 @@ import '../../application/module_permission_provider.dart';
 import '../../theme/app_theme.dart';
 import '../pages/purchases_page.dart';
 import '../pages/sales_page.dart';
-import '../widgets/app_group.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/profile_button.dart';
 import 'nav_resolver.dart';
 import '../widgets/app_list_row.dart';
+import '../widgets/empty_state.dart';
 
 class VentasComprasTabPage extends ConsumerWidget {
   const VentasComprasTabPage({super.key});
@@ -25,10 +25,7 @@ class VentasComprasTabPage extends ConsumerWidget {
           title: 'Ventas y Compras',
           actions: const [ProfileButton()],
           body: cards.isEmpty
-              ? const AppEmptyState(
-                  icon: Icons.point_of_sale_rounded,
-                  title: 'No tienes acceso a ventas ni compras',
-                )
+              ? const AppEmptyState.hint(icon: Icons.point_of_sale_rounded, text: 'No tienes acceso a ventas ni compras.')
               : ListView(
                   padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),
                   children: [

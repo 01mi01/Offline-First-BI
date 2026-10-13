@@ -45,7 +45,7 @@ class AppSection extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(header ?? '', style: AppText.header(context)),
+                    child: Text(header ?? '', style: AppText.formLabel(context)),
                   ),
                   ?headerTrailing,
                 ],
@@ -201,6 +201,8 @@ class AppRow extends StatelessWidget {
 class AppValueRow extends StatelessWidget {
   final String label;
   final String value;
+  // Widget en lugar del texto del valor (p. ej. una pastilla), a la derecha.
+  final Widget? valueWidget;
   final bool bold;
   final Color? valueColor;
   // Acción pequeña a la derecha del valor (p. ej. copiar).
@@ -209,7 +211,8 @@ class AppValueRow extends StatelessWidget {
   const AppValueRow({
     super.key,
     required this.label,
-    required this.value,
+    this.value = '',
+    this.valueWidget,
     this.bold = false,
     this.valueColor,
     this.trailing,
@@ -217,12 +220,19 @@ class AppValueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // La fila mide al menos [AppMetrics.rowMinHeight] y su contenido queda
+    // centrado en vertical dentro de ese alto (con márgenes iguales a los lados).
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: AppMetrics.rowMinHeight),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s16,
-          vertical: AppSpacing.s12,
+      child: Center(
+        child: Padding(
+        // Medio punto más de margen arriba que abajo: sin ese ajuste el texto
+        // (sin letras que bajen de la línea) se ve algo más alto que el centro.
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s16,
+          AppSpacing.s12 + 1,
+          AppSpacing.s16,
+          AppSpacing.s12 - 1,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,79 +245,21 @@ class AppValueRow extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.s16),
             Expanded(
-              child: Text(
-                value,
-                textAlign: TextAlign.end,
-                style: AppText.rowTitle(
-                  context,
-                  color: valueColor ?? AppColors.textSecondary,
-                ).copyWith(fontWeight: bold ? FontWeight.w700 : null),
-              ),
+              child: valueWidget != null
+                  ? Align(alignment: Alignment.centerRight, child: valueWidget)
+                  : Text(
+                      value,
+                      textAlign: TextAlign.end,
+                      style: AppText.rowTitle(
+                        context,
+                        color: valueColor ?? AppColors.textSecondary,
+                      ).copyWith(fontWeight: bold ? FontWeight.w700 : null),
+                    ),
             ),
             ?trailing,
           ],
         ),
       ),
-    );
-  }
-}
-
-// Estado vacío: icono gris, línea en negrita, línea gris y la acción principal.
-class AppEmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const AppEmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.s32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 52, color: AppColors.chevron),
-          const SizedBox(height: AppSpacing.s12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: AppText.rowTitle(context).copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (message != null) ...[
-            const SizedBox(height: AppSpacing.s4),
-            Text(
-              message!,
-              textAlign: TextAlign.center,
-              style: AppText.rowSubtitle(context),
-            ),
-          ],
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: AppSpacing.s20),
-            ElevatedButton(
-              onPressed: onAction,
-              style: ElevatedButton.styleFrom(minimumSize: const Size(200, AppMetrics.minTap)),
-              child: Text(
-                actionLabel!,
-                style: AppText.rowTitle(
-                  context,
-                  color: AppColors.onDark,
-                ).copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }

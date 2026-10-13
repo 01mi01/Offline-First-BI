@@ -27,6 +27,8 @@ import '../widgets/app_controls.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
 import '../../application/form_validation.dart';
+import '../widgets/app_style.dart';
+import '../widgets/empty_state.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -101,19 +103,16 @@ class MaterialsListTab extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.materials.isEmpty
                 ? Center(
-                    child: AppEmptyState(
+                    child: AppEmptyState.list(
+                      plural: 'materiales',
                       icon: Icons.palette_rounded,
-                      title: 'No se registraron materiales',
                       actionLabel: 'Nuevo material',
                       onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
                 ? const SingleChildScrollView(
-                    child: AppEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'Sin resultados',
-                    ),
+                    child: AppEmptyState.noMatch(),
                   )
                 : AppGroupListView(
                     itemCount: visible.length,
@@ -278,21 +277,21 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
           if (_selectedProductId == null)
             const Expanded(
               child: Center(
-                child: AppEmptyState(
+                child: AppEmptyState.hint(
                   icon: Icons.palette_rounded,
-                  title: 'Selecciona un producto',
-                  message: 'para ver el registro de uso de materiales',
+                  text:
+                      'Selecciona un producto para ver el registro de uso de materiales.',
                 ),
               ),
             )
           else if (_loading)
             const Expanded(child: Center(child: CircularProgressIndicator()))
           else if (_usageLog.isEmpty)
-            const Expanded(
+            Expanded(
               child: Center(
-                child: AppEmptyState(
+                child: AppEmptyState.list(
+                  plural: 'usos de materiales',
                   icon: Icons.history_rounded,
-                  title: 'Sin registros de uso',
                 ),
               ),
             )
@@ -469,6 +468,11 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
     return FormSheet(
       title: 'Registrar uso de material',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: 'Registrar',
+        onPrimary: _register,
+      ),
       children: [
         // Selector de material: buscar y elegir por nombre, igual que el
         // producto; escala con la cantidad de materiales y no lista nada hasta
@@ -495,9 +499,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
             padding: const EdgeInsets.only(left: AppSpacing.s4),
             child: Text(
               'Stock disponible: $availableText${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+              style: AppText.footnote(context),
             ),
           ),
         ],
@@ -560,14 +562,6 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
 
         // Error del registro
         if (_error != null) FormErrorText(_error!),
-        const SizedBox(height: AppSpacing.s24),
-
-        // Botones cancelar y registrar
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: 'Registrar',
-          onPrimary: _register,
-        ),
       ],
     );
   }
@@ -721,15 +715,24 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
     return FormSheet(
       title: 'Editar registro de uso',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: 'Guardar',
+        onPrimary: _save,
+        // Cancelar el registro: solo aquí, dentro del formulario de edición.
+        destructive: AppActionButton(
+          label: 'Cancelar registro',
+          kind: AppButtonKind.destructive,
+          onPressed: _cancelUsage,
+        ),
+      ),
       children: [
         // Muestra el material que se está editando
         Padding(
           padding: const EdgeInsets.only(left: AppSpacing.s4),
           child: Text(
             widget.entry.materialName,
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
+            style: AppText.rowSubtitle(context),
           ),
         ),
         const SizedBox(height: AppSpacing.s16),
@@ -751,9 +754,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
           const SizedBox(height: AppSpacing.s6),
           Text(
             'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+            style: AppText.footnote(context),
           ),
         ] else if (_isDiscrete)
           WholeNumberQuantityField(
@@ -793,22 +794,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
 
         // Error del registro
         if (_error != null) FormErrorText(_error!),
-        const SizedBox(height: AppSpacing.s24),
 
-        // Botones cancelar y guardar
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: 'Guardar',
-          onPrimary: _save,
-        ),
-
-        // Cancelar el registro: solo aquí, al final del formulario.
-        const SizedBox(height: AppSpacing.s12),
-        AppActionButton(
-          label: 'Cancelar registro',
-          kind: AppButtonKind.destructive,
-          onPressed: _cancelUsage,
-        ),
       ],
     );
   }

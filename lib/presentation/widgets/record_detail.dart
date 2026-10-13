@@ -9,66 +9,52 @@ import 'app_style.dart';
 // [onEdit] (registro que no se puede editar) solo queda "Cerrar". Acciones como
 // desactivar o cancelar viven únicamente en el formulario de edición.
 //
-// Se abre con [showAppSheet]; con [expand] ocupa todo el alto que le dé la hoja
-// (úsese junto a `heightFactor`), y sin él mide lo que su contenido.
+// Se abre con [showAppSheet]; mide lo que su contenido.
 class RecordDetailSheet extends StatelessWidget {
   final String title;
   final List<Widget> children;
   final VoidCallback? onEdit;
-  final bool expand;
 
   const RecordDetailSheet({
     super.key,
     required this.title,
     required this.children,
     this.onEdit,
-    this.expand = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final list = ListView(
-      shrinkWrap: !expand,
-      padding: const EdgeInsets.only(top: AppSpacing.s8, bottom: AppSpacing.s16),
-      children: children,
-    );
     return AppSheetScaffold(
       title: title,
-      expand: expand,
-      child: Column(
-        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      expand: false,
+      actions: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (expand) Expanded(child: list) else Flexible(child: list),
-          const Divider(height: 1, thickness: 1, color: AppColors.separator),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.s16,
-              AppSpacing.s12,
-              AppSpacing.s16,
-              AppSpacing.s16 + MediaQuery.paddingOf(context).bottom,
+          if (onEdit != null) ...[
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                onEdit!();
+              },
+              child: const Text('Editar'),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (onEdit != null) ...[
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onEdit!();
-                    },
-                    child: const Text('Editar'),
-                  ),
-                  const SizedBox(height: AppButtons.stackGap),
-                ],
-                AppActionButton(
-                  label: 'Cerrar',
-                  kind: AppButtonKind.neutral,
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
+            const SizedBox(height: AppButtons.stackGap),
+          ],
+          AppActionButton(
+            label: 'Cerrar',
+            kind: AppButtonKind.neutral,
+            onPressed: () => Navigator.pop(context),
           ),
         ],
+      ),
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.only(
+          top: AppSpacing.s8,
+          bottom: AppSpacing.s16,
+        ),
+        children: children,
       ),
     );
   }

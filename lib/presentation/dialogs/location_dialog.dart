@@ -112,7 +112,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
       final confirm = await confirmCancellation(
         context,
         title: '¿Desactivar ubicación?',
-        message: 'La ubicación "${_cityController.text.trim()}" no estará disponible para nuevos registros.',
+        message: 'La ubicación no estará disponible para nuevos registros.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -128,6 +128,11 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
     return FormSheet(
       title: isEditing ? 'Editar ubicación' : 'Nueva ubicación',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: isEditing ? 'Guardar' : 'Crear',
+        onPrimary: _save,
+      ),
       children: [
         // Ciudad
         LabeledField(
@@ -167,7 +172,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
         // Estado: solo al editar
         if (isEditing) ...[
-          const SizedBox(height: AppSpacing.s20),
+          const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Ubicación activa',
             subtitle: _isActive
@@ -179,13 +184,6 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
         ],
 
         if (_saveError != null) FormErrorText(_saveError!),
-        const SizedBox(height: AppSpacing.s24),
-
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: isEditing ? 'Guardar' : 'Crear',
-          onPrimary: _save,
-        ),
       ],
     );
   }

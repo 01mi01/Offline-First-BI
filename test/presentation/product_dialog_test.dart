@@ -9,6 +9,7 @@ import 'package:offline_first_bi/models/product_model.dart';
 import 'package:offline_first_bi/presentation/dialogs/product_dialog.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'form_finders.dart';
 
 Future<void> _openProductDialog(
   WidgetTester tester,
@@ -40,7 +41,7 @@ Future<void> _openProductDialog(
 }
 
 Future<void> _type(WidgetTester tester, String label, String text) async {
-  final field = find.widgetWithText(TextFormField, label);
+  final field = fieldLabeled(label);
   await tester.ensureVisible(field);
   await tester.enterText(field, text);
   await tester.pumpAndSettle();
@@ -63,8 +64,8 @@ void main() {
     (tester) async {
       await _openProductDialog(tester, db);
 
-      expect(find.widgetWithText(TextFormField, 'Precio A'), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'Precio B'), findsOneWidget);
+      expect(fieldLabeled('Precio A'), findsOneWidget);
+      expect(fieldLabeled('Precio B'), findsOneWidget);
 
       await _type(tester, 'Nombre', 'Estuches');
       await _type(tester, 'Precio A', '55');
@@ -81,21 +82,6 @@ void main() {
       expect(products.single.priceB, 40.0);
     },
   );
-
-  testWidgets('the price fields carry no "same value if left empty" hint', (
-    tester,
-  ) async {
-    await _openProductDialog(tester, db);
-
-    expect(find.textContaining('Igual al'), findsNothing);
-    expect(find.textContaining('si se deja vacío'), findsNothing);
-
-    // Al enfocar un precio vacío, el hint es el "0.00" de siempre.
-    await tester.tap(find.widgetWithText(TextFormField, 'Precio A'));
-    await tester.pumpAndSettle();
-    expect(find.text('0.00'), findsWidgets);
-    expect(find.textContaining('Igual al'), findsNothing);
-  });
 
   Future<void> create(WidgetTester tester) async {
     await tester.ensureVisible(find.text('Crear'));
@@ -227,7 +213,7 @@ void main() {
       await _openProductDialog(tester, db, product: product);
 
       TextFormField field(String label) => tester.widget<TextFormField>(
-        find.widgetWithText(TextFormField, label),
+        fieldLabeled(label),
       );
       expect(field('Precio A').controller!.text, '50.00');
       expect(field('Precio B').controller!.text, '35.50');
@@ -258,7 +244,7 @@ void main() {
       await _openProductDialog(tester, db);
       await fillValidProduct(tester);
 
-      final stock = find.widgetWithText(TextFormField, 'Stock');
+      final stock = fieldLabeled('Stock');
       await tester.ensureVisible(stock);
       await tester.enterText(stock, '2');
       await tester.pump();
@@ -283,7 +269,7 @@ void main() {
       await _openProductDialog(tester, db);
       await fillValidProduct(tester);
 
-      final stock = find.widgetWithText(TextFormField, 'Stock');
+      final stock = fieldLabeled('Stock');
       await tester.ensureVisible(stock);
       await tester.enterText(stock, '10.5');
       await tester.pump();
@@ -340,7 +326,7 @@ void main() {
       final product = (await ProductRepository(db).getAllIncludingInactive()).single;
       await _openProductDialog(tester, db, product: product);
 
-      final stock = find.widgetWithText(TextFormField, 'Stock');
+      final stock = fieldLabeled('Stock');
       await tester.ensureVisible(stock);
       expect(tester.widget<TextFormField>(stock).controller!.text, '10');
 

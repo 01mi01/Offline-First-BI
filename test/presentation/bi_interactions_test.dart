@@ -1219,12 +1219,11 @@ void main() {
     }
 
     testWidgets(
-      'empieza con todo el periodo, con una pista y sin botón de restablecer',
+      'empieza con todo el periodo y sin botón de restablecer',
       (tester) async {
         await pumpSeries(tester);
         expect(lineChart(tester).data.minX, 0);
         expect(lineChart(tester).data.maxX, 13);
-        expect(find.byKey(const ValueKey('bi-zoom-hint')), findsOneWidget);
         expect(find.byKey(const ValueKey('bi-zoom-reset')), findsNothing);
         // 14 intervalos: unas 5 etiquetas, una por cada 3.
         expect(lineChart(tester).data.clipData.any, isFalse);
@@ -1275,7 +1274,6 @@ void main() {
         expect(lineChart(tester).data.minX, 0);
         expect(lineChart(tester).data.maxX, 13);
         expect(find.byKey(const ValueKey('bi-zoom-reset')), findsNothing);
-        expect(find.byKey(const ValueKey('bi-zoom-hint')), findsOneWidget);
         expect(lineChart(tester).data.clipData.any, isFalse);
       },
     );

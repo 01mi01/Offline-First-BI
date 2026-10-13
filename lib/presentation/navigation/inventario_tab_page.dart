@@ -6,10 +6,10 @@ import '../pages/categories_page.dart';
 import '../pages/materials_page.dart';
 import '../pages/products_page.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/app_group.dart';
 import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/app_list_row.dart';
+import '../widgets/empty_state.dart';
 
 // Tab "Inventario" de la navegación inferior: pantalla de aterrizaje con
 // tarjetas (Productos, Categorías, Materiales), mostrando solo las que el
@@ -31,10 +31,7 @@ class InventarioTabPage extends ConsumerWidget {
             title: 'Inventario',
             actions: const [ProfileButton()],
             body: cards.isEmpty
-                ? const AppEmptyState(
-                    icon: Icons.inventory_2_rounded,
-                    title: 'No tienes acceso a ningún módulo de inventario',
-                  )
+                ? const AppEmptyState.hint(icon: Icons.inventory_2_rounded, text: 'No tienes acceso a ningún módulo de inventario.')
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),
                     children: [

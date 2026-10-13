@@ -27,7 +27,7 @@ void main() {
 
   // La opción de un interruptor se ve resaltada en el color primario.
   bool selected(WidgetTester tester, BiIndicator i, String label) =>
-      tester.widget<Text>(chip(i, label)).style?.color == AppColors.cyan;
+      tester.widget<Text>(chip(i, label)).style?.color == AppColors.cyanDark;
 
   BiConfig config() => h.container.read(biConfigProvider);
 
@@ -59,6 +59,14 @@ void main() {
 
   // Lleva un indicador a la vista y elige su tipo de gráfico.
   Future<void> tapType(WidgetTester tester, BiIndicator i, String type) async {
+    // Siempre desde arriba: con la lista ya desplazada el indicador puede
+    // estar construido pero fuera de la vista.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('bi-configure')),
+      -500,
+      scrollable: list(),
+      maxScrolls: 200,
+    );
     await tester.scrollUntilVisible(
       section(i),
       500,

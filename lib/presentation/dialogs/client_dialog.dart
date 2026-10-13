@@ -100,7 +100,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
       final confirm = await confirmCancellation(
         context,
         title: '¿Desactivar cliente?',
-        message: 'El cliente "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
+        message: 'El cliente no estará disponible para nuevas ventas.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -116,6 +116,11 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
     return FormSheet(
       title: isEditing ? 'Editar cliente' : 'Nuevo cliente',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: isEditing ? 'Guardar' : 'Crear',
+        onPrimary: _save,
+      ),
       children: [
         // Nombre
         LabeledField(
@@ -145,7 +150,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
 
         // Estado: solo al editar
         if (isEditing) ...[
-          const SizedBox(height: AppSpacing.s20),
+          const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Cliente activo',
             subtitle: _isActive
@@ -158,13 +163,6 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
 
         // Error al guardar
         if (_saveError != null) FormErrorText(_saveError!),
-        const SizedBox(height: AppSpacing.s24),
-
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: isEditing ? 'Guardar' : 'Crear',
-          onPrimary: _save,
-        ),
       ],
     );
   }

@@ -27,6 +27,13 @@ class AppText {
 
   static TextStyle footnote(BuildContext context) => header(context);
 
+  // Etiqueta de un campo o de una sección de un formulario o de un detalle.
+  static TextStyle formLabel(BuildContext context) => _base(context).copyWith(
+    fontSize: AppMetrics.formLabelSize,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textSecondary,
+  );
+
   static TextStyle link(BuildContext context) => _base(context).copyWith(
     fontSize: AppMetrics.rowTitleSize,
     color: AppColors.cyanDark,

@@ -20,6 +20,7 @@ import '../widgets/status_badge.dart';
 import '../../config/rounding.dart';
 import '../widgets/app_controls.dart';
 import '../widgets/filter_panel.dart';
+import '../widgets/empty_state.dart';
 
 // Productos: lista y catálogo de baldosas. Tocar un producto abre su detalle.
 class ProductsPage extends ConsumerStatefulWidget {
@@ -106,19 +107,16 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 ? const Center(child: CircularProgressIndicator())
                 : state.products.isEmpty
                 ? Center(
-                    child: AppEmptyState(
+                    child: AppEmptyState.list(
+                      plural: 'productos',
                       icon: Icons.inventory_2_rounded,
-                      title: 'No se registraron productos',
                       actionLabel: 'Nuevo producto',
                       onAction: () => _showForm(context, null),
                     ),
                   )
                 : visible.isEmpty
                 ? const SingleChildScrollView(
-                    child: AppEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'Sin resultados',
-                    ),
+                    child: AppEmptyState.noMatch(),
                   )
                 : _isGrid
                 ? _GridView(
@@ -255,8 +253,10 @@ List<String> _catalogPriceLines(ProductModel p, PriceDisplay display) {
   }
 }
 
-// Fila de la vista de lista, con los materiales vinculados debajo.
-class _ProductRow extends ConsumerStatefulWidget {
+// Fila de la vista de lista: imagen, nombre, categoría, stock, estado y, debajo,
+// los precios (más pequeños). Los materiales y el costo solo están en el
+// detalle.
+class _ProductRow extends StatelessWidget {
   final ProductModel product;
   final String categoryName;
   final PriceDisplay priceDisplay;
@@ -270,121 +270,29 @@ class _ProductRow extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_ProductRow> createState() => _ProductRowState();
-}
-
-class _ProductRowState extends ConsumerState<_ProductRow> {
-  List<Map<String, dynamic>> _materials = [];
-  bool _loadingMaterials = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMaterials();
-  }
-
-  // Carga materiales con precio para este producto
-  Future<void> _loadMaterials() async {
-    final materials = await ref
-        .read(materialProvider.notifier)
-        .getMaterialsWithPriceForProduct(widget.product.id);
-    if (mounted) {
-      setState(() {
-        _materials = materials;
-        _loadingMaterials = false;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final p = widget.product;
+    final p = product;
     // Solo los precios que pide el filtro de precio (con "Sin precio" no hay
     // ninguno). Mismas etiquetas cortas "A:" / "B:" que el catálogo.
     final prices = [
-      if (widget.priceDisplay == PriceDisplay.a ||
-          widget.priceDisplay == PriceDisplay.both)
+      if (priceDisplay == PriceDisplay.a || priceDisplay == PriceDisplay.both)
         'A: Bs. ${fixed2(p.priceA)}',
-      if (widget.priceDisplay == PriceDisplay.b ||
-          widget.priceDisplay == PriceDisplay.both)
+      if (priceDisplay == PriceDisplay.b || priceDisplay == PriceDisplay.both)
         'B: Bs. ${fixed2(p.priceB)}',
     ];
 
     return RecordRow(
-      onTap: widget.onTap,
+      onTap: onTap,
       thumb: RecordThumb(imagePath: p.image, icon: Icons.inventory_2_rounded),
       title: p.name,
-      details: [
-        RecordLine(widget.categoryName),
-        if (p.description != null && p.description!.isNotEmpty)
-          RecordLine(p.description!, maxLines: 2),
-        RecordLine(
-          [
-            if (p.productionCost != null)
-              'Costo: Bs. ${fixed2(p.productionCost!)}',
-            'Stock: ${p.stock}',
-          ].join('   '),
-        ),
-      ],
+      details: [RecordLine(categoryName), RecordLine('Stock: ${p.stock}')],
       pill: StatusBadge.forState(isActive: p.isActive),
-      trailing: prices.isEmpty
+      below: prices.isEmpty
           ? null
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [for (final price in prices) RecordValue(price)],
+          : Wrap(
+              spacing: AppSpacing.s16,
+              children: [for (final price in prices) RecordPrice(price)],
             ),
-      below: _loadingMaterials
-          ? const SizedBox(
-              height: 16,
-              width: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : _materials.isEmpty
-          ? null
-          : _MaterialsList(materials: _materials),
-    );
-  }
-}
-
-// Materiales de un producto con su precio por unidad (en la fila y el detalle).
-class _MaterialsList extends StatelessWidget {
-  final List<Map<String, dynamic>> materials;
-
-  const _MaterialsList({required this.materials});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Materiales', style: AppText.header(context)),
-        const SizedBox(height: AppSpacing.s6),
-        for (final m in materials)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.s4),
-            child: Row(
-              children: [
-                // El nombre cede espacio (y se recorta) antes de que el precio
-                // con su unidad se desborde.
-                Expanded(
-                  child: Text(
-                    m['name'] as String,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.rowSubtitle(
-                      context,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s8),
-                Text(
-                  'Bs. ${fixed2((m['price'] as double))} / ${m['unit']}',
-                  style: AppText.rowSubtitle(context),
-                ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 }

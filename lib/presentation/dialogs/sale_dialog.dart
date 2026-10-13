@@ -29,6 +29,7 @@ import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/app_buttons.dart';
+import '../widgets/empty_state.dart';
 
 class SaleDialog extends ConsumerStatefulWidget {
   final SaleModel? sale;
@@ -272,7 +273,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       title: '¿Cancelar venta?',
       message:
           'Se devolverá al inventario lo vendido. La venta seguirá en la '
-          'lista, marcada como cancelada, y ya no se podrá editar.',
+          'lista, marcada como cancelada y ya no se podrá editar.',
       confirmLabel: 'Cancelar venta',
     );
     if (!confirmed || !mounted) return;
@@ -309,18 +310,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
     return AppSheetScaffold(
       title: isEditing ? 'Editar venta' : 'Nueva venta',
-      leadingLabel: 'Cancelar',
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.s16,
-            AppSpacing.s8,
-            AppSpacing.s16,
-            AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: FormScroll(
             children: [
               SearchablePickerField<int>(
                 label: 'Cliente',
@@ -334,11 +326,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   _selectedClientId = val;
                   _error = null;
                 }),
-                trailing: AppFieldAction(
-                  icon: Icons.person_add_rounded,
-                  tooltip: 'Nuevo cliente',
-                  onPressed: _showAddClientSheet,
-                ),
+                labelAction: FormAddButton(onPressed: _showAddClientSheet),
               ),
               const SizedBox(height: AppSpacing.s16),
               SearchablePickerField<int>(
@@ -402,14 +390,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                           ),
                         ),
                         child: visibleProducts.isEmpty
-                            ? Center(
-                                child: Text(
-                                  searchingProducts
-                                      ? 'Sin resultados'
-                                      : 'Escribe para buscar un producto',
-                                  style: AppText.rowSubtitle(context),
-                                ),
-                              )
+                            ? searchingProducts
+                                  ? const AppEmptyState.noMatch(compact: true)
+                                  : const AppEmptyState.hint(
+                                      icon: Icons.search_rounded,
+                                      text: 'Escribe para buscar un producto.',
+                                      compact: true,
+                                    )
                             : ListView.separated(
                                 padding: EdgeInsets.zero,
                                 itemCount: visibleProducts.length,
@@ -547,37 +534,21 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 FormErrorText(_error!),
                 const SizedBox(height: AppSpacing.s16),
               ],
-              ElevatedButton(
-                onPressed: _isLoading ? null : _save,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: AppSpacing.s20,
-                        width: AppSpacing.s20,
-                        child: CircularProgressIndicator(
-                          color: AppColors.onDark,
-                          strokeWidth: 2,
-                        ),
+              const SizedBox(height: AppSpacing.s24),
+              FormActions(
+                onSecondary: () => Navigator.pop(context),
+                primaryLabel: isEditing ? 'Guardar' : 'Registrar venta',
+                onPrimary: _save,
+                loading: _isLoading,
+                destructive: isEditing && !widget.sale!.isCanceled
+                    ? AppActionButton(
+                        label: 'Cancelar venta',
+                        kind: AppButtonKind.destructive,
+                        onPressed: _isLoading ? null : _cancelSale,
                       )
-                    : Text(
-                        isEditing ? 'Guardar' : 'Registrar venta',
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.onDark,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
+                    : null,
               ),
-              if (isEditing && !widget.sale!.isCanceled) ...[
-                const SizedBox(height: AppButtons.stackGap),
-                AppActionButton(
-                  label: 'Cancelar venta',
-                  kind: AppButtonKind.destructive,
-                  onPressed: _isLoading ? null : _cancelSale,
-                ),
-              ],
             ],
-          ),
         ),
       ),
     );

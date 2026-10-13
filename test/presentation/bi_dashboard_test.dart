@@ -594,7 +594,7 @@ void main() {
           matching: find.text('−50.00%'),
         ),
       );
-      expect(gastosChange.style!.color, AppColors.cyan);
+      expect(gastosChange.style!.color, AppColors.cyanDark);
       // Balance: 200 → 500 = +150 %.
       expect(find.descendant(of: s, matching: find.text('+150.00%')), findsOneWidget);
     });

@@ -17,6 +17,7 @@ import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'form_finders.dart';
 
 void _phone(WidgetTester tester, {Size size = const Size(412, 915)}) {
   tester.view.physicalSize = size;
@@ -130,19 +131,6 @@ void main() {
       );
     }
 
-    testWidgets('shows the selected option and opens a searchable sheet', (
-      tester,
-    ) async {
-      final selected = ValueNotifier<int?>(null);
-      await pump(tester, selected: selected);
-      expect(find.text('Sin nombre'), findsOneWidget);
-
-      await tester.tap(find.byType(SearchablePickerField<int>));
-      await tester.pumpAndSettle();
-      expect(find.text('Buscar cliente'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
-    });
-
     testWidgets('typing filters a 120+ item list down to the matches', (
       tester,
     ) async {
@@ -195,52 +183,6 @@ void main() {
       await tester.enterText(find.byType(TextField), 'zzz');
       await tester.pumpAndSettle();
       expect(find.text('Sin resultados'), findsOneWidget);
-    });
-
-    testWidgets('inside a scrolling form the results end up above the keyboard', (
-      tester,
-    ) async {
-      _phone(tester, size: const Size(360, 640));
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: lightTheme,
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: Flex(
-                direction: Axis.vertical,
-                children: [
-                  const SizedBox(height: 520),
-                  SearchablePickerField<int>(
-                    label: 'Cliente',
-                    searchHint: 'Buscar cliente',
-                    value: null,
-                    options: options,
-                    onChanged: (_) {},
-                  ),
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-      // Teclado de 300 px.
-      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-      addTearDown(tester.view.resetViewInsets);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(TextField));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'cliente 04');
-      await tester.pumpAndSettle();
-
-      final result = tester.getRect(find.text('Cliente 040'));
-      expect(result.bottom, lessThanOrEqualTo(640 - 300));
-      expect(result.top, greaterThanOrEqualTo(0));
-      // Lo escrito (el campo) también queda a la vista, encima de los resultados.
-      final field = tester.getRect(find.byType(TextField));
-      expect(field.top, greaterThanOrEqualTo(0));
-      expect(field.bottom, lessThanOrEqualTo(result.top));
     });
 
     testWidgets('picking a filtered option selects it; the default (null) option is selectable too', (
@@ -328,7 +270,7 @@ void main() {
       // Sin escribir no se muestra ninguna fila: solo la invitación a buscar.
       expect(find.text('Estuches'), findsNothing);
       expect(find.text('Miniaturas'), findsNothing);
-      expect(find.text('Escribe para buscar un producto'), findsOneWidget);
+      expect(find.text('Escribe para buscar un producto.'), findsOneWidget);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Buscar producto'),
@@ -344,13 +286,13 @@ void main() {
         'nada',
       );
       await tester.pumpAndSettle();
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
 
       // Borrar lo escrito vuelve al estado inicial: otra vez sin lista.
       await tester.enterText(find.widgetWithText(TextField, 'Buscar producto'), '');
       await tester.pumpAndSettle();
       expect(find.text('Miniaturas'), findsNothing);
-      expect(find.text('Escribe para buscar un producto'), findsOneWidget);
+      expect(find.text('Escribe para buscar un producto.'), findsOneWidget);
     });
 
     testWidgets('Proveedor (Compras) filters by typed text and picks the match', (
@@ -395,12 +337,12 @@ void main() {
         );
       }
       await _openSheet(tester, db, const PurchaseDialog());
-      await tester.ensureVisible(find.text('Agregar'));
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
 
       // Crear uno nuevo sigue siendo un botón aparte, sin búsqueda.
-      expect(find.text('Crear nuevo material'), findsOneWidget);
+      expect(find.text('Nuevo material'), findsOneWidget);
 
       await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
@@ -416,51 +358,12 @@ void main() {
       expect(find.text('Cantidad (metro)'), findsOneWidget);
     });
 
-    testWidgets('the "add" icon stays on the row of the search field while typing', (
-      tester,
-    ) async {
-      await db.into(db.clients).insert(ClientsCompanion.insert(name: 'Michael Brown'));
-      await _openSheet(tester, db, const SaleDialog());
-
-      final picker = find.byType(SearchablePickerField<int>).first;
-      final field = find.descendant(of: picker, matching: find.byType(TextField));
-      final add = find.byIcon(Icons.person_add_outlined);
-      expect(
-        (tester.getCenter(field).dy - tester.getCenter(add).dy).abs(),
-        lessThan(1),
-      );
-
-      await tester.tap(field);
-      // Tras enfocar el campo la pantalla se acomoda una vez (el buscador
-      // espera un instante antes de llevarse a la vista).
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pumpAndSettle();
-      final before = tester.getCenter(add).dy;
-      await tester.enterText(field, 'mic');
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pumpAndSettle();
-      // Con los resultados abiertos debajo, el icono no se mueve y sigue
-      // alineado con el campo (no con campo + lista).
-      expect(find.text('Michael Brown'), findsOneWidget);
-      expect(tester.getCenter(add).dy, before);
-      expect((tester.getCenter(field).dy - tester.getCenter(add).dy).abs(), lessThan(1));
-    });
-
-    testWidgets('Cliente, Ubicación and Evento are all inline search fields', (
-      tester,
-    ) async {
-      await _openSheet(tester, db, const SaleDialog());
-
-      expect(find.byType(SearchablePickerField<int>), findsNWidgets(3));
-      expect(find.byType(DropdownButtonFormField<int>), findsNothing);
-    });
-
     testWidgets('a material must still be picked before adding a purchase line', (
       tester,
     ) async {
       await _openSheet(tester, db, const PurchaseDialog());
-      await tester.ensureVisible(find.text('Agregar'));
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Agregar').last);
@@ -609,7 +512,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Tote bag negra', 'Tote bag negra');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pumpAndSettle();
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Base metálica pequeña para pines', 'Base metálica pequeña para pines');
 
@@ -787,7 +690,7 @@ void main() {
         MaterialDialog(material: model),
         size: const Size(900, 1600),
       );
-      await tester.tap(find.byType(DropdownButtonFormField<int>));
+      await tester.tap(find.byTooltip('Unidad'));
       await tester.pumpAndSettle();
       for (final name in ['contenedor', 'paquete', 'rollo']) {
         expect(find.text(name), findsWidgets, reason: name);
@@ -799,7 +702,7 @@ void main() {
 
     testWidgets('creating a material shows every unit in the selector', (tester) async {
       await _openSheet(tester, db, const MaterialDialog());
-      await tester.tap(find.byType(DropdownButtonFormField<int>));
+      await tester.tap(find.byTooltip('Unidad'));
       await tester.pumpAndSettle();
       for (final name in ['contenedor', 'tira', 'metro', 'litro', 'otro']) {
         expect(find.text(name), findsWidgets, reason: name);

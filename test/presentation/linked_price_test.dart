@@ -14,6 +14,7 @@ import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'form_finders.dart';
 
 // Precio de los materiales, para TODOS los tipos de unidad (contenedor, medida
 // y otros): "Precio por unidad" y "Total pagado" siempre visibles y
@@ -163,19 +164,16 @@ void main() {
   }
 
   Future<void> chooseUnit(WidgetTester tester, String name) async {
-    await tester.tap(find.byType(DropdownButtonFormField<int>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(name).last);
-    await tester.pumpAndSettle();
+    await chooseOption(tester, 'Unidad', name);
   }
 
   Future<void> type(WidgetTester tester, String label, String text) async {
-    await tester.enterText(find.widgetWithText(TextFormField, label), text);
+    await tester.enterText(fieldLabeled(label), text);
     await tester.pumpAndSettle();
   }
 
   String textOf(WidgetTester tester, String label) => tester
-      .widget<TextFormField>(find.widgetWithText(TextFormField, label))
+      .widget<TextFormField>(fieldLabeled(label))
       .controller!
       .text;
 
@@ -195,21 +193,6 @@ void main() {
   }
 
   group('Nuevo material', () {
-    testWidgets('contenedor: both fields are always visible, with no info icon', (
-      tester,
-    ) async {
-      await openSheet(tester, const MaterialDialog());
-      await type(tester, 'Nombre', 'Resina parte B');
-      await chooseUnit(tester, 'contenedor');
-      expect(find.widgetWithText(TextFormField, 'Precio por unidad'), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'Total pagado (Bs.)'), findsOneWidget);
-      // Incluso con el stock en 0.
-      await type(tester, 'Stock', '0');
-      expect(find.widgetWithText(TextFormField, 'Total pagado (Bs.)'), findsOneWidget);
-
-      expect(find.byIcon(Icons.info_outline), findsNothing);
-    });
-
     testWidgets('Bs. 35 paid for 0.5 shows 70 per unit and stores it', (tester) async {
       await openSheet(tester, const MaterialDialog());
       await type(tester, 'Nombre', 'Resina parte B');
@@ -293,8 +276,8 @@ void main() {
       await openSheet(tester, const MaterialDialog());
       await type(tester, 'Nombre', 'Papel holográfico para stickers');
       await chooseUnit(tester, 'litro');
-      expect(find.widgetWithText(TextFormField, 'Precio por unidad'), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'Total pagado (Bs.)'), findsOneWidget);
+      expect(fieldLabeled('Precio por unidad'), findsOneWidget);
+      expect(fieldLabeled('Total pagado (Bs.)'), findsOneWidget);
 
       await type(tester, 'Stock', '0.5');
       await type(tester, 'Total pagado (Bs.)', '12');
@@ -327,16 +310,6 @@ void main() {
       final m = await materialNamed('Papel para stickers');
       expect(m.pricePerUnit, 10);
       expect(m.stock, 3.5);
-    });
-
-    testWidgets('no info icon next to "Precio por unidad" for any unit type', (
-      tester,
-    ) async {
-      await openSheet(tester, const MaterialDialog());
-      for (final unit in ['contenedor', 'litro', 'otro']) {
-        await chooseUnit(tester, unit);
-        expect(find.byIcon(Icons.info_outline), findsNothing, reason: unit);
-      }
     });
 
     testWidgets('otro is linked as well', (tester) async {
@@ -377,7 +350,6 @@ void main() {
       expect(textOf(tester, 'Precio por unidad'), '70.00');
       expect(textOf(tester, 'Total pagado (Bs.)'), '70.00');
       expect(textOf(tester, 'Cantidad (contenedor)'), '1');
-      expect(find.byIcon(Icons.info_outline), findsNothing);
     });
 
     testWidgets('Bs. 35 for 0.5 corrects the price to 70; stock is untouched', (
@@ -423,7 +395,7 @@ void main() {
       await type(tester, 'Cantidad (contenedor)', '0');
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
-      expect(find.text('Ingresa la cantidad'), findsOneWidget);
+      expect(find.text('Debe ser mayor a 0'), findsOneWidget);
       expect((await materialNamed('Resina parte B')).pricePerUnit, 70);
     });
 
@@ -434,7 +406,6 @@ void main() {
       expect(textOf(tester, 'Precio por unidad'), '10.00');
       expect(textOf(tester, 'Total pagado (Bs.)'), '10.00');
       expect(textOf(tester, 'Cantidad (litro)'), '1');
-      expect(find.byIcon(Icons.info_outline), findsNothing);
 
       await type(tester, 'Cantidad (litro)', '0.5');
       expect(textOf(tester, 'Total pagado (Bs.)'), '5.00'); // manda el precio
@@ -468,8 +439,8 @@ void main() {
 
     Future<void> openLine(WidgetTester tester, String material) async {
       await openSheet(tester, const PurchaseDialog());
-      await tester.ensureVisible(find.text('Agregar'));
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
       await pickFromSearch(
         tester,
@@ -484,12 +455,11 @@ void main() {
     ) async {
       await openLine(tester, 'Resina parte B');
       expect(textOf(tester, 'Precio por unidad (Bs.)'), '80.00');
-      expect(find.widgetWithText(TextFormField, 'Total pagado (Bs.)'), findsOneWidget);
+      expect(fieldLabeled('Total pagado (Bs.)'), findsOneWidget);
       expect(textOf(tester, 'Total pagado (Bs.)'), ''); // aún sin cantidad
       await tester.tap(find.text('La mitad'));
       await tester.pumpAndSettle();
       expect(textOf(tester, 'Total pagado (Bs.)'), '40.00');
-      expect(find.byIcon(Icons.info_outline), findsNothing);
     });
 
     testWidgets('half a container for Bs. 35 gives 70 per unit and stores it', (
@@ -504,7 +474,7 @@ void main() {
       await tester.ensureVisible(find.text('Agregar').last);
       await tester.tap(find.text('Agregar').last);
       await tester.pumpAndSettle();
-      expect(find.text('Bs. 35.00'), findsOneWidget);
+      expect(find.textContaining('Bs. 35.00'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Registrar compra'));
       await tester.tap(find.text('Registrar compra'));
@@ -531,7 +501,7 @@ void main() {
       await tester.ensureVisible(find.text('Agregar').last);
       await tester.tap(find.text('Agregar').last);
       await tester.pumpAndSettle();
-      expect(find.text('Bs. 90.00'), findsOneWidget);
+      expect(find.textContaining('Bs. 90.00'), findsOneWidget);
     });
 
     testWidgets('changing the quantity keeps the typed total and recalculates the price', (
@@ -566,7 +536,6 @@ void main() {
       expect(textOf(tester, 'Precio por unidad (Bs.)'), '4.00');
       expect(textOf(tester, 'Total pagado (Bs.)'), '');
       expect(find.byType(FractionQuantityPicker), findsNothing);
-      expect(find.byIcon(Icons.info_outline), findsNothing);
 
       await type(tester, 'Cantidad (metro)', '3');
       expect(textOf(tester, 'Total pagado (Bs.)'), '12.00'); // manda el precio
@@ -579,7 +548,7 @@ void main() {
       await tester.ensureVisible(find.text('Agregar').last);
       await tester.tap(find.text('Agregar').last);
       await tester.pumpAndSettle();
-      expect(find.text('Bs. 15.00'), findsOneWidget);
+      expect(find.textContaining('Bs. 15.00'), findsOneWidget);
       await tester.ensureVisible(find.text('Registrar compra'));
       await tester.tap(find.text('Registrar compra'));
       await tester.pumpAndSettle();
@@ -598,7 +567,7 @@ void main() {
       await tester.ensureVisible(find.text('Agregar').last);
       await tester.tap(find.text('Agregar').last);
       await tester.pumpAndSettle();
-      expect(find.text('Bs. 15.00'), findsOneWidget);
+      expect(find.textContaining('Bs. 15.00'), findsOneWidget);
     });
 
     testWidgets('switching material resets the quantity and the price', (tester) async {

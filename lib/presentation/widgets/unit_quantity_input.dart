@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
 import 'form_widgets.dart';
+import 'app_style.dart';
 
 // Clasificación del comportamiento de entrada de cantidad según el tipo de
 // unidad (Units.type, ver app_database.dart): "contenedor" (contenedor, paquete, rollo, tira)
@@ -102,16 +103,7 @@ class FractionQuantityPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.s4),
-          child: Text(
-            '$label ($unit)',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+        FormSectionLabel('$label ($unit)'),
         const SizedBox(height: AppSpacing.s8),
         Wrap(
           spacing: AppSpacing.s8,
@@ -136,9 +128,11 @@ class FractionQuantityPicker extends StatelessWidget {
                 ),
                 child: Text(
                   presetLabel,
-                  style: TextStyle(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  style: AppText.rowSubtitle(
+                    context,
                     color: selected ? AppColors.cyanDark : AppColors.textPrimary,
+                  ).copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -150,16 +144,7 @@ class FractionQuantityPicker extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.s4),
-                child: Text(
-                  'Envases completos',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              child: const FormSectionLabel('Envases completos'),
             ),
             _StepperButton(
               key: const ValueKey('container-whole-minus'),
@@ -173,10 +158,9 @@ class FractionQuantityPicker extends StatelessWidget {
               child: Text(
                 '$whole',
                 key: const ValueKey('container-whole-count'),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+                style: AppText.rowTitle(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w700),
               ),
             ),
             _StepperButton(
@@ -191,10 +175,7 @@ class FractionQuantityPicker extends StatelessWidget {
           Text(
             'Total: ${formatNumber(cleanFloat(value))} ${unitLabel(unit, value)}',
             key: const ValueKey('container-total'),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.cyanDark,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppText.formLabel(context).copyWith(color: AppColors.cyanDark),
           ),
         ],
       ],

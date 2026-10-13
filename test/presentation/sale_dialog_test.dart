@@ -76,7 +76,7 @@ void main() {
       // Agrega el producto al carrito tocando el ícono "+" (la lista aparece al
       // escribir en el buscador).
       await searchProducts(tester, 'Libro');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_circle_rounded));
       await tester.pumpAndSettle();
 
       // El carrito y el resumen deben reflejar el precio del producto
@@ -125,7 +125,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await searchProducts(tester, 'Libro');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_circle_rounded));
       await tester.pumpAndSettle();
 
       // Descuento mayor al subtotal (20)
@@ -173,18 +173,10 @@ void main() {
   }
 
   Future<void> addToCart(WidgetTester tester, String productName) async {
-    // Cada fila del catálogo (ListTile) tiene su propio ícono "+": se toca el
-    // de la fila del producto pedido.
     // La lista solo aparece al escribir en el buscador de productos.
     await searchProducts(tester, productName);
-    final tile = find.ancestor(
-      of: find.descendant(
-        of: find.byType(ListTile),
-        matching: find.text(productName),
-      ),
-      matching: find.byType(ListTile),
-    );
-    final add = find.descendant(of: tile.first, matching: find.byIcon(Icons.add));
+    // Con la búsqueda queda una sola fila, con su botón de agregar.
+    final add = find.byIcon(Icons.add_circle_rounded);
     await tester.ensureVisible(add);
     await tester.tap(add);
     await tester.pumpAndSettle();

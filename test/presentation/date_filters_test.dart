@@ -15,6 +15,7 @@ import 'package:offline_first_bi/presentation/widgets/date_range_filter_bar.dart
 import 'package:offline_first_bi/presentation/widgets/report_filters_widget.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
+import 'filter_helpers.dart';
 
 // Filtros por fecha de Ventas, Compras y Eventos (atajos + Desde/Hasta) y la
 // validación de rangos (Hasta no antes que Desde, hoy como fecha máxima) en
@@ -144,7 +145,7 @@ void main() {
 
     testWidgets('the X on a date chip clears just that date', (tester) async {
       await pumpBar(tester, initial: DateRangeFilter.forPreset(DatePreset.today));
-      await tester.tap(find.byIcon(Icons.close).first);
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
       await tester.pumpAndSettle();
       expect(emitted.last.from, isNull);
       expect(emitted.last.to, today);
@@ -240,13 +241,11 @@ void main() {
 
     testWidgets('Hoy and Este año keep only the recent sale', (tester) async {
       await pump(tester, const SalesListBody());
-      await tester.tap(find.text('Hoy'));
-      await tester.pumpAndSettle();
+      await pickPreset(tester, 'Hoy');
       expect(find.text('John Smith'), findsOneWidget);
       expect(find.text('Emily Johnson'), findsNothing);
 
-      await tester.tap(find.text('Este año'));
-      await tester.pumpAndSettle();
+      await pickPreset(tester, 'Este año');
       expect(find.text('John Smith'), findsOneWidget);
       expect(find.text('Emily Johnson'), findsNothing);
     });
@@ -263,7 +262,7 @@ void main() {
       expect(find.text('John Smith'), findsNothing);
     });
 
-    testWidgets('a range with no sales says "Sin resultados" and can be cleared', (
+    testWidgets('a range with no sales says "No se encontraron resultados." and can be cleared', (
       tester,
     ) async {
       await pump(tester, const SalesListBody());
@@ -274,11 +273,10 @@ void main() {
         to: DateTime(now.year - 5, 1, 2),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.close).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.close).first);
+      // "Limpiar" quita el filtro activo.
+      await tester.tap(find.text('Limpiar'));
       await tester.pumpAndSettle();
       expect(find.text('John Smith'), findsOneWidget);
       expect(find.text('Emily Johnson'), findsOneWidget);
@@ -305,8 +303,7 @@ void main() {
       expect(find.text('Hotel'), findsOneWidget);
       expect(find.text('Pasaje de bus'), findsOneWidget);
 
-      await tester.tap(find.text('Hoy'));
-      await tester.pumpAndSettle();
+      await pickPreset(tester, 'Hoy');
       expect(find.text('Hotel'), findsOneWidget);
       expect(find.text('Pasaje de bus'), findsNothing);
 
@@ -352,8 +349,7 @@ void main() {
       await pump(tester, const EventsPage());
       expect(find.text('Feria de Octubre'), findsOneWidget);
       expect(find.text('Feria del Libro La Paz'), findsOneWidget);
-      await tester.tap(find.text('Hoy'));
-      await tester.pumpAndSettle();
+      await pickPreset(tester, 'Hoy');
       expect(find.text('Feria de Octubre'), findsOneWidget);
       expect(find.text('Feria del Libro La Paz'), findsNothing);
     });
@@ -371,25 +367,26 @@ void main() {
       expect(find.text('Feria de Octubre'), findsNothing);
     });
 
-    testWidgets('shows the date bar together with the status chip', (
+    testWidgets('shows the dates together with the status filter in the panel', (
       tester,
     ) async {
       await pump(tester, const EventsPage());
-      // Ambos filtros conviven: la barra de fechas y el chip de estado.
+      // Ambos filtros conviven en el panel: las fechas y el estado.
+      await openFilterPanel(tester);
       expect(find.text('Hoy'), findsOneWidget);
-      expect(find.text('Todos'), findsOneWidget);
+      expect(find.text('Estado'), findsOneWidget);
     });
 
     testWidgets('an invalid range is rejected here too', (tester) async {
       await pump(tester, const EventsPage());
-      await tester.tap(find.text('Hoy'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Hasta:'));
+      await pickPreset(tester, 'Hoy');
+      await tester.tap(dateBox('Hasta'));
       await tester.pumpAndSettle();
       await _typeDate(tester, yesterday);
       expect(find.text(rangeOrderMessage), findsOneWidget);
       // Sigue el rango de "Hoy".
-      expect(find.text('Hasta: ${formatDate(today)}'), findsOneWidget);
+      final filter = containerOf(tester, EventsPage).read(eventDateFilterProvider);
+      expect(filter.preset, DatePreset.today);
     });
   });
 
@@ -514,12 +511,13 @@ void main() {
       await sale(emily, longAgo.add(const Duration(hours: 15)));
       await sale(emily, longAgo.add(const Duration(days: 1)));
       await pump(tester, const SalesListBody());
-      await tester.tap(find.text('Desde'));
+      await openFilterPanel(tester);
+      await tester.tap(dateBox('Desde'));
       await tester.pumpAndSettle();
       await _typeDate(tester, longAgo);
-      // Solo hay Desde: aparece su chip y Hasta sigue vacío.
-      expect(find.text('Desde: ${formatDate(longAgo)}'), findsOneWidget);
-      expect(find.text('Hasta'), findsOneWidget);
+      // Solo hay Desde: aparece su fecha y Hasta sigue vacío.
+      expect(find.text(formatDateShort(longAgo)), findsOneWidget);
+      expect(find.text('Seleccionar'), findsOneWidget);
       // Solo la venta de ese día (a cualquier hora); ni hoy ni el día siguiente.
       expect(find.text('John Smith'), findsNothing);
       expect(find.text('Emily Johnson'), findsOneWidget);
@@ -596,10 +594,9 @@ void main() {
           ),
         );
 
+    // "Ventas actuales" / "Compras actuales" y "Todas" son las dos pestañas.
     Future<void> choose(WidgetTester tester, String from, String to) async {
-      await tester.tap(find.text(from));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(to).last);
+      await tester.tap(find.text(to));
       await tester.pumpAndSettle();
     }
 
@@ -659,24 +656,4 @@ void main() {
     });
   });
 
-  testWidgets('Compras: the Tipo chip and the "Compras actuales" chip sit on the right, on one row', (tester) async {
-    await db.into(db.purchases).insert(
-      PurchasesCompanion.insert(
-        isMaterial: const Value(false),
-        description: const Value('Algo'),
-        totalAmount: 5,
-        date: now,
-      ),
-    );
-    await pump(tester, const PurchasesListBody());
-    final tipo = tester.getRect(find.text('Tipo').first);
-    final actuales = tester.getRect(find.text('Compras actuales').first);
-    final screen = tester.view.physicalSize.width / tester.view.devicePixelRatio;
-    // Pegados al margen derecho (16), no centrados, en la misma fila y con el
-    // filtro nuevo a la derecha de "Tipo".
-    expect(actuales.right, greaterThan(screen * 0.8));
-    expect(tipo.left, greaterThan(screen * 0.15));
-    expect(actuales.left, greaterThan(tipo.right));
-    expect((actuales.center.dy - tipo.center.dy).abs(), lessThan(4));
-  });
 }

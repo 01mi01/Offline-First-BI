@@ -27,6 +27,7 @@ import '../widgets/filter_panel.dart';
 import '../widgets/catalog_filter_bar.dart' show RecordTimeSwitcher;
 import '../../application/record_search.dart';
 import '../widgets/app_controls.dart' show AppSearchBar;
+import '../widgets/empty_state.dart';
 
 class SalesPage extends StatelessWidget {
   const SalesPage({super.key});
@@ -84,9 +85,9 @@ class SalesListBody extends ConsumerWidget {
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: AppEmptyState(
+              child: AppEmptyState.list(
+                plural: 'ventas',
                 icon: Icons.point_of_sale_rounded,
-                title: 'No se registraron ventas',
                 actionLabel: 'Nueva venta',
                 onAction: () => showSaleForm(context),
               ),
@@ -116,10 +117,7 @@ class SalesListBody extends ConsumerWidget {
           ),
           if (visible.isEmpty)
             const SliverToBoxAdapter(
-              child: AppEmptyState(
-                icon: Icons.search_off_rounded,
-                title: 'Sin resultados',
-              ),
+              child: AppEmptyState.noMatch(),
             )
           else
             AppSliverGroup(

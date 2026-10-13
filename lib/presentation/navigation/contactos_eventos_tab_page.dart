@@ -9,6 +9,7 @@ import '../widgets/screen_header.dart';
 import '../widgets/app_list_row.dart';
 import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
+import '../widgets/empty_state.dart';
 
 // Tab "Clientes, Proveedores y Eventos" de la navegación inferior: pantalla
 // de aterrizaje con tarjetas que llevan a cada página existente, mostrando
@@ -28,11 +29,9 @@ class ContactosEventosTabPage extends ConsumerWidget {
           title: 'Contactos y Eventos',
           actions: const [ProfileButton()],
           body: cards.isEmpty
-              ? Center(
-                  child: Text(
-                    'No tienes acceso a clientes, proveedores ni eventos',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
+              ? const AppEmptyState.hint(
+                  icon: Icons.people_rounded,
+                  text: 'No tienes acceso a clientes, proveedores ni eventos.',
                 )
               : ListView(
                   padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),

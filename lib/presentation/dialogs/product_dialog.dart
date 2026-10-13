@@ -188,7 +188,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         context,
         title: '¿Desactivar producto?',
         message:
-            'El producto "${_nameController.text.trim()}" no estará disponible para nuevas ventas.',
+            'El producto no estará disponible para nuevas ventas.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -218,10 +218,15 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     return FormSheet(
       title: isEditing ? 'Editar producto' : 'Nuevo producto',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: isEditing ? 'Guardar' : 'Crear',
+        onPrimary: _save,
+      ),
       children: [
         // Selector de imagen
         AppPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
-        const SizedBox(height: AppSpacing.s20),
+        const SizedBox(height: AppSpacing.s16),
 
         // Nombre
         LabeledField(
@@ -312,7 +317,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
         // Estado: solo al editar
         if (isEditing) ...[
-          const SizedBox(height: AppSpacing.s20),
+          const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Producto activo',
             subtitle: _isActive
@@ -322,14 +327,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
             onChanged: _onToggleActive,
           ),
         ],
-        const SizedBox(height: AppSpacing.s24),
-
-        // Botones cancelar y guardar (al final del contenido)
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: isEditing ? 'Guardar' : 'Crear',
-          onPrimary: _save,
-        ),
       ],
     );
   }

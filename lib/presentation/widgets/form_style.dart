@@ -50,6 +50,11 @@ class AppFormTheme extends StatelessWidget {
       child: Theme(
         data: base.copyWith(
           inputDecorationTheme: appInputDecorationTheme(context),
+          textTheme: base.textTheme.copyWith(
+            bodyLarge: base.textTheme.bodyLarge?.copyWith(
+              fontSize: AppMetrics.formTextSize,
+            ),
+          ),
         ),
         child: child,
       ),

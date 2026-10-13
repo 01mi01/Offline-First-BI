@@ -22,6 +22,7 @@ import '../widgets/record_detail.dart';
 import '../widgets/record_list.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
+import '../widgets/empty_state.dart';
 
 class EventsPage extends ConsumerWidget {
   const EventsPage({super.key});
@@ -142,19 +143,16 @@ class _EventsTab extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.events.isEmpty
                 ? Center(
-                    child: AppEmptyState(
+                    child: AppEmptyState.list(
+                      plural: 'eventos',
                       icon: Icons.event_rounded,
-                      title: 'No se registraron eventos',
                       actionLabel: 'Nuevo evento',
                       onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
                 ? const SingleChildScrollView(
-                    child: AppEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'Sin resultados',
-                    ),
+                    child: AppEmptyState.noMatch(),
                   )
                 : AppGroupListView(
                     itemCount: visible.length,
@@ -267,19 +265,16 @@ class _LocationsTab extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.locations.isEmpty
                 ? Center(
-                    child: AppEmptyState(
+                    child: AppEmptyState.list(
+                      plural: 'ubicaciones',
                       icon: Icons.place_rounded,
-                      title: 'No se registraron ubicaciones',
                       actionLabel: 'Nueva ubicación',
                       onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
                 ? const SingleChildScrollView(
-                    child: AppEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'Sin resultados',
-                    ),
+                    child: AppEmptyState.noMatch(),
                   )
                 : AppGroupListView(
                     itemCount: visible.length,

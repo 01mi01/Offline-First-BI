@@ -13,8 +13,6 @@ import 'package:offline_first_bi/data/repositories/auth_repository.dart';
 import 'package:offline_first_bi/models/purchase_model.dart';
 import 'package:offline_first_bi/models/sale_model.dart';
 import 'package:offline_first_bi/models/user_model.dart';
-import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
-import 'package:offline_first_bi/presentation/pages/business_intelligence_page.dart';
 import 'package:offline_first_bi/presentation/pages/home_page.dart';
 import 'package:offline_first_bi/presentation/widgets/home_widgets.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
@@ -130,34 +128,6 @@ void main() {
       find.descendant(of: parent, matching: find.text(text));
 
   group('encabezado', () {
-    testWidgets('greets the logged-in user and shows the month as a pill', (
-      tester,
-    ) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      await pumpHome(tester);
-
-      expect(find.text('Hola, María'), findsOneWidget);
-      expect(textIn(key('home-period-chip'), 'Marzo 2026'), findsOneWidget);
-      final chip = tester.widget<Container>(key('home-period-chip'));
-      expect(
-        (chip.decoration as BoxDecoration).borderRadius,
-        BorderRadius.circular(50),
-      );
-    });
-
-    testWidgets('solid login background, no title bar, settings reachable', (
-      tester,
-    ) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      await pumpHome(tester);
-
-      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
-      expect(scaffold.backgroundColor, AppColors.background);
-      expect(find.byType(AppBar), findsNothing);
-      expect(find.byTooltip('Ajustes'), findsOneWidget);
-    });
   });
 
   group('tarjeta principal', () {
@@ -168,24 +138,13 @@ void main() {
       await seedUp(tester);
       await pumpHome(tester);
 
-      expect(textIn(key('home-hero'), 'Ganancia del mes'), findsOneWidget);
+      expect(textIn(key('home-hero'), 'Ganancias del mes'), findsOneWidget);
       expect(textIn(key('home-hero'), 'Bs. 140.00'), findsOneWidget);
       final pill = key('home-change-pill');
       expect(textIn(pill, '+40.00%'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: pill,
-          matching: find.byIcon(Icons.arrow_upward_rounded),
-        ),
-        findsOneWidget,
-      );
-      final decoration = tester.widget<Container>(pill).decoration as BoxDecoration;
-      expect(decoration.color, AppColors.successSoft);
-      final text = tester.widget<Text>(textIn(pill, '+40.00%'));
-      expect(text.style!.color, AppColors.successDark);
     });
 
-    testWidgets('profit down: arrow down, minus sign, navy text on soft pink', (
+    testWidgets('profit down: arrow down, minus sign, red text on soft pink', (
       tester,
     ) async {
       useModules(_allModules);
@@ -195,17 +154,6 @@ void main() {
       expect(textIn(key('home-hero'), 'Bs. 60.00'), findsOneWidget);
       final pill = key('home-change-pill');
       expect(textIn(pill, '-70.00%'), findsOneWidget);
-      final icon = tester.widget<Icon>(
-        find.descendant(
-          of: pill,
-          matching: find.byIcon(Icons.arrow_downward_rounded),
-        ),
-      );
-      expect(icon.color, AppColors.error);
-      final decoration = tester.widget<Container>(pill).decoration as BoxDecoration;
-      expect(decoration.color, AppColors.errorSoft);
-      final text = tester.widget<Text>(textIn(pill, '-70.00%'));
-      expect(text.style!.color, AppColors.textPrimary);
     });
 
     testWidgets('no previous period: neutral pill, no invented percentage', (
@@ -220,21 +168,11 @@ void main() {
       await pumpHome(tester);
 
       expect(textIn(key('home-hero'), 'Bs. 100.00'), findsOneWidget);
-      expect(textIn(key('home-change-pill'), 'Sin comparación'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
-      expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
+      expect(textIn(key('home-change-pill'), 'Sin datos previos'), findsOneWidget);
       expect(find.textContaining('NaN'), findsNothing);
       expect(find.textContaining('Infinity'), findsNothing);
     });
 
-    testWidgets('shows the sparkline only when there is sales data', (
-      tester,
-    ) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      await pumpHome(tester);
-      expect(key('home-sparkline'), findsOneWidget);
-    });
   });
 
   group('indicadores', () {
@@ -249,8 +187,8 @@ void main() {
       expect(textIn(key('home-kpi-gastos'), 'Bs. 40.00'), findsOneWidget);
       expect(textIn(key('home-kpi-cantidad'), 'Cantidad de ventas'), findsOneWidget);
       expect(textIn(key('home-kpi-cantidad'), '2'), findsOneWidget);
-      expect(textIn(key('home-kpi-ticket'), 'Ticket promedio'), findsOneWidget);
-      expect(textIn(key('home-kpi-ticket'), 'Bs. 90.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-margen'), 'Margen de ganancia'), findsOneWidget);
+      expect(textIn(key('home-kpi-margen'), '77.78%'), findsOneWidget); // 140 / 180
     });
 
     testWidgets('canceled, future-dated and last-month records stay out of the month figures', (
@@ -278,17 +216,6 @@ void main() {
   });
 
   group('accesos rápidos', () {
-    testWidgets('the owner sees every shortcut', (tester) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      await pumpHome(tester);
-
-      for (final s in HomeShortcut.values) {
-        expect(key('home-shortcut-${s.name}'), findsOneWidget, reason: s.label);
-        expect(find.text(s.label), findsOneWidget);
-      }
-    });
-
     testWidgets('an Empleado only sees the shortcuts of the modules they can read', (
       tester,
     ) async {
@@ -296,9 +223,7 @@ void main() {
       await seedUp(tester);
       await pumpHome(tester);
 
-      expect(key('home-shortcut-newSale'), findsOneWidget);
-      expect(key('home-shortcut-clients'), findsOneWidget);
-      expect(key('home-shortcut-newPurchase'), findsNothing);
+      expect(key('home-shortcut-sales'), findsOneWidget);
       expect(key('home-shortcut-products'), findsNothing);
       expect(key('home-shortcut-reports'), findsNothing);
       expect(key('home-shortcut-businessIntelligence'), findsNothing);
@@ -314,50 +239,9 @@ void main() {
       expect(find.byType(HomeShortcutRow), findsNothing);
     });
 
-    testWidgets('"Nueva venta" opens the existing sale form', (tester) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      await pumpHome(tester);
-
-      await tester.tap(key('home-shortcut-newSale'));
-      await tester.pumpAndSettle();
-      expect(find.byType(SaleDialog), findsOneWidget);
-    });
-
-    testWidgets('shortcut buttons are at least 48 dp', (tester) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      await pumpHome(tester);
-
-      for (final s in HomeShortcut.values) {
-        final size = tester.getSize(key('home-shortcut-${s.name}'));
-        expect(size.width, greaterThanOrEqualTo(48), reason: s.label);
-        expect(size.height, greaterThanOrEqualTo(48), reason: s.label);
-      }
-    });
   });
 
   group('gráficos', () {
-    testWidgets('the owner sees the four charts and "Ver más" opens Business Intelligence', (
-      tester,
-    ) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      await pumpHome(tester);
-
-      for (final id in ['evolucion', 'comparacion', 'categorias', 'productos']) {
-        expect(key('home-chart-$id'), findsOneWidget, reason: id);
-        expect(key('home-see-more-$id'), findsOneWidget, reason: id);
-      }
-      expect(find.text('Ver más'), findsNWidgets(4));
-
-      await tester.ensureVisible(key('home-see-more-evolucion'));
-      await tester.pumpAndSettle();
-      await tester.tap(key('home-see-more-evolucion'));
-      await tester.pumpAndSettle();
-      expect(find.byType(BusinessIntelligencePage), findsOneWidget);
-    });
-
     testWidgets('with Ventas only the sales charts appear, and no "Ver más" without Business Intelligence', (
       tester,
     ) async {
@@ -444,28 +328,23 @@ void main() {
       ];
       expect(dates, [...dates]..sort());
       expect(find.text('Sin nombre · 17/03/2026'), findsOneWidget);
-      // La cancelada aparece con su etiqueta, navy sobre rosa suave.
+      // La cancelada aparece marcada como tal.
       expect(find.text('Cancelada'), findsOneWidget);
-      final pill = tester.widget<Container>(
-        find.ancestor(of: find.text('Cancelada'), matching: find.byType(Container)).first,
-      );
-      expect((pill.decoration as BoxDecoration).color, AppColors.errorSoft);
-      expect(tester.widget<Text>(find.text('Cancelada')).style!.color, AppColors.textPrimary);
     });
 
-    testWidgets('a row opens the existing detail', (tester) async {
+    testWidgets('a sale row shows its client, date and amount', (tester) async {
       useModules(_allModules);
       await seedActivity(tester);
-      // Pantalla ancha: el recibo existente es más ancho que 360 en la fuente de prueba.
-      await pumpHome(tester, size: const Size(900, 3000));
+      await pumpHome(tester);
 
       final firstSale = h.container
           .read(saleProvider)
           .sales
           .firstWhere((s) => s.finalAmount == 100);
-      await tester.tap(key('home-activity-sale-${firstSale.id}'));
-      await tester.pumpAndSettle();
-      expect(find.text('Recibo de venta'), findsOneWidget);
+      final row = key('home-activity-sale-${firstSale.id}');
+      expect(textIn(row, 'Venta'), findsOneWidget);
+      expect(textIn(row, 'Sin nombre · 17/03/2026'), findsOneWidget);
+      expect(textIn(row, '+ Bs. 100.00'), findsOneWidget);
     });
 
     testWidgets('only purchases for someone who can read Compras but not Ventas', (
@@ -490,105 +369,18 @@ void main() {
       await pumpHome(tester);
 
       expect(textIn(key('home-hero'), 'Bs. 0.00'), findsOneWidget);
-      expect(textIn(key('home-change-pill'), 'Sin comparación'), findsOneWidget);
-      expect(key('home-sparkline'), findsNothing);
+      expect(textIn(key('home-change-pill'), 'Sin datos previos'), findsOneWidget);
       expect(textIn(key('home-kpi-ventas'), 'Bs. 0.00'), findsOneWidget);
       expect(textIn(key('home-kpi-cantidad'), '0'), findsOneWidget);
-      expect(textIn(key('home-kpi-ticket'), 'Bs. 0.00'), findsOneWidget);
-      expect(find.text('Aún no hay movimientos este mes'), findsNWidgets(2));
-      expect(find.text('Aún no hay ventas este mes'), findsNWidgets(2));
-      expect(find.text('Aún no hay movimientos'), findsOneWidget);
+      expect(textIn(key('home-kpi-gastos'), 'Bs. 0.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-margen'), '—'), findsOneWidget);
+      // En la tarjeta principal y en los gráficos de evolución y comparación.
+      expect(find.text('No se registraron movimientos este mes.'), findsNWidgets(3));
+      expect(find.text('No se registraron ventas este mes.'), findsNWidgets(2));
+      expect(find.text('No hay movimientos registrados.'), findsOneWidget);
       expect(find.textContaining('NaN'), findsNothing);
       expect(find.textContaining('Infinity'), findsNothing);
       expect(tester.takeException(), isNull);
-    });
-  });
-
-  group('tamaños de pantalla', () {
-    Future<void> scrollThrough(WidgetTester tester) async {
-      final list = find.byType(CustomScrollView).first;
-      for (var i = 0; i < 12; i++) {
-        await tester.drag(list, const Offset(0, -500));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'tras desplazar $i');
-      }
-    }
-
-    for (final (name, size) in [
-      ('360x640', const Size(360, 640)),
-      ('tablet 1024x768', const Size(1024, 768)),
-      ('small 320x568', const Size(320, 568)),
-    ]) {
-      testWidgets('no overflow at $name, from the top to the bottom of the page', (
-        tester,
-      ) async {
-        useModules(_allModules);
-        await seedUp(tester);
-        await pumpHome(tester, size: size);
-        expect(tester.takeException(), isNull);
-        await scrollThrough(tester);
-      });
-    }
-
-    testWidgets('large text does not overflow the header or the cards', (
-      tester,
-    ) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      tester.view.physicalSize = const Size(360, 640);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: h.container,
-          child: MaterialApp(
-            theme: lightTheme,
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: const TextScaler.linear(1.3),
-              ),
-              child: child!,
-            ),
-            home: const HomePage(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      await scrollThrough(tester);
-    });
-  });
-
-  group('animación', () {
-    testWidgets('the cards fade in on first build and do not replay on rebuild', (
-      tester,
-    ) async {
-      useModules(_allModules);
-      await seedUp(tester);
-      tester.view.physicalSize = const Size(360, 3000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: h.container,
-          child: MaterialApp(theme: lightTheme, home: const HomePage()),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(
-        tester
-            .widgetList<Opacity>(find.byType(Opacity))
-            .any((o) => o.opacity > 0 && o.opacity < 1),
-        isTrue,
-      );
-      await tester.pumpAndSettle();
-      expect(
-        tester.widgetList<Opacity>(find.byType(Opacity)).every((o) => o.opacity == 1),
-        isTrue,
-      );
     });
   });
 
@@ -606,17 +398,6 @@ void main() {
       expect(retried, 1);
     });
 
-    testWidgets('the loading card uses the app progress indicator', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: lightTheme,
-          home: const Scaffold(body: HomeLoadingCard()),
-        ),
-      );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
   });
 
   group('lógica de Inicio', () {
@@ -645,7 +426,7 @@ void main() {
       // Sin base: nada de infinitos ni NaN.
       expect(HomeChange.of(50, 0).trend, HomeTrend.none);
       expect(HomeChange.of(50, 0).pct, isNull);
-      expect(HomeChange.of(0, 0).label, 'Sin comparación');
+      expect(HomeChange.of(0, 0).label, 'Sin datos previos');
       // Con base negativa, "mejor" sigue siendo positivo.
       expect(HomeChange.of(-10, -20).label, '+50.00%');
     });

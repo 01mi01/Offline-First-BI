@@ -13,6 +13,8 @@ import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'form_finders.dart';
+import 'filter_helpers.dart';
 
 // Buscadores y filtros de estado de Materiales, Registro de uso, Eventos y
 // Ubicaciones, y selectores que no listan nada hasta que se escribe.
@@ -76,12 +78,9 @@ void main() {
     );
   }
 
-  Future<void> chooseStatus(WidgetTester tester, String current, String next) async {
-    await tester.tap(find.text(current).first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(next).last);
-    await tester.pumpAndSettle();
-  }
+  // El filtro de estado está en el panel de filtros.
+  Future<void> chooseStatus(WidgetTester tester, String current, String next) =>
+      pickFilter(tester, 'Estado', next);
 
   group('Materiales', () {
     setUp(() async {
@@ -104,14 +103,13 @@ void main() {
 
       await tester.enterText(find.widgetWithText(TextField, 'Buscar material'), 'zzz');
       await tester.pumpAndSettle();
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
     });
 
     testWidgets('status filter: Todos by default, then Activos / Inactivos', (
       tester,
     ) async {
       await pump(tester, const Scaffold(body: MaterialsListTab()));
-      expect(find.text('Todos'), findsOneWidget);
       expect(find.text('Tela para estuches'), findsOneWidget);
 
       await chooseStatus(tester, 'Todos', 'Activos');
@@ -177,7 +175,7 @@ void main() {
       await tester.pumpAndSettle();
       // Elegido: el campo muestra el producto y se habilita el registro.
       expect(find.text('Tote bag negra'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
 
     testWidgets('Registro de uso sheet: Material is a search picker like Producto', (
@@ -188,7 +186,7 @@ void main() {
       );
       await pump(tester, const Scaffold(body: MaterialsUsageTab()));
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pumpAndSettle();
 
       // Producto (pestaña, detrás de la hoja) y Material (hoja): dos buscadores.
@@ -198,7 +196,7 @@ void main() {
       await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
       // Sin escribir no hay lista de materiales.
-      expect(find.text('Escribe para buscar'), findsOneWidget);
+      expect(find.text('Escribe para buscar.'), findsOneWidget);
       expect(find.text('Base metálica grande para pines'), findsNothing);
       expect(find.text('Papel para stickers'), findsNothing);
 
@@ -217,7 +215,7 @@ void main() {
         ), 'tela');
       await tester.pumpAndSettle();
       expect(find.text('Tela para estuches'), findsNothing);
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
     });
   });
 
@@ -251,7 +249,6 @@ void main() {
 
     testWidgets('Eventos: Todos / Activos / Inactivos', (tester) async {
       await pump(tester, const EventsPage());
-      expect(find.text('Todos'), findsOneWidget);
       expect(find.text('Feria Activa'), findsOneWidget);
       expect(find.text('Feria Cancelada'), findsOneWidget);
 
@@ -268,7 +265,6 @@ void main() {
       await pump(tester, const EventsPage());
       await tester.tap(find.text('Ubicaciones').first);
       await tester.pumpAndSettle();
-      expect(find.text('Todas'), findsOneWidget);
       expect(find.textContaining('La Paz - Calacoto'), findsWidgets);
       expect(find.textContaining('Santa Cruz - Las Palmas'), findsWidgets);
 
@@ -323,7 +319,7 @@ void main() {
     ) async {
       await openSheet(tester, const SaleDialog());
       expect(find.text('Tote bag negra'), findsNothing);
-      expect(find.text('Escribe para buscar un producto'), findsOneWidget);
+      expect(find.text('Escribe para buscar un producto.'), findsOneWidget);
       await searchProducts(tester, 'tote');
       expect(find.text('Tote bag negra'), findsOneWidget);
 
@@ -366,12 +362,13 @@ void main() {
       await tester.tap(find.text('Riverside Supply Co.').last);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
       await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
       expect(find.text('Tela negra'), findsNothing);
-      expect(find.text('Escribe para buscar'), findsOneWidget);
+      expect(find.text('Escribe para buscar.'), findsOneWidget);
       await tester.enterText(
         find.descendant(
           of: find.byType(SearchablePickerField<int>).last,

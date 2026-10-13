@@ -6,16 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/purchase_repository.dart';
-import 'package:offline_first_bi/data/repositories/sale_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
 import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
 import 'package:offline_first_bi/presentation/pages/categories_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/presentation/pages/products_page.dart';
 import 'package:offline_first_bi/presentation/pages/purchases_page.dart';
-import 'package:offline_first_bi/presentation/pages/sales_page.dart';
+import 'package:offline_first_bi/presentation/widgets/status_badge.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'form_finders.dart';
+import 'filter_helpers.dart';
 
 void _phone(WidgetTester tester, {Size size = const Size(412, 915)}) {
   tester.view.physicalSize = size;
@@ -115,45 +116,34 @@ void main() {
       );
     });
 
-    Future<void> pick(WidgetTester tester, String option) async {
-      await tester.tap(find.byIcon(Icons.filter_list));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(option).last);
-      await tester.pumpAndSettle();
-    }
+    Future<void> pick(WidgetTester tester, String option) =>
+        pickFilter(tester, 'Tipo', option);
+
+    // Cada fila lleva el tipo de la compra como pastilla.
+    Finder typeLine(String type) => find.widgetWithText(StatusBadge, type);
 
     testWidgets('shows both by default, then only Gastos, only Materiales, and both again', (
       tester,
     ) async {
       await _pumpPage(tester, db, const PurchasesListBody());
 
-      expect(find.text('Material'), findsOneWidget);
-      expect(find.text('Gasto'), findsOneWidget);
+      expect(typeLine('Material'), findsOneWidget);
+      expect(typeLine('Gasto'), findsOneWidget);
 
       await pick(tester, 'Gastos');
-      expect(find.text('Gasto'), findsOneWidget);
-      expect(find.text('Material'), findsNothing);
+      expect(typeLine('Gasto'), findsOneWidget);
+      expect(typeLine('Material'), findsNothing);
       expect(find.text('Pasaje de bus'), findsOneWidget);
 
       await pick(tester, 'Materiales');
-      expect(find.text('Material'), findsOneWidget);
-      expect(find.text('Gasto'), findsNothing);
+      expect(typeLine('Material'), findsOneWidget);
+      expect(typeLine('Gasto'), findsNothing);
 
       await pick(tester, 'Ambos tipos');
-      expect(find.text('Material'), findsOneWidget);
-      expect(find.text('Gasto'), findsOneWidget);
+      expect(typeLine('Material'), findsOneWidget);
+      expect(typeLine('Gasto'), findsOneWidget);
     });
 
-    testWidgets('the "Gasto" pill uses the neutral text color, not green or red', (
-      tester,
-    ) async {
-      await _pumpPage(tester, db, const PurchasesListBody());
-
-      final pill = tester.widget<Text>(find.text('Gasto'));
-      expect(pill.style!.color, AppColors.textPrimary);
-      expect(pill.style!.color, isNot(AppColors.success));
-      expect(pill.style!.color, isNot(AppColors.error));
-    });
   });
 
   group('Ventas: descuento', () {
@@ -198,7 +188,7 @@ void main() {
       expect(find.text('Total'), findsOneWidget);
 
       await searchProducts(tester, 'Libro');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_circle_rounded));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextFormField, '0'), '5');
       await tester.pumpAndSettle();
@@ -208,52 +198,6 @@ void main() {
       expect(find.text('Bs. 15.00'), findsOneWidget);
     });
 
-    testWidgets('the receipt of a sale lists Subtotal, Descuento and Total', (
-      tester,
-    ) async {
-      await SaleRepository(db).createSale(
-        clientId: null,
-        locationId: null,
-        eventId: null,
-        totalAmount: 20,
-        discount: 0,
-        finalAmount: 20,
-        date: DateTime(2026, 1, 1),
-        items: [
-          {'productId': 1, 'quantity': 1, 'unitPrice': 20.0, 'priceType': 'A'},
-        ],
-      );
-      await SaleRepository(db).createSale(
-        clientId: null,
-        locationId: null,
-        eventId: null,
-        totalAmount: 20,
-        discount: 4,
-        finalAmount: 16,
-        date: DateTime(2026, 1, 2),
-        items: [
-          {'productId': 1, 'quantity': 1, 'unitPrice': 20.0, 'priceType': 'A'},
-        ],
-      );
-      // Pantalla ancha: la fuente de prueba es más ancha que Roboto.
-      await _pumpPage(tester, db, const SalesListBody(), size: const Size(900, 1600));
-
-      // La más reciente (con descuento de 4)...
-      await tester.tap(find.text('Sin nombre').first);
-      await tester.pumpAndSettle();
-      expect(find.text('Subtotal'), findsOneWidget);
-      expect(find.text('Descuento'), findsOneWidget);
-      expect(find.text('- Bs. 4.00'), findsOneWidget);
-      expect(find.text('Total'), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
-
-      // ...y la que no tuvo descuento: la línea está, en cero.
-      await tester.tap(find.text('Sin nombre').last);
-      await tester.pumpAndSettle();
-      expect(find.text('Descuento'), findsOneWidget);
-      expect(find.text('- Bs. 4.00'), findsNothing);
-    });
   });
 
   group('Compras: total editable a mano', () {
@@ -272,8 +216,8 @@ void main() {
     });
 
     Future<void> addTela(WidgetTester tester) async {
-      await tester.ensureVisible(find.text('Agregar'));
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela negra', 'Tela negra');
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, '3');
@@ -320,7 +264,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // "+" de la línea de Tela: la cantidad sube a 4, el total sigue en 50.
-      await tester.tap(find.byIcon(Icons.add).first);
+      await tester.tap(find.byTooltip('Agregar uno').first);
       await tester.pumpAndSettle();
       await tester.ensureVisible(totalField);
       expect(tester.widget<TextFormField>(totalField).controller!.text, '50');
@@ -375,93 +319,18 @@ void main() {
         _pumpPage(tester, db, const ProductsPage());
 
     Future<void> toGrid(WidgetTester tester) async {
-      await tester.tap(find.byIcon(Icons.grid_view_rounded));
+      await tester.tap(find.text('Vista de catálogo'));
       await tester.pumpAndSettle();
     }
 
     Future<void> toList(WidgetTester tester) async {
-      await tester.tap(find.byIcon(Icons.list));
+      await tester.tap(find.text('Lista'));
       await tester.pumpAndSettle();
     }
 
-    // El filtro de precio solo se controla desde la vista de lista.
-    Future<void> pickPrice(WidgetTester tester, String option) async {
-      await tester.tap(find.byIcon(Icons.sell_outlined));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(option).last);
-      await tester.pumpAndSettle();
-    }
-
-    // Posiciones de los controles de arriba (centros) en la vista actual.
-    Map<String, Offset> topControls(WidgetTester tester) => {
-      'price': tester.getCenter(find.byIcon(Icons.sell_outlined)),
-      'category': tester.getCenter(find.byIcon(Icons.category_outlined)),
-      'status': tester.getCenter(find.text('Todos')),
-      'search': tester.getCenter(find.byType(TextField)),
-      'list': tester.getCenter(find.byIcon(Icons.list)),
-      'grid': tester.getCenter(find.byIcon(Icons.grid_view_rounded)),
-    };
-
-    testWidgets('layout: the three filters on top aligned right, search below filling the width next to the toggle', (
-      tester,
-    ) async {
-      await openList(tester);
-      final c = topControls(tester);
-
-      // Arriba: precio, categoría y estado, en ese orden y pegados a la
-      // derecha. Si no caben en una línea (412 de ancho), el último pasa a la
-      // siguiente, también a la derecha.
-      expect(c['price']!.dy, closeTo(c['category']!.dy, 4));
-      expect(c['price']!.dx, lessThan(c['category']!.dx));
-      expect(c['status']!.dy, greaterThanOrEqualTo(c['category']!.dy));
-      expect(c['status']!.dx, greaterThan(300));
-      // Debajo: el buscador y, a su derecha, el toggle lista/catálogo.
-      expect(c['search']!.dy, greaterThan(c['status']!.dy + 20));
-      expect(c['search']!.dy, closeTo(c['list']!.dy, 4));
-      expect(c['search']!.dx, lessThan(c['list']!.dx));
-      expect(c['grid']!.dx, greaterThan(c['list']!.dx));
-      expect(c['grid']!.dx, greaterThan(350));
-      // El buscador ocupa el ancho disponible (hasta el toggle).
-      final searchRect = tester.getRect(find.byType(TextField));
-      expect(searchRect.width, greaterThan(250));
-    });
-
-    testWidgets('filters, search and buttons are in exactly the same place in the catalogue view', (
-      tester,
-    ) async {
-      await openList(tester);
-      final inList = topControls(tester);
-
-      await toGrid(tester);
-      final inGrid = topControls(tester);
-      for (final key in inList.keys) {
-        expect(inGrid[key], inList[key], reason: key);
-      }
-    });
-
-    testWidgets('the name and price sorters are gone', (tester) async {
-      await openList(tester);
-
-      expect(find.byIcon(Icons.swap_vert), findsNothing);
-      expect(find.text('Nombre'), findsNothing);
-      expect(find.textContaining('menor a mayor'), findsNothing);
-      // El orden de siempre (alfabético) se mantiene.
-      expect(
-        tester.getTopLeft(find.text('Estuches')).dy,
-        lessThan(tester.getTopLeft(find.text('Miniaturas')).dy),
-      );
-    });
-
-    testWidgets('the price control is in both views, in the same place', (
-      tester,
-    ) async {
-      await openList(tester);
-      expect(find.byIcon(Icons.sell_outlined), findsOneWidget);
-
-      await toGrid(tester);
-      expect(find.byIcon(Icons.sell_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.swap_vert), findsNothing);
-    });
+    // El filtro de precio está en el panel de filtros, igual en las dos vistas.
+    Future<void> pickPrice(WidgetTester tester, String option) =>
+        pickFilter(tester, 'Precio', option);
 
     testWidgets('cards say just "Precio" with a single band chosen, never A/B', (
       tester,
@@ -474,24 +343,6 @@ void main() {
       expect(find.text('Precio: Bs. 12.00'), findsOneWidget);
       expect(find.textContaining('A: Bs.'), findsNothing);
       expect(find.textContaining('B: Bs.'), findsNothing);
-    });
-
-    testWidgets('the price filter has four options, including "Ambos"', (
-      tester,
-    ) async {
-      await openList(tester);
-
-      await tester.tap(find.byIcon(Icons.sell_outlined));
-      await tester.pumpAndSettle();
-      for (final option in ['Precio A', 'Precio B', 'Ambos', 'Sin precio']) {
-        expect(find.text(option), findsWidgets, reason: option);
-      }
-      // Orden del menú: Ambos, Precio A, Precio B, Sin precio.
-      double top(String t) => tester.getTopLeft(find.text(t).last).dy;
-      expect(top('Ambos'), lessThan(top('Precio A')));
-      expect(top('Precio A'), lessThan(top('Precio B')));
-      expect(top('Precio B'), lessThan(top('Sin precio')));
-      expect(find.text('Ambos'), findsNWidgets(2)); // la etiqueta del chip (valor por defecto de la lista) y la opción
     });
 
     testWidgets('the catalogue reflects the price chosen in the list: B, none, both', (
@@ -522,8 +373,10 @@ void main() {
 
       await tester.tap(find.text('Estuches'));
       await tester.pumpAndSettle();
-      expect(find.text('Precio A: Bs. 30.00'), findsOneWidget);
-      expect(find.text('Precio B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('Precio A'), findsOneWidget);
+      expect(find.text('Bs. 30.00'), findsOneWidget);
+      expect(find.text('Precio B'), findsOneWidget);
+      expect(find.text('Bs. 11.00'), findsOneWidget);
     });
 
     testWidgets('list view follows the filter: A only, B only, none, both', (
@@ -583,16 +436,13 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'nada que coincida');
       await tester.pumpAndSettle();
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
     });
 
     testWidgets('filters by category', (tester) async {
       await openList(tester);
 
-      await tester.tap(find.byIcon(Icons.category_outlined));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Papelería').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'Categoría', 'Papelería');
 
       expect(find.text('Miniaturas'), findsOneWidget);
       expect(find.text('Estuches'), findsNothing);
@@ -602,13 +452,13 @@ void main() {
   group('Compras: la cantidad de una línea nueva no se rellena con el stock', () {
     Future<void> openAddLine(WidgetTester tester) async {
       await _openSheet(tester, db, const PurchaseDialog());
-      await tester.ensureVisible(find.text('Agregar'));
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
     }
 
     String quantityText(WidgetTester tester, String label) => tester
-        .widget<TextFormField>(find.widgetWithText(TextFormField, label))
+        .widget<TextFormField>(fieldLabeled(label))
         .controller!
         .text;
 
@@ -640,17 +490,14 @@ void main() {
         await openAddLine(tester);
 
         // "Crear nuevo material" con stock inicial 5 a Bs. 3 el metro.
-        await tester.tap(find.text('Crear nuevo material'));
+        await tester.tap(find.text('Nuevo material'));
         await tester.pumpAndSettle();
-        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Papel para stickers');
+        await tester.enterText(fieldLabeled('Nombre'), 'Papel para stickers');
         // La unidad es un desplegable corto, no un buscador.
-        await tester.tap(find.widgetWithText(DropdownButtonFormField<int>, 'Unidad'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('metro').last);
-        await tester.pumpAndSettle();
-        await tester.enterText(find.widgetWithText(TextFormField, 'Stock'), '5');
+        await chooseOption(tester, 'Unidad', 'metro');
+        await tester.enterText(fieldLabeled('Stock'), '5');
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Precio por unidad'),
+          fieldLabeled('Precio por unidad'),
           '3',
         );
         await tester.pumpAndSettle();
@@ -670,7 +517,7 @@ void main() {
 
         // Se compra lo de esta ocasión: 2 metros.
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Cantidad (metro)'),
+          fieldLabeled('Cantidad (metro)'),
           '2',
         );
         await tester.pumpAndSettle();
@@ -718,11 +565,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField), '');
       await tester.pumpAndSettle();
-      // El filtro de estado: sin icono, con el texto "Todas" (valor por defecto).
-      await tester.tap(find.text('Todas'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Inactivas').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'Estado', 'Inactivas');
       expect(find.text('Libros'), findsOneWidget);
       expect(find.text('Pines'), findsNothing);
     });

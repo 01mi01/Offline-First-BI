@@ -100,7 +100,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
       final confirm = await confirmCancellation(
         context,
         title: '¿Desactivar proveedor?',
-        message: 'El proveedor "${_nameController.text.trim()}" no estará disponible para nuevas compras.',
+        message: 'El proveedor no estará disponible para nuevas compras.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -116,6 +116,11 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
     return FormSheet(
       title: isEditing ? 'Editar proveedor' : 'Nuevo proveedor',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: isEditing ? 'Guardar' : 'Crear',
+        onPrimary: _save,
+      ),
       children: [
         // Nombre
         LabeledField(
@@ -145,7 +150,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
 
         // Estado: solo al editar
         if (isEditing) ...[
-          const SizedBox(height: AppSpacing.s20),
+          const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Proveedor activo',
             subtitle: _isActive
@@ -158,13 +163,6 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
 
         // Error al guardar
         if (_saveError != null) FormErrorText(_saveError!),
-        const SizedBox(height: AppSpacing.s24),
-
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: isEditing ? 'Guardar' : 'Crear',
-          onPrimary: _save,
-        ),
       ],
     );
   }

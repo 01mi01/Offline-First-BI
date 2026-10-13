@@ -11,6 +11,7 @@ import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'form_finders.dart';
 
 Future<void> _openPurchaseDialog(WidgetTester tester, AppDatabase db) async {
   // Usa un tamaño de pantalla realista (tipo teléfono) en vez del lienzo de
@@ -88,8 +89,8 @@ void main() {
       // al proveedor por defecto "Sin proveedor".
 
       // Abre la hoja para agregar un material
-      await tester.ensureVisible(find.text('Agregar'));
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
 
       expect(find.text('Agregar material'), findsOneWidget);
@@ -246,8 +247,8 @@ void main() {
     // Abre la hoja "Agregar material" y elige el material indicado.
     Future<Finder> openAddSheetWith(WidgetTester tester, String material) async {
       await _openPurchaseDialog(tester, db);
-      await tester.ensureVisible(find.text('Agregar'));
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
 
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, material, material);

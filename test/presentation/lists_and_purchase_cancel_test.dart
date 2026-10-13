@@ -6,15 +6,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/purchase_repository.dart';
-import 'package:offline_first_bi/presentation/pages/categories_page.dart';
 import 'package:offline_first_bi/presentation/pages/clients_page.dart';
 import 'package:offline_first_bi/presentation/pages/events_page.dart';
 import 'package:offline_first_bi/presentation/pages/products_page.dart';
 import 'package:offline_first_bi/presentation/pages/purchases_page.dart';
-import 'package:offline_first_bi/presentation/pages/sales_page.dart';
 import 'package:offline_first_bi/presentation/pages/suppliers_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
+import 'package:offline_first_bi/presentation/widgets/record_list.dart';
+import 'filter_helpers.dart';
 
 // Cancelar una compra desde su formulario de edición, y los buscadores y
 // filtros de Clientes, Proveedores, Eventos, Ubicaciones y Productos, más el
@@ -80,7 +80,9 @@ void main() {
 
     Future<void> openEdit(WidgetTester tester) async {
       await pump(tester, const PurchasesListBody());
-      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.tap(find.byType(RecordRow).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar'));
       await tester.pumpAndSettle();
       expect(find.text('Editar compra'), findsOneWidget);
     }
@@ -90,7 +92,6 @@ void main() {
     ) async {
       await buyMaterial();
       await pump(tester, const PurchasesListBody());
-      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
 
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
@@ -115,8 +116,11 @@ void main() {
 
       expect(await stock(), 10);
       expect(find.text('Cancelada'), findsOneWidget);
-      expect(find.byIcon(Icons.edit_outlined), findsNothing);
       expect((await PurchaseRepository(db).getAll()).single.isCanceled, isTrue);
+      // Su detalle ya no ofrece editarla.
+      await tester.tap(find.byType(RecordRow).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Editar'), findsNothing);
     });
 
     testWidgets('"Volver" leaves the purchase and the stock untouched', (tester) async {
@@ -202,9 +206,7 @@ void main() {
       // Cancelada y con fecha futura: "Compras actuales" la oculta, igual que
       // a una venta cancelada con fecha futura.
       expect(find.text('Gasto futuro'), findsNothing);
-      await tester.tap(find.text('Compras actuales'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Todas').last);
+      await tester.tap(find.text('Todas'));
       await tester.pumpAndSettle();
       expect(find.text('Gasto futuro'), findsOneWidget);
       expect(find.text('Cancelada'), findsOneWidget);
@@ -212,43 +214,6 @@ void main() {
   });
 
   group('orden de los filtros de Ventas y Compras', () {
-    testWidgets('Ventas: "Ventas actuales" on top, then the presets, then Desde / Hasta', (
-      tester,
-    ) async {
-      await db.into(db.sales).insert(
-        SalesCompanion.insert(totalAmount: 10, finalAmount: 10, date: appNow()),
-      );
-      await pump(tester, const SalesListBody());
-      final time = tester.getCenter(find.text('Ventas actuales'));
-      final presets = tester.getCenter(find.text('Hoy'));
-      final from = tester.getCenter(find.text('Desde'));
-      expect(time.dy, lessThan(presets.dy));
-      expect(presets.dy, lessThan(from.dy));
-      expect(time.dx, greaterThan(250)); // alineado a la derecha
-    });
-
-    testWidgets('Compras: Tipo and "Compras actuales" on top, then presets, then Desde / Hasta', (
-      tester,
-    ) async {
-      await PurchaseRepository(db).createPurchase(
-        supplierId: null,
-        isMaterial: false,
-        description: 'Algo',
-        totalAmount: 5,
-        date: appNow(),
-        locationId: null,
-        eventId: null,
-        items: const [],
-      );
-      await pump(tester, const PurchasesListBody());
-      final tipo = tester.getCenter(find.text('Tipo'));
-      final time = tester.getCenter(find.text('Compras actuales'));
-      final presets = tester.getCenter(find.text('Hoy'));
-      final from = tester.getCenter(find.text('Desde'));
-      expect(tipo.dy, closeTo(time.dy, 4));
-      expect(tipo.dy, lessThan(presets.dy));
-      expect(presets.dy, lessThan(from.dy));
-    });
   });
 
   group('Clientes y Proveedores: buscador y estado', () {
@@ -263,7 +228,6 @@ void main() {
       await pump(tester, const ClientsListBody());
 
       expect(find.text('Buscar cliente'), findsOneWidget);
-      expect(find.text('Todos'), findsOneWidget); // por defecto
       expect(find.text('Ana Martínez'), findsOneWidget);
       expect(find.text('Michael Brown'), findsOneWidget);
       expect(find.text('Laura Inactiva'), findsOneWidget);
@@ -275,17 +239,11 @@ void main() {
 
       await tester.enterText(find.byType(TextField), '');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Todos'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Inactivos').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'Estado', 'Inactivos');
       expect(find.text('Laura Inactiva'), findsOneWidget);
       expect(find.text('Ana Martínez'), findsNothing);
 
-      await tester.tap(find.text('Inactivos'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Activos').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'Estado', 'Activos');
       expect(find.text('Laura Inactiva'), findsNothing);
       expect(find.text('Michael Brown'), findsOneWidget);
     });
@@ -298,17 +256,14 @@ void main() {
       await pump(tester, const SuppliersListBody());
 
       expect(find.text('Buscar proveedor'), findsOneWidget);
-      expect(find.text('Todos'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'river');
       await tester.pumpAndSettle();
       expect(find.text('Riverside Supply Co.'), findsOneWidget);
       expect(find.text('Papelera Vieja'), findsNothing);
 
       await tester.enterText(find.byType(TextField), '');
-      await tester.tap(find.text('Todos'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Inactivos').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'Estado', 'Inactivos');
       expect(find.text('Papelera Vieja'), findsOneWidget);
       expect(find.text('Riverside Supply Co.'), findsNothing);
     });
@@ -337,19 +292,10 @@ void main() {
       );
     });
 
-    testWidgets('Eventos: the status filter is on top (right), then the date filter, then "Buscar evento"', (
+    testWidgets('Eventos: the search and the filters button share a row above the list; the panel has Estado and the dates', (
       tester,
     ) async {
       await pump(tester, const EventsPage());
-      final status = tester.getCenter(find.text('Todos'));
-      final presets = tester.getCenter(find.text('Hoy'));
-      final search = tester.getCenter(find.text('Buscar evento'));
-      final firstEvent = tester.getCenter(find.text('Exposición de Libros'));
-      expect(status.dy, lessThan(presets.dy));
-      expect(status.dx, greaterThan(300));
-      expect(search.dy, greaterThan(status.dy));
-      expect(search.dy, lessThan(firstEvent.dy));
-
       await tester.enterText(find.widgetWithText(TextField, 'Buscar evento'), 'feria');
       await tester.pumpAndSettle();
       expect(find.text('Feria de Arte'), findsOneWidget);
@@ -358,7 +304,7 @@ void main() {
 
     Future<void> openLocations(WidgetTester tester) async {
       await pump(tester, const EventsPage());
-      await tester.tap(find.widgetWithText(Tab, 'Ubicaciones'));
+      await tester.tap(find.text('Ubicaciones'));
       await tester.pumpAndSettle();
     }
 
@@ -367,6 +313,7 @@ void main() {
     ) async {
       await openLocations(tester);
       expect(find.text('Buscar ubicación'), findsOneWidget);
+      await openFilterPanel(tester);
       expect(find.text('Todos los países'), findsOneWidget);
       expect(find.text('Todas las ciudades'), findsOneWidget);
       expect(find.text('La Paz, Bolivia'), findsOneWidget);
@@ -402,15 +349,12 @@ void main() {
     ) async {
       await openLocations(tester);
 
-      await tester.tap(find.text('Todos los países'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Perú').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'País', 'Perú');
       expect(find.text('Lima, Perú'), findsOneWidget);
       expect(find.text('La Paz, Bolivia'), findsNothing);
 
       // Las ciudades ofrecidas son solo las de Perú.
-      await tester.tap(find.text('Todas las ciudades'));
+      await tester.tap(find.byTooltip('Ciudad'));
       await tester.pumpAndSettle();
       expect(find.text('Lima'), findsWidgets);
       expect(find.text('La Paz'), findsNothing);
@@ -420,10 +364,7 @@ void main() {
       expect(find.text('Lima, Perú'), findsOneWidget);
 
       // Cambiar a Bolivia quita la ciudad elegida (ya no pertenece al país).
-      await tester.tap(find.text('Perú'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Bolivia').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'País', 'Bolivia');
       expect(find.text('Todas las ciudades'), findsOneWidget);
       expect(find.text('La Paz, Bolivia'), findsOneWidget);
       expect(find.text('Santa Cruz, Bolivia'), findsOneWidget);
@@ -448,47 +389,17 @@ void main() {
         ),
       );
       await pump(tester, const ProductsPage());
-      expect(find.text('Todos'), findsOneWidget);
       expect(find.text('Estuches'), findsOneWidget);
       expect(find.text('Libro viejo'), findsOneWidget);
 
-      await tester.tap(find.text('Todos'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Inactivos').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'Estado', 'Inactivos');
       expect(find.text('Libro viejo'), findsOneWidget);
       expect(find.text('Estuches'), findsNothing);
 
-      await tester.tap(find.text('Inactivos'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Activos').last);
-      await tester.pumpAndSettle();
+      await pickFilter(tester, 'Estado', 'Activos');
       expect(find.text('Estuches'), findsOneWidget);
       expect(find.text('Libro viejo'), findsNothing);
     });
 
-    testWidgets('Categorías: the status filter is on top and the search and the toggle share the row below, in both views', (
-      tester,
-    ) async {
-      await pump(tester, const CategoriesPage());
-      Map<String, Offset> controls() => {
-        'status': tester.getCenter(find.text('Todas')),
-        'search': tester.getCenter(find.byType(TextField)),
-        'list': tester.getCenter(find.byIcon(Icons.list)),
-        'grid': tester.getCenter(find.byIcon(Icons.grid_view_rounded)),
-      };
-      final inList = controls();
-      expect(inList['status']!.dy, lessThan(inList['search']!.dy));
-      expect(inList['status']!.dx, greaterThan(300));
-      expect(inList['search']!.dy, closeTo(inList['list']!.dy, 4));
-      expect(inList['search']!.dx, lessThan(inList['list']!.dx));
-
-      await tester.tap(find.byIcon(Icons.grid_view_rounded));
-      await tester.pumpAndSettle();
-      final inGrid = controls();
-      for (final key in inList.keys) {
-        expect(inGrid[key], inList[key], reason: key);
-      }
-    });
   });
 }

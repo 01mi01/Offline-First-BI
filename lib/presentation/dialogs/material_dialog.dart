@@ -162,7 +162,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
       final confirm = await confirmCancellation(
         context,
         title: '¿Desactivar material?',
-        message: 'El material "${_nameController.text.trim()}" no estará disponible para nuevas compras y productos.',
+        message: 'El material no estará disponible para nuevas compras y productos.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -187,6 +187,11 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     return FormSheet(
       title: isEditing ? 'Editar material' : 'Nuevo material',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: isEditing ? 'Guardar' : 'Crear',
+        onPrimary: _save,
+      ),
       children: [
         // Nombre
         LabeledField(
@@ -275,7 +280,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
 
         // Estado: solo al editar
         if (isEditing) ...[
-          const SizedBox(height: AppSpacing.s20),
+          const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Material activo',
             subtitle: _isActive
@@ -285,13 +290,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
             onChanged: _onToggleActive,
           ),
         ],
-        const SizedBox(height: AppSpacing.s24),
-
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: isEditing ? 'Guardar' : 'Crear',
-          onPrimary: _save,
-        ),
       ],
     );
   }

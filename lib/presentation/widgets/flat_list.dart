@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import 'record_list.dart' show imagePlaceholderColor;
 
 // Piezas del catálogo (baldosas sin sombra) y el botón flotante de "agregar".
 
@@ -24,7 +25,7 @@ class FlatTile extends StatelessWidget {
   });
 
   Widget _placeholder() => Container(
-    color: AppColors.surface,
+    color: imagePlaceholderColor,
     child: Center(
       child: Icon(icon, color: AppColors.cyanDark, size: 40),
     ),

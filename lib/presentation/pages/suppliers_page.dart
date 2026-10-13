@@ -15,6 +15,7 @@ import '../widgets/app_controls.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
+import '../widgets/empty_state.dart';
 
 // Página de Proveedores, con su propio módulo de permisos ("proveedores"),
 // independiente de Clientes.
@@ -78,19 +79,16 @@ class SuppliersListBody extends ConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : state.suppliers.isEmpty
                 ? Center(
-                    child: AppEmptyState(
+                    child: AppEmptyState.list(
+                      plural: 'proveedores',
                       icon: Icons.local_shipping_rounded,
-                      title: 'No se registraron proveedores',
                       actionLabel: 'Nuevo proveedor',
                       onAction: () => _showDialog(context, null),
                     ),
                   )
                 : visible.isEmpty
                 ? const SingleChildScrollView(
-                    child: AppEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'Sin resultados',
-                    ),
+                    child: AppEmptyState.noMatch(),
                   )
                 : AppGroupListView(
                     itemCount: visible.length,

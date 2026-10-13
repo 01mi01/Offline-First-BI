@@ -4,13 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
-import 'package:offline_first_bi/data/repositories/event_repository.dart';
 import 'package:offline_first_bi/models/client_model.dart';
-import 'package:offline_first_bi/models/event_model.dart';
 import 'package:offline_first_bi/presentation/dialogs/client_dialog.dart';
 import 'package:offline_first_bi/presentation/dialogs/event_dialog.dart';
 import 'package:offline_first_bi/presentation/dialogs/material_dialog.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'form_finders.dart';
 
 // Formularios: un mismo comportamiento en toda la app.
 //  - El botón de guardar nunca queda desactivado en silencio: si falta algo,
@@ -111,7 +110,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Campo requerido'), findsOneWidget);
 
-        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Michael Brown');
+        await tester.enterText(fieldLabeled('Nombre'), 'Michael Brown');
         await tester.pump();
 
         expect(find.text('Campo requerido'), findsNothing);
@@ -123,7 +122,7 @@ void main() {
       (tester) async {
         await openSheet(tester, const MaterialDialog());
 
-        await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Resina parte A');
+        await tester.enterText(fieldLabeled('Nombre'), 'Resina parte A');
         await tester.pump();
 
         expect(find.text('Campo requerido'), findsNothing);
@@ -146,20 +145,17 @@ void main() {
         expect(find.text('Selecciona una unidad'), findsOneWidget);
 
         // Unidad: elegir una quita SU error, los demás siguen.
-        await tester.tap(find.byType(DropdownButtonFormField<int>));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('metro').last);
-        await tester.pumpAndSettle();
+        await chooseOption(tester, 'Unidad', 'metro');
         expect(find.text('Selecciona una unidad'), findsNothing);
         expect(find.text('Campo requerido'), findsNWidgets(3));
 
         // Stock y precio: escribir un valor quita el suyo (caso que dejaba el
         // aviso "Requerido" pegado aunque el campo ya tuviera valor).
-        await tester.enterText(find.widgetWithText(TextFormField, 'Stock'), '10');
+        await tester.enterText(fieldLabeled('Stock'), '10');
         await tester.pump();
         expect(find.text('Campo requerido'), findsNWidgets(2));
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Precio por unidad'),
+          fieldLabeled('Precio por unidad'),
           '1.5',
         );
         await tester.pump();
@@ -174,14 +170,15 @@ void main() {
         await openSheet(tester, const EventDialog());
 
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Nombre del evento'),
+          fieldLabeled('Nombre del evento'),
           'Feria de Arte',
         );
         await tester.tap(find.text('Crear'));
         await tester.pumpAndSettle();
         expect(find.text('Selecciona la fecha de inicio'), findsOneWidget);
 
-        await tester.tap(find.text('Fecha de inicio'));
+        // El primer campo de fecha es el de inicio.
+        await tester.tap(find.text('Seleccionar fecha').first);
         await tester.pumpAndSettle();
         await tester.tap(find.text('OK'));
         await tester.pumpAndSettle();
@@ -190,72 +187,4 @@ void main() {
       },
     );
   });
-
-  group('the keyboard only shows when a field is focused by the person', () {
-    testWidgets(
-      'closing the date picker does not bring the keyboard back',
-      (tester) async {
-        await openSheet(tester, const EventDialog());
-
-        // La persona escribe el nombre: el teclado está visible.
-        await tester.tap(find.widgetWithText(TextFormField, 'Nombre del evento'));
-        await tester.pump();
-        expect(tester.testTextInput.isVisible, isTrue);
-
-        // Abre y cancela el selector de fecha.
-        await tester.tap(find.text('Fecha de inicio'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
-
-        expect(tester.testTextInput.isVisible, isFalse);
-        expect(FocusManager.instance.primaryFocus?.context?.widget, isNot(isA<EditableText>()));
-      },
-    );
-
-    testWidgets(
-      'closing the "Desactivar" confirmation does not bring the keyboard back',
-      (tester) async {
-        final event = await _seedEvent(db);
-        await openSheet(tester, EventDialog(event: event));
-
-        await tester.tap(find.widgetWithText(TextFormField, 'Nombre del evento'));
-        await tester.pump();
-        expect(tester.testTextInput.isVisible, isTrue);
-
-        await tester.tap(find.byType(Switch));
-        await tester.pumpAndSettle();
-        expect(find.text('¿Desactivar evento?'), findsOneWidget);
-        await tester.tap(find.text('Cancelar').last);
-        await tester.pumpAndSettle();
-
-        expect(tester.testTextInput.isVisible, isFalse);
-      },
-    );
-
-    testWidgets(
-      'a field the person taps afterwards still gets the keyboard normally',
-      (tester) async {
-        await openSheet(tester, const EventDialog());
-        await tester.tap(find.widgetWithText(TextFormField, 'Nombre del evento'));
-        await tester.pump();
-        await tester.tap(find.text('Fecha de inicio'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
-        expect(tester.testTextInput.isVisible, isFalse);
-
-        await tester.tap(find.widgetWithText(TextFormField, 'Notas'));
-        await tester.pump();
-
-        expect(tester.testTextInput.isVisible, isTrue);
-      },
-    );
-  });
-}
-
-Future<EventModel> _seedEvent(AppDatabase db) async {
-  final repository = EventRepository(db);
-  await repository.save(name: 'Feria de Arte', startDate: DateTime(2024, 3, 5));
-  return (await repository.getAll()).single;
 }

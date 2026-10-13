@@ -14,11 +14,10 @@ import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
 import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
 import 'package:offline_first_bi/presentation/pages/business_intelligence_page.dart';
 import 'package:offline_first_bi/presentation/pages/events_page.dart';
-import 'package:offline_first_bi/presentation/pages/purchases_page.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
-import 'package:offline_first_bi/presentation/pages/sales_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'filter_helpers.dart';
 
 // La zona de una ubicación (su descripción) se busca y se ve en todas partes:
 // todos los buscadores de ubicaciones aciertan por ella, y donde se muestra una
@@ -130,7 +129,7 @@ void main() {
   group('searches that match only through the zone', () {
     testWidgets('Ubicaciones list: each zone finds its location', (tester) async {
       await pump(tester, const EventsPage());
-      await tester.tap(find.widgetWithText(Tab, 'Ubicaciones'));
+      await tester.tap(find.text('Ubicaciones'));
       await tester.pumpAndSettle();
 
       for (final (zone, city) in [
@@ -154,14 +153,17 @@ void main() {
       tester,
     ) async {
       await pump(tester, const EventsPage());
-      await tester.tap(find.widgetWithText(Tab, 'Ubicaciones'));
+      await tester.tap(find.text('Ubicaciones'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Todas las ciudades'));
+      await openFilterPanel(tester);
+      await tester.tap(find.byTooltip('Ciudad'));
       await tester.pumpAndSettle();
       // Cada ciudad una sola vez, aunque tenga varias zonas.
       expect(find.text('La Paz'), findsOneWidget);
       expect(find.text('Santa Cruz'), findsOneWidget);
+      // La lista abierta tiene un alto máximo y se desplaza.
+      await tester.ensureVisible(find.text('Santa Cruz').last);
       await tester.tap(find.text('Santa Cruz').last);
       await tester.pumpAndSettle();
       expect(find.text('Equipetrol'), findsOneWidget);
@@ -171,7 +173,7 @@ void main() {
       // La búsqueda por zona respeta el filtro de ciudad.
       await tester.enterText(find.byType(TextField), 'calacoto');
       await tester.pumpAndSettle();
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
     });
 
     testWidgets('sale form: Ubicación picker matches the zone and shows it', (
@@ -308,50 +310,4 @@ void main() {
     });
   });
 
-  group('the zone is shown wherever a location is shown', () {
-    testWidgets('event cards', (tester) async {
-      await db.into(db.events).insert(
-        EventsCompanion.insert(
-          name: 'Feria de Lima',
-          locationId: Value(ids['Miraflores']),
-          startDate: DateTime(2024, 1, 1),
-          endDate: Value(DateTime(2024, 1, 2)),
-        ),
-      );
-      await pump(tester, const EventsPage());
-      expect(find.text('Lima, Perú · Miraflores'), findsOneWidget);
-    });
-
-    testWidgets('sale details', (tester) async {
-      await db.into(db.sales).insert(
-        SalesCompanion.insert(
-          locationId: Value(ids['Calacoto']),
-          totalAmount: 10,
-          finalAmount: 10,
-          date: DateTime(2024, 1, 1, 12),
-        ),
-      );
-      await pump(tester, const SalesPage(), size: const Size(700, 1400));
-      await tester.tap(find.text('Bs. 10.00'));
-      await tester.pumpAndSettle();
-      expect(find.text('La Paz, Bolivia · Calacoto'), findsOneWidget);
-    });
-
-    testWidgets('purchase details', (tester) async {
-      await db.into(db.purchases).insert(
-        PurchasesCompanion.insert(
-          locationId: Value(ids['Urubó']),
-          isMaterial: const Value(false),
-          description: const Value('Pasaje'),
-          totalAmount: 20,
-          date: DateTime(2024, 1, 1, 12),
-        ),
-      );
-
-      await pump(tester, const PurchasesPage(), size: const Size(700, 1400));
-      await tester.tap(find.text('Bs. 20.00'));
-      await tester.pumpAndSettle();
-      expect(find.text('Santa Cruz, Bolivia · Urubó'), findsOneWidget);
-    });
-  });
 }

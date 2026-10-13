@@ -102,7 +102,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
         context,
         title: '¿Desactivar evento?',
         message:
-            'El evento "${_nameController.text.trim()}" no estará disponible para nuevos registros.',
+            'El evento no estará disponible para nuevos registros.',
         confirmLabel: 'Desactivar',
         dismissLabel: 'Cancelar',
       );
@@ -172,6 +172,11 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     return FormSheet(
       title: isEditing ? 'Editar evento' : 'Nuevo evento',
       formKey: _formKey,
+      actions: FormActions(
+        onSecondary: () => Navigator.pop(context),
+        primaryLabel: isEditing ? 'Guardar' : 'Crear',
+        onPrimary: _save,
+      ),
       children: [
         // Nombre del evento
         LabeledField(
@@ -204,11 +209,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
               ),
           ],
           onChanged: (val) => setState(() => _selectedLocationId = val),
-          trailing: AppFieldAction(
-            icon: Icons.add_location_rounded,
-            tooltip: 'Nueva ubicación',
-            onPressed: _showAddLocationSheet,
-          ),
+          labelAction: FormAddButton(onPressed: _showAddLocationSheet),
         ),
         const SizedBox(height: AppSpacing.s16),
 
@@ -257,13 +258,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
         ],
 
         if (_saveError != null) FormErrorText(_saveError!),
-        const SizedBox(height: AppSpacing.s24),
-
-        FormActions(
-          onSecondary: () => Navigator.pop(context),
-          primaryLabel: isEditing ? 'Guardar' : 'Crear',
-          onPrimary: _save,
-        ),
       ],
     );
   }

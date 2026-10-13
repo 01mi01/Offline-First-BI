@@ -217,9 +217,9 @@ void main() {
       );
 
       expect(find.textContaining('Desde: 01/01/2024'), findsOneWidget);
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       expect(lastEmitted, const ReportFilters());
@@ -238,9 +238,9 @@ void main() {
       // Se resuelve el nombre real de la categoría vía el provider real
       // (categoryProvider respaldado por la base sembrada), no un texto fijo.
       expect(find.text('Bolsas'), findsOneWidget);
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       expect(lastEmitted, const ReportFilters());
@@ -262,9 +262,9 @@ void main() {
       );
 
       expect(find.text('Lino & Co.'), findsOneWidget);
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
       expect(lastEmitted, const ReportFilters());

@@ -13,6 +13,7 @@ import 'package:offline_first_bi/presentation/widgets/transaction_date_field.dar
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
+import 'form_finders.dart';
 
 // La fecha de una venta, compra o evento al crearlo NO tiene límite: se puede
 // registrar algo pasado (se anota tarde) o futuro (se deja preparado). Solo los
@@ -103,12 +104,12 @@ void main() {
     Future<void> sellWith(WidgetTester tester, DateTime? date) async {
       await openSheet(tester, const SaleDialog());
       await searchProducts(tester, 'Libro');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_circle_rounded));
       await tester.pumpAndSettle();
       if (date != null) {
-        await tapText(tester, 'Fecha: ${formatDate(today)}');
+        await tapText(tester, formatDate(today));
         await _typeDate(tester, date);
-        expect(find.text('Fecha: ${formatDate(date)}'), findsOneWidget);
+        expect(find.text(formatDate(date)), findsOneWidget);
       }
       await tapText(tester, 'Registrar venta');
     }
@@ -117,9 +118,9 @@ void main() {
       tester,
     ) async {
       await openSheet(tester, const SaleDialog());
-      expect(find.text('Fecha: ${formatDate(today)}'), findsOneWidget);
+      expect(find.text(formatDate(today)), findsOneWidget);
       await searchProducts(tester, 'Libro');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_circle_rounded));
       await tester.pumpAndSettle();
       await tapText(tester, 'Registrar venta');
       final sale = await db.select(db.sales).getSingle();
@@ -145,15 +146,15 @@ void main() {
       await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Descripción del gasto'),
+        fieldLabeled('Descripción del gasto'),
         'Pasaje de bus',
       );
-      await tester.enterText(find.widgetWithText(TextFormField, 'Total (Bs.)'), '15');
+      await tester.enterText(fieldLabeled('Total (Bs.)'), '15');
       await tester.pumpAndSettle();
       if (date != null) {
-        await tapText(tester, 'Fecha: ${formatDate(today)}');
+        await tapText(tester, formatDate(today));
         await _typeDate(tester, date);
-        expect(find.text('Fecha: ${formatDate(date)}'), findsOneWidget);
+        expect(find.text(formatDate(date)), findsOneWidget);
       }
       await tapText(tester, 'Registrar compra');
     }
@@ -181,10 +182,13 @@ void main() {
     Future<void> createWith(WidgetTester tester, DateTime date) async {
       await openSheet(tester, const EventDialog());
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Nombre del evento'),
+        fieldLabeled('Nombre del evento'),
         'Feria de Arte',
       );
-      await tapText(tester, 'Fecha de inicio');
+      // El primer campo de fecha es el de inicio.
+      await tester.ensureVisible(find.text('Seleccionar fecha').first);
+      await tester.tap(find.text('Seleccionar fecha').first);
+      await tester.pumpAndSettle();
       await _typeDate(tester, date);
       await tapText(tester, 'Crear');
     }

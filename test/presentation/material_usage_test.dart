@@ -33,7 +33,7 @@ Future<void> _openUsageTab(WidgetTester tester, AppDatabase db) async {
 
   // Elige el producto y abre la hoja "Registrar el uso de un material".
   await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
-  await tester.tap(find.byIcon(Icons.add));
+  await tester.tap(find.byIcon(Icons.add_rounded));
   await tester.pumpAndSettle();
 }
 
@@ -155,7 +155,9 @@ void main() {
       expect(find.textContaining('/ unidad'), findsOneWidget);
 
       // Edita el registro: mismo rechazo de decimales.
-      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.tap(find.textContaining('3 unidades'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar'));
       await tester.pumpAndSettle();
       final editField = find.descendant(
         of: find.byType(WholeNumberQuantityField),
@@ -172,31 +174,4 @@ void main() {
     },
   );
 
-  testWidgets('material list cards show the unit next to stock and price', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(412, 915);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
-        child: MaterialApp(
-          theme: lightTheme,
-          home: const Scaffold(body: MaterialsListTab()),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Stock: 5 contenedores'), findsOneWidget);
-    expect(find.text('Stock: 30 unidades'), findsOneWidget);
-    expect(find.text('Stock: 10.00 metros'), findsOneWidget);
-    expect(find.text('Bs. 2.00 / contenedor'), findsOneWidget);
-    expect(find.text('Bs. 2.00 / metro'), findsOneWidget);
-    // Ya no se muestra el genérico "/u".
-    expect(find.textContaining('/u'), findsNothing);
-  });
 }

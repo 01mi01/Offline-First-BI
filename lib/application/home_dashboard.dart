@@ -73,9 +73,9 @@ enum HomePeriod {
   year('Este año', 'del año', 'este año');
 
   final String label;
-  // "Ganancia de hoy", "Ventas de la semana"...
+  // "Ganancias de hoy", "Ventas de la semana"...
   final String ofLabel;
-  // "Aún no hay ventas hoy", "... esta semana".
+  // "No se registraron ventas hoy", "... esta semana".
   final String duringLabel;
   const HomePeriod(this.label, this.ofLabel, this.duringLabel);
 
@@ -124,6 +124,14 @@ enum HomePeriod {
         );
     }
   }
+
+  // "No se registraron movimientos ayer para comparar", "... la semana anterior para comparar".
+  String get previousDuringLabel => switch (this) {
+    HomePeriod.today => 'ayer',
+    HomePeriod.week => 'la semana anterior',
+    HomePeriod.month => 'el mes anterior',
+    HomePeriod.year => 'el año anterior',
+  };
 
   // "Hoy frente a ayer", "Este mes frente al anterior"...
   String get comparisonLabel => switch (this) {
@@ -283,7 +291,7 @@ class HomeChange {
   // "+12.50%", "-8.00%", "0.00%"; siempre con signo cuando hay cambio.
   String get label {
     final value = pct;
-    if (value == null) return 'Sin comparación';
+    if (value == null) return 'Sin datos previos';
     final text = fixed2(value.abs());
     return switch (trend) {
       HomeTrend.up => '+$text%',

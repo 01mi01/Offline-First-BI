@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 // Redondeo de la app: todo importe (Bs.), cantidad de unidades de medida
 // decimales y cualquier otro número calculado (porcentajes, promedios,
 // indicadores) lleva DOS decimales, redondeados "half up" (0.125 -> 0.13).
@@ -9,9 +11,11 @@
 
 // Tolerancia para que un valor como 1.005 (que en binario es 1.00499999...)
 // redondee a 1.01 como se espera: el ruido de coma flotante es del orden de
-// 1e-16 relativo, muy por debajo de este margen.
+// 1e-16 relativo, muy por debajo de este margen. El margen relativo es solo de
+// 1e-12 para que un importe muy grande (cientos de millones) no gane un
+// céntimo de más.
 double _nudge(double scaled) =>
-    scaled + (scaled < 0 ? -1 : 1) * 1e-9 * (scaled.abs() < 1 ? 1 : scaled.abs());
+    scaled + (scaled < 0 ? -1 : 1) * math.max(1e-9, 1e-12 * scaled.abs());
 
 // Redondea a dos decimales, "half up" (lejos de cero en negativos, para que
 // el resultado sea simétrico). NaN e infinito se devuelven tal cual.

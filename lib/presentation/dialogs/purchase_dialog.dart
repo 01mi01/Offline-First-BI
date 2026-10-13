@@ -35,6 +35,7 @@ import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/app_buttons.dart';
+import '../widgets/empty_state.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
   final PurchaseModel? purchase;
@@ -284,9 +285,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       title: '¿Cancelar compra?',
       message: widget.purchase!.isMaterial
           ? 'Se restará del stock de los materiales lo comprado. La compra '
-                'seguirá en la lista, marcada como cancelada, y ya no se '
+                'seguirá en la lista, marcada como cancelada y ya no se '
                 'podrá editar.'
-          : 'La compra seguirá en la lista, marcada como cancelada, y ya no '
+          : 'La compra seguirá en la lista, marcada como cancelada y ya no '
                 'se podrá editar.',
       confirmLabel: 'Cancelar compra',
     );
@@ -327,7 +328,6 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
     return AppSheetScaffold(
       title: isEditing ? 'Editar compra' : 'Nueva compra',
-      leadingLabel: 'Cancelar',
       child: Form(
         key: _formKey,
         child: Column(
@@ -378,11 +378,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         _selectedSupplierId = val;
                         _error = null;
                       }),
-                      trailing: AppFieldAction(
-                        icon: Icons.add_business_rounded,
-                        tooltip: 'Nuevo proveedor',
-                        onPressed: _showAddSupplierSheet,
-                      ),
+                      labelAction: FormAddButton(onPressed: _showAddSupplierSheet),
                     ),
                     const SizedBox(height: AppSpacing.s16),
                     SearchablePickerField<int>(
@@ -425,22 +421,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     ),
                     const SizedBox(height: AppSpacing.s24),
                     if (_isMaterial) ...[
-                      Row(
-                        children: [
-                          const Expanded(child: FormSectionLabel('Materiales')),
-                          TextButton.icon(
-                            onPressed: _showAddMaterialItem,
-                            icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text('Agregar'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.cyanDark,
-                              minimumSize: const Size(
-                                AppMetrics.minTap,
-                                AppMetrics.minTap,
-                              ),
-                            ),
-                          ),
-                        ],
+                      FormSectionLabel(
+                        'Materiales',
+                        action: FormAddButton(onPressed: _showAddMaterialItem),
                       ),
                       Container(
                         decoration: BoxDecoration(
@@ -450,16 +433,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           ),
                         ),
                         child: _materialItems.isEmpty
-                            ? ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  minHeight: AppMetrics.rowMinHeight,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Sin materiales agregados',
-                                    style: AppText.rowSubtitle(context),
-                                  ),
-                                ),
+                            ? AppEmptyState.list(
+                                plural: 'materiales',
+                                adjective: 'agregados',
+                                icon: Icons.palette_rounded,
+                                compact: true,
                               )
                             : Column(
                                 children: [
@@ -553,40 +531,21 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s24),
-                    if (_error != null) ...[
-                      FormErrorText(_error!),
-                      const SizedBox(height: AppSpacing.s16),
-                    ],
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _save,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: AppSpacing.s20,
-                              width: AppSpacing.s20,
-                              child: CircularProgressIndicator(
-                                color: AppColors.onDark,
-                                strokeWidth: 2,
-                              ),
+                    if (_error != null) FormErrorText(_error!),
+                    const SizedBox(height: AppSpacing.s24),
+                    FormActions(
+                      onSecondary: () => Navigator.pop(context),
+                      primaryLabel: isEditing ? 'Guardar' : 'Registrar compra',
+                      onPrimary: _save,
+                      loading: _isLoading,
+                      destructive: isEditing && !widget.purchase!.isCanceled
+                          ? AppActionButton(
+                              label: 'Cancelar compra',
+                              kind: AppButtonKind.destructive,
+                              onPressed: _isLoading ? null : _cancelPurchase,
                             )
-                          : Text(
-                              isEditing ? 'Guardar' : 'Registrar compra',
-                              maxLines: 1,
-                              style: Theme.of(context).textTheme.headlineLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.onDark,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
+                          : null,
                     ),
-                    if (isEditing && !widget.purchase!.isCanceled) ...[
-                      const SizedBox(height: AppButtons.stackGap),
-                      AppActionButton(
-                        label: 'Cancelar compra',
-                        kind: AppButtonKind.destructive,
-                        onPressed: _isLoading ? null : _cancelPurchase,
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -818,18 +777,9 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
     return AppSheetScaffold(
       title: 'Agregar material',
-      leadingLabel: 'Cancelar',
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.s16,
-            AppSpacing.s8,
-            AppSpacing.s16,
-            AppSpacing.s32 + MediaQuery.paddingOf(context).bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: FormScroll(
             children: [
               SearchablePickerField<int>(
                 label: 'Material',
@@ -847,9 +797,8 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                     _resetFor(mat?.pricePerUnit);
                   });
                 },
-                trailing: AppFieldAction(
-                  icon: Icons.add_rounded,
-                  tooltip: 'Crear nuevo material',
+                labelAction: FormAddButton(
+                  label: 'Nuevo material',
                   onPressed: _showCreateMaterialSheet,
                 ),
               ),
@@ -914,7 +863,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                   AppSpacing.s4,
                   AppSpacing.s8,
                   AppSpacing.s4,
-                  AppSpacing.s24,
+                  0,
                 ),
                 child: Text(
                   _isMedida(_selectedMaterialId)
@@ -923,18 +872,13 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                   style: AppText.footnote(context),
                 ),
               ),
-              ElevatedButton(
-                onPressed: _add,
-                child: Text(
-                  'Agregar',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.onDark,
-                  ),
-                ),
+              const SizedBox(height: AppSpacing.s24),
+              FormActions(
+                onSecondary: () => Navigator.pop(context),
+                primaryLabel: 'Agregar',
+                onPrimary: _add,
               ),
             ],
-          ),
         ),
       ),
     );

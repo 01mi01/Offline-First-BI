@@ -28,6 +28,7 @@ import '../widgets/filter_panel.dart';
 import '../widgets/catalog_filter_bar.dart' show RecordTimeSwitcher;
 import '../../application/record_search.dart';
 import '../widgets/app_controls.dart' show AppSearchBar;
+import '../widgets/empty_state.dart';
 
 class PurchasesPage extends StatelessWidget {
   const PurchasesPage({super.key});
@@ -98,9 +99,9 @@ class PurchasesListBody extends ConsumerWidget {
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: AppEmptyState(
+              child: AppEmptyState.list(
+                plural: 'compras',
                 icon: Icons.shopping_bag_rounded,
-                title: 'No se registraron compras',
                 actionLabel: 'Nueva compra',
                 onAction: () => showPurchaseForm(context),
               ),
@@ -131,10 +132,7 @@ class PurchasesListBody extends ConsumerWidget {
           ),
           if (visible.isEmpty)
             const SliverToBoxAdapter(
-              child: AppEmptyState(
-                icon: Icons.search_off_rounded,
-                title: 'Sin resultados',
-              ),
+              child: AppEmptyState.noMatch(),
             )
           else
             AppSliverGroup(
@@ -206,13 +204,19 @@ class _PurchaseRow extends StatelessWidget {
       title: supplierName,
       titleColor: canceled ? AppColors.textSecondary : null,
       details: [
-        RecordLine(
-          '${formatDateTime(purchase.date)}  ${purchase.isMaterial ? 'Material' : 'Gasto'}',
-        ),
+        RecordLine(formatDateTime(purchase.date)),
         if (purchase.description != null && purchase.description!.isNotEmpty)
           RecordLine(purchase.description!, maxLines: 1),
       ],
-      pill: canceled ? const StatusBadge.canceled() : null,
+      // El tipo de la compra y, si está cancelada, su estado.
+      pill: Wrap(
+        spacing: AppSpacing.s6,
+        runSpacing: AppSpacing.s4,
+        children: [
+          StatusBadge.purchaseType(isMaterial: purchase.isMaterial),
+          if (canceled) const StatusBadge.canceled(),
+        ],
+      ),
       trailing: RecordValue(
         'Bs. ${fixed2(purchase.totalAmount)}',
         canceled: canceled,
@@ -299,9 +303,9 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
               AppValueRow(label: 'Fecha', value: formatDateTime(purchase.date)),
               AppValueRow(
                 label: 'Tipo',
-                value: purchase.isMaterial
-                    ? 'Compra de materiales'
-                    : 'Gasto general',
+                valueWidget: StatusBadge.purchaseType(
+                  isMaterial: purchase.isMaterial,
+                ),
               ),
               if (purchase.locationId != null)
                 AppValueRow(label: 'Ubicación', value: _locationText(location)),

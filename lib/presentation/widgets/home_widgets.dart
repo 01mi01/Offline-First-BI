@@ -6,6 +6,7 @@ import 'bi_charts.dart' show formatMoney;
 import 'home_profit_chart.dart';
 import 'screen_header.dart';
 import 'app_list_row.dart';
+import 'empty_state.dart';
 
 const Duration _entranceDuration = Duration(milliseconds: 300);
 
@@ -155,7 +156,6 @@ class HomeHeroCard extends StatefulWidget {
   final double sales;
   final double expenses;
   final HomeProfitSeries? series;
-  final String emptyMessage;
 
   const HomeHeroCard({
     super.key,
@@ -166,7 +166,6 @@ class HomeHeroCard extends StatefulWidget {
     required this.sales,
     required this.expenses,
     this.series,
-    this.emptyMessage = '',
   });
 
   @override
@@ -279,7 +278,11 @@ class _HomeHeroCardState extends State<HomeHeroCard> {
                       child: IgnorePointer(
                         child: Align(
                           alignment: const Alignment(0, -0.5),
-                          child: HomeEmptyMessage(widget.emptyMessage),
+                          child: AppEmptyState.noData(
+                            what: 'movimientos',
+                            period: widget.period.duringLabel,
+                            compact: true,
+                          ),
                         ),
                       ),
                     ),
@@ -330,7 +333,7 @@ class HomeChangePill extends StatelessWidget {
 
     return Semantics(
       label: change.trend == HomeTrend.none
-          ? 'Sin comparación con el periodo anterior'
+          ? 'Sin datos del periodo anterior para comparar'
           : 'Cambio frente al periodo anterior: ${change.label}',
       excludeSemantics: true,
       child: Container(
@@ -614,24 +617,71 @@ class HomeChartCard extends StatelessWidget {
   }
 }
 
-class HomeEmptyMessage extends StatelessWidget {
-  final String message;
+// Evolución de un periodo con un solo intervalo (p. ej. el lunes en "Esta
+// semana"): una línea necesita dos puntos, así que se muestran las cifras del
+// intervalo con los colores del gráfico.
+class HomeSinglePointSummary extends StatelessWidget {
+  final String dateLabel;
+  final String incomeText;
+  final String expensesText;
 
-  const HomeEmptyMessage(this.message, {super.key});
+  const HomeSinglePointSummary({
+    super.key,
+    required this.dateLabel,
+    required this.incomeText,
+    required this.expensesText,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-        ),
+    final textTheme = Theme.of(context).textTheme;
+    Widget item(String label, String value, Color color) => Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: AppSpacing.s10,
+                height: AppSpacing.s10,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: AppSpacing.s8),
+              Text(
+                label,
+                style: textTheme.labelMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s4),
+          Text(
+            value,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
+    );
+    return Column(
+      key: const ValueKey('home-single-point'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            item('Ingresos', incomeText, AppColors.chartColor1),
+            item('Gastos', expensesText, AppColors.chartColor2),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.s12),
+        Text(
+          dateLabel,
+          style: textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+      ],
     );
   }
 }
@@ -705,7 +755,10 @@ class HomeActivityCard extends StatelessWidget {
       key: const ValueKey('home-activity'),
       children: [
         if (activities.isEmpty)
-          const HomeEmptyMessage('Aún no hay movimientos')
+          AppEmptyState.list(
+            plural: 'movimientos',
+            icon: Icons.history_rounded,
+          )
         else
           for (final activity in activities) _activityRow(context, activity),
       ],

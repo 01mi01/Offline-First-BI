@@ -13,7 +13,6 @@ class AppColors {
   static const navy = Color(0xFF112444);
   static const lime = Color(0xFFBEE355);
   static const blue = Color(0xFF2C6E9B);
-  static const blueSoft = Color(0xFFE6EEF3);
 
   // Fondos
   static const background = Color(0xFFF3F2F7);
@@ -50,6 +49,8 @@ class AppColors {
   static const success = Color(0xFF8FBF2A);
   static const successDark = Color(0xFF4F720C);
   static const successSoft = Color(0xFFEEF6D6);
+  // Fondo suave del azul acero (tipo "Gasto" de una compra).
+  static const blueSoft = Color(0xFFE6EEF3);
 
   // Paleta de los gráficos de Business Intelligence.
   static const chartColor1 = Color(0xFF05959C);
@@ -115,10 +116,6 @@ class AppSpacing {
 }
 
 class AppShadows {
-  static const thumb = [
-    BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: Offset(0, 1)),
-  ];
-
   static const card = [
     BoxShadow(color: AppColors.shadow, blurRadius: 32, offset: Offset(0, 12)),
   ];
@@ -167,6 +164,8 @@ class AppMetrics {
   static const double groupRadius = 14;
   // Radio estándar de las hojas inferiores.
   static const double sheetRadius = 28;
+  // Espacio libre entre la barra de estado y lo más alto que llega una hoja.
+  static const double sheetTopGap = 24;
   static const double controlRadius = groupRadius;
   static const double thumbRadius = controlRadius - AppSpacing.s2;
   static const double rowMinHeight = 52;
@@ -184,8 +183,11 @@ class AppMetrics {
   static const double rowTitleSize = 17;
   static const double rowSubtitleSize = 15;
   static const double headerSize = 13;
+  // Un solo tamaño para las etiquetas y el texto de los formularios (y de los
+  // detalles, que usan rowTitleSize).
+  static const double formLabelSize = 14;
+  static const double formTextSize = 17;
   static const double bigNumberSize = 40;
-  static const double navBarHeight = 44;
   static const double segmentedHeight = 40;
   static const double controlHeight = 48;
   static const double controlTextSize = 15;
@@ -201,10 +203,6 @@ class AppFlat {
   static const double thumbSize = 56;
   static const double thumbRadius = 16;
   static const double tileRadius = 20;
-  static const EdgeInsets rowPadding = EdgeInsets.symmetric(
-    horizontal: AppSpacing.s16,
-    vertical: AppSpacing.s12,
-  );
   static const double minTap = 48;
   static const EdgeInsets listWithFab = EdgeInsets.only(
     bottom: AppSpacing.s16 + 56 + AppSpacing.s16,

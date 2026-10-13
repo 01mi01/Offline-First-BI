@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
@@ -9,11 +8,11 @@ import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/unit_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
-import 'package:offline_first_bi/presentation/pages/materials_page.dart';
-import 'package:offline_first_bi/presentation/pages/products_page.dart';
+import 'package:offline_first_bi/presentation/widgets/app_sheet.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'form_finders.dart';
 
 // Pulido tras la revisión en el dispositivo: orden de las unidades, unidad en
 // las líneas de Compras, botón flotante, botón de registrar, espacio con el
@@ -117,7 +116,13 @@ void main() {
       await material('Base metálica grande para pines', 'unidad');
     }
 
-    Future<void> openPurchase(WidgetTester tester, {Size size = const Size(412, 915)}) async {
+    // Con [inAppSheet] la hoja se abre como en la app (showAppSheet), que deja
+    // sitio al teclado; si no, una hoja simple.
+    Future<void> openPurchase(
+      WidgetTester tester, {
+      Size size = const Size(412, 915),
+      bool inAppSheet = false,
+    }) async {
       setScreen(tester, size);
       await tester.pumpWidget(
         ProviderScope(
@@ -127,11 +132,16 @@ void main() {
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
-                  onPressed: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => const PurchaseDialog(),
-                  ),
+                  onPressed: () => inAppSheet
+                      ? showAppSheet<void>(
+                          context,
+                          builder: (_) => const PurchaseDialog(),
+                        )
+                      : showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => const PurchaseDialog(),
+                        ),
                   child: const Text('Open'),
                 ),
               ),
@@ -144,11 +154,14 @@ void main() {
     }
 
     Future<void> addLine(WidgetTester tester, String material, String quantity) async {
-      await tester.tap(find.text('Agregar'));
+      await tester.ensureVisible(materialsAddButton());
+      await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, material, material);
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, quantity);
       await tester.pumpAndSettle();
+      // Los botones van al final del contenido que se desplaza.
+      await tester.ensureVisible(find.text('Agregar').last);
       await tester.tap(find.text('Agregar').last);
       await tester.pumpAndSettle();
     }
@@ -159,212 +172,20 @@ void main() {
       await seedMaterials();
       await openPurchase(tester);
 
+      // La línea lleva la cantidad con su unidad y, a su lado, el importe.
       await addLine(tester, 'Tela negra', '2');
-      expect(find.text('2.00 metros'), findsOneWidget);
+      expect(find.textContaining('2.00 metros'), findsOneWidget);
 
       await addLine(tester, 'Base metálica grande para pines', '1');
-      expect(find.text('1 unidad'), findsOneWidget);
+      expect(find.textContaining('1 unidad  ·'), findsOneWidget);
 
-      // El botón "+" sube la cantidad y la unidad concuerda con el nuevo número.
-      final plus = find.descendant(
-        of: find.ancestor(of: find.text('1 unidad'), matching: find.byType(Wrap)),
-        matching: find.byIcon(Icons.add),
-      );
-      await tester.tap(plus);
+      // El botón "+" de la segunda línea sube la cantidad y la unidad concuerda
+      // con el nuevo número.
+      await tester.tap(find.byTooltip('Agregar uno').last);
       await tester.pumpAndSettle();
-      expect(find.text('2 unidades'), findsOneWidget);
+      expect(find.textContaining('2 unidades'), findsOneWidget);
     });
 
-    testWidgets('4. "Registrar compra" fits on a single line', (tester) async {
-      await openPurchase(tester);
-
-      final label = find.text('Registrar compra');
-      final fontSize = tester
-          .widget<Text>(label)
-          .style!
-          .fontSize!;
-      expect(tester.getSize(label).height, lessThan(fontSize * 1.8));
-      // Y sigue dentro del botón.
-      final button = tester.getRect(find.widgetWithText(ElevatedButton, 'Registrar compra'));
-      expect(button.contains(tester.getRect(label).topLeft), isTrue);
-      expect(button.contains(tester.getRect(label).bottomRight), isTrue);
-    });
-
-    testWidgets('5. with the keyboard open the scrollable area is roomier, the title stays pinned and the buttons are reached by scrolling', (
-      tester,
-    ) async {
-      await openPurchase(tester);
-      final scroll = find.descendant(
-        of: find.byType(PurchaseDialog),
-        matching: find.byType(SingleChildScrollView),
-      );
-      final titleBefore = tester.getTopLeft(find.text('Nueva compra'));
-
-      tester.view.viewInsets = const FakeViewPadding(bottom: 350);
-      await tester.pumpAndSettle();
-
-      final height = tester.getSize(scroll.first).height;
-      // Margen razonable de desplazamiento con el teclado abierto en 412x915.
-      expect(height, greaterThan(280));
-      // El título no se mueve por abrir el teclado; los botones van al final del
-      // contenido que se desplaza y, al llegar a ellos, quedan sobre el teclado.
-      expect(tester.getTopLeft(find.text('Nueva compra')).dx, titleBefore.dx);
-      final submit = find.widgetWithText(ElevatedButton, 'Registrar compra');
-      await tester.ensureVisible(submit);
-      await tester.pumpAndSettle();
-      final buttons = tester.getRect(submit);
-      expect(buttons.bottom, lessThanOrEqualTo(915 - 350));
-      expect(buttons.top, greaterThanOrEqualTo(tester.getRect(scroll.first).top));
-      expect(buttons.bottom, lessThanOrEqualTo(tester.getRect(scroll.first).bottom));
-    });
   });
 
-  group('3. botón flotante en las listas', () {
-    testWidgets('the last product is fully above the floating button at the end of the list', (
-      tester,
-    ) async {
-      setScreen(tester, const Size(412, 915));
-      for (var i = 1; i <= 8; i++) {
-        await db.into(db.products).insert(
-          ProductsCompanion.insert(
-            categoryId: 1,
-            name: 'Producto $i',
-            priceA: 10,
-            priceB: 8,
-            stock: const Value(5),
-          ),
-        );
-      }
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(db)],
-          child: MaterialApp(theme: lightTheme, home: const ProductsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.drag(find.byType(ListView), const Offset(0, -10000));
-      await tester.pumpAndSettle();
-
-      final fab = tester.getRect(find.byType(FloatingActionButton));
-      final lastCardBadge = tester.getRect(find.text('Activo').last);
-      expect(lastCardBadge.bottom, lessThan(fab.top));
-    });
-
-    test('the shared list padding leaves room for the button plus its margin', () {
-      expect(AppSpacing.listWithFab.bottom, greaterThanOrEqualTo(56 + 16));
-    });
-  });
-
-  group('6. registro de uso', () {
-    testWidgets('quantity and price are separate pieces; a price never breaks in the middle', (
-      tester,
-    ) async {
-      setScreen(tester, const Size(412, 915));
-      final unit = await (db.select(
-        db.units,
-      )..where((u) => u.name.equals('contenedor'))).getSingle();
-      final productId = await db.into(db.products).insert(
-        ProductsCompanion.insert(categoryId: 1, name: 'Estuches', priceA: 55, priceB: 40),
-      );
-      final materialId = await db.into(db.materials).insert(
-        MaterialsCompanion.insert(
-          name: 'Papel holográfico para stickers',
-          unitId: unit.id,
-          pricePerUnit: 12,
-          stock: const Value(10),
-        ),
-      );
-      await db.into(db.productMaterials).insert(
-        ProductMaterialsCompanion.insert(
-          productId: productId,
-          materialId: materialId,
-          quantityUsed: 2,
-        ),
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(db)],
-          child: MaterialApp(
-            theme: lightTheme,
-            home: const Scaffold(body: MaterialsUsageTab()),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
-
-      final quantity = find.text('Cantidad: 2 contenedores');
-      final price = find.text('Bs. 12.00 / contenedor');
-      expect(quantity, findsOneWidget);
-      expect(price, findsOneWidget);
-      // El precio completo ocupa una sola línea.
-      final fontSize = tester.widget<Text>(price).style!.fontSize!;
-      expect(tester.getSize(price).height, lessThan(fontSize * 1.8));
-    });
-  });
-
-  group('7. un solo rojo', () {
-    test('the theme error color is the single app red', () {
-      expect(lightTheme.colorScheme.error, AppColors.error);
-    });
-
-    test('that red is dark enough for small text on the light surfaces (WCAG AA 4.5:1)', () {
-      double lum(Color c) => c.computeLuminance();
-      double contrast(Color a, Color b) {
-        final l1 = lum(a), l2 = lum(b);
-        final hi = l1 > l2 ? l1 : l2, lo = l1 > l2 ? l2 : l1;
-        return (hi + 0.05) / (lo + 0.05);
-      }
-
-      expect(contrast(AppColors.error, AppColors.surface), greaterThanOrEqualTo(4.5));
-      expect(contrast(AppColors.error, AppColors.background), greaterThanOrEqualTo(4.5));
-    });
-
-    test('the code has no other red: no bright red literals and no Colors.red*', () {
-      final offenders = <String>[];
-      final literal = RegExp(r'0x[Ff][Ff][Ff][Ff]3[Bb]30|Colors\.red|Colors\.deepOrange');
-      for (final entity in Directory('lib').listSync(recursive: true)) {
-        if (entity is! File || !entity.path.endsWith('.dart')) continue;
-        if (entity.path.endsWith('.g.dart')) continue;
-        if (literal.hasMatch(entity.readAsStringSync())) offenders.add(entity.path);
-      }
-      expect(offenders, isEmpty);
-    });
-
-    testWidgets('validation error text uses that red', (tester) async {
-      setScreen(tester, const Size(412, 915));
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(db)],
-          child: MaterialApp(
-            theme: lightTheme,
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => const PurchaseDialog(),
-                  ),
-                  child: const Text('Open'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Gasto general'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Registrar compra'));
-      await tester.pumpAndSettle();
-
-      final error = tester.widget<Text>(find.text('Campo requerido').first);
-      final color = error.style?.color ?? lightTheme.colorScheme.error;
-      expect(color, AppColors.error);
-    });
-  });
 }

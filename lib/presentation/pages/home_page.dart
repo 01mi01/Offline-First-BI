@@ -19,8 +19,6 @@ import '../../models/report_filters.dart';
 import '../../models/sale_model.dart';
 import '../../theme/app_theme.dart';
 import '../navigation/inventario_tab_page.dart';
-import '../navigation/nav_resolver.dart';
-import '../navigation/shell_page.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/bi_charts.dart';
@@ -30,6 +28,7 @@ import '../widgets/home_widgets.dart';
 import 'business_intelligence_page.dart';
 import 'reports_page.dart';
 import 'sales_page.dart';
+import '../widgets/empty_state.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -110,13 +109,12 @@ class HomePage extends ConsumerWidget {
         hero = HomeEntrance(
           child: HomeHeroCard(
             period: period,
-            title: 'Ganancia ${period.ofLabel}',
+            title: 'Ganancias ${period.ofLabel}',
             amount: formatMoney(report.summary.balance),
             change: HomeChange.of(report.summary.balance, previous.balance),
             sales: report.summary.ingresos,
             expenses: report.summary.gastos,
             series: profitSeries,
-            emptyMessage: 'Aún no hay movimientos ${period.duringLabel}',
           ),
         );
       }
@@ -222,8 +220,14 @@ class HomePage extends ConsumerWidget {
       final noMovements =
           report.timeSeries.isEmpty ||
           (report.summary.ingresos == 0 && report.summary.gastos == 0);
-      final noMovementsText = 'Aún no hay movimientos ${period.duringLabel}';
-      final noSalesText = 'Aún no hay ventas ${period.duringLabel}';
+      final noMovementsEmpty = AppEmptyState.noData(
+        what: 'movimientos',
+        period: period.duringLabel,
+      );
+      final noSalesEmpty = AppEmptyState.noData(
+        what: 'ventas',
+        period: period.duringLabel,
+      );
 
       if (access.profit || access.sales) {
         sections.add(
@@ -245,7 +249,16 @@ class HomePage extends ConsumerWidget {
                     ? 'Ingresos y gastos por mes'
                     : 'Ingresos y gastos por día',
                 child: noMovements
-                    ? HomeEmptyMessage(noMovementsText)
+                    ? noMovementsEmpty
+                    : report.timeSeries.buckets.length == 1
+                    ? HomeSinglePointSummary(
+                        dateLabel: homeBucketLabel(
+                          HomeBucket.day,
+                          report.timeSeries.buckets.first.start,
+                        ),
+                        incomeText: formatMoney(report.summary.ingresos),
+                        expensesText: formatMoney(report.summary.gastos),
+                      )
                     : BiTimeSeriesChart(series: report.timeSeries),
               ),
             ),
@@ -258,7 +271,12 @@ class HomePage extends ConsumerWidget {
               title: 'Ingresos y gastos',
               subtitle: period.comparisonLabel,
               child: noMovements || previous == null
-                  ? HomeEmptyMessage(noMovementsText)
+                  ? noMovementsEmpty
+                  : previous.ingresos == 0 && previous.gastos == 0
+                  ? AppEmptyState.noData(
+                      what: 'movimientos',
+                      period: '${period.previousDuringLabel} para comparar',
+                    )
                   : BiGroupedBars(
                       groups: const ['Ingresos', 'Gastos', 'Balance'],
                       seriesNames: const ['Actual', 'Anterior'],
@@ -284,7 +302,7 @@ class HomePage extends ConsumerWidget {
               title: 'Ventas por categoría',
               subtitle: 'Ingresos ${period.ofLabel}',
               child: report.salesByCategory.isEmpty
-                  ? HomeEmptyMessage(noSalesText)
+                  ? noSalesEmpty
                   : BiPieChart(
                       entries: report.salesByCategory,
                       byQuantity: false,
@@ -301,7 +319,7 @@ class HomePage extends ConsumerWidget {
               title: 'Productos más vendidos',
               subtitle: 'Ingresos ${period.ofLabel}',
               child: report.salesByProduct.isEmpty
-                  ? HomeEmptyMessage(noSalesText)
+                  ? noSalesEmpty
                   : BiRankingChart(
                       entries: report.salesByProduct,
                       byQuantity: false,
@@ -362,29 +380,31 @@ class HomePage extends ConsumerWidget {
           const ScreenTopBar(actions: [ProfileButton()]),
           Expanded(
             child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: HomeHeader(
-              userName: user?.username ?? '',
-              period: period,
-              onPeriodChanged: (value) =>
-                  ref.read(homePeriodProvider.notifier).state = value,
-              hero: hero,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.s16)),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => sections[index](context),
-              childCount: sections.length,
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
-            ),
-          ),
-        ],
+              slivers: [
+                SliverToBoxAdapter(
+                  child: HomeHeader(
+                    userName: user?.username ?? '',
+                    period: period,
+                    onPeriodChanged: (value) =>
+                        ref.read(homePeriodProvider.notifier).state = value,
+                    hero: hero,
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: AppSpacing.s16),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => sections[index](context),
+                    childCount: sections.length,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -399,26 +419,15 @@ class HomePage extends ConsumerWidget {
     HomeShortcut.businessIntelligence => Icons.insights_rounded,
   };
 
+  // Los accesos rápidos abren la misma pantalla que el módulo, sin la barra de
+  // navegación inferior; al volver se regresa a Inicio con la barra visible.
   void _open(BuildContext context, HomeShortcut shortcut) {
-    switch (shortcut) {
-      case HomeShortcut.products:
-        _push(context, NavGroupId.inventario, const ProductsScreen());
-      case HomeShortcut.sales:
-        _push(context, NavGroupId.ventasCompras, const SalesPage());
-      case HomeShortcut.reports:
-        _push(context, NavGroupId.reportes, const ReportsPage());
-      case HomeShortcut.businessIntelligence:
-        _push(
-          context,
-          NavGroupId.reportes,
-          const BusinessIntelligencePage(),
-        );
-    }
+    final Widget page = switch (shortcut) {
+      HomeShortcut.products => const ProductsScreen(),
+      HomeShortcut.sales => const SalesPage(),
+      HomeShortcut.reports => const ReportsPage(),
+      HomeShortcut.businessIntelligence => const BusinessIntelligencePage(),
+    };
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
-
-  void _push(BuildContext context, NavGroupId group, Widget page) =>
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => ShellPage(group: group, child: page)),
-      );
 }

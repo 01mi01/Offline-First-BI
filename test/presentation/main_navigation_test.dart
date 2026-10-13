@@ -92,7 +92,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('No tienes acceso a ningún módulo de inventario'),
+        find.text('No tienes acceso a ningún módulo de inventario.'),
         findsOneWidget,
       );
       expect(find.text('Productos'), findsNothing);
@@ -152,7 +152,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('No tienes acceso a ventas ni compras'),
+        find.text('No tienes acceso a ventas ni compras.'),
         findsOneWidget,
       );
       expect(find.text('Ventas'), findsNothing);
@@ -176,7 +176,7 @@ void main() {
       // La app usa un ícono de "back" propio (no el widget estándar de
       // Cupertino/Material), así que se toca directamente en vez de usar
       // tester.pageBack().
-      await tester.tap(find.byIcon(Icons.arrow_back_ios));
+      await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(AppListRow, 'Compras'));
@@ -257,7 +257,7 @@ void main() {
       // La app usa un ícono de "back" propio (no el widget estándar de
       // Cupertino/Material), así que se toca directamente en vez de usar
       // tester.pageBack().
-      await tester.tap(find.byIcon(Icons.arrow_back_ios));
+      await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Proveedores'));
@@ -313,7 +313,7 @@ void main() {
       // La app usa un ícono de "back" propio (no el widget estándar de
       // Cupertino/Material), así que se toca directamente en vez de usar
       // tester.pageBack().
-      await tester.tap(find.byIcon(Icons.arrow_back_ios));
+      await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
 
       // "Reportes" también aparece en el título del AppBar de esta pantalla,
@@ -345,8 +345,6 @@ void main() {
       expect(find.text('Contactos'), findsNothing);
       expect(find.text('Reportes'), findsNothing);
 
-      // El "+" de creación rápida ya no existe en la barra inferior.
-      expect(find.byIcon(Icons.add), findsNothing);
     });
 
     testWidgets('tapping the Ventas tab opens its landing menu, not a segmented control',
@@ -363,7 +361,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.shopping_cart_outlined));
+      await tester.tap(find.byIcon(Icons.shopping_cart_rounded));
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppListRow, 'Ventas'), findsOneWidget);
@@ -388,7 +386,6 @@ void main() {
       expect(find.text('Ventas'), findsNothing);
       expect(find.text('Contactos'), findsNothing);
       expect(find.text('Reportes'), findsNothing);
-      expect(find.byIcon(Icons.add), findsNothing);
     });
 
     testWidgets(
@@ -430,5 +427,37 @@ void main() {
         expect(find.text('Ventas'), findsWidgets);
       },
     );
+
+    testWidgets('a Home shortcut opens its page without the bottom bar, and going back brings the bar back',
+        (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_wrap(
+        const MainNavigationPage(),
+        db: db,
+        readableModules: ['inventario', 'ventas', 'reportes', 'business_intelligence'],
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byType(MainBottomBar), findsOneWidget);
+
+      for (final (key, page) in [
+        ('products', ProductsScreen),
+        ('sales', SalesPage),
+        ('reports', ReportsPage),
+        ('businessIntelligence', BusinessIntelligencePage),
+      ]) {
+        await tester.tap(find.byKey(ValueKey('home-shortcut-$key')));
+        await tester.pumpAndSettle();
+        expect(find.byType(page), findsOneWidget, reason: key);
+        expect(find.byType(MainBottomBar), findsNothing, reason: key);
+
+        await tester.tap(find.text('Atrás'));
+        await tester.pumpAndSettle();
+        expect(find.byType(MainBottomBar), findsOneWidget, reason: key);
+      }
+    });
   });
 }

@@ -4,13 +4,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'app_buttons.dart';
+import 'record_list.dart' show imagePlaceholderColor;
+import 'app_style.dart';
+import 'form_style.dart';
 
 // Piezas comunes de los formularios (crear y editar): campo con su etiqueta,
 // selector de fecha, desplegable con alto limitado, interruptor de estado,
 // foto y botones de abajo. Los campos toman su aspecto de [AppFormTheme].
 
-// Campo con su etiqueta: un texto pequeño y tenue ENCIMA del campo. [builder]
-// recibe siempre `null` como `labelText` (el campo no lleva etiqueta flotante).
+// Campo con su etiqueta: un texto pequeño y tenue ENCIMA del campo, con, si
+// se da, un botón de acción ([action], p. ej. "+ Agregar") a la derecha de la
+// etiqueta. [builder] recibe siempre `null` como `labelText` (el campo no lleva
+// etiqueta flotante).
 //
 //   LabeledField(
 //     label: 'Nombre',
@@ -23,6 +28,7 @@ class LabeledField extends StatelessWidget {
   final Widget Function(String? labelText) builder;
   final double inset;
   final bool hidden;
+  final Widget? action;
 
   const LabeledField({
     super.key,
@@ -30,6 +36,7 @@ class LabeledField extends StatelessWidget {
     required this.builder,
     this.inset = AppSpacing.s4,
     this.hidden = false,
+    this.action,
   });
 
   @override
@@ -38,34 +45,91 @@ class LabeledField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.only(left: math.max(0.0, inset - AppSpacing.s4)),
-          child: FormSectionLabel(label),
+        FormSectionLabel(
+          label,
+          action: action,
+          inset: math.max(0.0, inset),
         ),
-        const SizedBox(height: AppSpacing.s6),
+        // Sin botón, la etiqueta es una línea; con botón, la fila ya mide lo
+        // que un botón y no hace falta más espacio.
+        SizedBox(height: action == null ? AppSpacing.s6 : 0),
         builder(null),
       ],
     );
   }
 }
 
-// Título de una sección de un formulario (p. ej. "Carrito"): el mismo texto
-// pequeño y tenue que la etiqueta de un campo.
+// Alto de la fila de una etiqueta con botón: el botón conserva su zona de toque
+// de 48 sin hacer más alto el hueco sobre el campo.
+const double _actionRowHeight = 36;
+
+// Título de una sección de un formulario (p. ej. "Carrito", "Materiales"): el
+// mismo texto de la etiqueta de un campo, con un [action] opcional a la derecha.
 class FormSectionLabel extends StatelessWidget {
   final String text;
+  final Widget? action;
+  final double inset;
 
-  const FormSectionLabel(this.text, {super.key});
+  const FormSectionLabel(
+    this.text, {
+    super.key,
+    this.action,
+    this.inset = AppSpacing.s4,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.s4),
+    final label = Padding(
+      padding: EdgeInsets.only(left: inset),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
-        ),
+        // Fuera de un formulario (p. ej. los filtros de Reportes) conserva su
+        // tamaño de siempre.
+        style: AppFormTheme.isActive(context)
+            ? AppText.formLabel(context)
+            : Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+      ),
+    );
+    if (action == null) return label;
+    return SizedBox(
+      height: _actionRowHeight,
+      child: Row(
+        children: [
+          Expanded(child: label),
+          action!,
+        ],
+      ),
+    );
+  }
+}
+
+// Botón "+ Agregar" de un formulario: el mismo para agregar un cliente, un
+// proveedor, una ubicación o un material. Va a la derecha de la etiqueta del
+// campo, en el cian oscuro de los menús.
+class FormAddButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String label;
+
+  const FormAddButton({
+    super.key,
+    required this.onPressed,
+    this.label = 'Agregar',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.add_rounded, size: 18),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.cyanDark,
+        minimumSize: const Size(AppMetrics.minTap, _actionRowHeight),
+        tapTargetSize: MaterialTapTargetSize.padded,
+        textStyle: AppText.formLabel(context),
       ),
     );
   }
@@ -206,6 +270,9 @@ class AppDropdownField<T> extends FormField<T> {
                      selected?.label ?? '',
                      maxLines: 1,
                      overflow: TextOverflow.ellipsis,
+                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                       color: AppColors.textPrimary,
+                     ),
                    ),
                  ),
                ),
@@ -215,40 +282,6 @@ class AppDropdownField<T> extends FormField<T> {
        );
 }
 
-// Botón cuadrado junto a un campo (p. ej. "agregar ubicación nueva").
-class AppFieldAction extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  const AppFieldAction({
-    super.key,
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: AppColors.cyanSoft,
-        borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
-          onTap: onPressed,
-          child: SizedBox(
-            width: AppMetrics.minTap + AppSpacing.s8,
-            height: AppMetrics.minTap + AppSpacing.s8,
-            child: Icon(icon, color: AppColors.cyanDark, size: 22),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // Botones de abajo de un formulario: la acción principal (crear, guardar,
 // registrar) arriba y, debajo, salir sin cambiar nada.
 class FormActions extends StatelessWidget {
@@ -256,6 +289,11 @@ class FormActions extends StatelessWidget {
   final VoidCallback onSecondary;
   final String primaryLabel;
   final VoidCallback? onPrimary;
+  // Mientras se guarda, el botón principal muestra un indicador.
+  final bool loading;
+  // Botón rojo opcional (cancelar el registro): va entre el principal y el de
+  // salir, que siempre queda al final.
+  final Widget? destructive;
 
   const FormActions({
     super.key,
@@ -263,14 +301,33 @@ class FormActions extends StatelessWidget {
     required this.onSecondary,
     required this.primaryLabel,
     required this.onPrimary,
+    this.loading = false,
+    this.destructive,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ElevatedButton(onPressed: onPrimary, child: Text(primaryLabel)),
+        ElevatedButton(
+          onPressed: loading ? null : onPrimary,
+          child: loading
+              ? const SizedBox(
+                  height: AppSpacing.s20,
+                  width: AppSpacing.s20,
+                  child: CircularProgressIndicator(
+                    color: AppColors.onDark,
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(primaryLabel, maxLines: 1),
+        ),
+        if (destructive != null) ...[
+          const SizedBox(height: AppButtons.stackGap),
+          destructive!,
+        ],
         const SizedBox(height: AppButtons.stackGap),
         AppActionButton(
           label: secondaryLabel,
@@ -319,17 +376,11 @@ class AppToggleRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppText.rowTitle(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w600),
                 ),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text(subtitle, style: AppText.footnote(context)),
               ],
             ),
           ),
@@ -361,7 +412,7 @@ class AppPhotoSlot extends StatelessWidget {
   Widget _placeholder() => Container(
     width: size,
     height: size,
-    color: AppColors.surface,
+    color: imagePlaceholderColor,
     child: const Icon(
       Icons.add_a_photo_rounded,
       color: AppColors.cyanDark,

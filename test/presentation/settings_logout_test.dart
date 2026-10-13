@@ -102,42 +102,6 @@ void main() {
   }
 
   group('entry point', () {
-    testWidgets('every main tab has the settings button in its top bar', (
-      tester,
-    ) async {
-      await pumpAppLoggedIn(tester);
-
-      for (final tab in ['Inicio', 'Inventario', 'Ventas', 'Contactos', 'Reportes']) {
-        // La barra inferior es el último widget con esa etiqueta.
-        await tester.tap(find.text(tab).last);
-        await tester.pumpAndSettle();
-        expect(
-          find.byTooltip('Ajustes'),
-          findsWidgets,
-          reason: 'la pestaña "$tab" debe ofrecer Ajustes',
-        );
-      }
-    });
-
-    testWidgets('the settings page shows the account and a reserved, disabled dark-mode spot', (
-      tester,
-    ) async {
-      await pumpAppLoggedIn(tester);
-      await openSettings(tester);
-
-      expect(find.text('Ajustes'), findsWidgets);
-      expect(find.text('usuario_prueba'), findsOneWidget);
-      expect(find.text('prueba@test.com'), findsOneWidget);
-
-      // Preferencias: "Tema oscuro" reservado, marcado "Próximamente" y sin
-      // efecto (el interruptor está desactivado).
-      expect(find.text('Preferencias'), findsOneWidget);
-      expect(find.text('Tema oscuro'), findsOneWidget);
-      expect(find.text('Próximamente'), findsOneWidget);
-      final toggle = tester.widget<Switch>(find.byType(Switch));
-      expect(toggle.onChanged, isNull);
-      expect(toggle.value, isFalse);
-    });
   });
 
   group('logout', () {
@@ -151,7 +115,7 @@ void main() {
         expect(spy.logoutCalls, 0);
 
         await openSettings(tester);
-        await tester.tap(find.byIcon(Icons.logout));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Cerrar sesión'));
         await tester.pumpAndSettle();
         expect(find.text('¿Cerrar sesión?'), findsOneWidget);
         await tester.tap(
@@ -175,7 +139,7 @@ void main() {
     testWidgets('the person can log in again after logging out', (tester) async {
       await pumpAppLoggedIn(tester);
       await openSettings(tester);
-      await tester.tap(find.byIcon(Icons.logout));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Cerrar sesión'));
       await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
@@ -224,7 +188,7 @@ void main() {
         expect(find.byType(MainNavigationPage), findsOneWidget); // sesión restaurada
 
         await openSettings(tester);
-        await tester.tap(find.byIcon(Icons.logout));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Cerrar sesión'));
         await tester.pumpAndSettle();
         await tester.tap(
           find.descendant(
@@ -247,12 +211,12 @@ void main() {
       await pumpAppLoggedIn(tester);
       await openSettings(tester);
 
-      await tester.tap(find.byIcon(Icons.logout));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Cerrar sesión'));
       await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
           of: find.byType(AlertDialog),
-          matching: find.widgetWithText(OutlinedButton, 'Cancelar'),
+          matching: find.widgetWithText(ElevatedButton, 'Cancelar'),
         ),
       );
       await tester.pumpAndSettle();

@@ -58,7 +58,6 @@ class AppSegmented<T> extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(AppMetrics.thumbRadius),
-                        boxShadow: AppShadows.thumb,
                       ),
                     ),
                   ),

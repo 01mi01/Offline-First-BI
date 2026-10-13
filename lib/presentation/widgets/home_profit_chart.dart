@@ -81,7 +81,7 @@ class HomeProfitChart extends StatelessWidget {
 
     return LineChart(
       LineChartData(
-        minX: 0,
+        minX: n <= 1 ? -1 : 0,
         maxX: n <= 1 ? 1 : (n - 1).toDouble(),
         minY: minY,
         maxY: maxY,
@@ -159,7 +159,16 @@ class HomeProfitChart extends StatelessWidget {
             preventCurveOverShooting: true,
             isStrokeCapRound: true,
             showingIndicators: selectedIndex == null ? const [] : [selectedIndex],
-            dotData: FlDotData(show: n == 1),
+            dotData: FlDotData(
+              show: n == 1,
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                    radius: 6,
+                    color: color,
+                    strokeWidth: 3,
+                    strokeColor: AppColors.cyanSoft,
+                  ),
+            ),
             belowBarData: BarAreaData(show: false),
           ),
         ],

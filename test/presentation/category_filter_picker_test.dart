@@ -182,7 +182,7 @@ void main() {
         expect(find.text('Pines'), findsOneWidget); // el chip
         expect(find.text('Todas las categorías'), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.close));
+        await tester.tap(find.byIcon(Icons.close_rounded));
         await tester.pumpAndSettle();
         expect(last!.categoryId, isNull);
         expect(find.text('Todas las categorías'), findsOneWidget);
@@ -328,7 +328,7 @@ void main() {
             expect(spec.read(last!), isNull);
 
             await choose();
-            await tester.tap(find.byIcon(Icons.close));
+            await tester.tap(find.byIcon(Icons.close_rounded));
             await tester.pumpAndSettle();
             expect(spec.read(last!), isNull);
           },

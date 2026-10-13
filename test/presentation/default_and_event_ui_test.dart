@@ -22,6 +22,7 @@ import 'package:offline_first_bi/presentation/pages/suppliers_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
+import 'form_finders.dart';
 
 void main() {
   late AppDatabase db;
@@ -82,7 +83,17 @@ void main() {
     ),
   );
 
-  group('default records show a lock instead of the edit button', () {
+  group('default records show a lock and cannot be edited from their detail', () {
+    // El detalle de un registro editable ofrece "Editar"; el de uno
+    // predeterminado, no.
+    Future<void> expectDetail(WidgetTester tester, String name, {required bool editable}) async {
+      await tester.tap(find.text(name));
+      await tester.pumpAndSettle();
+      expect(find.text('Editar'), editable ? findsOneWidget : findsNothing, reason: name);
+      await tester.tap(find.text('Cerrar'));
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('categories: "Sin categoría" is locked, the others stay editable', (
       tester,
     ) async {
@@ -91,8 +102,8 @@ void main() {
 
       expect(find.text('Sin categoría'), findsOneWidget);
       expect(find.text('Pines'), findsOneWidget);
-      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      await expectDetail(tester, 'Sin categoría', editable: false);
+      await expectDetail(tester, 'Pines', editable: true);
     });
 
     testWidgets('clients: the default client is locked, the others stay editable', (
@@ -101,8 +112,8 @@ void main() {
       await ClientRepository(db).save(name: 'Michael Brown');
       await pumpApp(tester, const ClientsPage());
 
-      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      await expectDetail(tester, DefaultRecords.client, editable: false);
+      await expectDetail(tester, 'Michael Brown', editable: true);
     });
 
     testWidgets('suppliers: "Sin proveedor" is locked, the others stay editable', (
@@ -111,8 +122,8 @@ void main() {
       await SupplierRepository(db).save(name: 'Riverside Supply Co.');
       await pumpApp(tester, const SuppliersPage());
 
-      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      await expectDetail(tester, DefaultRecords.supplier, editable: false);
+      await expectDetail(tester, 'Riverside Supply Co.', editable: true);
     });
   });
 
@@ -132,7 +143,7 @@ void main() {
         );
 
         await searchProducts(tester, 'Tote bag negra'); // la lista aparece al escribir
-        await tester.tap(find.byIcon(Icons.add)); // agrega el producto
+        await tester.tap(find.byIcon(Icons.add_circle_rounded)); // agrega el producto
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Registrar venta'));
         await tester.pumpAndSettle();
@@ -194,11 +205,11 @@ void main() {
         await tester.tap(find.text('Gasto general'));
         await tester.pumpAndSettle();
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Descripción del gasto'),
+          fieldLabeled('Descripción del gasto'),
           'Participación en feria',
         );
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Total (Bs.)'),
+          fieldLabeled('Total (Bs.)'),
           '50',
         );
         await tester.ensureVisible(find.text('Registrar compra'));

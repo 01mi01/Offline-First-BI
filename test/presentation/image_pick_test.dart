@@ -15,6 +15,7 @@ import 'package:offline_first_bi/presentation/dialogs/product_dialog.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'package:path/path.dart' as p;
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'form_finders.dart';
 
 // Selector de imágenes simulado: entrega un archivo de la caché, como el real.
 class _FakeImagePicker extends Fake
@@ -123,7 +124,7 @@ void main() {
 
   Future<void> pickImage(WidgetTester tester, File source) async {
     ImagePickerPlatform.instance = _FakeImagePicker(source.path);
-    await tester.tap(find.byIcon(Icons.add_a_photo_outlined));
+    await tester.tap(find.byIcon(Icons.add_a_photo_rounded));
     await settleIO(tester);
   }
 
@@ -150,6 +151,8 @@ void main() {
       final shown = shownImagePath(tester)!;
       expect(File(shown).existsSync(), isTrue);
 
+      // Los botones van al final del contenido que se desplaza.
+      await tester.ensureVisible(find.text('Cancelar'));
       await tester.tap(find.text('Cancelar'));
       // Primero se cierra la hoja (animación) y se destruye el diálogo...
       await tester.pumpAndSettle();
@@ -165,10 +168,10 @@ void main() {
       await pickImage(tester, picked);
       final shown = shownImagePath(tester)!;
 
-      await tester.enterText(find.widgetWithText(TextFormField, 'Nombre'), 'Estuches');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Precio A'), '10');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Precio B'), '8');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Stock'), '3');
+      await tester.enterText(fieldLabeled('Nombre'), 'Estuches');
+      await tester.enterText(fieldLabeled('Precio A'), '10');
+      await tester.enterText(fieldLabeled('Precio B'), '8');
+      await tester.enterText(fieldLabeled('Stock'), '3');
       await tester.tap(find.text('Crear'));
       await settleIO(tester);
 
@@ -202,7 +205,6 @@ void main() {
       await settleIO(tester);
 
       expect(tester.takeException(), isNull);
-      expect(find.byIcon(Icons.add_a_photo_outlined), findsOneWidget);
     });
   });
 

@@ -135,7 +135,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pumpAndSettle();
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, materialName, materialName);
     }

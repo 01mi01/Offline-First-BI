@@ -41,7 +41,8 @@ class RecordRow extends StatelessWidget {
       onTap: onTap,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: AppMetrics.rowMinHeight),
-        child: Padding(
+        child: Center(
+          child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.s16,
             vertical: hasThumb ? AppSpacing.s14 : AppSpacing.s12,
@@ -92,11 +93,16 @@ class RecordRow extends StatelessWidget {
                 ),
             ],
           ),
+          ),
         ),
       ),
     );
   }
 }
+
+// Fondo del marcador de imagen (productos y categorías): el mismo tono cian
+// oscuro suave de los iconos del menú de Inventario.
+final Color imagePlaceholderColor = AppColors.cyanDark.withValues(alpha: 0.14);
 
 // Imagen cuadrada con esquinas redondeadas. Sin imagen (o si el archivo ya no
 // existe) muestra un cuadro neutro con [icon]. Solo la usan productos y
@@ -116,7 +122,7 @@ class RecordThumb extends StatelessWidget {
   Widget _placeholder() => Container(
     width: size,
     height: size,
-    color: AppColors.cyanSoft,
+    color: imagePlaceholderColor,
     child: Icon(icon, color: AppColors.cyanDark, size: size * 0.45),
   );
 
@@ -151,6 +157,25 @@ class RecordLine extends StatelessWidget {
       maxLines: maxLines,
       overflow: maxLines == null ? null : TextOverflow.ellipsis,
       style: AppText.rowSubtitle(context),
+    );
+  }
+}
+
+// Precio de una fila de producto: pequeño, en negrita suave.
+class RecordPrice extends StatelessWidget {
+  final String text;
+
+  const RecordPrice(this.text, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      softWrap: false,
+      style: AppText.rowSubtitle(
+        context,
+        color: AppColors.textPrimary,
+      ).copyWith(fontSize: AppMetrics.headerSize + 1, fontWeight: FontWeight.w600),
     );
   }
 }

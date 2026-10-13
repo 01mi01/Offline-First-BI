@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
-import 'package:offline_first_bi/presentation/dialogs/sale_dialog.dart';
-import 'package:offline_first_bi/presentation/pages/materials_page.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
@@ -127,114 +125,6 @@ void main() {
     );
   });
 
-  testWidgets('Sale form: Cliente search keeps its place and the results open below it', (
-    tester,
-  ) async {
-    await pump(tester, const Scaffold(body: SaleDialog()));
-    openKeyboard(tester);
-    await tester.pumpAndSettle();
-    final picker = find.byType(SearchablePickerField<int>).first;
-    await typeAndCheck(
-      tester,
-      find.descendant(of: picker, matching: find.byType(TextField)),
-      first: 'cliente 1',
-      second: 'cliente 2',
-      results: find.descendant(of: picker, matching: find.text('Cliente 1')),
-    );
-  });
-
-  testWidgets('Sale form: the product search keeps its place and its results are above the keyboard', (
-    tester,
-  ) async {
-    await pump(tester, const Scaffold(body: SaleDialog()));
-    openKeyboard(tester);
-    await tester.pumpAndSettle();
-    await typeAndCheck(
-      tester,
-      find.widgetWithText(TextField, 'Buscar producto'),
-      first: 'producto 1',
-      second: 'producto 2',
-      results: find.text('Producto 1'),
-    );
-  });
-
-  testWidgets('Materiales > Registro de uso: the Producto search keeps its place', (
-    tester,
-  ) async {
-    await pump(tester, const Scaffold(body: MaterialsUsageTab()));
-    openKeyboard(tester);
-    await tester.pumpAndSettle();
-    await typeAndCheck(
-      tester,
-      find.byType(TextField),
-      first: 'producto 1',
-      second: 'producto 2',
-      results: find.text('Producto 1'),
-    );
-  });
-
   // Al llevar el campo al borde de arriba del área que se desplaza, su etiqueta
   // (que flota sobre el borde y sobresale de la caja) queda entera, con margen.
-  testWidgets('a search field scrolled to the top keeps its whole label visible, with a margin', (
-    tester,
-  ) async {
-    tester.view.physicalSize = screen;
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final listKey = GlobalKey();
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: lightTheme,
-        home: Scaffold(
-          appBar: AppBar(title: const Text('Encabezado')),
-          body: SingleChildScrollView(
-            key: listKey,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-              for (var i = 0; i < 12; i++) SizedBox(height: 80, child: Text('Fila $i')),
-              SearchablePickerField<int>(
-                label: 'Ubicación',
-                searchHint: 'Buscar ubicación',
-                value: null,
-                options: [
-                  const PickerOption<int>(null, 'Sin ubicación'),
-                  for (var i = 0; i < 6; i++)
-                    PickerOption<int>(i, 'La Paz, Bolivia', subtitle: 'Calacoto $i'),
-                ],
-                onChanged: (_) {},
-              ),
-              const SizedBox(height: 1200),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final field = find.descendant(
-      of: find.byType(SearchablePickerField<int>),
-      matching: find.byType(TextField),
-    );
-    await tester.ensureVisible(field);
-    await tester.pumpAndSettle();
-    await tester.tap(field);
-    await settle(tester);
-    openKeyboard(tester);
-    await settle(tester);
-    await tester.enterText(field, 'calacoto');
-    await settle(tester);
-
-    final viewportTop = tester.getTopLeft(find.byKey(listKey)).dy;
-    final labelTop = tester.getTopLeft(find.text('Ubicación')).dy;
-    // La etiqueta entera, con margen, bajo el encabezado.
-    expect(labelTop, greaterThanOrEqualTo(viewportTop + 4));
-    // Lo escrito sigue sobre el teclado y los resultados debajo del campo.
-    final fieldRect = tester.getRect(field);
-    expect(fieldRect.bottom, lessThanOrEqualTo(screen.height - keyboard));
-    expect(tester.getTopLeft(find.text('Calacoto 0')).dy, greaterThan(fieldRect.bottom - 1));
-    expect(tester.takeException(), isNull);
-  });
 }

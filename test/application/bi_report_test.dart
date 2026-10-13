@@ -45,8 +45,7 @@ void main() {
         AppColors.chartColor5,
       ];
       expect(colors.toSet().length, 5);
-      expect(AppColors.chartColor1, AppColors.cyan);
-      expect(AppColors.chartColor4, AppColors.cyanDark);
+      expect(AppColors.chartColor1, AppColors.cyanDark);
       // Cada color pertenece a su familia de la paleta: cian, azul marino,
       // verde lima, cian oscuro y azul.
       const hueRanges = [
@@ -362,7 +361,11 @@ void main() {
 
       await pumpPage(tester);
 
-      expect(find.text('Business Intelligence'), findsOneWidget);
+      // El título se desplaza con el panel: puede quedar fuera de la vista.
+      expect(
+        find.text('Business Intelligence', skipOffstage: false),
+        findsOneWidget,
+      );
       expect(find.text('Próximamente'), findsNothing);
       // Los predeterminados de la configuración.
       for (final title in [
