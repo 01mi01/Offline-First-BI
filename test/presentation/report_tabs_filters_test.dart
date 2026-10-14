@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
-import 'package:offline_first_bi/config/date_formatters.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
-import 'package:offline_first_bi/config/app_clock.dart';
+import 'filter_helpers.dart';
 
 // Reportes: las pestañas Ventas y Compras llevan cada una sus propios filtros.
 void main() {
@@ -39,75 +38,68 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> pickDate(WidgetTester tester, String chipLabel) async {
-    await tester.tap(find.text(chipLabel));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('OK'));
-    await tester.pumpAndSettle();
-  }
-
   Future<void> openTab(WidgetTester tester, String name) async {
-    await tester.tap(find.descendant(of: find.byType(TabBar), matching: find.text(name)));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(TabBar),
+        matching: find.text(name),
+      ),
+    );
     await tester.pumpAndSettle();
   }
-
-  final today = formatDate(appNow());
 
   testWidgets(
-    'a date set on the Ventas tab does not carry over to Compras, and it is '
+    'a period set on the Ventas tab does not carry over to Compras, and it is '
     'still there when coming back',
     (tester) async {
       await pumpReports(tester);
 
-      await pickDate(tester, 'Fecha de inicio');
-      expect(find.text('Desde: $today'), findsOneWidget);
+      await pickPreset(tester, 'Hoy');
+      expect(find.text('Limpiar'), findsOneWidget);
 
       await openTab(tester, 'Compras');
-      expect(find.textContaining('Desde:'), findsNothing);
-      expect(find.text('Fecha de inicio'), findsOneWidget);
+      expect(find.text('Limpiar'), findsNothing);
 
       await openTab(tester, 'Ventas');
-      expect(find.text('Desde: $today'), findsOneWidget);
+      expect(find.text('Hoy'), findsOneWidget);
     },
   );
 
   testWidgets(
     'filters set on Compras stay on Compras, and the two tabs can hold '
-    'different dates at once',
+    'different periods at once',
     (tester) async {
       await pumpReports(tester);
 
       await openTab(tester, 'Compras');
-      await pickDate(tester, 'Fecha de fin');
-      expect(find.text('Hasta: $today'), findsOneWidget);
-      expect(find.textContaining('Desde:'), findsNothing);
+      await pickPreset(tester, 'Este mes');
 
       await openTab(tester, 'Ventas');
-      // Ventas no recibe el "Hasta" de Compras...
-      expect(find.textContaining('Hasta:'), findsNothing);
-      // ...y puede tener su propia fecha de inicio.
-      await pickDate(tester, 'Fecha de inicio');
-      expect(find.text('Desde: $today'), findsOneWidget);
+      expect(find.text('Limpiar'), findsNothing);
+      await pickPreset(tester, 'Hoy');
 
       await openTab(tester, 'Compras');
-      expect(find.text('Hasta: $today'), findsOneWidget);
-      expect(find.textContaining('Desde:'), findsNothing);
+      expect(find.text('Este mes'), findsOneWidget);
+      expect(find.text('Hoy'), findsNothing);
+      await openTab(tester, 'Ventas');
+      expect(find.text('Hoy'), findsOneWidget);
+      expect(find.text('Este mes'), findsNothing);
     },
   );
 
-  testWidgets('"Limpiar todo" on one tab leaves the other tab\'s filters alone', (
+  testWidgets('"Limpiar" on one tab leaves the other tab filters alone', (
     tester,
   ) async {
     await pumpReports(tester);
-    await pickDate(tester, 'Fecha de inicio'); // Ventas
+    await pickPreset(tester, 'Hoy');
     await openTab(tester, 'Compras');
-    await pickDate(tester, 'Fecha de fin'); // Compras
+    await pickPreset(tester, 'Este mes');
 
-    await tester.tap(find.text('Limpiar todo'));
+    await tester.tap(find.text('Limpiar'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Hasta:'), findsNothing); // Compras limpia
+    expect(find.text('Limpiar'), findsNothing);
 
     await openTab(tester, 'Ventas');
-    expect(find.text('Desde: $today'), findsOneWidget); // Ventas intacta
+    expect(find.text('Hoy'), findsOneWidget);
   });
 }

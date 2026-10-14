@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
 import '../../config/rounding.dart';
 import '../../application/product_provider.dart';
-import '../../application/search_filter.dart';
+import '../../application/category_provider.dart';
+import '../../application/record_search.dart';
 import '../../application/status_filter.dart';
 import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
@@ -29,6 +30,7 @@ import '../widgets/filter_panel.dart';
 import '../../application/form_validation.dart';
 import '../widgets/app_style.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/picker_options.dart';
 
 // Página de Materiales: lista de materiales y registro de uso por producto,
 // como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
@@ -62,12 +64,11 @@ class MaterialsListTab extends ConsumerWidget {
     final units = ref.watch(unitProvider).units;
     final status = ref.watch(materialStatusFilterProvider);
     final query = ref.watch(materialListQueryProvider);
-    // Búsqueda por nombre (sin distinguir tildes) y filtro por estado.
-    final visible = filterByQuery<MaterialModel>(
-      state.materials.where((m) => status.matches(m.isActive)),
-      query,
-      (m) => m.name,
-    );
+    final visible = ref
+        .watch(materialSearchIndexProvider)
+        .search(query)
+        .where((m) => status.matches(m.isActive))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -261,9 +262,10 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
               showLabel: false,
               searchHint: 'Producto',
               value: _selectedProductId,
-              options: [
-                for (final p in products) PickerOption<int>(p.id, p.name),
-              ],
+              options: productPickerOptions(
+                products,
+                ref.watch(categoryProvider).categories,
+              ),
               onChanged: (val) {
                 setState(() {
                   _selectedProductId = val;
@@ -481,9 +483,10 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
           label: 'Material',
           searchHint: 'Buscar material',
           value: _selectedMaterialId,
-          options: [
-            for (final m in materials) PickerOption<int>(m.id, m.name),
-          ],
+          options: materialPickerOptions(
+            materials,
+            ref.watch(unitProvider).units,
+          ),
           onChanged: (val) => setState(() {
             _selectedMaterialId = val;
             _materialError = null;

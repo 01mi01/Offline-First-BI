@@ -7,6 +7,8 @@ import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
+import 'app_style.dart';
+import 'empty_state.dart';
 import 'info_hint.dart';
 import 'bi_interaction.dart';
 
@@ -65,42 +67,22 @@ class BiChartTypePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return _BiPillTrack(
       children: [
         for (final type in types)
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.s4),
-            child: Tooltip(
-              message: type.label,
-              child: GestureDetector(
-                key: ValueKey('bi-chart-type-${type.name}'),
-                onTap: () => onChanged(type),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s8,
-                    vertical: AppSpacing.s4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: type == selected
-                        ? AppColors.cyanDark.withValues(alpha: 0.1)
-                        : AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: type == selected
-                          ? AppColors.cyanDark
-                          : AppColors.border,
-                    ),
-                  ),
-                  child: Icon(
-                    _chartTypeIcon(type),
-                    size: 18,
-                    semanticLabel: type.label,
-                    color: type == selected
-                        ? AppColors.cyanDark
-                        : AppColors.textSecondary,
-                  ),
-                ),
+          Tooltip(
+            message: type.label,
+            child: _BiPill(
+              key: ValueKey('bi-chart-type-${type.name}'),
+              selected: type == selected,
+              onTap: () => onChanged(type),
+              child: Icon(
+                _chartTypeIcon(type),
+                size: 18,
+                semanticLabel: type.label,
+                color: type == selected
+                    ? AppColors.cyanDark
+                    : AppColors.textSecondary,
               ),
             ),
           ),
@@ -109,9 +91,59 @@ class BiChartTypePicker extends StatelessWidget {
   }
 }
 
-// Tarjeta contenedora de un indicador, con el estilo de las tarjetas de
-// Reportes: título con su icono de información y, debajo, los controles del
-// indicador (tipo de gráfico, métrica...).
+class _BiPillTrack extends StatelessWidget {
+  final List<Widget> children;
+
+  const _BiPillTrack({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.s2),
+        decoration: BoxDecoration(
+          color: AppColors.track,
+          borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: children),
+      ),
+    );
+  }
+}
+
+class _BiPill extends StatelessWidget {
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _BiPill({
+    super.key,
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 32, minWidth: 40),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppMetrics.thumbRadius),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
 class BiSectionCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -133,54 +165,20 @@ class BiSectionCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      decoration: AppCards.decoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (info != null)
-                InkResponse(
-                  key: ValueKey('bi-info-$title'),
-                  onTap: () => showBiInfo(context, title, info!),
-                  radius: 20,
-                  child: const Padding(
-                    padding: EdgeInsets.all(AppSpacing.s4),
-                    child: Icon(
-                      Icons.info_outline_rounded,
-                      size: 20,
-                      color: AppColors.textSecondary,
-                      semanticLabel: 'Información',
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.s2),
+          BiSectionHeader(title: title, info: info),
+          if (subtitle != null)
             Text(
               subtitle!,
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
+              ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
             ),
-          ],
           if (controls != null) ...[
-            const SizedBox(height: AppSpacing.s10),
+            const SizedBox(height: AppSpacing.s12),
             controls!,
           ],
           const SizedBox(height: AppSpacing.s12),
@@ -191,25 +189,106 @@ class BiSectionCard extends StatelessWidget {
   }
 }
 
-class BiEmptyState extends StatelessWidget {
-  final String message;
+class BiStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+  final bool large;
+  final Key? valueKey;
 
-  const BiEmptyState({
+  const BiStat({
     super.key,
-    this.message = 'Sin datos para los filtros aplicados',
+    required this.label,
+    required this.value,
+    this.valueColor = AppColors.textPrimary,
+    this.large = false,
+    this.valueKey,
   });
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final base = large ? textTheme.headlineMedium : textTheme.titleMedium;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              key: valueKey,
+              style: base?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: textTheme.labelMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class BiSectionHeader extends StatelessWidget {
+  final String title;
+  final String? info;
+
+  const BiSectionHeader({super.key, required this.title, this.info});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: AppSectionTitle(title)),
+        if (info != null)
+          InkResponse(
+            key: ValueKey('bi-info-$title'),
+            onTap: () => showBiInfo(context, title, info!),
+            radius: 20,
+            child: const Padding(
+              padding: EdgeInsets.all(AppSpacing.s4),
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 20,
+                color: AppColors.textSecondary,
+                semanticLabel: 'Información',
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class BiEmptyState extends StatelessWidget {
+  final String? message;
+
+  const BiEmptyState({super.key, this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final text = message;
+    if (text == null) {
+      return AppEmptyState.noData(
+        what: 'datos',
+        period: 'en el periodo',
+        compact: true,
+      );
+    }
+    return AppEmptyState.hint(
+      icon: Icons.bar_chart_rounded,
+      text: text,
+      compact: true,
     );
   }
 }
@@ -503,7 +582,9 @@ class _BiSignedBarsState extends State<BiSignedBars> {
           children: [
             for (var i = 0; i < items.length; i++)
               Padding(
-                padding: EdgeInsets.only(bottom: i == items.length - 1 ? 0 : 12),
+                padding: EdgeInsets.only(
+                  bottom: i == items.length - 1 ? 0 : 12,
+                ),
                 child: _SignedBarRow(
                   index: i,
                   item: items[i],
@@ -646,38 +727,19 @@ class BiMetricToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Con varias opciones o texto grande, pasan a una segunda línea.
-    return Wrap(
-      spacing: AppSpacing.s4,
-      runSpacing: AppSpacing.s4,
+    return _BiPillTrack(
       children: [
         for (var i = 0; i < labels.length; i++)
-          GestureDetector(
+          _BiPill(
+            selected: i == selected,
             onTap: () => onChanged(i),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.s10,
-                vertical: AppSpacing.s4,
-              ),
-              decoration: BoxDecoration(
+            child: Text(
+              labels[i],
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: i == selected
-                    ? AppColors.cyanDark.withValues(alpha: 0.1)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: i == selected ? AppColors.cyanDark : AppColors.border,
-                ),
-              ),
-              child: Text(
-                labels[i],
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: i == selected
-                      ? AppColors.cyanDark
-                      : AppColors.textSecondary,
-                  fontWeight: i == selected
-                      ? FontWeight.w600
-                      : FontWeight.w500,
-                ),
+                    ? AppColors.cyanDark
+                    : AppColors.textSecondary,
+                fontWeight: i == selected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ),
@@ -938,7 +1000,9 @@ class _BiPieChartState extends State<BiPieChart> {
                         final index =
                             response?.touchedSection?.touchedSectionIndex ?? -1;
                         final position = event.localPosition;
-                        if (index < 0 || index >= shown.length || position == null) {
+                        if (index < 0 ||
+                            index >= shown.length ||
+                            position == null) {
                           _hideTip();
                           return;
                         }
@@ -1099,46 +1163,6 @@ SideTitles bucketAxisTitles({
   );
 }
 
-class BiLegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-  final bool dashed;
-
-  const BiLegendDot({
-    super.key,
-    required this.color,
-    required this.label,
-    this.dashed = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: dashed ? Colors.transparent : color,
-            border: dashed ? Border.all(color: color, width: 2) : null,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s6),
-        Flexible(
-          child: Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // Marca del punto tocado en un gráfico de líneas: una línea vertical suave y un
 // punto con el color de la serie.
 List<TouchedSpotIndicatorData?> biSpotIndicators(
@@ -1296,7 +1320,8 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
             height: 196,
             tooltipKey: _tip,
             onTooltipHidden: _clearMarker,
-            labelOf: (i) => bucketAxisLabel(buckets[i].start, series.granularity),
+            labelOf: (i) =>
+                bucketAxisLabel(buckets[i].start, series.granularity),
             chartBuilder: (context, min, max) =>
                 _lines(buckets, maxY, visible, min, max),
           ),
@@ -1395,9 +1420,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
           for (final s in visible)
             line(
               s,
-              dash: s == BiTimeSeriesChart.gastosSeries
-                  ? const [6, 4]
-                  : null,
+              dash: s == BiTimeSeriesChart.gastosSeries ? const [6, 4] : null,
             ),
         ],
       ),

@@ -162,7 +162,7 @@ void main() {
       await tester.tap(find.byType(SearchablePickerField<int>));
       await tester.pumpAndSettle();
       // Sin escribir no hay lista de productos.
-      expect(find.text('Escribe para buscar'), findsOneWidget);
+      expect(find.text('Escribe para buscar.'), findsOneWidget);
       expect(find.text('Estuches'), findsNothing);
       expect(find.text('Tote bag negra'), findsNothing);
 
@@ -330,7 +330,7 @@ void main() {
       await tester.tap(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
       expect(find.text('Michael Brown'), findsNothing);
-      expect(find.text('Escribe para buscar'), findsOneWidget);
+      expect(find.text('Escribe para buscar.'), findsOneWidget);
       await tester.enterText(
         find.descendant(
           of: find.byType(SearchablePickerField<int>).first,
@@ -349,7 +349,7 @@ void main() {
       await tester.tap(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
       expect(find.text('Riverside Supply Co.'), findsNothing);
-      expect(find.text('Escribe para buscar'), findsOneWidget);
+      expect(find.text('Escribe para buscar.'), findsOneWidget);
       await tester.enterText(
         find.descendant(
           of: find.byType(SearchablePickerField<int>).first,

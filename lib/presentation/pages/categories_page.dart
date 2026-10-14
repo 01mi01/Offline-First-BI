@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/category_provider.dart';
 import '../../application/category_catalog_filter.dart';
+import '../../application/record_search.dart';
 import '../../models/category_model.dart';
 import '../../models/default_records.dart';
 import '../widgets/app_group.dart';
@@ -34,7 +35,10 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     final state = ref.watch(categoryProvider);
     final filter = ref.watch(categoryCatalogFilterProvider);
     final setFilter = ref.read(categoryCatalogFilterProvider.notifier);
-    final visible = filter.apply(state.categories);
+    final visible = filter.apply(
+      state.categories,
+      index: ref.watch(categorySearchIndexProvider),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,

@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
-import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'filter_helpers.dart';
 
 // Con el teclado abierto, un buscador con resultados debajo no se mueve al
 // escribir ni al aparecer los resultados: lo escrito siempre queda a la vista
@@ -106,19 +106,21 @@ void main() {
     // Tocar el chip abre el buscador en línea (que toma el foco), y entonces
     // sube el teclado.
     // (en una pantalla chica el panel de filtros se desplaza por dentro)
-    await tester.ensureVisible(find.text('Ubicación'));
+    await openFilterPanel(tester);
+    final locationField = find.descendant(
+      of: find.byKey(const ValueKey('filter-search-Ubicación')),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(locationField);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ubicación'));
+    await tester.tap(locationField);
     await tester.pumpAndSettle();
     openKeyboard(tester);
     await settle(tester);
 
     await typeAndCheck(
       tester,
-      find.descendant(
-        of: find.byType(SearchablePickerField<int>),
-        matching: find.byType(TextField),
-      ),
+      locationField,
       first: 'zona 1',
       second: 'zona 2',
       results: find.text('Zona 1, Bolivia'),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
-import '../../application/location_options.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/material_provider.dart';
 import '../../application/unit_provider.dart';
@@ -36,6 +35,7 @@ import '../../config/rounding.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/picker_options.dart';
 
 class PurchaseDialog extends ConsumerStatefulWidget {
   final PurchaseModel? purchase;
@@ -369,11 +369,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       label: 'Proveedor',
                       searchHint: 'Buscar proveedor',
                       value: supplierValue,
-                      options: [
-                        const PickerOption<int>(null, DefaultRecords.supplier),
-                        for (final s in suppliers)
-                          PickerOption<int>(s.id, s.name),
-                      ],
+                      options: supplierPickerOptions(
+                        suppliers,
+                        noneLabel: DefaultRecords.supplier,
+                      ),
                       onChanged: (val) => setState(() {
                         _selectedSupplierId = val;
                         _error = null;
@@ -385,17 +384,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       label: 'Ubicación',
                       searchHint: 'Buscar ubicación',
                       value: _selectedLocationId,
-                      options: [
-                        const PickerOption<int>(null, 'Sin ubicación'),
-                        for (final l in ref.watch(locationProvider).locations)
-                          if (l.isActive || l.id == _selectedLocationId)
-                            PickerOption<int>(
-                              l.id,
-                              locationLabel(l),
-                              subtitle: locationZone(l),
-                              selectedLabel: locationLabelWithZone(l),
-                            ),
-                      ],
+                      options: locationPickerOptions(
+                        ref.watch(locationProvider).locations,
+                        noneLabel: 'Sin ubicación',
+                        keepId: _selectedLocationId,
+                      ),
                       onChanged: (val) =>
                           setState(() => _selectedLocationId = val),
                     ),
@@ -404,12 +397,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       label: 'Evento',
                       searchHint: 'Buscar evento',
                       value: _selectedEventId,
-                      options: [
-                        const PickerOption<int>(null, 'Sin evento'),
-                        for (final e in ref.watch(eventProvider).events)
-                          if (e.isActive || e.id == _selectedEventId)
-                            PickerOption<int>(e.id, e.name),
-                      ],
+                      options: eventPickerOptions(
+                        ref.watch(eventProvider).events,
+                        ref.watch(locationProvider).locations,
+                        noneLabel: 'Sin evento',
+                        keepId: _selectedEventId,
+                      ),
                       onChanged: (val) =>
                           setState(() => _selectedEventId = val),
                     ),
@@ -785,9 +778,10 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                 label: 'Material',
                 searchHint: 'Buscar material',
                 value: _selectedMaterialId,
-                options: [
-                  for (final m in materials) PickerOption<int>(m.id, m.name),
-                ],
+                options: materialPickerOptions(
+                  materials,
+                  ref.watch(unitProvider).units,
+                ),
                 onChanged: (val) {
                   final mat = materials.where((m) => m.id == val).firstOrNull;
                   setState(() {

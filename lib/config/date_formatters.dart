@@ -35,21 +35,3 @@ const List<String> _shortMonthNames = [
 String formatDateShort(DateTime date) =>
     '${date.day} ${_shortMonthNames[date.month - 1]} ${date.year}';
 
-const List<String> _monthNames = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-];
-
-// Octubre 2026: nombre del mes y año (para el periodo mostrado en Inicio).
-String formatMonthYear(DateTime date) =>
-    '${_monthNames[date.month - 1]} ${date.year}';

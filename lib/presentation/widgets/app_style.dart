@@ -57,36 +57,6 @@ class AppText {
   );
 }
 
-// Campo de texto sin borde ni relleno, para dentro de una fila de formulario.
-InputDecoration appFieldDecoration(
-  BuildContext context, {
-  String? hint,
-  String? helper,
-  Widget? suffix,
-}) {
-  const none = InputBorder.none;
-  return InputDecoration(
-    hintText: hint,
-    helperText: helper,
-    helperMaxLines: 3,
-    errorMaxLines: 3,
-    isDense: true,
-    filled: false,
-    fillColor: Colors.transparent,
-    border: none,
-    enabledBorder: none,
-    focusedBorder: none,
-    errorBorder: none,
-    focusedErrorBorder: none,
-    disabledBorder: none,
-    contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
-    hintStyle: AppText.rowTitle(context, color: AppColors.textSecondary),
-    helperStyle: AppText.footnote(context),
-    errorStyle: AppText.error(context),
-    suffixIcon: suffix,
-  );
-}
-
 class AppChevron extends StatelessWidget {
   const AppChevron({super.key});
 
@@ -96,6 +66,23 @@ class AppChevron extends StatelessWidget {
       Icons.chevron_right_rounded,
       size: 22,
       color: AppColors.chevron,
+    );
+  }
+}
+
+class AppSectionTitle extends StatelessWidget {
+  final String title;
+
+  const AppSectionTitle(this.title, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      ),
     );
   }
 }

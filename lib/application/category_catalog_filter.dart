@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/category_model.dart';
+import 'record_search.dart';
 
 enum CategoryStatusFilter { all, active, inactive }
 
@@ -21,20 +22,21 @@ class CategoryCatalogFilter {
     );
   }
 
-  // Categorías que cumplen la búsqueda por nombre y el estado, en el orden en
-  // que llegan (alfabético por nombre desde el repositorio).
-  List<CategoryModel> apply(List<CategoryModel> categories) {
-    final q = query.trim().toLowerCase();
-    return categories.where((c) {
+  List<CategoryModel> apply(
+    List<CategoryModel> categories, {
+    SearchIndex<CategoryModel>? index,
+  }) {
+    final found = (index ?? SearchIndex(categories, (c) => c.name))
+        .search(query);
+    return found.where((c) {
       switch (status) {
         case CategoryStatusFilter.all:
-          break;
+          return true;
         case CategoryStatusFilter.active:
-          if (!c.isActive) return false;
+          return c.isActive;
         case CategoryStatusFilter.inactive:
-          if (c.isActive) return false;
+          return !c.isActive;
       }
-      return q.isEmpty || c.name.toLowerCase().contains(q);
     }).toList();
   }
 }

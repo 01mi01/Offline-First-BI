@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/supplier_provider.dart';
-import '../../application/search_filter.dart';
+import '../../application/record_search.dart';
 import '../../application/status_filter.dart';
 import '../../models/default_records.dart';
 import '../../models/supplier_model.dart';
@@ -41,12 +41,11 @@ class SuppliersListBody extends ConsumerWidget {
     final state = ref.watch(supplierProvider);
     final status = ref.watch(supplierStatusFilterProvider);
     final query = ref.watch(supplierListQueryProvider);
-    // Búsqueda por nombre (sin distinguir tildes) y filtro por estado.
-    final visible = filterByQuery<SupplierModel>(
-      state.suppliers.where((r) => status.matches(r.isActive)),
-      query,
-      (r) => r.name,
-    );
+    final visible = ref
+        .watch(supplierSearchIndexProvider)
+        .search(query)
+        .where((r) => status.matches(r.isActive))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,

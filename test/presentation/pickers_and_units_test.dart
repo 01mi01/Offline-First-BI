@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
-import 'package:offline_first_bi/application/search_filter.dart';
+import 'package:offline_first_bi/application/record_search.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/material_repository.dart';
 import 'package:offline_first_bi/models/material_model.dart';
@@ -71,10 +71,10 @@ void main() {
   Future<Unit> unitNamed(String name) async =>
       (await (db.select(db.units)..where((u) => u.name.equals(name))).getSingle());
 
-  group('filterByQuery (texto escrito -> coincidencias)', () {
+  group('SearchIndex (texto escrito -> coincidencias)', () {
     final names = ['Ana Martínez', 'Sarah Davis', 'Café Central', 'Cañete', 'Laura Thompson'];
 
-    List<String> find(String q) => filterByQuery<String>(names, q, (n) => n);
+    List<String> find(String q) => SearchIndex<String>(names, (n) => n).search(q);
 
     test('an empty query returns everything, in order', () {
       expect(find(''), names);
@@ -182,7 +182,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'zzz');
       await tester.pumpAndSettle();
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
     });
 
     testWidgets('picking a filtered option selects it; the default (null) option is selectable too', (

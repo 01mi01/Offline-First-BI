@@ -33,15 +33,14 @@ class AppColors {
 
   // Líneas y detalles
   static const border = Color(0xFFE2EBEE);
-  static const hairline = Color(0xFFE8ECF1);
   static const separator = Color(0xFFDCE1E8);
   static const chevron = Color(0xFF9AA5B4);
+  static const checkFill = Color(0xFF04787E);
 
   // Efectos
   static const pressedOverlay = Color(0x1F112444);
   static const shadow = Color(0x14112444);
   static const shadowNeutral = Color(0x1F000000);
-  static const scrim = Color(0xB3000000);
 
   // Estados
   static const error = Color(0xFFC2305F);
@@ -103,16 +102,9 @@ class AppSpacing {
   static const double s24 = 24;
   static const double s28 = 28;
   static const double s32 = 32;
-  static const double s40 = 40;
   static const double s48 = 48;
 
   // Relleno de listas con botón flotante: 56 de alto más 16 de margen.
-  static const EdgeInsets listWithFab = EdgeInsets.fromLTRB(
-    s16,
-    s16,
-    s16,
-    s16 + 56 + s16,
-  );
 }
 
 class AppShadows {

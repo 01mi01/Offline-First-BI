@@ -57,6 +57,7 @@ Future<T?> showAppSheet<T>(
 // este termina donde empiezan ellos y respetan la barra inferior del teléfono.
 class AppSheetScaffold extends StatelessWidget {
   final String title;
+  final Key? titleKey;
   final Widget child;
   final Widget? actions;
   final bool expand;
@@ -64,6 +65,7 @@ class AppSheetScaffold extends StatelessWidget {
   const AppSheetScaffold({
     super.key,
     required this.title,
+    this.titleKey,
     required this.child,
     this.actions,
     this.expand = true,
@@ -86,6 +88,7 @@ class AppSheetScaffold extends StatelessWidget {
             child: Center(
               child: Text(
                 title,
+                key: titleKey,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

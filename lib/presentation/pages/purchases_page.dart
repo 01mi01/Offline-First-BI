@@ -48,14 +48,14 @@ class PurchasesListBody extends ConsumerWidget {
     final dates = ref.watch(purchaseDateFilterProvider);
     final timeFilter = ref.watch(purchaseTimeFilterProvider);
     final query = ref.watch(purchaseListQueryProvider);
-    final searchText = ref.watch(purchaseSearchTextProvider);
-    final visible = state.purchases
+    final visible = ref
+        .watch(purchaseSearchIndexProvider)
+        .search(query)
         .where(
           (p) =>
               kind.includes(p) &&
               dates.matches(p.date) &&
-              timeFilter.includes(p.date) &&
-              matchesAllWords(searchText[p.id] ?? '', query),
+              timeFilter.includes(p.date),
         )
         .toList();
 

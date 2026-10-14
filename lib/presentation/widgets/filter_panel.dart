@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import 'app_controls.dart';
 import 'date_range_filter_bar.dart' show pickFilterDate, showDateRangeError;
 import 'focus_utils.dart';
+import 'searchable_picker.dart';
 
 class FilterOption<T> {
   final T value;
@@ -50,7 +51,6 @@ class FilterDropdown<T> extends FilterField {
   @override
   final T defaultValue;
   final ValueChanged<T> onApply;
-  final bool wide;
 
   FilterDropdown({
     required this.label,
@@ -58,11 +58,7 @@ class FilterDropdown<T> extends FilterField {
     required this.current,
     required this.defaultValue,
     required this.onApply,
-    this.wide = false,
   });
-
-  @override
-  bool get fullWidth => wide;
 
   String _labelOf(T value) => options
       .firstWhere(
@@ -135,7 +131,59 @@ class FilterDropdown<T> extends FilterField {
   }
 }
 
-// Atajos de periodo y fechas Desde / Hasta.
+class FilterPicker extends FilterField {
+  final String label;
+  final String searchHint;
+  final String allLabel;
+  final List<PickerOption<int>> options;
+  @override
+  final int? current;
+  final ValueChanged<int?> onApply;
+
+  FilterPicker({
+    required this.label,
+    required this.searchHint,
+    required this.allLabel,
+    required this.options,
+    required this.current,
+    required this.onApply,
+  });
+
+  @override
+  Object? get defaultValue => null;
+
+  @override
+  bool get fullWidth => true;
+
+  @override
+  String? get summary {
+    for (final o in options) {
+      if (o.value == current) return o.selectedLabel ?? o.label;
+    }
+    return null;
+  }
+
+  @override
+  void apply(Object? value) => onApply(value as int?);
+
+  @override
+  Widget build(BuildContext context) {
+    return _Labeled(
+      label: label,
+      child: SearchablePickerField<int>(
+        key: ValueKey('filter-search-$label'),
+        label: label,
+        showLabel: false,
+        searchStyle: true,
+        searchHint: searchHint,
+        value: current,
+        options: [PickerOption<int>(null, allLabel), ...options],
+        onChanged: onApply,
+      ),
+    );
+  }
+}
+
 class FilterDates extends FilterField {
   @override
   final DateRangeFilter current;
@@ -488,8 +536,30 @@ class FilterPanel extends StatelessWidget {
 
   const FilterPanel({super.key, required this.fields, required this.open});
 
+  List<List<FilterField>> get _rows {
+    final rows = <List<FilterField>>[];
+    var pending = <FilterField>[];
+    void flush() {
+      if (pending.isNotEmpty) rows.add(pending);
+      pending = <FilterField>[];
+    }
+
+    for (final f in fields) {
+      if (f.fullWidth) {
+        flush();
+        rows.add([f]);
+      } else {
+        pending.add(f);
+        if (pending.length == 2) flush();
+      }
+    }
+    flush();
+    return rows;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final rows = _rows;
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
@@ -502,24 +572,22 @@ class FilterPanel extends StatelessWidget {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final half = (constraints.maxWidth - AppSpacing.s8) / 2;
-                  final lone = fields.where((f) => !f.fullWidth).length == 1;
-                  return Wrap(
-                    spacing: AppSpacing.s8,
-                    runSpacing: AppSpacing.s12,
-                    children: [
-                      for (final f in fields)
-                        SizedBox(
-                          width: f.fullWidth || lone
-                              ? constraints.maxWidth
-                              : half,
-                          child: f.build(context),
-                        ),
-                    ],
-                  );
-                },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < rows.length; i++) ...[
+                    if (i > 0) const SizedBox(height: AppSpacing.s12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var j = 0; j < rows[i].length; j++) ...[
+                          if (j > 0) const SizedBox(width: AppSpacing.s8),
+                          Expanded(child: rows[i][j].build(context)),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
               ),
             )
           : const SizedBox(width: double.infinity),
@@ -532,17 +600,29 @@ class FilterPanel extends StatelessWidget {
 class FilterArea extends StatefulWidget {
   final Widget? search;
   final List<FilterField> fields;
+  final bool alwaysOpen;
+  final VoidCallback? onClear;
 
-  const FilterArea({super.key, required this.fields, this.search});
+  const FilterArea({
+    super.key,
+    required this.fields,
+    this.search,
+    this.alwaysOpen = false,
+    this.onClear,
+  });
 
   @override
   State<FilterArea> createState() => _FilterAreaState();
 }
 
 class _FilterAreaState extends State<FilterArea> {
-  bool _open = false;
+  late bool _open = widget.alwaysOpen;
 
   void _clear() {
+    if (widget.onClear != null) {
+      widget.onClear!();
+      return;
+    }
     for (final f in widget.fields) {
       f.apply(f.defaultValue);
     }
@@ -570,17 +650,18 @@ class _FilterAreaState extends State<FilterArea> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: margin,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (search != null) Expanded(child: search),
-                if (search != null) const SizedBox(width: AppSpacing.s8),
-                button,
-              ],
+          if (!widget.alwaysOpen || search != null)
+            Padding(
+              padding: margin,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (search != null) Expanded(child: search),
+                  if (search != null) const SizedBox(width: AppSpacing.s8),
+                  button,
+                ],
+              ),
             ),
-          ),
           if (count > 0)
             Padding(
               padding: margin,

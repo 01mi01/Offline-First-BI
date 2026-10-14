@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
-import '../../application/search_filter.dart';
+import '../../application/record_search.dart';
 import '../../application/status_filter.dart';
 import '../../models/client_model.dart';
 import '../../models/default_records.dart';
@@ -41,12 +41,11 @@ class ClientsListBody extends ConsumerWidget {
     final state = ref.watch(clientProvider);
     final status = ref.watch(clientStatusFilterProvider);
     final query = ref.watch(clientListQueryProvider);
-    // Búsqueda por nombre (sin distinguir tildes) y filtro por estado.
-    final visible = filterByQuery<ClientModel>(
-      state.clients.where((r) => status.matches(r.isActive)),
-      query,
-      (r) => r.name,
-    );
+    final visible = ref
+        .watch(clientSearchIndexProvider)
+        .search(query)
+        .where((r) => status.matches(r.isActive))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,

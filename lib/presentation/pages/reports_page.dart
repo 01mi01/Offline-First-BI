@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/sale_provider.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
+import '../../application/sale_provider.dart';
+import '../../config/rounding.dart';
+import '../../models/purchase_model.dart';
 import '../../models/report_filters.dart';
 import '../../models/report_models.dart';
-import '../../models/purchase_model.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/screen_header.dart';
+import '../widgets/app_group.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/report_filters_widget.dart';
-import '../widgets/report_sale_card.dart';
-import '../widgets/report_purchase_card.dart';
+import '../widgets/report_records.dart';
+import '../widgets/screen_header.dart';
 import 'report_detail_page.dart';
-import '../../config/rounding.dart';
 
 class ReportsPage extends ConsumerWidget {
   const ReportsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const ScreenScaffold(title: 'Reportes', body: ReportsBody());
+    return const ScreenScaffold(
+      title: 'Reportes',
+      body: ReportsBody(),
+    );
   }
 }
 
-// Contenido de reportes (filtros + tabs Ventas/Compras), sin AppBar propia.
-// Se usa tanto en ReportsPage (con AppBar y back) como embebido en el sub-tab
-// "Reportes" del tab "Reportes + BI" de la navegación inferior (sin AppBar).
 class ReportsBody extends ConsumerStatefulWidget {
   const ReportsBody({super.key});
 
@@ -36,22 +37,13 @@ class ReportsBody extends ConsumerStatefulWidget {
 class _ReportsBodyState extends ConsumerState<ReportsBody>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  // Cada pestaña (Ventas / Compras) conserva sus propios filtros: cambiar de
-  // pestaña no arrastra las fechas ni el resto de filtros de la otra.
   ReportFilters _salesFilters = const ReportFilters();
   ReportFilters _purchaseFilters = const ReportFilters();
-  int _currentTab = 0;
-
-  ReportFilters get _activeFilters =>
-      _currentTab == 0 ? _salesFilters : _purchaseFilters;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      setState(() => _currentTab = _tabController.index);
-    });
   }
 
   @override
@@ -73,313 +65,236 @@ class _ReportsBodyState extends ConsumerState<ReportsBody>
     }
 
     final saleRows = ref.watch(saleReportRowsProvider(_salesFilters));
-    final filteredPurchases = ref.watch(
-      filteredPurchasesProvider(_purchaseFilters),
-    );
+    final purchases = ref.watch(filteredPurchasesProvider(_purchaseFilters));
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          children: [
-            // Tabs Ventas/Compras, embebidos en el contenido (sin AppBar propia)
-            Material(
-              color: AppColors.background,
-              child: TabBar(
-                controller: _tabController,
-                labelColor: AppColors.cyanDark,
-                unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.cyanDark,
-                indicatorSize: TabBarIndicatorSize.label,
-                labelStyle: Theme.of(
-                  context,
-                ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
-                tabs: const [
-                  Tab(text: 'Ventas'),
-                  Tab(text: 'Compras'),
-                ],
-              ),
-            ),
-
-            // Panel de filtros. Con el buscador en línea abierto y el teclado
-            // arriba puede no caber: se limita a la mitad del alto disponible y se
-            // desplaza dentro (sin recortar el resto, que sigue debajo).
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                // Con el buscador en línea abierto (teclado arriba) el panel usa
-            // todo el alto disponible bajo las pestañas: el campo queda arriba
-            // y los resultados debajo, sin que lo escrito se salga de vista.
-            maxHeight: View.of(context).viewInsets.bottom > 0
-                ? (constraints.maxHeight - kTextTabBarHeight).clamp(
-                    0.0,
-                    double.infinity,
-                  )
-                : constraints.maxHeight * 0.5,
-              ),
-              child: ListView(
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                children: [
-                  ReportFiltersWidget(
-                    filters: _activeFilters,
-                    onChanged: (f) => setState(() {
-                      if (_currentTab == 0) {
-                        _salesFilters = f;
-                      } else {
-                        _purchaseFilters = f;
-                      }
-                    }),
-                    activeTab: _currentTab,
-                  ),
-                ],
-              ),
-            ),
-
-            // Tabs de contenido
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  Container(
-                    key: ValueKey(_salesFilters.hashCode),
-                    color: AppColors.background,
-                    child: _SalesTab(rows: saleRows),
-                  ),
-                  Container(
-                    key: ValueKey(_purchaseFilters.hashCode + 1),
-                    color: AppColors.background,
-                    child: _PurchasesTab(purchases: filteredPurchases),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// Tab de ventas
-class _SalesTab extends ConsumerWidget {
-  final List<SaleReportRow> rows;
-
-  const _SalesTab({required this.rows});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(reportServiceProvider).summarizeSaleRows(rows);
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s16,
-        0,
-        AppSpacing.s16,
-        AppSpacing.s16,
-      ),
+    return Column(
       children: [
-        const SizedBox(height: AppSpacing.s16),
-        _SummaryBar(
-          children: [
-            _SummaryTile(label: 'Ventas', value: '${summary.count}'),
-            _SummaryTile(
-              label: 'Ingresos',
-              value: 'Bs. ${fixed2(summary.totalAmount)}',
-              valueColor: AppColors.cyanDark,
-            ),
-            _SummaryTile(
-              label: 'Descuentos',
-              value: 'Bs. ${fixed2(summary.totalDiscount)}',
-              valueColor: AppColors.error,
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.s12),
-        _ViewFullReportButton(
-          enabled: rows.isNotEmpty,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ReportDetailPage(
-                title: 'Reporte de Ventas',
-                type: ReportType.sales,
-                saleRows: rows,
-                purchases: const [],
-              ),
-            ),
+        Material(
+          color: AppColors.background,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: AppColors.cyanDark,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.cyanDark,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
+            tabs: const [
+              Tab(text: 'Ventas'),
+              Tab(text: 'Compras'),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        if (rows.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: AppSpacing.s32),
-            child: Center(
-              child: Text(
-                'Sin resultados para los filtros aplicados',
-                style: TextStyle(color: AppColors.textSecondary),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _SalesTab(
+                rows: saleRows,
+                hasSales: saleState.sales.isNotEmpty,
+                filters: _salesFilters,
+                onFilters: (f) => setState(() => _salesFilters = f),
               ),
-            ),
-          )
-        else
-          ...rows.map((r) => ReportSaleCard(row: r)),
+              _PurchasesTab(
+                purchases: purchases,
+                hasPurchases: purchaseState.purchases.isNotEmpty,
+                filters: _purchaseFilters,
+                onFilters: (f) => setState(() => _purchaseFilters = f),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 }
 
-// Tab de compras
+class _SalesTab extends ConsumerWidget {
+  final List<SaleReportRow> rows;
+  final bool hasSales;
+  final ReportFilters filters;
+  final ValueChanged<ReportFilters> onFilters;
+
+  const _SalesTab({
+    required this.rows,
+    required this.hasSales,
+    required this.filters,
+    required this.onFilters,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summary = ref.watch(reportServiceProvider).summarizeSaleRows(rows);
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: ReportFiltersWidget(
+            filters: filters,
+            onChanged: onFilters,
+            activeTab: 0,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: _ReportSummary(
+            values: [
+              ('Ventas', '${summary.count}'),
+              ('Ingresos', 'Bs. ${fixed2(summary.totalAmount)}'),
+              ('Descuentos', 'Bs. ${fixed2(summary.totalDiscount)}'),
+            ],
+            enabled: rows.isNotEmpty,
+            onOpen: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReportDetailPage(
+                  title: 'Reporte de Ventas',
+                  type: ReportType.sales,
+                  saleRows: rows,
+                  purchases: const [],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (rows.isEmpty)
+          SliverToBoxAdapter(
+            child: hasSales
+                ? const AppEmptyState.noMatch()
+                : AppEmptyState.list(
+                    plural: 'ventas',
+                    icon: Icons.point_of_sale_rounded,
+                  ),
+          )
+        else
+          AppSliverGroup(
+            itemCount: rows.length,
+            itemBuilder: (context, index) =>
+                ReportSaleRowTile(row: rows[index]),
+          ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _PurchasesTab extends ConsumerWidget {
   final List<PurchaseModel> purchases;
+  final bool hasPurchases;
+  final ReportFilters filters;
+  final ValueChanged<ReportFilters> onFilters;
 
-  const _PurchasesTab({required this.purchases});
+  const _PurchasesTab({
+    required this.purchases,
+    required this.hasPurchases,
+    required this.filters,
+    required this.onFilters,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(purchasesSummaryProvider(purchases));
     final rows = ref.watch(purchaseReportRowsProvider(purchases));
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s16,
-        0,
-        AppSpacing.s16,
-        AppSpacing.s16,
-      ),
-      children: [
-        const SizedBox(height: AppSpacing.s16),
-        _SummaryBar(
-          children: [
-            _SummaryTile(label: 'Compras', value: '${summary.count}'),
-            _SummaryTile(
-              label: 'Gasto total',
-              value: 'Bs. ${fixed2(summary.totalAmount)}',
-              valueColor: AppColors.error,
-            ),
-            _SummaryTile(
-              label: materialsSummaryLabel(summary.materialCount),
-              value: '${summary.materialCount}',
-              valueColor: AppColors.cyanDark,
-            ),
-          ],
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: ReportFiltersWidget(
+            filters: filters,
+            onChanged: onFilters,
+            activeTab: 1,
+          ),
         ),
-        const SizedBox(height: AppSpacing.s12),
-        _ViewFullReportButton(
-          enabled: purchases.isNotEmpty,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ReportDetailPage(
-                title: 'Reporte de Compras',
-                type: ReportType.purchases,
-                saleRows: const [],
-                purchases: purchases,
+        SliverToBoxAdapter(
+          child: _ReportSummary(
+            values: [
+              ('Compras', '${summary.count}'),
+              ('Gasto total', 'Bs. ${fixed2(summary.totalAmount)}'),
+              (
+                materialsSummaryLabel(summary.materialCount),
+                '${summary.materialCount}',
+              ),
+            ],
+            enabled: purchases.isNotEmpty,
+            onOpen: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReportDetailPage(
+                  title: 'Reporte de Compras',
+                  type: ReportType.purchases,
+                  saleRows: const [],
+                  purchases: purchases,
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
         if (purchases.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: AppSpacing.s32),
-            child: Center(
-              child: Text(
-                'Sin resultados para los filtros aplicados',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
+          SliverToBoxAdapter(
+            child: hasPurchases
+                ? const AppEmptyState.noMatch()
+                : AppEmptyState.list(
+                    plural: 'compras',
+                    icon: Icons.shopping_bag_rounded,
+                  ),
           )
         else
-          ...rows.map(
-            (r) => ReportPurchaseCard(
-              purchase: r.purchase,
-              supplierName: r.supplierName,
-              locationName: r.locationName,
-              eventName: r.eventName,
-            ),
+          AppSliverGroup(
+            itemCount: rows.length,
+            itemBuilder: (context, index) =>
+                ReportPurchaseRowTile(row: rows[index]),
           ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
+          ),
+        ),
       ],
     );
   }
 }
 
-// Barra de resumen
-class _SummaryBar extends StatelessWidget {
-  final List<Widget> children;
+class _ReportSummary extends StatelessWidget {
+  final List<(String, String)> values;
+  final bool enabled;
+  final VoidCallback onOpen;
 
-  const _SummaryBar({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(children: children.map((c) => Expanded(child: c)).toList()),
-    );
-  }
-}
-
-// Tile de resumen
-class _SummaryTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _SummaryTile({
-    required this.label,
-    required this.value,
-    this.valueColor,
+  const _ReportSummary({
+    required this.values,
+    required this.enabled,
+    required this.onOpen,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: valueColor ?? AppColors.textPrimary,
-          ),
+        AppSection(
+          children: [
+            for (final (label, value) in values)
+              AppValueRow(label: label, value: value),
+          ],
         ),
-        const SizedBox(height: AppSpacing.s2),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            0,
+            AppSpacing.s16,
+            AppSpacing.s16,
+          ),
+          child: ElevatedButton.icon(
+            onPressed: enabled ? onOpen : null,
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: const Text('Ver reporte completo y exportar'),
+          ),
         ),
       ],
     );
   }
 }
 
-// Etiqueta del conteo de compras de materiales en el resumen: "1 Material" en
-// singular, "N Materiales" en cualquier otro caso (incluido 0).
 String materialsSummaryLabel(int count) => count == 1 ? 'Material' : 'Materiales';
-
-// Botón ver reporte completo
-class _ViewFullReportButton extends StatelessWidget {
-  final bool enabled;
-  final VoidCallback onTap;
-
-  const _ViewFullReportButton({required this.enabled, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: enabled ? onTap : null,
-      icon: const Icon(Icons.open_in_new_rounded, size: 16),
-      label: const Text('Ver reporte completo y exportar'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 44),
-        foregroundColor: AppColors.cyanDark,
-        side: BorderSide(color: AppColors.cyanDark),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppMetrics.groupRadius)),
-      ),
-    );
-  }
-}

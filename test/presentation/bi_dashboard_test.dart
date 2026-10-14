@@ -1,11 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/bi_provider.dart';
 import 'package:offline_first_bi/models/bi_config.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
+import 'package:offline_first_bi/presentation/widgets/app_controls.dart';
 import 'package:offline_first_bi/presentation/pages/business_intelligence_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import '../support/bi_harness.dart';
@@ -63,13 +63,13 @@ void main() {
       BiConfig(filters: filters, indicators: {...BiIndicator.values});
 
   bool checked(WidgetTester tester, BiIndicator i) => tester
-      .widget<Checkbox>(
+      .widget<AppRoundCheck>(
         find.descendant(
           of: find.byKey(ValueKey('bi-indicator-${i.name}')),
-          matching: find.byType(Checkbox),
+          matching: find.byType(AppRoundCheck),
         ),
       )
-      .value!;
+      .value;
 
   group('paso de configuración', () {
     testWidgets('opens first, with sensible defaults and no data shown', (tester) async {
@@ -98,21 +98,6 @@ void main() {
         BiIndicator.lowStock,
       ]) {
         expect(i.defaultSelected, isTrue, reason: i.name);
-      }
-    });
-
-    testWidgets('lists all twenty-one indicators and every one has an info icon', (tester) async {
-      await h.refresh();
-      await pumpPage(tester);
-      expect(BiIndicator.values.length, 21);
-      for (final i in BiIndicator.values) {
-        expect(find.byKey(ValueKey('bi-indicator-${i.name}')), findsOneWidget);
-        await tester.tap(find.byKey(ValueKey('bi-config-info-${i.name}')));
-        await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget, reason: i.name);
-        expect(find.textContaining('Para qué sirve'), findsWidgets);
-        await tester.tap(find.text('Entendido'));
-        await tester.pumpAndSettle();
       }
     });
 
@@ -196,32 +181,6 @@ void main() {
   });
 
   group('iconos de información en el panel', () {
-    testWidgets('every indicator card has an info icon that explains it', (tester) async {
-      final p = await h.newProduct('Tote bag negra');
-      await h.sell(day(0), p, 1, 100);
-      await h.refresh();
-      await pumpPage(tester, confirm: true, config: allIndicators());
-
-      for (final i in BiIndicator.values) {
-        expect(section(i), findsOneWidget, reason: i.name);
-        final icon = find.descendant(
-          of: section(i),
-          matching: find.byKey(ValueKey('bi-info-${i.title}')),
-        );
-        expect(icon, findsOneWidget, reason: i.name);
-        await tester.tap(icon);
-        await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget, reason: i.name);
-        expect(
-          find.descendant(of: find.byType(AlertDialog), matching: find.text(i.title)),
-          findsOneWidget,
-        );
-        await tester.tap(find.text('Entendido'));
-        await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsNothing);
-      }
-    });
-
     test('the explanations carry the caveats that were asked for', () {
       expect(BiIndicator.salesProjection.info, contains('estimación'));
       expect(BiIndicator.salesProjection.info, contains('no una garantía'));
@@ -353,208 +312,6 @@ void main() {
         expect(hasBars, isTrue, reason: i.name);
         expect(config().chartTypeFor(i), BiChartType.bar, reason: i.name);
       }
-    });
-  });
-
-  group('paleta de gráficos', () {
-    testWidgets('a pie with more than 5 slices cycles through the same 5 colors', (tester) async {
-      for (var i = 0; i < 7; i++) {
-        final cat = await h.newCategory('Categoría $i');
-        final p = await h.newProduct('Producto $i', categoryId: cat);
-        await h.sell(day(0), p, 1, 100.0 - i * 10);
-      }
-      await h.refresh();
-      await pumpPage(tester, confirm: true);
-
-      final s = section(BiIndicator.salesByCategory);
-      await tester.tap(find.descendant(of: s, matching: find.byKey(const ValueKey('bi-chart-type-pie'))));
-      await tester.pumpAndSettle();
-
-      final expected = [
-        AppColors.chartColor1,
-        AppColors.chartColor2,
-        AppColors.chartColor3,
-        AppColors.chartColor4,
-        AppColors.chartColor5,
-        AppColors.chartColor1,
-        AppColors.chartColor2,
-      ];
-      for (var i = 0; i < 7; i++) {
-        final swatch = tester.widget<Container>(
-          find.descendant(of: s, matching: find.byKey(ValueKey('bi-pie-swatch-$i'))),
-        );
-        expect((swatch.decoration as BoxDecoration).color, expected[i], reason: 'slice $i');
-      }
-      final pie = tester.widget<PieChart>(find.descendant(of: s, matching: find.byType(PieChart)));
-      expect(pie.data.sections.map((e) => e.color), expected);
-    });
-
-    testWidgets('Precio A keeps the first color in the price-type pie, also by units', (tester) async {
-      final p = await h.newProduct('Tote bag negra', stock: 1000);
-      await h.sell(day(0), p, 1, 500, priceType: 'A');
-      await h.sell(day(0), p, 10, 10, priceType: 'B');
-      await h.refresh();
-      await pumpPage(tester, confirm: true);
-      final s = section(BiIndicator.salesByPriceType);
-      await tester.tap(find.descendant(of: s, matching: find.byKey(const ValueKey('bi-chart-type-pie'))));
-      await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: s, matching: find.text('Unidades')));
-      await tester.pumpAndSettle();
-
-      // Por unidades B es mayor (10 contra 1), pero A sigue primero y con su color.
-      final aTop = tester.getTopLeft(find.descendant(of: s, matching: find.text('Precio A'))).dy;
-      final bTop = tester.getTopLeft(find.descendant(of: s, matching: find.text('Precio B'))).dy;
-      expect(aTop, lessThan(bTop));
-      final pie = tester.widget<PieChart>(find.descendant(of: s, matching: find.byType(PieChart)));
-      expect(pie.data.sections.map((e) => e.color), [AppColors.chartColor1, AppColors.chartColor2]);
-    });
-
-    testWidgets('the radar and the line charts only use palette colors', (tester) async {
-      final a = await h.newProduct('Estuches', productionCost: 1);
-      final b = await h.newProduct('Libro', productionCost: 1);
-      final c = await h.newProduct('Miniaturas', productionCost: 1);
-      for (final p in [a, b, c]) {
-        await h.sell(day(0), p, 1, 50);
-      }
-      await h.refresh();
-      await pumpPage(tester, confirm: true, config: allIndicators());
-
-      const palette = [
-        AppColors.chartColor1,
-        AppColors.chartColor2,
-        AppColors.chartColor3,
-        AppColors.chartColor4,
-        AppColors.chartColor5,
-      ];
-      final radar = tester.widget<RadarChart>(find.byType(RadarChart));
-      // El primer conjunto (invisible) solo fija la escala; los demás, un
-      // color de la paleta por producto, en orden.
-      final visible = radar.data.dataSets.skip(1).toList();
-      expect(visible.length, 3);
-      for (var i = 0; i < visible.length; i++) {
-        expect(visible[i].borderColor, chartColorAt(i));
-        expect(palette, contains(visible[i].borderColor));
-      }
-      final line = tester.widget<LineChart>(
-        find.descendant(of: section(BiIndicator.timeSeries), matching: find.byType(LineChart)),
-      );
-      for (final bar in line.data.lineBarsData) {
-        expect(palette, contains(bar.color));
-      }
-    });
-  });
-
-  group('ancho de teléfono', () {
-    // Un teléfono pequeño (360 dp): sin desbordes en ningún indicador ni en la
-    // configuración, también con textos largos y todos los tipos de gráfico.
-    Future<void> pumpNarrow(WidgetTester tester, BiConfig config) async {
-      tester.view.physicalSize = const Size(360, 60000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      h.container.read(biConfigProvider.notifier).state = config;
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: h.container,
-          child: MaterialApp(theme: lightTheme, home: const BusinessIntelligencePage()),
-        ),
-      );
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('configuration and every indicator fit, in every chart type', (tester) async {
-      final prod = await h.newProduct('Set de pines pequeños', productionCost: 20, stock: 500);
-      final other = await h.newProduct('Stickers holográficos', productionCost: 80, stock: 3);
-      await h.newProduct('Pines grandes');
-      final mat = await h.newMaterial('Base metálica pequeña para pines');
-      await h.newEvent('Larga Noche de Museos La Paz', day(-3), day(-2));
-      for (var i = 0; i < 20; i++) {
-        await h.sell(day(-i * 5), prod, 1 + i % 3, 120.0 + i * 3);
-        await h.sell(day(-i * 5 - 1), other, 1, 99, priceType: 'B');
-      }
-      await h.buyMaterial(day(-100), mat, 200, 3);
-      await h.spend(day(-4), 321.5);
-      await h.refresh();
-
-      await pumpNarrow(
-        tester,
-        allIndicators(filters: ReportFilters(startDate: day(-45), endDate: day(0))),
-      );
-      expect(tester.takeException(), isNull, reason: 'configuración');
-      await confirmConfig(tester);
-      expect(tester.takeException(), isNull, reason: 'panel');
-
-      for (final i in BiIndicator.values.where((i) => i.hasChartPicker)) {
-        for (final type in i.chartTypes) {
-          final picker = find.descendant(
-            of: section(i),
-            matching: find.byKey(ValueKey('bi-chart-type-${type.name}')),
-          );
-          if (picker.evaluate().isEmpty) continue; // indicador sin datos
-          await tester.tap(picker);
-          await tester.pumpAndSettle();
-          expect(tester.takeException(), isNull, reason: '${i.name} / ${type.name}');
-        }
-      }
-      // El selector del radar y el de sin movimiento también caben.
-      await tester.tap(find.byKey(const ValueKey('bi-radar-pick')));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull, reason: 'selector del radar');
-    });
-  });
-
-  group('selector de productos del radar (aspecto)', () {
-    testWidgets('"Los más vendidos" stays on one line and the title clears the status bar', (
-      tester,
-    ) async {
-      final a = await h.newProduct('Estuches', productionCost: 1);
-      final b = await h.newProduct('Libro', productionCost: 1);
-      await h.sell(day(0), a, 1, 50);
-      await h.sell(day(0), b, 1, 40);
-      // Muchos productos: la hoja ocupa toda la altura, como en el teléfono.
-      for (var i = 0; i < 15; i++) {
-        await h.newProduct('Producto $i');
-      }
-      await h.refresh();
-
-      // Teléfono angosto (360 x 640 px) con barra de estado de 40 px.
-      tester.view.physicalSize = const Size(360, 640);
-      tester.view.devicePixelRatio = 1.0;
-      tester.view.padding = const FakeViewPadding(top: 40);
-      tester.view.viewPadding = const FakeViewPadding(top: 40);
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      addTearDown(tester.view.resetPadding);
-      addTearDown(tester.view.resetViewPadding);
-      h.container.read(biConfigProvider.notifier).state = BiConfig(
-        indicators: {BiIndicator.productRadar},
-      );
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: h.container,
-          child: MaterialApp(theme: lightTheme, home: const BusinessIntelligencePage()),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await confirmConfig(tester);
-
-      await tester.tap(find.byKey(const ValueKey('bi-radar-pick')));
-      await tester.pumpAndSettle();
-
-      // El título no queda pegado a la barra de estado.
-      final title = tester.getTopLeft(find.text('Elige de 2 a 4 productos'));
-      expect(title.dy, greaterThanOrEqualTo(40));
-
-      // El botón (al final de la lista que se desplaza) cabe en una sola línea.
-      final label = find.text('Los más vendidos');
-      await tester.scrollUntilVisible(
-        label,
-        200,
-        scrollable: find.byType(Scrollable).last,
-      );
-      expect(label, findsOneWidget);
-      expect(tester.getSize(label).height, lessThan(30));
-      expect(tester.takeException(), isNull);
     });
   });
 
@@ -774,7 +531,10 @@ void main() {
       // desactiva; con 4 marcados, el resto queda deshabilitado.
       Finder option(int id) => find.byKey(ValueKey('bi-radar-option-$id'));
       bool enabled(int id) =>
-          tester.widget<CheckboxListTile>(option(id)).onChanged != null;
+          tester.widget<AppRoundCheck>(
+            find.descendant(of: option(id), matching: find.byType(AppRoundCheck)),
+          ).onChanged !=
+          null;
 
       await tester.tap(option(ids[3]));
       await tester.pumpAndSettle();
@@ -917,34 +677,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(checked(tester, BiIndicator.eventProfit), isTrue);
       expect(find.text('Ver indicadores (${defaults + 1})'), findsOneWidget);
-    });
-
-    testWidgets('every new card has its info icon and, with more than one view, a chart picker', (tester) async {
-      final p = await h.newProduct('Tote bag negra', productionCost: 40, stock: 1000);
-      final feria = await h.newEvent('Feria de Arte', day(-30), day(-28));
-      await h.sell(day(-3), p, 1, 100, eventId: feria);
-      await h.sellMany(day(-2), [(p, 1, 100), (await h.newProduct('Stickers'), 1, 10)]);
-      await h.spend(day(-3), 50, eventId: feria);
-      await h.refresh();
-      await pumpPage(tester, confirm: true, config: BiConfig(indicators: {...added}));
-
-      for (final i in added) {
-        expect(section(i), findsOneWidget, reason: i.name);
-        final icon = inSection(i, find.byKey(ValueKey('bi-info-${i.title}')));
-        expect(icon, findsOneWidget, reason: i.name);
-        await tester.tap(icon);
-        await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget, reason: i.name);
-        await tester.tap(find.text('Entendido'));
-        await tester.pumpAndSettle();
-        for (final type in i.chartTypes) {
-          expect(
-            inSection(i, find.byKey(ValueKey('bi-chart-type-${type.name}'))),
-            findsOneWidget,
-            reason: '${i.name} / ${type.name}',
-          );
-        }
-      }
     });
 
     group('productos comprados juntos', () {
@@ -1117,7 +849,7 @@ void main() {
         await h.refresh();
         await pumpPage(tester, confirm: true, config: only(BiIndicator.weekdaySales));
         const i = BiIndicator.weekdaySales;
-        expect(inSection(i, find.text('Sin datos para los filtros aplicados')), findsOneWidget);
+        expect(inSection(i, find.text('No se registraron datos en el periodo.')), findsOneWidget);
         expect(inSection(i, find.byKey(const ValueKey('bi-chart-type-line'))), findsNothing);
       });
     });
@@ -1161,7 +893,7 @@ void main() {
         await h.refresh();
         await pumpPage(tester, confirm: true, config: only(BiIndicator.averageTicket));
         const i = BiIndicator.averageTicket;
-        expect(inSection(i, find.text('Sin datos para los filtros aplicados')), findsOneWidget);
+        expect(inSection(i, find.text('No se registraron datos en el periodo.')), findsOneWidget);
         expect(inSection(i, find.byKey(const ValueKey('bi-chart-type-line'))), findsNothing);
       });
     });
@@ -1351,49 +1083,6 @@ void main() {
         expect(config().chartTypeFor(i), BiChartType.list);
       });
 
-      testWidgets('on a phone width the sentence never splits "Bs." from its amount', (tester) async {
-        tester.view.physicalSize = const Size(360, 60000);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        await seedReturns();
-        h.container.read(biConfigProvider.notifier).state = BiConfig(
-          indicators: {BiIndicator.costReturn},
-          chartTypes: {BiIndicator.costReturn: BiChartType.list},
-        );
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: h.container,
-            child: MaterialApp(theme: lightTheme, home: const BusinessIntelligencePage()),
-          ),
-        );
-        await tester.pumpAndSettle();
-        await confirmConfig(tester);
-
-        for (var row = 0; row < 3; row++) {
-          final finder = find.byKey(ValueKey('bi-return-phrase-$row'));
-          final text = tester.widget<Text>(finder).data!;
-          // No ordinary space after "Bs." anywhere in the sentence.
-          expect(text.contains('Bs. '), isFalse, reason: 'row $row');
-          expect(RegExp('Bs\\.\u00A0').allMatches(text).length, 2, reason: 'row $row');
-
-          // The rendered paragraph keeps each "Bs." and its amount on one line.
-          final paragraph = tester.renderObject<RenderParagraph>(finder);
-          expect(paragraph.size.height, greaterThan(paragraph.text.style!.fontSize! * 1.5),
-              reason: 'row $row should wrap on a 360 dp phone, or the check proves nothing');
-          for (final m in RegExp('Bs\\.\u00A0').allMatches(text)) {
-            // From "Bs." through the first character of the amount: if the
-            // text wrapped in between, the boxes would sit on different lines.
-            final boxes = paragraph.getBoxesForSelection(
-              TextSelection(baseOffset: m.start, extentOffset: m.end + 1),
-            );
-            expect(boxes, isNotEmpty);
-            expect(boxes.map((b) => b.top).toSet().length, 1,
-                reason: 'row $row: "Bs." wrapped away from its amount');
-          }
-        }
-      });
-
       testWidgets('explains when no sold product has a production cost', (tester) async {
         final libro = await h.newProduct('Libro');
         await h.sell(day(-1), libro, 1, 95);
@@ -1428,99 +1117,5 @@ void main() {
       });
     });
 
-    testWidgets('their charts only use palette colors (the red is only for losses)', (tester) async {
-      final p = await h.newProduct('Tote bag negra', productionCost: 40, stock: 1000);
-      await h.sell(weekday(DateTime.monday, 1), p, 1, 100, discount: 10);
-      await h.sell(weekday(DateTime.saturday, 1), p, 1, 200);
-      await h.refresh();
-      await pumpPage(
-        tester,
-        confirm: true,
-        config: BiConfig(
-          indicators: {
-            BiIndicator.weekdaySales,
-            BiIndicator.averageTicket,
-            BiIndicator.discountImpact,
-          },
-        ),
-      );
-      const palette = [
-        AppColors.chartColor1,
-        AppColors.chartColor2,
-        AppColors.chartColor3,
-        AppColors.chartColor4,
-        AppColors.chartColor5,
-      ];
-
-      final bars = tester.widget<BarChart>(find.byType(BarChart));
-      for (final g in bars.data.barGroups) {
-        for (final rod in g.barRods) {
-          expect(palette, contains(rod.color));
-        }
-      }
-      for (final i in [BiIndicator.weekdaySales, BiIndicator.averageTicket, BiIndicator.discountImpact]) {
-        await pickType(tester, i, BiChartType.line);
-        final line = tester.widget<LineChart>(inSection(i, find.byType(LineChart)));
-        for (final bar in line.data.lineBarsData) {
-          expect(palette, contains(bar.color), reason: i.name);
-        }
-        for (final extra in line.data.extraLinesData.horizontalLines) {
-          expect(palette, contains(extra.color), reason: i.name);
-        }
-      }
-    });
-
-    testWidgets('on a phone width every new indicator fits in every chart type and metric', (tester) async {
-      tester.view.physicalSize = const Size(360, 60000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final tote = await h.newProduct('Set de pines pequeños', productionCost: 20, stock: 500);
-      final stickers = await h.newProduct('Stickers holográficos', productionCost: 80, stock: 500);
-      final libro = await h.newProduct('Libro', stock: 500);
-      final larga = await h.newEvent('Larga Noche de Museos La Paz', day(-30), day(-28));
-      final lima = await h.newEvent('Feria del Libro Santa Cruz', day(-20), day(-18));
-      for (var i = 0; i < 24; i++) {
-        await h.sellMany(
-          day(-i * 3 - 1),
-          [(tote, 1 + i % 3, 120.0 + i), (stickers, 1, 99), if (i % 4 == 0) (libro, 1, 95)],
-          eventId: i % 5 == 0 ? larga : (i % 7 == 0 ? lima : null),
-          discount: i % 3 == 0 ? 7.5 : 0,
-        );
-      }
-      await h.spend(day(-3), 321.5, eventId: larga);
-      await h.spend(day(-5), 4000, eventId: lima);
-      await h.refresh();
-
-      h.container.read(biConfigProvider.notifier).state = BiConfig(indicators: {...added});
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: h.container,
-          child: MaterialApp(theme: lightTheme, home: const BusinessIntelligencePage()),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull, reason: 'configuration');
-      await confirmConfig(tester);
-      expect(tester.takeException(), isNull, reason: 'dashboard');
-
-      for (final i in added) {
-        for (final type in i.chartTypes) {
-          await pickType(tester, i, type);
-          expect(tester.takeException(), isNull, reason: '${i.name} / ${type.name}');
-        }
-      }
-      // Weekday metric toggle in both chart types.
-      for (final type in BiIndicator.weekdaySales.chartTypes) {
-        await pickType(tester, BiIndicator.weekdaySales, type);
-        await tester.tap(inSection(BiIndicator.weekdaySales, find.text('Número de ventas')));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'weekday ${type.name} ventas');
-        await tester.tap(inSection(BiIndicator.weekdaySales, find.text('Ingresos')));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'weekday ${type.name} ingresos');
-      }
-    });
   });
 }

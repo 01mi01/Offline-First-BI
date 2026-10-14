@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/event_provider.dart';
-import '../../application/location_options.dart';
 import '../../application/location_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/app_theme.dart';
@@ -16,6 +15,7 @@ import '../../application/form_validation.dart';
 import '../widgets/app_sheet.dart';
 import '../widgets/form_style.dart';
 import '../widgets/form_widgets.dart';
+import '../widgets/picker_options.dart';
 
 class EventDialog extends ConsumerStatefulWidget {
   final EventModel? event;
@@ -198,16 +198,11 @@ class _EventDialogState extends ConsumerState<EventDialog> {
           label: 'Ubicación',
           searchHint: 'Buscar ubicación',
           value: _selectedLocationId,
-          options: [
-            const PickerOption<int>(null, 'Sin ubicación'),
-            for (final l in locations)
-              PickerOption<int>(
-                l.id,
-                locationLabel(l),
-                subtitle: locationZone(l),
-                selectedLabel: locationLabelWithZone(l),
-              ),
-          ],
+          options: locationPickerOptions(
+            locations,
+            noneLabel: 'Sin ubicación',
+            onlyActive: false,
+          ),
           onChanged: (val) => setState(() => _selectedLocationId = val),
           labelAction: FormAddButton(onPressed: _showAddLocationSheet),
         ),

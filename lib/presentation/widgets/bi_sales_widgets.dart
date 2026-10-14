@@ -26,7 +26,6 @@ TextStyle? _small(BuildContext context, {Color? color}) => Theme.of(
 
 String _salesText(int n) => n == 1 ? '1 venta' : '$n ventas';
 
-// Cifra grande con su etiqueta debajo (el estilo de las tarjetas de resumen).
 class _StatTile extends StatelessWidget {
   final String label;
   final String value;
@@ -42,28 +41,12 @@ class _StatTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final base = large
-        ? Theme.of(context).textTheme.headlineLarge
-        : Theme.of(context).textTheme.displayMedium;
-    return Column(
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: base?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-              fontSize: large ? 28 : null,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s2),
-        Text(label, style: _small(context), textAlign: TextAlign.center),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => BiStat(
+    label: label,
+    value: value,
+    valueColor: valueColor,
+    large: large,
+  );
 }
 
 // Eje izquierdo de conteos: solo números enteros.
@@ -1024,7 +1007,7 @@ class BiCostReturnSection extends StatelessWidget {
         message: report.withoutCost > 0
             ? 'Los productos vendidos no tienen costo de producción '
                   'registrado: agrégalo en Productos para ver su retorno.'
-            : 'Sin datos para los filtros aplicados',
+            : null,
       );
     } else if (chartType == BiChartType.list) {
       body = Column(

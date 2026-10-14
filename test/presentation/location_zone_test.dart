@@ -75,6 +75,18 @@ void main() {
     matching: find.byType(TextField),
   );
 
+  Future<Finder> openLocationFilter(
+    WidgetTester tester, {
+    required bool panel,
+  }) async {
+    if (panel) await openFilterPanel(tester);
+    final field = pickerField('Ubicación');
+    await tester.ensureVisible(field);
+    await tester.tap(field);
+    await tester.pumpAndSettle();
+    return field;
+  }
+
   group('helpers', () {
     final calacoto = LocationModel(
       id: 1,
@@ -246,13 +258,7 @@ void main() {
       tester,
     ) async {
       await pump(tester, const ReportsPage());
-      await tester.ensureVisible(find.text('Ubicación'));
-      await tester.tap(find.text('Ubicación'));
-      await tester.pumpAndSettle();
-      final field = find.descendant(
-        of: find.byType(SearchablePickerField<int>),
-        matching: find.byType(TextField),
-      );
+      final field = await openLocationFilter(tester, panel: true);
       await tester.enterText(field, 'equipetrol');
       await tester.pumpAndSettle();
       expect(find.text('Santa Cruz, Bolivia'), findsOneWidget);
@@ -261,22 +267,19 @@ void main() {
 
       await tester.tap(find.text('Equipetrol'));
       await tester.pumpAndSettle();
-      expect(find.text('Santa Cruz, Bolivia · Equipetrol'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(field).controller!.text,
+        'Santa Cruz, Bolivia · Equipetrol',
+      );
     });
 
     testWidgets('Reportes > Compras: the same filter works on purchases', (
       tester,
     ) async {
       await pump(tester, const ReportsPage());
-      await tester.tap(find.widgetWithText(Tab, 'Compras'));
+      await tester.tap(find.text('Compras'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Ubicación'));
-      await tester.tap(find.text('Ubicación'));
-      await tester.pumpAndSettle();
-      final field = find.descendant(
-        of: find.byType(SearchablePickerField<int>),
-        matching: find.byType(TextField),
-      );
+      final field = await openLocationFilter(tester, panel: true);
       await tester.enterText(field, 'urubo');
       await tester.pumpAndSettle();
       expect(find.text('Santa Cruz, Bolivia'), findsOneWidget);
@@ -291,13 +294,7 @@ void main() {
         const BusinessIntelligencePage(),
         size: const Size(412, 2400),
       );
-      await tester.ensureVisible(find.text('Ubicación'));
-      await tester.tap(find.text('Ubicación'));
-      await tester.pumpAndSettle();
-      final field = find.descendant(
-        of: find.byType(SearchablePickerField<int>),
-        matching: find.byType(TextField),
-      );
+      final field = await openLocationFilter(tester, panel: false);
       await tester.enterText(field, 'calacoto');
       await tester.pumpAndSettle();
       expect(find.text('La Paz, Bolivia'), findsOneWidget);
@@ -306,7 +303,10 @@ void main() {
 
       await tester.tap(find.text('Calacoto'));
       await tester.pumpAndSettle();
-      expect(find.text('La Paz, Bolivia · Calacoto'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(field).controller!.text,
+        'La Paz, Bolivia · Calacoto',
+      );
     });
   });
 

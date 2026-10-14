@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offline_first_bi/models/product_model.dart';
 import '../../application/product_provider.dart';
 import '../../application/product_catalog_filter.dart';
+import '../../application/record_search.dart';
 import '../../application/status_filter.dart';
 import '../../application/category_provider.dart';
 import '../../application/material_provider.dart';
@@ -39,7 +40,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final categories = ref.watch(categoryProvider).categories;
     final filter = ref.watch(productCatalogFilterProvider);
     final setFilter = ref.read(productCatalogFilterProvider.notifier);
-    final visible = filter.apply(state.products);
+    final visible = filter.apply(
+      state.products,
+      index: ref.watch(productSearchIndexProvider),
+    );
     final priceDisplay = filter.priceDisplay;
 
     return Scaffold(
@@ -87,7 +91,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               ),
               FilterDropdown<int?>(
                 label: 'Categoría',
-                wide: true,
                 options: [
                   const FilterOption<int?>(null, 'Todas las categorías'),
                   for (final c in categories) FilterOption<int?>(c.id, c.name),

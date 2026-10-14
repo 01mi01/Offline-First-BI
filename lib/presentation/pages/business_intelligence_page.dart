@@ -11,6 +11,7 @@ import '../../models/bi_config.dart';
 import '../../models/purchase_kind.dart';
 import '../../models/report_filters.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/bi_charts.dart';
 import '../widgets/bi_config_view.dart';
@@ -304,7 +305,12 @@ class _BusinessIntelligencePageState
     ];
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.s16),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        0,
+        AppSpacing.s16,
+        AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
+      ),
       children: [
         _DashboardHeader(
           config: config,
@@ -319,8 +325,6 @@ class _BusinessIntelligencePageState
   }
 }
 
-// Cabecera del panel: qué periodo y filtros se aplican y el acceso para
-// volver a configurarlos.
 class _DashboardHeader extends StatelessWidget {
   final BiConfig config;
   final VoidCallback onConfigure;
@@ -333,7 +337,6 @@ class _DashboardHeader extends StatelessWidget {
     final start = _filters.startDate;
     final end = _filters.endDate;
     if (start == null && end == null) return 'Todo el historial hasta hoy';
-    // Con solo "Desde" se filtra ese único día (igual que en Reportes).
     if (end == null || start == end) return formatDate((start ?? end)!);
     if (start == null) return 'Hasta ${formatDate(end)}';
     return '${formatDate(start)} – ${formatDate(end)}';
@@ -350,24 +353,19 @@ class _DashboardHeader extends StatelessWidget {
       if (_filters.purchaseKind != PurchaseKind.all)
         'El tipo de operación solo filtra las compras.',
     ];
-    final style = Theme.of(
-      context,
-    ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary);
+    final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.s20),
+      decoration: AppCards.decoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            key: const ValueKey('bi-period'),
             'Periodo: $_period',
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+            key: const ValueKey('bi-period'),
+            style: textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
@@ -375,22 +373,17 @@ class _DashboardHeader extends StatelessWidget {
           const SizedBox(height: AppSpacing.s4),
           Text(
             '${config.indicators.length} indicadores · ${notes.join(' ')}',
-            style: style,
-          ),
-          const SizedBox(height: AppSpacing.s12),
-          OutlinedButton.icon(
-            key: const ValueKey('bi-configure'),
-            onPressed: onConfigure,
-            icon: const Icon(Icons.tune_rounded, size: 16),
-            label: const Text('Configurar'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 44),
-              foregroundColor: AppColors.cyanDark,
-              side: const BorderSide(color: AppColors.cyanDark),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
-              ),
+            style: textTheme.labelMedium?.copyWith(
+              color: AppColors.textSecondary,
             ),
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          AppActionButton(
+            key: const ValueKey('bi-configure'),
+            label: 'Configurar',
+            icon: Icons.tune_rounded,
+            kind: AppButtonKind.neutral,
+            onPressed: onConfigure,
           ),
         ],
       ),

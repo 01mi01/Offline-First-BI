@@ -8,6 +8,10 @@ import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
+import 'app_buttons.dart';
+import 'app_controls.dart';
+import 'app_style.dart';
+import 'app_sheet.dart';
 import 'bi_charts.dart';
 import 'bi_interaction.dart';
 
@@ -89,24 +93,8 @@ class _SummaryTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s2),
-        Text(label, style: _small(context)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) =>
+      BiStat(label: label, value: value, valueColor: valueColor);
 }
 
 // Barras agrupadas genéricas: [groups] en el eje X y una serie por barra de
@@ -436,7 +424,7 @@ class _ComparisonRow extends StatelessWidget {
             const SizedBox(width: AppSpacing.s2),
             Text(
               changeText,
-              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
@@ -481,7 +469,7 @@ class BiMarginSection extends StatelessWidget {
         message: report.withoutCost > 0
             ? 'Los productos vendidos no tienen costo de producción '
                   'registrado: agrégalo en Productos para ver su margen.'
-            : 'Sin datos para los filtros aplicados',
+            : null,
       );
     } else if (chartType == BiChartType.list) {
       body = _MarginList(entries: _sorted(report.entries, byMargin));
@@ -1043,7 +1031,7 @@ class _ComparisonColumn extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
         border: Border(left: BorderSide(color: color, width: 4)),
       ),
       child: Column(
@@ -1056,7 +1044,7 @@ class _ComparisonColumn extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               perDay == null ? '—' : formatMoney(perDay!),
-              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
@@ -1466,16 +1454,12 @@ class _BiRadarSectionState extends State<BiRadarSection> {
           ? 'Mostrando los productos con más ingresos'
           : indicator.description,
       info: indicator.info,
-      controls: OutlinedButton.icon(
+      controls: AppActionButton(
         key: const ValueKey('bi-radar-pick'),
+        label: 'Elegir productos',
+        icon: Icons.tune_rounded,
+        kind: AppButtonKind.neutral,
         onPressed: () => _pickProducts(context),
-        icon: const Icon(Icons.tune_rounded, size: 16),
-        label: const Text('Elegir productos'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.cyanDark,
-          side: const BorderSide(color: AppColors.cyanDark),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppMetrics.groupRadius)),
-        ),
       ),
       child: radar.products.length < radarMinProducts
           ? const BiEmptyState(
@@ -1589,14 +1573,8 @@ class _BiRadarSectionState extends State<BiRadarSection> {
   }
 
   Future<void> _pickProducts(BuildContext context) async {
-    final result = await showModalBottomSheet<List<int>>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    final result = await showAppSheet<List<int>>(
+      context,
       builder: (_) => _RadarPicker(
         products: widget.products,
         initial: [for (final p in radar.products) p.id],
@@ -1676,7 +1654,6 @@ class _RadarLegendRow extends StatelessWidget {
   }
 }
 
-// Hoja para elegir de 2 a 4 productos del radar.
 class _RadarPicker extends StatefulWidget {
   final List<ProductModel> products;
   final List<int> initial;
@@ -1696,83 +1673,71 @@ class _RadarPickerState extends State<_RadarPicker> {
       ..sort((a, b) => a.name.compareTo(b.name));
     final full = _selected.length >= radarMaxProducts;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.s24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Elige de $radarMinProducts a $radarMaxProducts productos',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s8),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
+    return AppSheetScaffold(
+      title: 'Elige de $radarMinProducts a $radarMaxProducts productos',
+      expand: false,
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s16,
+          AppSpacing.s8,
+          AppSpacing.s16,
+          AppSpacing.s32,
+        ),
+        children: [
+          for (final p in active)
+            InkWell(
+              key: ValueKey('bi-radar-option-${p.id}'),
+              onTap: !_selected.contains(p.id) && full
+                  ? null
+                  : () => _toggle(p.id, !_selected.contains(p.id)),
+              child: Row(
                 children: [
-                  for (final p in active)
-                    CheckboxListTile(
-                      key: ValueKey('bi-radar-option-${p.id}'),
-                      contentPadding: EdgeInsets.zero,
-                      activeColor: AppColors.cyanDark,
-                      title: Text(p.name),
-                      value: _selected.contains(p.id),
-                      onChanged: !_selected.contains(p.id) && full
-                          ? null
-                          : (checked) => setState(() {
-                              if (checked == true) {
-                                _selected.add(p.id);
-                              } else {
-                                _selected.remove(p.id);
-                              }
-                            }),
+                  AppRoundCheck(
+                    value: _selected.contains(p.id),
+                    onChanged: !_selected.contains(p.id) && full
+                        ? null
+                        : (checked) => _toggle(p.id, checked),
+                  ),
+                  const SizedBox(width: AppSpacing.s8),
+                  Expanded(
+                    child: Text(
+                      p.name,
+                      style: AppText.rowTitle(
+                        context,
+                        color: !_selected.contains(p.id) && full
+                            ? AppColors.textMuted
+                            : null,
+                      ),
                     ),
-                  // Al final del contenido que se desplaza, no fijos.
-                  const SizedBox(height: AppSpacing.s12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, <int>[]),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.cyanDark,
-                            side: const BorderSide(color: AppColors.cyanDark),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
-                            ),
-                          ),
-                          // Una sola línea: en pantallas angostas se reduce un poco.
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text('Los más vendidos', maxLines: 1, softWrap: false),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.s12),
-                      Expanded(
-                        child: ElevatedButton(
-                          key: const ValueKey('bi-radar-done'),
-                          onPressed: _selected.length >= radarMinProducts
-                              ? () => Navigator.pop(context, _selected)
-                              : null,
-                          child: const Text('Listo'),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          const SizedBox(height: AppSpacing.s24),
+          ElevatedButton(
+            key: const ValueKey('bi-radar-done'),
+            onPressed: _selected.length >= radarMinProducts
+                ? () => Navigator.pop(context, _selected)
+                : null,
+            child: const Text('Listo'),
+          ),
+          const SizedBox(height: AppButtons.stackGap),
+          AppActionButton(
+            label: 'Los más vendidos',
+            kind: AppButtonKind.neutral,
+            onPressed: () => Navigator.pop(context, <int>[]),
+          ),
+        ],
       ),
     );
   }
+
+  void _toggle(int id, bool checked) => setState(() {
+    if (checked) {
+      _selected.add(id);
+    } else {
+      _selected.remove(id);
+    }
+  });
 }

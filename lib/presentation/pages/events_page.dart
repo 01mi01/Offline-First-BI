@@ -4,7 +4,7 @@ import '../../application/date_range_filter.dart';
 import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/location_options.dart';
-import '../../application/search_filter.dart';
+import '../../application/record_search.dart';
 import '../../application/status_filter.dart';
 import '../../models/event_model.dart';
 import '../../models/location_model.dart';
@@ -57,36 +57,24 @@ class _EventsTab extends ConsumerWidget {
     final locationById = {for (final l in locations) l.id: l};
     // Un evento de varios días entra si alguno de sus días cae en el rango.
     // País y ciudad se miden contra la ubicación del evento.
-    // Búsqueda por nombre (sin distinguir tildes).
-    final visible = filterByQuery<EventModel>(
-      state.events.where(
-        (e) =>
-            status.matches(e.isActive) &&
-            dates.overlaps(e.startDate, e.endDate) &&
-            locationMatches(
-              locationById[e.locationId],
-              country: country,
-              city: city,
-            ),
-      ),
-      query,
-      (e) => e.name,
-    );
+    final visible = ref
+        .watch(eventSearchIndexProvider)
+        .search(query)
+        .where(
+          (e) =>
+              status.matches(e.isActive) &&
+              dates.overlaps(e.startDate, e.endDate) &&
+              locationMatches(
+                locationById[e.locationId],
+                country: country,
+                city: city,
+              ),
+        )
+        .toList();
     final countries = countryOptions(locations);
     final cities = cityOptions(locations, country: country);
 
     final fields = <FilterField>[
-      FilterDropdown<StatusFilter>(
-        label: 'Estado',
-        options: [
-          for (final s in StatusFilter.values)
-            FilterOption(s, statusFilterLabel(s)),
-        ],
-        current: status,
-        defaultValue: StatusFilter.all,
-        onApply: (value) =>
-            ref.read(eventStatusFilterProvider.notifier).state = value,
-      ),
       FilterDropdown<String?>(
         label: 'País',
         options: [
@@ -113,6 +101,17 @@ class _EventsTab extends ConsumerWidget {
         defaultValue: null,
         onApply: (value) =>
             ref.read(eventCityFilterProvider.notifier).state = value,
+      ),
+      FilterDropdown<StatusFilter>(
+        label: 'Estado',
+        options: [
+          for (final s in StatusFilter.values)
+            FilterOption(s, statusFilterLabel(s)),
+        ],
+        current: status,
+        defaultValue: StatusFilter.all,
+        onApply: (value) =>
+            ref.read(eventStatusFilterProvider.notifier).state = value,
       ),
       FilterDates(
         current: dates,
@@ -190,17 +189,15 @@ class _LocationsTab extends ConsumerWidget {
     final country = ref.watch(locationCountryFilterProvider);
     final city = ref.watch(locationCityFilterProvider);
     final query = ref.watch(locationListQueryProvider);
-    // Búsqueda por ciudad y país (sin distinguir tildes), estado, país y
-    // ciudad: todos los filtros se aplican juntos.
-    final visible = filterByQuery<LocationModel>(
-      state.locations.where(
-        (l) =>
-            status.matches(l.isActive) &&
-            locationMatches(l, country: country, city: city),
-      ),
-      query,
-      locationSearchText,
-    );
+    final visible = ref
+        .watch(locationSearchIndexProvider)
+        .search(query)
+        .where(
+          (l) =>
+              status.matches(l.isActive) &&
+              locationMatches(l, country: country, city: city),
+        )
+        .toList();
     final countries = countryOptions(state.locations);
     final cities = cityOptions(state.locations, country: country);
 

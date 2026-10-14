@@ -15,6 +15,7 @@ import 'package:offline_first_bi/models/sale_model.dart';
 import 'package:offline_first_bi/models/user_model.dart';
 import 'package:offline_first_bi/presentation/pages/home_page.dart';
 import 'package:offline_first_bi/presentation/widgets/home_widgets.dart';
+import 'package:offline_first_bi/presentation/widgets/kpi_grid.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
 import '../support/bi_harness.dart';
@@ -284,7 +285,7 @@ void main() {
 
       expect(find.text('Hola, María'), findsOneWidget);
       expect(key('home-hero'), findsNothing);
-      expect(find.byType(HomeKpiGrid), findsNothing);
+      expect(find.byType(AppKpiGrid), findsNothing);
       expect(find.byType(HomeChartCard), findsNothing);
       expect(key('home-activity'), findsNothing);
     });

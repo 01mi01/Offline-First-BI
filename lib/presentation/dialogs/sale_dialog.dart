@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
-import '../../application/location_options.dart';
-import '../../application/search_filter.dart';
 import '../widgets/catalog_filter_bar.dart' show RevealOnFocus;
 import '../../application/client_provider.dart';
 import '../../application/product_provider.dart';
@@ -30,6 +28,8 @@ import '../../config/rounding.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/picker_options.dart';
+import '../../application/record_search.dart';
 
 class SaleDialog extends ConsumerStatefulWidget {
   final SaleModel? sale;
@@ -305,7 +305,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         .toList();
     final searchingProducts = _productQuery.trim().isNotEmpty;
     final visibleProducts = searchingProducts
-        ? filterByQuery<ProductModel>(products, _productQuery, (p) => p.name)
+        ? ref
+              .watch(productSearchIndexProvider)
+              .search(_productQuery)
+              .where((p) => p.isActive)
+              .toList()
         : const <ProductModel>[];
 
     return AppSheetScaffold(
@@ -318,10 +322,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 label: 'Cliente',
                 searchHint: 'Buscar cliente',
                 value: clientValue,
-                options: [
-                  const PickerOption<int>(null, DefaultRecords.client),
-                  for (final c in clients) PickerOption<int>(c.id, c.name),
-                ],
+                options: clientPickerOptions(
+                  clients,
+                  noneLabel: DefaultRecords.client,
+                ),
                 onChanged: (val) => setState(() {
                   _selectedClientId = val;
                   _error = null;
@@ -333,17 +337,11 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 label: 'Ubicación',
                 searchHint: 'Buscar ubicación',
                 value: _selectedLocationId,
-                options: [
-                  const PickerOption<int>(null, 'Sin ubicación'),
-                  for (final l in ref.watch(locationProvider).locations)
-                    if (l.isActive || l.id == _selectedLocationId)
-                      PickerOption<int>(
-                        l.id,
-                        locationLabel(l),
-                        subtitle: locationZone(l),
-                        selectedLabel: locationLabelWithZone(l),
-                      ),
-                ],
+                options: locationPickerOptions(
+                  ref.watch(locationProvider).locations,
+                  noneLabel: 'Sin ubicación',
+                  keepId: _selectedLocationId,
+                ),
                 onChanged: (val) => setState(() => _selectedLocationId = val),
               ),
               const SizedBox(height: AppSpacing.s16),
@@ -351,12 +349,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 label: 'Evento',
                 searchHint: 'Buscar evento',
                 value: _selectedEventId,
-                options: [
-                  const PickerOption<int>(null, 'Sin evento'),
-                  for (final e in ref.watch(eventProvider).events)
-                    if (e.isActive || e.id == _selectedEventId)
-                      PickerOption<int>(e.id, e.name),
-                ],
+                options: eventPickerOptions(
+                  ref.watch(eventProvider).events,
+                  ref.watch(locationProvider).locations,
+                  noneLabel: 'Sin evento',
+                  keepId: _selectedEventId,
+                ),
                 onChanged: (val) => setState(() => _selectedEventId = val),
               ),
               const SizedBox(height: AppSpacing.s16),

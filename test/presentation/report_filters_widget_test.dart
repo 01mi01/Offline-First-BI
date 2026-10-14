@@ -7,12 +7,12 @@ import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/presentation/widgets/report_filters_widget.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
+import 'form_finders.dart';
 
-// Cobertura ligera de ReportFiltersWidget ("donde sea relevante", no la
-// matriz combinatoria completa que sí se cubre a nivel de servicio en
-// report_filters_db_test.dart): qué chips aparecen según la pestaña activa,
-// y que limpiar un filtro (el ícono "x" de un chip, o "Limpiar todo") emite
-// el ReportFilters correcto vía onChanged.
+// Cobertura ligera de ReportFiltersWidget (la matriz combinatoria completa se
+// cubre a nivel de servicio en report_filters_db_test.dart): qué filtros
+// aparecen según la pestaña activa, y que limpiar un filtro (o todos) emite el
+// ReportFilters correcto vía onChanged.
 class _Harness extends StatefulWidget {
   final int activeTab;
   final ReportFilters initialFilters;
@@ -33,13 +33,16 @@ class _HarnessState extends State<_Harness> {
 
   @override
   Widget build(BuildContext context) {
-    return ReportFiltersWidget(
-      filters: filters,
-      activeTab: widget.activeTab,
-      onChanged: (f) {
-        setState(() => filters = f);
-        widget.onChanged?.call(f);
-      },
+    return SingleChildScrollView(
+      child: ReportFiltersWidget(
+        filters: filters,
+        activeTab: widget.activeTab,
+        alwaysOpen: true,
+        onChanged: (f) {
+          setState(() => filters = f);
+          widget.onChanged?.call(f);
+        },
+      ),
     );
   }
 }
@@ -100,91 +103,42 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('chip visibility per tab', () {
+  group('filtros por pestaña', () {
     testWidgets('sales tab (0) shows Cliente/Categoría/Producto/Tipo de precio + Evento/Ubicación', (tester) async {
       await pumpHarness(tester, activeTab: 0);
 
-      expect(find.text('Cliente'), findsOneWidget);
-      // Categoría es un desplegable con todas las categorías.
-      expect(find.text('Todas las categorías'), findsOneWidget);
-      expect(find.text('Producto'), findsOneWidget);
-      expect(find.text('Tipo de precio'), findsOneWidget);
-      expect(find.text('Evento'), findsOneWidget);
-      expect(find.text('Ubicación'), findsOneWidget);
-      expect(find.text('Todos los países'), findsOneWidget);
-      expect(find.text('Todas las ciudades'), findsOneWidget);
+      for (final label in [
+        'Cliente',
+        'Categoría',
+        'Producto',
+        'Tipo de precio',
+        'Evento',
+        'Ubicación',
+        'País',
+        'Ciudad',
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
       expect(find.text('Proveedor'), findsNothing);
+      expect(find.text('Tipo'), findsNothing);
     });
 
-    testWidgets('purchases tab (1) shows only Proveedor + Evento/Ubicación', (tester) async {
+    testWidgets('purchases tab (1) shows only Proveedor + Tipo + Evento/Ubicación', (tester) async {
       await pumpHarness(tester, activeTab: 1);
 
-      expect(find.text('Proveedor'), findsOneWidget);
-      expect(find.text('Evento'), findsOneWidget);
-      expect(find.text('Ubicación'), findsOneWidget);
-      expect(find.text('Todos los países'), findsOneWidget);
-      expect(find.text('Todas las ciudades'), findsOneWidget);
-      expect(find.text('Cliente'), findsNothing);
-      expect(find.text('Todas las categorías'), findsNothing);
-      expect(find.text('Producto'), findsNothing);
-      expect(find.text('Tipo de precio'), findsNothing);
+      for (final label in ['Proveedor', 'Tipo', 'Evento', 'Ubicación', 'País', 'Ciudad']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      for (final label in ['Cliente', 'Categoría', 'Producto', 'Tipo de precio']) {
+        expect(find.text(label), findsNothing, reason: label);
+      }
     });
   });
 
-  group('chip layout', () {
-    testWidgets(
-      'every chip (including "Tipo de precio") fits inside the screen width at '
-      'phone size instead of being cut off at the right edge',
-      (tester) async {
-        tester.view.physicalSize = const Size(360, 800);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        await pumpHarness(tester, activeTab: 0);
-
-        for (final label in [
-          'Cliente',
-          'Todas las categorías',
-          'Producto',
-          'Tipo de precio',
-          'Evento',
-          'Ubicación',
-          'Todos los países',
-          'Todas las ciudades',
-        ]) {
-          final rect = tester.getRect(find.text(label));
-          expect(rect.left, greaterThanOrEqualTo(0), reason: '$label left');
-          expect(
-            rect.right,
-            lessThanOrEqualTo(360 - 16),
-            reason: '"$label" no debe quedar cortado en el borde derecho',
-          );
-        }
-      },
-    );
-
-    testWidgets('chips wrap onto more rows instead of scrolling horizontally', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(360, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await pumpHarness(tester, activeTab: 0);
-
-      expect(find.byType(Wrap), findsWidgets);
-      final firstTop = tester.getTopLeft(find.text('Cliente')).dy;
-      final lastTop = tester.getTopLeft(find.text('Ubicación')).dy;
-      expect(lastTop, greaterThan(firstTop), reason: 'debe haber más de una fila');
-    });
-  });
-
-  group('"Limpiar todo"', () {
+  group('"Limpiar"', () {
     testWidgets('is hidden when no filter is active', (tester) async {
       await pumpHarness(tester, activeTab: 0);
-      expect(find.text('Limpiar todo'), findsNothing);
+      expect(find.text('Limpiar'), findsNothing);
     });
 
     testWidgets('is shown when a filter is active and resets every field on tap', (tester) async {
@@ -192,22 +146,22 @@ void main() {
       await pumpHarness(
         tester,
         activeTab: 0,
-        initialFilters: ReportFilters(clientId: clientId),
+        initialFilters: ReportFilters(clientId: clientId, categoryId: categoryId),
         onChanged: (f) => lastEmitted = f,
       );
 
-      expect(find.text('Limpiar todo'), findsOneWidget);
+      expect(find.text('Limpiar'), findsOneWidget);
 
-      await tester.tap(find.text('Limpiar todo'));
+      await tester.tap(find.text('Limpiar'));
       await tester.pumpAndSettle();
 
       expect(lastEmitted, const ReportFilters());
-      expect(find.text('Limpiar todo'), findsNothing);
+      expect(find.text('Limpiar'), findsNothing);
     });
   });
 
-  group('clearing an individual chip', () {
-    testWidgets('tapping the date chip close icon clears only startDate', (tester) async {
+  group('clearing an individual filter', () {
+    testWidgets('removing the Desde date clears only startDate', (tester) async {
       ReportFilters? lastEmitted;
       await pumpHarness(
         tester,
@@ -216,17 +170,15 @@ void main() {
         onChanged: (f) => lastEmitted = f,
       );
 
-      expect(find.textContaining('Desde: 01/01/2024'), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.ensureVisible(find.byTooltip('Quitar Desde'));
+      await tester.tap(find.byTooltip('Quitar Desde'));
       await tester.pumpAndSettle();
 
       expect(lastEmitted, const ReportFilters());
       expect(lastEmitted!.startDate, isNull);
     });
 
-    testWidgets('tapping the Categoría chip close icon clears only categoryId', (tester) async {
+    testWidgets('choosing "Todas las categorías" clears only categoryId', (tester) async {
       ReportFilters? lastEmitted;
       await pumpHarness(
         tester,
@@ -235,36 +187,33 @@ void main() {
         onChanged: (f) => lastEmitted = f,
       );
 
-      // Se resuelve el nombre real de la categoría vía el provider real
-      // (categoryProvider respaldado por la base sembrada), no un texto fijo.
-      expect(find.text('Bolsas'), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.close_rounded));
-      await tester.pumpAndSettle();
+      await chooseOption(tester, 'Categoría', 'Todas las categorías');
 
       expect(lastEmitted, const ReportFilters());
       expect(lastEmitted!.categoryId, isNull);
     });
 
-    testWidgets('tapping the Proveedor chip close icon clears only supplierId on the purchases tab', (tester) async {
+    testWidgets('choosing "Todos los proveedores" clears only supplierId on the purchases tab', (tester) async {
       final supplier = await (db.select(
         db.suppliers,
       )..where((s) => s.name.equals('Lino & Co.'))).getSingle();
-      final supplierId = supplier.id;
 
       ReportFilters? lastEmitted;
       await pumpHarness(
         tester,
         activeTab: 1,
-        initialFilters: ReportFilters(supplierId: supplierId),
+        initialFilters: ReportFilters(supplierId: supplier.id),
         onChanged: (f) => lastEmitted = f,
       );
 
-      expect(find.text('Lino & Co.'), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      final field = find.descendant(
+        of: find.byKey(const ValueKey('filter-search-Proveedor')),
+        matching: find.byType(TextField),
+      );
+      await tester.ensureVisible(field);
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Todos los proveedores'));
       await tester.pumpAndSettle();
 
       expect(lastEmitted, const ReportFilters());

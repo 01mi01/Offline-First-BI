@@ -7,6 +7,7 @@ import 'home_profit_chart.dart';
 import 'screen_header.dart';
 import 'app_list_row.dart';
 import 'empty_state.dart';
+import 'app_style.dart';
 
 const Duration _entranceDuration = Duration(milliseconds: 300);
 
@@ -371,105 +372,6 @@ class HomeChangePill extends StatelessWidget {
 // Indicadores
 // ---------------------------------------------------------------------------
 
-class HomeKpi {
-  final String key;
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final Color? background;
-
-  const HomeKpi({
-    required this.key,
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    this.background,
-  });
-}
-
-class HomeKpiGrid extends StatelessWidget {
-  final List<HomeKpi> items;
-
-  const HomeKpiGrid({super.key, required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = <Widget>[];
-    for (var i = 0; i < items.length; i += 2) {
-      final pair = items.skip(i).take(2).toList();
-      rows.add(
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var j = 0; j < pair.length; j++) ...[
-                if (j > 0) const SizedBox(width: AppSpacing.s12),
-                Expanded(child: _KpiCard(kpi: pair[j])),
-              ],
-            ],
-          ),
-        ),
-      );
-      if (i + 2 < items.length) {
-        rows.add(const SizedBox(height: AppSpacing.s12));
-      }
-    }
-    return Column(children: rows);
-  }
-}
-
-class _KpiCard extends StatelessWidget {
-  final HomeKpi kpi;
-
-  const _KpiCard({required this.kpi});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Container(
-      key: ValueKey('home-kpi-${kpi.key}'),
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: AppCards.decoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: kpi.background ?? kpi.color.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(kpi.icon, size: 20, color: kpi.color),
-          ),
-          const SizedBox(height: AppSpacing.s12),
-          Text(
-            kpi.label,
-            style: textTheme.labelMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              kpi.value,
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Accesos rápidos
 // ---------------------------------------------------------------------------
@@ -559,23 +461,6 @@ class _ShortcutButton extends StatelessWidget {
 // Secciones y gráficos
 // ---------------------------------------------------------------------------
 
-class HomeSectionTitle extends StatelessWidget {
-  final String title;
-
-  const HomeSectionTitle(this.title, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-      ),
-    );
-  }
-}
-
 class HomeChartCard extends StatelessWidget {
   final String id;
   final String title;
@@ -601,7 +486,7 @@ class HomeChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          HomeSectionTitle(title),
+          AppSectionTitle(title),
           if (subtitle != null)
             Text(
               subtitle!,

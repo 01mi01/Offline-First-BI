@@ -39,23 +39,3 @@ Future<void> showInfoDialog(
   );
 }
 
-// Icono "i" para el final de un campo: al tocarlo explica el campo.
-class InfoHintButton extends StatelessWidget {
-  final String title;
-  final String message;
-
-  const InfoHintButton({super.key, required this.title, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: title,
-      icon: const Icon(
-        Icons.info_outline_rounded,
-        color: AppColors.textSecondary,
-        size: 20,
-      ),
-      onPressed: () => showInfoDialog(context, title: title, message: message),
-    );
-  }
-}

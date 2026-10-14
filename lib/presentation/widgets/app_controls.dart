@@ -349,3 +349,49 @@ class _StepperButton extends StatelessWidget {
     );
   }
 }
+
+class AppRoundCheck extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  const AppRoundCheck({super.key, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onChanged != null;
+    return Semantics(
+      checked: value,
+      enabled: enabled,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? () => onChanged!(!value) : null,
+        child: SizedBox(
+          width: AppMetrics.minTap,
+          height: AppMetrics.minTap,
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: value ? AppColors.checkFill : Colors.transparent,
+                border: Border.all(
+                  color: value ? AppColors.checkFill : AppColors.textMuted,
+                  width: 1.5,
+                ),
+              ),
+              child: value
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 16,
+                      color: AppColors.onDark.withValues(alpha: 0.92),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

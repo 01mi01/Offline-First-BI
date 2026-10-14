@@ -9,6 +9,7 @@ class AppActionButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final AppButtonKind kind;
+  final IconData? icon;
   final EdgeInsetsGeometry padding;
 
   const AppActionButton({
@@ -16,6 +17,7 @@ class AppActionButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     required this.kind,
+    this.icon,
     this.padding = EdgeInsets.zero,
   });
 
@@ -28,7 +30,22 @@ class AppActionButton extends StatelessWidget {
         style: kind == AppButtonKind.destructive
             ? destructiveButtonStyle
             : neutralButtonStyle,
-        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        child: icon == null
+            ? Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 18),
+                  const SizedBox(width: AppSpacing.s8),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

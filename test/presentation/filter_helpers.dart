@@ -10,14 +10,12 @@ import 'form_finders.dart';
 
 // Abre el panel de filtros si está cerrado.
 Future<void> openFilterPanel(WidgetTester tester) async {
-  if (find.byType(FilterPanel).evaluate().isNotEmpty &&
-      find.descendant(
-        of: find.byType(FilterPanel),
-        matching: find.byType(Wrap),
-      ).evaluate().isNotEmpty) {
+  final button = find.byType(FilterButton);
+  if (button.evaluate().isEmpty ||
+      tester.widget<FilterButton>(button.first).open) {
     return;
   }
-  await tester.tap(find.byType(FilterButton));
+  await tester.tap(button.first);
   await tester.pumpAndSettle();
 }
 

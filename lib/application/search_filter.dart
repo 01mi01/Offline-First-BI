@@ -18,15 +18,3 @@ String normalizeForSearch(String text) {
   }
   return buffer.toString();
 }
-
-// Elementos cuyo texto contiene lo escrito. Una búsqueda vacía los devuelve
-// todos, en su orden original.
-List<T> filterByQuery<T>(
-  Iterable<T> items,
-  String query,
-  String Function(T item) textOf,
-) {
-  final q = normalizeForSearch(query);
-  if (q.isEmpty) return items.toList();
-  return items.where((i) => normalizeForSearch(textOf(i)).contains(q)).toList();
-}

@@ -7,6 +7,7 @@ import '../pages/reports_page.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/app_list_row.dart';
 import 'nav_resolver.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/profile_button.dart';
 
 // Tab "Reportes + Business Intelligence" de la navegación inferior: pantalla
@@ -27,11 +28,9 @@ class ReportesBiTabPage extends ConsumerWidget {
           title: 'Reportes y Business Intelligence',
           actions: const [ProfileButton()],
           body: cards.isEmpty
-              ? Center(
-                  child: Text(
-                    'No tienes acceso a reportes ni business intelligence',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
+              ? const AppEmptyState.hint(
+                  icon: Icons.bar_chart_rounded,
+                  text: 'No tienes acceso a reportes ni business intelligence.',
                 )
               : ListView(
                   padding: const EdgeInsets.fromLTRB(AppHeader.sidePadding, 0, AppHeader.sidePadding, AppSpacing.s16),

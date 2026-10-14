@@ -9,6 +9,9 @@ import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
+import 'app_buttons.dart';
+import 'app_sheet.dart';
+import 'app_style.dart';
 import 'bi_charts.dart';
 import 'bi_interaction.dart';
 
@@ -21,29 +24,14 @@ import 'bi_interaction.dart';
 
 enum BiDrillKind { product, category, event, material }
 
-// El indicador cuyas barras abren un detalle, o null si no tiene.
-BiDrillKind? biDrillKindOf(BiIndicator indicator) => switch (indicator) {
-  BiIndicator.salesByProduct => BiDrillKind.product,
-  BiIndicator.salesByCategory => BiDrillKind.category,
-  BiIndicator.salesByEvent => BiDrillKind.event,
-  BiIndicator.purchasesByMaterial => BiDrillKind.material,
-  _ => null,
-};
-
 Future<void> showBiDrillDown(
   BuildContext context, {
   required BiDrillKind kind,
   required BiEntry entry,
   required BiQuery query,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
+  return showAppSheet<void>(
+    context,
     builder: (_) => _DrillSheet(kind: kind, entry: entry, query: query),
   );
 }
@@ -94,70 +82,30 @@ class _DrillSheet extends ConsumerWidget {
       BiDrillKind.material => 'Compras del material',
     };
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.92,
+    return AppSheetScaffold(
+      title: entry.label,
+      titleKey: const ValueKey('bi-drill-title'),
+      expand: false,
+      actions: AppActionButton(
+        key: const ValueKey('bi-drill-close'),
+        label: 'Cerrar',
+        kind: AppButtonKind.neutral,
+        onPressed: () => Navigator.pop(context),
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s24,
-            AppSpacing.s16,
-            AppSpacing.s24,
-            AppSpacing.s16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      entry.label,
-                      key: const ValueKey('bi-drill-title'),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  InkResponse(
-                    key: const ValueKey('bi-drill-close'),
-                    onTap: () => Navigator.pop(context),
-                    radius: 20,
-                    child: const Padding(
-                      padding: EdgeInsets.all(AppSpacing.s4),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 22,
-                        color: AppColors.textSecondary,
-                        semanticLabel: 'Cerrar',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s12),
-              Flexible(
-                child: ListView(
-                  key: const ValueKey('bi-drill-list'),
-                  shrinkWrap: true,
-                  padding: EdgeInsets.zero,
-                  children: body,
-                ),
-              ),
-            ],
-          ),
+      child: ListView(
+        key: const ValueKey('bi-drill-list'),
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s16,
+          AppSpacing.s8,
+          AppSpacing.s16,
+          AppSpacing.s16,
         ),
+        children: [
+          Text(subtitle, style: AppText.rowSubtitle(context)),
+          const SizedBox(height: AppSpacing.s16),
+          ...body,
+        ],
       ),
     );
   }
@@ -520,31 +468,12 @@ class _DrillStat extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            key: ValueKey('bi-drill-stat-$statKey'),
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s2),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => BiStat(
+    label: label,
+    value: value,
+    valueColor: color,
+    valueKey: ValueKey('bi-drill-stat-$statKey'),
+  );
 }
 
 class _Metric {

@@ -12,7 +12,6 @@ import 'form_widgets.dart';
 // se calcula el otro; el último en escribirse es el que manda al guardar el
 // precio por unidad. Sirve igual para media botella que para medio litro: se
 // compra una cantidad rara a un precio que no se conoce por unidad.
-const String priceInfoTitle = 'Precio por unidad o total pagado';
 const String priceInfoMessage =
     'Puedes ingresar el precio por unidad o el total pagado, el otro se '
     'calculará automáticamente.';

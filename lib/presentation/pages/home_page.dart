@@ -25,6 +25,8 @@ import '../widgets/bi_charts.dart';
 import '../widgets/bi_drilldown.dart';
 import '../widgets/bi_insight_widgets.dart' show BiGroupedBars;
 import '../widgets/home_widgets.dart';
+import '../widgets/app_style.dart';
+import '../widgets/kpi_grid.dart';
 import 'business_intelligence_page.dart';
 import 'reports_page.dart';
 import 'sales_page.dart';
@@ -150,7 +152,7 @@ class HomePage extends ConsumerWidget {
               children: [
                 Padding(
                   padding: EdgeInsets.fromLTRB(side, 0, side, AppSpacing.s8),
-                  child: const HomeSectionTitle('Accesos rápidos'),
+                  child: const AppSectionTitle('Accesos rápidos'),
                 ),
                 HomeShortcutRow(items: shortcutItems),
               ],
@@ -161,9 +163,9 @@ class HomePage extends ConsumerWidget {
     }
 
     if (report != null) {
-      final kpis = <HomeKpi>[
+      final kpis = <AppKpi>[
         if (access.sales)
-          HomeKpi(
+          AppKpi(
             key: 'ventas',
             label: 'Ventas ${period.ofLabel}',
             value: formatMoney(report.summary.ingresos),
@@ -171,7 +173,7 @@ class HomePage extends ConsumerWidget {
             color: AppColors.cyanDark,
           ),
         if (access.purchases)
-          HomeKpi(
+          AppKpi(
             key: 'gastos',
             label: 'Gastos ${period.ofLabel}',
             value: formatMoney(report.summary.gastos),
@@ -180,7 +182,7 @@ class HomePage extends ConsumerWidget {
             background: AppColors.errorSoft,
           ),
         if (access.sales)
-          HomeKpi(
+          AppKpi(
             key: 'cantidad',
             label: 'Cantidad de ventas',
             value: '${report.ticket.salesCount}',
@@ -188,7 +190,7 @@ class HomePage extends ConsumerWidget {
             color: AppColors.success,
           ),
         if (access.profit)
-          HomeKpi(
+          AppKpi(
             key: 'margen',
             label: 'Margen de ganancia',
             value: marginText(report.summary.ingresos, report.summary.balance),
@@ -205,9 +207,9 @@ class HomePage extends ConsumerWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(bottom: AppSpacing.s8),
-                    child: HomeSectionTitle('Resumen'),
+                    child: AppSectionTitle('Resumen'),
                   ),
-                  HomeKpiGrid(items: kpis),
+                  AppKpiGrid(items: kpis),
                 ],
               ),
             ),
@@ -232,7 +234,7 @@ class HomePage extends ConsumerWidget {
       if (access.profit || access.sales) {
         sections.add(
           (_) => padded(
-            const HomeSectionTitle('Análisis'),
+            const AppSectionTitle('Análisis'),
             bottom: AppSpacing.s8,
           ),
         );
@@ -363,7 +365,7 @@ class HomePage extends ConsumerWidget {
       if (!loading && !failed) {
         sections.add(
           (_) => padded(
-            const HomeSectionTitle('Actividad reciente'),
+            const AppSectionTitle('Actividad reciente'),
             bottom: AppSpacing.s8,
           ),
         );

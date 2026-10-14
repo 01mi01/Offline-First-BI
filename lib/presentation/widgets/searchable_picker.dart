@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../application/search_filter.dart';
+import '../../application/record_search.dart';
 import '../../theme/app_theme.dart';
-import 'form_style.dart';
 import 'form_widgets.dart';
 import 'focus_utils.dart';
 import 'app_controls.dart';
@@ -16,10 +15,16 @@ class PickerOption<T> {
   final T? value;
   final String label;
   final String? subtitle;
-  // Texto que muestra el campo ya elegida la opción (por defecto, [label]).
   final String? selectedLabel;
+  final String? searchText;
 
-  const PickerOption(this.value, this.label, {this.subtitle, this.selectedLabel});
+  const PickerOption(
+    this.value,
+    this.label, {
+    this.subtitle,
+    this.selectedLabel,
+    this.searchText,
+  });
 }
 
 // Selector de un registro existente con búsqueda en línea, igual que el
@@ -78,6 +83,19 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
   final _controller = TextEditingController();
   final _focus = FocusNode();
   Timer? _revealTimer;
+  SearchIndex<PickerOption<T>>? _index;
+  List<PickerOption<T>>? _indexSource;
+
+  SearchIndex<PickerOption<T>> get _optionIndex {
+    if (_index == null || !identical(_indexSource, widget.options)) {
+      _indexSource = widget.options;
+      _index = SearchIndex(
+        widget.options,
+        (o) => '${o.label} ${o.subtitle ?? ''} ${o.searchText ?? ''}',
+      );
+    }
+    return _index!;
+  }
 
   String get _selectedLabel {
     for (final option in widget.options) {
@@ -203,13 +221,8 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
     final focused = _focus.hasFocus;
     final query = _controller.text;
     final hasQuery = focused && query.trim().isNotEmpty;
-    final inForm = AppFormTheme.isActive(context);
     final visible = hasQuery
-        ? filterByQuery<PickerOption<T>>(
-            widget.options,
-            query,
-            (o) => '${o.label} ${o.subtitle ?? ''}',
-          )
+        ? _optionIndex.search(query)
         : widget.options.where((o) => o.value == null).toList();
 
     // Con el teclado abierto queda poco alto: la lista se acorta para no
@@ -252,53 +265,24 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             // los resultados aparecen, aumentan o disminuyen.
             Container(
               height: maxResultsHeight,
-              decoration: AppFormTheme.isActive(context)
-                  ? BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(
-                        AppMetrics.groupRadius,
-                      ),
-                      border: Border.all(color: AppColors.border),
-                    )
-                  : BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
+                border: Border.all(color: AppColors.border),
+              ),
               child: ListView(
                 padding: const EdgeInsets.all(AppSpacing.s8),
                 children: [
                   for (final option in visible) _buildTile(context, option),
                   if (!hasQuery)
-                    inForm
-                        ? const AppEmptyState.hint(
-                            key: ValueKey('picker-type-to-search'),
-                            icon: Icons.search_rounded,
-                            text: 'Escribe para buscar.',
-                            compact: true,
-                          )
-                        : const Padding(
-                            padding: EdgeInsets.all(AppSpacing.s16),
-                            child: Center(
-                              child: Text(
-                                'Escribe para buscar',
-                                key: ValueKey('picker-type-to-search'),
-                                style: TextStyle(color: AppColors.textSecondary),
-                              ),
-                            ),
-                          )
+                    const AppEmptyState.hint(
+                      key: ValueKey('picker-type-to-search'),
+                      icon: Icons.search_rounded,
+                      text: 'Escribe para buscar.',
+                      compact: true,
+                    )
                   else if (visible.isEmpty)
-                    inForm
-                        ? const AppEmptyState.noMatch(compact: true)
-                        : const Padding(
-                            padding: EdgeInsets.all(AppSpacing.s16),
-                            child: Center(
-                              child: Text(
-                                'Sin resultados',
-                                style: TextStyle(color: AppColors.textSecondary),
-                              ),
-                            ),
-                          ),
+                    const AppEmptyState.noMatch(compact: true),
                 ],
               ),
             ),
@@ -310,34 +294,17 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
 
   Widget _buildTile(BuildContext context, PickerOption<T> option) {
     final isSelected = option.value == widget.value;
-    final inForm = AppFormTheme.isActive(context);
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
       title: Text(
         option.label,
-        style: inForm
-            ? AppText.rowSubtitle(
-                context,
-                color: AppColors.textPrimary,
-              ).copyWith(
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              )
-            : Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
+        style: AppText.rowSubtitle(context, color: AppColors.textPrimary)
+            .copyWith(fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500),
       ),
       subtitle: option.subtitle == null
           ? null
-          : Text(
-              option.subtitle!,
-              style: inForm
-                  ? AppText.footnote(context)
-                  : Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-            ),
+          : Text(option.subtitle!, style: AppText.footnote(context)),
       trailing: isSelected
           ? const Icon(Icons.check_rounded, color: AppColors.cyanDark)
           : null,

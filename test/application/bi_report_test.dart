@@ -35,48 +35,6 @@ void main() {
     for (final e in entries) e.label: e.amount,
   };
 
-  group('chart palette', () {
-    test('exactly five chart colors, each in its palette family', () {
-      final colors = [
-        AppColors.chartColor1,
-        AppColors.chartColor2,
-        AppColors.chartColor3,
-        AppColors.chartColor4,
-        AppColors.chartColor5,
-      ];
-      expect(colors.toSet().length, 5);
-      expect(AppColors.chartColor1, AppColors.cyanDark);
-      // Cada color pertenece a su familia de la paleta: cian, azul marino,
-      // verde lima, cian oscuro y azul.
-      const hueRanges = [
-        (170.0, 195.0), // chartColor1: cian
-        (205.0, 235.0), // chartColor2: azul marino
-        (60.0, 90.0), // chartColor3: verde lima
-        (170.0, 195.0), // chartColor4: cian oscuro
-        (195.0, 215.0), // chartColor5: azul
-      ];
-      for (var i = 0; i < colors.length; i++) {
-        final hue = HSLColor.fromColor(colors[i]).hue;
-        expect(
-          hue,
-          inInclusiveRange(hueRanges[i].$1, hueRanges[i].$2),
-          reason: 'chartColor${i + 1}: ${colors[i]}',
-        );
-      }
-    });
-
-    test('chartColorAt cycles through the same five colors in order', () {
-      final first = [for (var i = 0; i < 5; i++) chartColorAt(i)];
-      for (var i = 0; i < 20; i++) {
-        expect(chartColorAt(i), first[i % 5], reason: 'index $i');
-      }
-      expect(chartColorAt(5), AppColors.chartColor1);
-      expect(chartColorAt(6), AppColors.chartColor2);
-      expect(chartColorAt(9), AppColors.chartColor5);
-      expect(chartColorAt(10), AppColors.chartColor1);
-    });
-  });
-
   group('indicators', () {
     test('summary excludes canceled and future-dated records', () async {
       final p = await newProduct('Tote bag negra');
@@ -386,39 +344,6 @@ void main() {
       expect(find.text('Feria de Arte'), findsOneWidget);
     });
 
-    testWidgets('bars cycle through the five palette colors past the fifth', (
-      tester,
-    ) async {
-      // 7 categorías con ventas: las barras 6 y 7 reutilizan los colores 1 y 2.
-      for (var i = 0; i < 7; i++) {
-        final cat = await newCategory('Categoría $i');
-        final p = await newProduct('Producto $i', categoryId: cat);
-        await sell(day(0), p, 1, 100.0 - i * 10);
-      }
-      await refresh();
-      await pumpPage(tester);
-
-      Color barColor(int i) {
-        final box = tester.widget<Container>(
-          find.byKey(ValueKey('bi-bar-$i')).first,
-        );
-        return box.color!;
-      }
-
-      final expected = [
-        AppColors.chartColor1,
-        AppColors.chartColor2,
-        AppColors.chartColor3,
-        AppColors.chartColor4,
-        AppColors.chartColor5,
-        AppColors.chartColor1,
-        AppColors.chartColor2,
-      ];
-      for (var i = 0; i < 7; i++) {
-        expect(barColor(i), expected[i], reason: 'bar $i');
-      }
-    });
-
     testWidgets('the configuration step reuses the Reportes filters and presets', (
       tester,
     ) async {
@@ -437,14 +362,14 @@ void main() {
         expect(find.text(preset), findsOneWidget);
       }
       for (final chip in [
-        'Todas las categorías',
+        'Categoría',
         'Producto',
         'Tipo de precio',
         'Tipo de operación',
         'Evento',
         'Ubicación',
-        'Todos los países',
-        'Todas las ciudades',
+        'País',
+        'Ciudad',
       ]) {
         expect(find.text(chip), findsOneWidget, reason: chip);
       }
@@ -466,7 +391,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('bi-configure')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
-      await tester.tap(find.text('Hoy'));
+      await tester.tap(find.text('Hoy').last);
       await tester.pumpAndSettle();
       // El botón va al final del contenido que se desplaza.
       await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));

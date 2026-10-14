@@ -46,14 +46,10 @@ class SalesListBody extends ConsumerWidget {
     final dates = ref.watch(saleDateFilterProvider);
     final timeFilter = ref.watch(saleTimeFilterProvider);
     final query = ref.watch(saleListQueryProvider);
-    final searchText = ref.watch(saleSearchTextProvider);
-    final visible = state.sales
-        .where(
-          (s) =>
-              dates.matches(s.date) &&
-              timeFilter.includes(s.date) &&
-              matchesAllWords(searchText[s.id] ?? '', query),
-        )
+    final visible = ref
+        .watch(saleSearchIndexProvider)
+        .search(query)
+        .where((s) => dates.matches(s.date) && timeFilter.includes(s.date))
         .toList();
 
     String clientName(SaleModel sale) =>

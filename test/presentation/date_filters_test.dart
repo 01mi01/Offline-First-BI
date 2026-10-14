@@ -409,6 +409,7 @@ void main() {
                   builder: (context, setInner) => ReportFiltersWidget(
                     filters: filters,
                     activeTab: 0,
+                    alwaysOpen: true,
                     onChanged: (f) {
                       emitted.add(f);
                       setInner(() => filters = f);
@@ -438,13 +439,13 @@ void main() {
       // ya activo lo quitaría, así que ese día solo se comprueba "Hoy".
       if (today == DateTime(now.year)) return;
 
-      await tester.tap(find.text('Este año'));
+      await tester.tap(find.text('Este año').last);
       await tester.pumpAndSettle();
       expect(emitted.last.startDate, DateTime(now.year));
       expect(emitted.last.endDate, today); // nunca más allá de hoy
 
       // Volver a tocarlo quita el rango.
-      await tester.tap(find.text('Este año'));
+      await tester.tap(find.text('Este año').last);
       await tester.pumpAndSettle();
       expect(emitted.last.startDate, isNull);
       expect(emitted.last.endDate, isNull);
@@ -452,7 +453,7 @@ void main() {
 
     testWidgets('Hasta before Desde is rejected', (tester) async {
       await pumpReport(tester, initial: ReportFilters(startDate: today));
-      await tester.tap(find.text('Fecha de fin'));
+      await tester.tap(dateBox('Hasta'));
       await tester.pumpAndSettle();
       await _typeDate(tester, yesterday);
       expect(find.text(rangeOrderMessage), findsOneWidget);
@@ -461,7 +462,7 @@ void main() {
 
     testWidgets('the same day for Desde and Hasta is accepted', (tester) async {
       await pumpReport(tester, initial: ReportFilters(startDate: today));
-      await tester.tap(find.text('Fecha de fin'));
+      await tester.tap(dateBox('Hasta'));
       await tester.pumpAndSettle();
       await _typeDate(tester, today);
       expect(emitted.single.startDate, today);
@@ -470,7 +471,7 @@ void main() {
 
     testWidgets('a future date is refused by the picker', (tester) async {
       await pumpReport(tester);
-      await tester.tap(find.text('Fecha de inicio'));
+      await tester.tap(dateBox('Desde'));
       await tester.pumpAndSettle();
       await tester.tap(_pickerEditIcon);
       await tester.pumpAndSettle();
@@ -487,7 +488,7 @@ void main() {
 
     testWidgets('a valid past Desde is applied', (tester) async {
       await pumpReport(tester);
-      await tester.tap(find.text('Fecha de inicio'));
+      await tester.tap(dateBox('Desde'));
       await tester.pumpAndSettle();
       await _typeDate(tester, yesterday);
       expect(emitted.single.startDate, yesterday);

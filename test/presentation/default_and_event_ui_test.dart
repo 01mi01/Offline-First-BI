@@ -174,7 +174,7 @@ void main() {
         // escribir.
         expect(find.text('Sin nombre'), findsOneWidget);
         expect(find.text('Michael Brown'), findsNothing);
-        expect(find.text('Escribe para buscar'), findsOneWidget);
+        expect(find.text('Escribe para buscar.'), findsOneWidget);
 
         await tester.enterText(
           find.descendant(
@@ -314,7 +314,7 @@ void main() {
       await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'exposicion');
       await tester.pumpAndSettle();
       expect(find.descendant(of: field, matching: find.text('Exposición de Arte')), findsNothing);
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
     });
 
     testWidgets('purchases: the event picker also hides the inactive event', (
@@ -343,7 +343,7 @@ void main() {
       await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'exposicion');
       await tester.pumpAndSettle();
       expect(find.descendant(of: field, matching: find.text('Exposición de Arte')), findsNothing);
-      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.text('No se encontraron resultados.'), findsOneWidget);
     });
 
     testWidgets(

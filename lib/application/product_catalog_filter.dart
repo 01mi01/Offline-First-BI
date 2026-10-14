@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product_model.dart';
+import 'record_search.dart';
 import 'status_filter.dart';
 
 // Qué precio(s) muestran las tarjetas de Productos (lista y catálogo).
@@ -44,16 +45,15 @@ class ProductCatalogFilter {
       categoryId != null ||
       status != StatusFilter.all;
 
-  // Productos que cumplen la búsqueda (nombre o descripción) y la categoría,
-  // en el orden en que llegan (alfabético por nombre desde el repositorio).
-  List<ProductModel> apply(List<ProductModel> products) {
-    final q = query.trim().toLowerCase();
-    return products.where((p) {
+  List<ProductModel> apply(
+    List<ProductModel> products, {
+    SearchIndex<ProductModel>? index,
+  }) {
+    final found = (index ?? SearchIndex(products, (p) => '${p.name} ${p.description ?? ''}'))
+        .search(query);
+    return found.where((p) {
       if (categoryId != null && p.categoryId != categoryId) return false;
-      if (!status.matches(p.isActive)) return false;
-      if (q.isEmpty) return true;
-      return p.name.toLowerCase().contains(q) ||
-          (p.description ?? '').toLowerCase().contains(q);
+      return status.matches(p.isActive);
     }).toList();
   }
 }
