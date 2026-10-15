@@ -8,104 +8,107 @@ import '../../models/purchase_model.dart';
 import '../../models/report_filters.dart';
 import '../../models/report_models.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/app_controls.dart';
 import '../widgets/app_group.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/kpi_grid.dart';
+import '../widgets/profile_button.dart';
 import '../widgets/report_filters_widget.dart';
 import '../widgets/report_records.dart';
 import '../widgets/screen_header.dart';
 import 'report_detail_page.dart';
 
-class ReportsPage extends ConsumerWidget {
+class ReportsPage extends ConsumerStatefulWidget {
   const ReportsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return const ScreenScaffold(
-      title: 'Reportes',
-      body: ReportsBody(),
-    );
-  }
+  ConsumerState<ReportsPage> createState() => _ReportsPageState();
 }
 
-class ReportsBody extends ConsumerStatefulWidget {
-  const ReportsBody({super.key});
-
-  @override
-  ConsumerState<ReportsBody> createState() => _ReportsBodyState();
-}
-
-class _ReportsBodyState extends ConsumerState<ReportsBody>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ReportsPageState extends ConsumerState<ReportsPage> {
   ReportFilters _salesFilters = const ReportFilters();
   ReportFilters _purchaseFilters = const ReportFilters();
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final saleState = ref.watch(saleProvider);
     final purchaseState = ref.watch(purchaseProvider);
-    final saleItemsMapAsync = ref.watch(saleItemsMapProvider);
-
-    if (saleState.isLoading ||
+    final loading =
+        saleState.isLoading ||
         purchaseState.isLoading ||
-        saleItemsMapAsync.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+        ref.watch(saleItemsMapProvider).isLoading;
 
-    final saleRows = ref.watch(saleReportRowsProvider(_salesFilters));
-    final purchases = ref.watch(filteredPurchasesProvider(_purchaseFilters));
+    final saleRows = loading
+        ? const <SaleReportRow>[]
+        : ref.watch(saleReportRowsProvider(_salesFilters));
+    final purchases = loading
+        ? const <PurchaseModel>[]
+        : ref.watch(filteredPurchasesProvider(_purchaseFilters));
 
-    return Column(
-      children: [
-        Material(
-          color: AppColors.background,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: AppColors.cyanDark,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.cyanDark,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: Theme.of(
-              context,
-            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w600),
-            tabs: const [
-              Tab(text: 'Ventas'),
-              Tab(text: 'Compras'),
-            ],
-          ),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _SalesTab(
-                rows: saleRows,
-                hasSales: saleState.sales.isNotEmpty,
-                filters: _salesFilters,
-                onFilters: (f) => setState(() => _salesFilters = f),
+    return DefaultTabController(
+      length: 2,
+      child: ScreenScaffold(
+        title: 'Reportes',
+        actions: const [ProfileButton()],
+        bottom: const AppTabSwitcher(labels: ['Ventas', 'Compras']),
+        bottomBar: loading
+            ? null
+            : _ExportBar(saleRows: saleRows, purchases: purchases),
+        body: loading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                children: [
+                  _SalesTab(
+                    rows: saleRows,
+                    hasSales: saleState.sales.isNotEmpty,
+                    filters: _salesFilters,
+                    onFilters: (f) => setState(() => _salesFilters = f),
+                  ),
+                  _PurchasesTab(
+                    purchases: purchases,
+                    hasPurchases: purchaseState.purchases.isNotEmpty,
+                    filters: _purchaseFilters,
+                    onFilters: (f) => setState(() => _purchaseFilters = f),
+                  ),
+                ],
               ),
-              _PurchasesTab(
-                purchases: purchases,
-                hasPurchases: purchaseState.purchases.isNotEmpty,
-                filters: _purchaseFilters,
-                onFilters: (f) => setState(() => _purchaseFilters = f),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
+    );
+  }
+}
+
+class _ExportBar extends StatelessWidget {
+  final List<SaleReportRow> saleRows;
+  final List<PurchaseModel> purchases;
+
+  const _ExportBar({required this.saleRows, required this.purchases});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final sales = controller.index == 0;
+        final enabled = sales ? saleRows.isNotEmpty : purchases.isNotEmpty;
+        return ElevatedButton(
+          key: const ValueKey('report-export'),
+          onPressed: enabled
+              ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReportDetailPage(
+                      title: sales ? 'Reporte de Ventas' : 'Reporte de Compras',
+                      type: sales ? ReportType.sales : ReportType.purchases,
+                      saleRows: sales ? saleRows : const [],
+                      purchases: sales ? const [] : purchases,
+                    ),
+                  ),
+                )
+              : null,
+          child: const Text('Exportar el reporte'),
+        );
+      },
     );
   }
 }
@@ -137,24 +140,23 @@ class _SalesTab extends ConsumerWidget {
           ),
         ),
         SliverToBoxAdapter(
-          child: _ReportSummary(
-            values: [
-              ('Ventas', '${summary.count}'),
-              ('Ingresos', 'Bs. ${fixed2(summary.totalAmount)}'),
-              ('Descuentos', 'Bs. ${fixed2(summary.totalDiscount)}'),
-            ],
-            enabled: rows.isNotEmpty,
-            onOpen: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ReportDetailPage(
-                  title: 'Reporte de Ventas',
-                  type: ReportType.sales,
-                  saleRows: rows,
-                  purchases: const [],
-                ),
+          child: _ReportKpis(
+            items: [
+              AppKpi(
+                key: 'report-income',
+                label: 'Ingresos',
+                value: 'Bs. ${fixed2(summary.totalAmount)}',
+                icon: Icons.trending_up_rounded,
+                color: AppColors.cyanDark,
               ),
-            ),
+              AppKpi(
+                key: 'report-count',
+                label: 'Ventas',
+                value: '${summary.count}',
+                icon: Icons.point_of_sale_rounded,
+                color: AppColors.blue,
+              ),
+            ],
           ),
         ),
         if (rows.isEmpty)
@@ -173,9 +175,7 @@ class _SalesTab extends ConsumerWidget {
                 ReportSaleRowTile(row: rows[index]),
           ),
         SliverToBoxAdapter(
-          child: SizedBox(
-            height: AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
-          ),
+          child: SizedBox(height: AppSpacing.s24),
         ),
       ],
     );
@@ -210,27 +210,24 @@ class _PurchasesTab extends ConsumerWidget {
           ),
         ),
         SliverToBoxAdapter(
-          child: _ReportSummary(
-            values: [
-              ('Compras', '${summary.count}'),
-              ('Gasto total', 'Bs. ${fixed2(summary.totalAmount)}'),
-              (
-                materialsSummaryLabel(summary.materialCount),
-                '${summary.materialCount}',
+          child: _ReportKpis(
+            items: [
+              AppKpi(
+                key: 'report-expense',
+                label: 'Gasto total',
+                value: 'Bs. ${fixed2(summary.totalAmount)}',
+                icon: Icons.trending_down_rounded,
+                color: AppColors.error,
+                background: AppColors.errorSoft,
+              ),
+              AppKpi(
+                key: 'report-count',
+                label: 'Compras',
+                value: '${summary.count}',
+                icon: Icons.shopping_bag_rounded,
+                color: AppColors.blue,
               ),
             ],
-            enabled: purchases.isNotEmpty,
-            onOpen: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ReportDetailPage(
-                  title: 'Reporte de Compras',
-                  type: ReportType.purchases,
-                  saleRows: const [],
-                  purchases: purchases,
-                ),
-              ),
-            ),
           ),
         ),
         if (purchases.isEmpty)
@@ -249,52 +246,28 @@ class _PurchasesTab extends ConsumerWidget {
                 ReportPurchaseRowTile(row: rows[index]),
           ),
         SliverToBoxAdapter(
-          child: SizedBox(
-            height: AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
-          ),
+          child: SizedBox(height: AppSpacing.s24),
         ),
       ],
     );
   }
 }
 
-class _ReportSummary extends StatelessWidget {
-  final List<(String, String)> values;
-  final bool enabled;
-  final VoidCallback onOpen;
+class _ReportKpis extends StatelessWidget {
+  final List<AppKpi> items;
 
-  const _ReportSummary({
-    required this.values,
-    required this.enabled,
-    required this.onOpen,
-  });
+  const _ReportKpis({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        AppSection(
-          children: [
-            for (final (label, value) in values)
-              AppValueRow(label: label, value: value),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s16,
-            0,
-            AppSpacing.s16,
-            AppSpacing.s16,
-          ),
-          child: ElevatedButton.icon(
-            onPressed: enabled ? onOpen : null,
-            icon: const Icon(Icons.open_in_new_rounded, size: 18),
-            label: const Text('Ver reporte completo y exportar'),
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s4,
+        AppSpacing.s16,
+        AppSpacing.s16,
+      ),
+      child: AppKpiGrid(items: items, cardHeight: 136),
     );
   }
 }
-
-String materialsSummaryLabel(int count) => count == 1 ? 'Material' : 'Materiales';

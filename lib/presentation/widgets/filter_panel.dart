@@ -51,6 +51,7 @@ class FilterDropdown<T> extends FilterField {
   @override
   final T defaultValue;
   final ValueChanged<T> onApply;
+  final String? placeholder;
 
   FilterDropdown({
     required this.label,
@@ -58,14 +59,15 @@ class FilterDropdown<T> extends FilterField {
     required this.current,
     required this.defaultValue,
     required this.onApply,
+    this.placeholder,
   });
 
-  String _labelOf(T value) => options
-      .firstWhere(
-        (o) => o.value == value,
-        orElse: () => options.first,
-      )
-      .label;
+  String _labelOf(T value) {
+    for (final o in options) {
+      if (o.value == value) return o.label;
+    }
+    return placeholder ?? options.first.label;
+  }
 
   @override
   String? get summary => _labelOf(current);
@@ -421,12 +423,14 @@ class FilterButton extends StatelessWidget {
   final int count;
   final bool open;
   final VoidCallback onTap;
+  final bool wide;
 
   const FilterButton({
     super.key,
     required this.count,
     required this.open,
     required this.onTap,
+    this.wide = false,
   });
 
   @override
@@ -440,7 +444,7 @@ class FilterButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
         child: Container(
-          width: AppMetrics.controlHeight,
+          width: wide ? double.infinity : AppMetrics.controlHeight,
           height: AppMetrics.controlHeight,
           decoration: BoxDecoration(
             color: AppColors.track,
@@ -449,11 +453,32 @@ class FilterButton extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Icon(
-                Icons.tune_rounded,
-                size: 22,
-                color: highlighted ? AppColors.cyanDark : AppColors.textSecondary,
-              ),
+              if (wide)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.tune_rounded,
+                      size: 22,
+                      color: highlighted
+                          ? AppColors.cyanDark
+                          : AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: AppSpacing.s8),
+                    Text(
+                      'Filtros',
+                      style: filterValueStyle(context, active: highlighted),
+                    ),
+                  ],
+                )
+              else
+                Icon(
+                  Icons.tune_rounded,
+                  size: 22,
+                  color: highlighted
+                      ? AppColors.cyanDark
+                      : AppColors.textSecondary,
+                ),
               if (count > 0)
                 Positioned(
                   top: AppSpacing.s4,
@@ -642,8 +667,13 @@ class _FilterAreaState extends State<FilterArea> {
         if (_isActive(f) && f.summary != null) f.summary!,
     ].join(' · ');
     const margin = EdgeInsets.symmetric(horizontal: AppSpacing.s16);
-    final button = FilterButton(count: count, open: _open, onTap: _toggle);
     final search = widget.search;
+    final button = FilterButton(
+      count: count,
+      open: _open,
+      onTap: _toggle,
+      wide: search == null,
+    );
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.s12),
@@ -653,14 +683,15 @@ class _FilterAreaState extends State<FilterArea> {
           if (!widget.alwaysOpen || search != null)
             Padding(
               padding: margin,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (search != null) Expanded(child: search),
-                  if (search != null) const SizedBox(width: AppSpacing.s8),
-                  button,
-                ],
-              ),
+              child: search == null
+                  ? button
+                  : Row(
+                      children: [
+                        Expanded(child: search),
+                        const SizedBox(width: AppSpacing.s8),
+                        button,
+                      ],
+                    ),
             ),
           if (count > 0)
             Padding(

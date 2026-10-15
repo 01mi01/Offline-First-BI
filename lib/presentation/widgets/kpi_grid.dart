@@ -21,26 +21,28 @@ class AppKpi {
 
 class AppKpiGrid extends StatelessWidget {
   final List<AppKpi> items;
+  final double? cardHeight;
 
-  const AppKpiGrid({super.key, required this.items});
+  const AppKpiGrid({super.key, required this.items, this.cardHeight});
 
   @override
   Widget build(BuildContext context) {
     final rows = <Widget>[];
     for (var i = 0; i < items.length; i += 2) {
       final pair = items.skip(i).take(2).toList();
+      final row = Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var j = 0; j < pair.length; j++) ...[
+            if (j > 0) const SizedBox(width: AppSpacing.s12),
+            Expanded(child: _KpiCard(kpi: pair[j])),
+          ],
+        ],
+      );
       rows.add(
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var j = 0; j < pair.length; j++) ...[
-                if (j > 0) const SizedBox(width: AppSpacing.s12),
-                Expanded(child: _KpiCard(kpi: pair[j])),
-              ],
-            ],
-          ),
-        ),
+        cardHeight == null
+            ? IntrinsicHeight(child: row)
+            : SizedBox(height: cardHeight, child: row),
       );
       if (i + 2 < items.length) {
         rows.add(const SizedBox(height: AppSpacing.s12));

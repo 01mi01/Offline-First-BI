@@ -6,6 +6,7 @@ import '../../models/event_model.dart';
 import '../../theme/app_theme.dart';
 import 'location_dialog.dart';
 import '../../config/date_formatters.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/focus_utils.dart';
 import '../widgets/searchable_picker.dart';
@@ -97,17 +98,17 @@ class _EventDialogState extends ConsumerState<EventDialog> {
   // Desactivar un evento (no se borra): deja de ofrecerse al registrar
   // ventas y compras, pero sigue en el historial y en los reportes.
   Future<void> _onToggleActive(bool value) async {
-    if (!value) {
-      final confirm = await confirmCancellation(
-        context,
-        title: '¿Desactivar evento?',
-        message:
-            'El evento no estará disponible para nuevos registros.',
-        confirmLabel: 'Desactivar',
-        dismissLabel: 'Cancelar',
-      );
-      if (!confirm) return;
-    }
+    final confirm = await confirmCancellation(
+      context,
+      title: value ? 'Activar el evento' : 'Desactivar el evento',
+      message: value
+          ? 'El evento volverá a estar disponible para nuevos registros.'
+          : 'El evento no estará disponible para nuevos registros.',
+      confirmLabel: value ? 'Activar' : 'Desactivar',
+      confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
+      dismissLabel: 'Cancelar',
+    );
+    if (!confirm) return;
     setState(() => _isActive = value);
   }
 

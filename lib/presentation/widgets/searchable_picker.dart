@@ -225,15 +225,9 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
         ? _optionIndex.search(query)
         : widget.options.where((o) => o.value == null).toList();
 
-    // Con el teclado abierto queda poco alto: la lista se acorta para no
-    // desbordar pantallas chicas. El alto del teclado se lee de la vista (un
-    // Scaffold se lo quita al MediaQuery de su contenido).
-    final media = MediaQuery.of(context);
     final view = View.of(context);
-    final keyboardHeight = view.viewInsets.bottom / view.devicePixelRatio;
-    final maxResultsHeight = ((media.size.height - keyboardHeight) *
-            0.3)
-        .clamp(120.0, 200.0);
+    final screenHeight = view.physicalSize.height / view.devicePixelRatio;
+    final resultsHeight = (screenHeight * 0.25).clamp(120.0, 200.0);
 
     return TextFieldTapRegion(
       child: Column(
@@ -264,31 +258,44 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             // escribe, así que lo que hay encima (el campo) no se mueve cuando
             // los resultados aparecen, aumentan o disminuyen.
             Container(
-              height: maxResultsHeight,
+              height: resultsHeight,
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
                 border: Border.all(color: AppColors.border),
               ),
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.s8),
-                children: [
-                  for (final option in visible) _buildTile(context, option),
-                  if (!hasQuery)
-                    const AppEmptyState.hint(
-                      key: ValueKey('picker-type-to-search'),
-                      icon: Icons.search_rounded,
-                      text: 'Escribe para buscar.',
-                      compact: true,
-                    )
-                  else if (visible.isEmpty)
-                    const AppEmptyState.noMatch(compact: true),
-                ],
-              ),
+              child: _results(context, visible, hasQuery),
             ),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _results(
+    BuildContext context,
+    List<PickerOption<T>> visible,
+    bool hasQuery,
+  ) {
+    final empty = hasQuery
+        ? const AppEmptyState.noMatch(compact: true)
+        : const AppEmptyState.hint(
+            key: ValueKey('picker-type-to-search'),
+            icon: Icons.search_rounded,
+            text: 'Escribe para buscar.',
+            compact: true,
+          );
+    if (visible.isEmpty) return empty;
+    final tiles = [for (final option in visible) _buildTile(context, option)];
+    if (hasQuery) {
+      return ListView(
+        padding: const EdgeInsets.all(AppSpacing.s8),
+        children: tiles,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.s8),
+      child: Column(children: [...tiles, Expanded(child: empty)]),
     );
   }
 

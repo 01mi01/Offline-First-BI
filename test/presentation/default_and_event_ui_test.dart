@@ -244,7 +244,7 @@ void main() {
 
         await tester.tap(find.byType(Switch));
         await tester.pumpAndSettle();
-        expect(find.text('¿Desactivar evento?'), findsOneWidget);
+        expect(find.text('Desactivar el evento'), findsOneWidget);
         await tester.tap(find.text('Desactivar'));
         await tester.pumpAndSettle();
         expect(find.text('Oculto en el sistema'), findsOneWidget);

@@ -629,12 +629,12 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
     final entry = widget.entry;
     final confirmed = await confirmCancellation(
       context,
-      title: '¿Cancelar registro de uso?',
+      title: 'Cancelar el registro de uso',
       message:
           'Se devolverá ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} '
           '${unitLabel(entry.materialUnitName, entry.quantityUsed)} de '
           '"${entry.materialName}" al stock.',
-      confirmLabel: 'Cancelar registro',
+      confirmLabel: 'Cancelar el registro de uso',
     );
     if (!confirmed || !mounted) return;
     final error = await ref.read(materialProvider.notifier).cancelUsage(entry.id);
@@ -724,7 +724,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
         onPrimary: _save,
         // Cancelar el registro: solo aquí, dentro del formulario de edición.
         destructive: AppActionButton(
-          label: 'Cancelar registro',
+          label: 'Cancelar el registro de uso',
           kind: AppButtonKind.destructive,
           onPressed: _cancelUsage,
         ),

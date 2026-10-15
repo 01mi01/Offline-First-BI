@@ -96,7 +96,7 @@ void main() {
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
       expect(find.text('Nueva compra'), findsOneWidget);
-      expect(find.text('Cancelar compra'), findsNothing);
+      expect(find.text('Cancelar la compra'), findsNothing);
     });
 
     testWidgets('confirming subtracts the stock, and the purchase stays as "Cancelada" with no edit button', (
@@ -106,12 +106,12 @@ void main() {
       expect(await stock(), 15);
       await openEdit(tester);
 
-      await tester.ensureVisible(find.text('Cancelar compra'));
+      await tester.ensureVisible(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar compra'));
+      await tester.tap(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      expect(find.text('¿Cancelar compra?'), findsOneWidget);
-      await tester.tap(find.text('Cancelar compra').last);
+      expect(find.text('Se cancelará la compra pero se mantendrá el registro.'), findsOneWidget);
+      await tester.tap(find.text('Cancelar la compra').last);
       await tester.pumpAndSettle();
 
       expect(await stock(), 10);
@@ -126,9 +126,9 @@ void main() {
     testWidgets('"Volver" leaves the purchase and the stock untouched', (tester) async {
       await buyMaterial();
       await openEdit(tester);
-      await tester.ensureVisible(find.text('Cancelar compra'));
+      await tester.ensureVisible(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar compra'));
+      await tester.tap(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Volver'));
       await tester.pumpAndSettle();
@@ -146,11 +146,11 @@ void main() {
           .write(const MaterialsCompanion(stock: Value(3)));
       await openEdit(tester);
 
-      await tester.ensureVisible(find.text('Cancelar compra'));
+      await tester.ensureVisible(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar compra'));
+      await tester.tap(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar compra').last);
+      await tester.tap(find.text('Cancelar la compra').last);
       await tester.pumpAndSettle();
 
       expect(
@@ -176,11 +176,11 @@ void main() {
         items: const [],
       );
       await openEdit(tester);
-      await tester.ensureVisible(find.text('Cancelar compra'));
+      await tester.ensureVisible(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar compra'));
+      await tester.tap(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar compra').last);
+      await tester.tap(find.text('Cancelar la compra').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Cancelada'), findsOneWidget);

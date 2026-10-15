@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import 'app_sheet.dart' show SheetActionBar;
 import 'app_style.dart';
 
 TextStyle? screenTitleStyle(BuildContext context) =>
@@ -13,8 +14,14 @@ TextStyle? screenTitleStyle(BuildContext context) =>
 class ScreenTopBar extends StatelessWidget {
   final bool? showBack;
   final List<Widget> actions;
+  final VoidCallback? onBack;
 
-  const ScreenTopBar({super.key, this.showBack, this.actions = const []});
+  const ScreenTopBar({
+    super.key,
+    this.showBack,
+    this.actions = const [],
+    this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +35,7 @@ class ScreenTopBar extends StatelessWidget {
           height: AppHeader.rowHeight,
           child: Row(
             children: [
-              if (back) const _BackButton(),
+              if (back) _BackButton(onTap: onBack),
               const Spacer(),
               IconButtonTheme(
                 data: IconButtonThemeData(
@@ -90,6 +97,8 @@ class ScreenScaffold extends StatelessWidget {
   final List<Widget>? slivers;
   final Widget? bottom;
   final Widget? floatingActionButton;
+  final Widget? bottomBar;
+  final VoidCallback? onBack;
 
   const ScreenScaffold({
     super.key,
@@ -99,6 +108,8 @@ class ScreenScaffold extends StatelessWidget {
     this.showBack,
     this.bottom,
     this.floatingActionButton,
+    this.bottomBar,
+    this.onBack,
   }) : slivers = null;
 
   const ScreenScaffold.slivers({
@@ -108,6 +119,8 @@ class ScreenScaffold extends StatelessWidget {
     this.actions = const [],
     this.showBack,
     this.floatingActionButton,
+    this.bottomBar,
+    this.onBack,
   }) : body = null,
        bottom = null;
 
@@ -134,8 +147,10 @@ class ScreenScaffold extends StatelessWidget {
       floatingActionButton: floatingActionButton,
       body: Column(
         children: [
-          ScreenTopBar(showBack: showBack, actions: actions),
+          ScreenTopBar(showBack: showBack, actions: actions, onBack: onBack),
           Expanded(child: content),
+          if (bottomBar != null && MediaQuery.viewInsetsOf(context).bottom == 0)
+            SheetActionBar(child: bottomBar!),
         ],
       ),
     );
@@ -143,12 +158,14 @@ class ScreenScaffold extends StatelessWidget {
 }
 
 class _BackButton extends StatelessWidget {
-  const _BackButton();
+  final VoidCallback? onTap;
+
+  const _BackButton({this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => Navigator.maybePop(context),
+      onTap: onTap ?? () => Navigator.maybePop(context),
       child: SizedBox(
         height: AppHeader.rowHeight,
         child: Padding(

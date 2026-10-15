@@ -11,26 +11,32 @@ import 'app_group.dart';
 import 'app_sheet.dart';
 import 'app_style.dart';
 import 'record_detail.dart';
-import 'record_list.dart';
+import 'transaction_rows.dart';
+import '../../application/report_provider.dart' show saleItemsMapProvider;
 import 'status_badge.dart';
 
-class ReportSaleRowTile extends StatelessWidget {
+class ReportSaleRowTile extends ConsumerWidget {
   final SaleReportRow row;
 
   const ReportSaleRowTile({super.key, required this.row});
 
   @override
-  Widget build(BuildContext context) {
-    final discount = row.discountAmount;
-    return RecordRow(
-      title: row.clientName,
-      details: [
-        RecordLine(formatDateTime(row.sale.date)),
-        if (row.locationName != null) RecordLine(row.locationName!),
-        if (row.eventName != null) RecordLine(row.eventName!),
-        if (discount > 0) RecordLine('Desc. Bs. ${fixed2(discount)}'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lines = row.lines;
+    final items = ref.watch(saleItemsMapProvider).valueOrNull?[row.sale.id];
+    final List<String> names = lines != null
+        ? [for (final l in lines) l.item.productName]
+        : [for (final i in items ?? const <SaleItemModel>[]) i.productName];
+    return saleRecordRow(
+      productNames: names,
+      clientName: row.clientName,
+      date: row.sale.date,
+      discount: row.discountAmount,
+      amount: row.netAmount,
+      extraLines: [
+        if (row.locationName != null) row.locationName!,
+        if (row.eventName != null) row.eventName!,
       ],
-      trailing: RecordValue('Bs. ${fixed2(row.netAmount)}'),
       onTap: () => showAppSheet<void>(
         context,
         builder: (_) => _ReportSaleDetail(row: row),
@@ -160,17 +166,17 @@ class ReportPurchaseRowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final purchase = row.purchase;
-    return RecordRow(
-      title: row.supplierName,
-      details: [
-        RecordLine(formatDateTime(purchase.date)),
-        if (purchase.description != null && purchase.description!.isNotEmpty)
-          RecordLine(purchase.description!, maxLines: 1),
-        if (row.locationName != null) RecordLine(row.locationName!),
-        if (row.eventName != null) RecordLine(row.eventName!),
+    return purchaseRecordRow(
+      materialNames: [for (final i in row.items) i.materialName],
+      description: purchase.description,
+      isMaterial: purchase.isMaterial,
+      supplierName: row.supplierName,
+      date: purchase.date,
+      amount: purchase.totalAmount,
+      extraLines: [
+        if (row.locationName != null) row.locationName!,
+        if (row.eventName != null) row.eventName!,
       ],
-      pill: StatusBadge.purchaseType(isMaterial: purchase.isMaterial),
-      trailing: RecordValue('Bs. ${fixed2(purchase.totalAmount)}'),
       onTap: () => showAppSheet<void>(
         context,
         builder: (_) => _ReportPurchaseDetail(row: row),

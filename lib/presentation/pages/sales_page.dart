@@ -19,7 +19,8 @@ import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/record_detail.dart';
-import '../widgets/record_list.dart';
+import '../widgets/transaction_rows.dart';
+import '../../application/report_provider.dart' show saleItemsMapProvider;
 import '../widgets/status_badge.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/catalog_filter_bar.dart';
@@ -158,7 +159,7 @@ void showSaleReceipt(BuildContext context, SaleModel sale, String clientName) {
   );
 }
 
-class _SaleRow extends StatelessWidget {
+class _SaleRow extends ConsumerWidget {
   final SaleModel sale;
   final String clientName;
   final VoidCallback onTap;
@@ -170,20 +171,15 @@ class _SaleRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final canceled = sale.isCanceled;
-    return RecordRow(
-      title: clientName,
-      titleColor: canceled ? AppColors.textSecondary : null,
-      details: [
-        RecordLine(formatDateTime(sale.date)),
-        if (sale.discount > 0) RecordLine('Desc. Bs. ${fixed2(sale.discount)}'),
-      ],
-      pill: canceled ? const StatusBadge.canceled() : null,
-      trailing: RecordValue(
-        'Bs. ${fixed2(sale.finalAmount)}',
-        canceled: canceled,
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(saleItemsMapProvider).valueOrNull?[sale.id];
+    return saleRecordRow(
+      productNames: [for (final i in items ?? const []) i.productName],
+      clientName: clientName,
+      date: sale.date,
+      discount: sale.discount,
+      amount: sale.finalAmount,
+      canceled: sale.isCanceled,
       onTap: onTap,
     );
   }

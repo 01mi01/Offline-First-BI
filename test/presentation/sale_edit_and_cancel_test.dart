@@ -188,7 +188,7 @@ void main() {
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
       expect(find.text('Nueva venta'), findsOneWidget);
-      expect(find.text('Cancelar venta'), findsNothing);
+      expect(find.text('Cancelar la venta'), findsNothing);
     });
 
     testWidgets(
@@ -211,12 +211,12 @@ void main() {
         await tester.tap(find.text('Editar'));
         await tester.pumpAndSettle();
         expect(find.text('Editar venta'), findsOneWidget);
-        await tester.ensureVisible(find.text('Cancelar venta'));
+        await tester.ensureVisible(find.text('Cancelar la venta'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Cancelar venta'));
+        await tester.tap(find.text('Cancelar la venta'));
         await tester.pumpAndSettle();
-        expect(find.text('¿Cancelar venta?'), findsOneWidget);
-        await tester.tap(find.text('Cancelar venta').last);
+        expect(find.text('Se cancelará la venta pero se mantendrá el registro.'), findsOneWidget);
+        await tester.tap(find.text('Cancelar la venta').last);
         await tester.pumpAndSettle();
 
         expect(await productStock(), 5); // lo vendido volvió al inventario
@@ -246,9 +246,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Editar'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Cancelar venta'));
+      await tester.ensureVisible(find.text('Cancelar la venta'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar venta'));
+      await tester.tap(find.text('Cancelar la venta'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Volver'));
       await tester.pumpAndSettle();
@@ -304,12 +304,12 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Editar'));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Cancelar registro'));
+        await tester.ensureVisible(find.text('Cancelar el registro de uso'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Cancelar registro'));
+        await tester.tap(find.text('Cancelar el registro de uso'));
         await tester.pumpAndSettle();
-        expect(find.text('¿Cancelar registro de uso?'), findsOneWidget);
-        await tester.tap(find.text('Cancelar registro').last);
+        expect(find.byType(AlertDialog), findsOneWidget);
+        await tester.tap(find.text('Cancelar el registro de uso').last);
         await tester.pumpAndSettle();
 
         expect(await materialStock(), 10); // los 4 metros volvieron

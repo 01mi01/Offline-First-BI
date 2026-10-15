@@ -375,9 +375,9 @@ class AppRoundCheck extends StatelessWidget {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: value ? AppColors.checkFill : Colors.transparent,
+                color: value ? AppColors.cyanDeep : Colors.transparent,
                 border: Border.all(
-                  color: value ? AppColors.checkFill : AppColors.textMuted,
+                  color: value ? AppColors.cyanDeep : AppColors.textMuted,
                   width: 1.5,
                 ),
               ),
@@ -391,6 +391,72 @@ class AppRoundCheck extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class AppMiniToggle<T> extends StatelessWidget {
+  final List<AppSegment<T>> segments;
+  final T selected;
+  final ValueChanged<T> onChanged;
+
+  const AppMiniToggle({
+    super.key,
+    required this.segments,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s2),
+      decoration: BoxDecoration(
+        color: AppColors.track,
+        borderRadius: BorderRadius.circular(AppMetrics.thumbRadius),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final segment in segments)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                if (segment.value != selected) onChanged(segment.value);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                height: 28,
+                constraints: const BoxConstraints(minWidth: 60),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: segment.value == selected
+                      ? AppColors.surface
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(
+                    AppMetrics.thumbRadius - AppSpacing.s2,
+                  ),
+                ),
+                child: Text(
+                  segment.label,
+                  maxLines: 1,
+                  style: AppText.rowSubtitle(
+                    context,
+                    color: segment.value == selected
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ).copyWith(
+                    fontSize: AppMetrics.filterTextSize,
+                    fontWeight: segment.value == selected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

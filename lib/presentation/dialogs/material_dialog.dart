@@ -7,6 +7,7 @@ import '../../config/rounding.dart';
 import '../../models/material_model.dart';
 import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../../application/form_validation.dart';
 import '../widgets/app_sheet.dart';
@@ -158,16 +159,17 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   }
 
   Future<void> _onToggleActive(bool value) async {
-    if (!value) {
-      final confirm = await confirmCancellation(
-        context,
-        title: '¿Desactivar material?',
-        message: 'El material no estará disponible para nuevas compras y productos.',
-        confirmLabel: 'Desactivar',
-        dismissLabel: 'Cancelar',
-      );
-      if (confirm != true) return;
-    }
+    final confirm = await confirmCancellation(
+      context,
+      title: value ? 'Activar el material' : 'Desactivar el material',
+      message: value
+          ? 'El material volverá a estar disponible para nuevas compras y productos.'
+          : 'El material no estará disponible para nuevas compras y productos.',
+      confirmLabel: value ? 'Activar' : 'Desactivar',
+      confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
+      dismissLabel: 'Cancelar',
+    );
+    if (!confirm) return;
     setState(() => _isActive = value);
   }
 

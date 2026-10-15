@@ -62,7 +62,7 @@ void main() {
     // Siempre desde arriba: con la lista ya desplazada el indicador puede
     // estar construido pero fuera de la vista.
     await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('bi-configure')),
+      find.byKey(const ValueKey('bi-period')),
       -500,
       scrollable: list(),
       maxScrolls: 200,
@@ -252,12 +252,12 @@ void main() {
 
         // Volver a la configuración conserva lo elegido hasta que se confirma...
         await tester.scrollUntilVisible(
-          find.byKey(const ValueKey('bi-configure')),
+          find.byKey(const ValueKey('bi-period')),
           -500,
           scrollable: list(),
           maxScrolls: 200,
         );
-        await tester.tap(find.byKey(const ValueKey('bi-configure')));
+        await tester.tap(find.text('Atrás'));
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
 
@@ -284,12 +284,12 @@ void main() {
         await pick(tester, BiIndicator.salesByProduct, 'Unidades');
 
         await tester.scrollUntilVisible(
-          find.byKey(const ValueKey('bi-configure')),
+          find.byKey(const ValueKey('bi-period')),
           -500,
           scrollable: list(),
           maxScrolls: 200,
         );
-        await tester.tap(find.byKey(const ValueKey('bi-configure')));
+        await tester.tap(find.text('Atrás'));
         await tester.pumpAndSettle();
         // El botón va al final del contenido que se desplaza.
         await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));

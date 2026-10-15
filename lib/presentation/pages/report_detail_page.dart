@@ -6,6 +6,8 @@ import '../../models/purchase_model.dart';
 import '../../models/report_models.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_group.dart';
+import '../widgets/filter_panel.dart';
+import '../widgets/profile_button.dart';
 import '../widgets/report_records.dart';
 import '../widgets/screen_header.dart';
 
@@ -100,59 +102,42 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
 
     return ScreenScaffold.slivers(
       title: widget.title,
-      actions: [
-        PopupMenuButton<String>(
-          key: const ValueKey('export-menu'),
-          iconSize: AppHeader.iconSize,
-          icon: _isExporting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.cyanDark,
-                  ),
-                )
-              : const Icon(Icons.download_rounded, color: AppColors.cyanDark),
-          onSelected: (v) {
-            if (v == 'pdf') _exportPdf();
-            if (v == 'excel') _exportExcel();
-          },
-          itemBuilder: (_) => const [
-            PopupMenuItem(
-              key: ValueKey('export-pdf'),
-              value: 'pdf',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.picture_as_pdf_rounded,
-                    color: AppColors.error,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text('Exportar PDF'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              key: ValueKey('export-excel'),
-              value: 'excel',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.table_chart_rounded,
-                    color: AppColors.success,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text('Exportar Excel'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
+      actions: const [ProfileButton()],
       slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              0,
+              AppSpacing.s16,
+              AppSpacing.s16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilterDropdown<String?>(
+                  label: 'Exportar',
+                  placeholder: 'Elegir formato',
+                  options: const [
+                    FilterOption<String?>('excel', 'Exportar Excel'),
+                    FilterOption<String?>('pdf', 'Exportar PDF'),
+                  ],
+                  current: null,
+                  defaultValue: null,
+                  onApply: (value) {
+                    if (_isExporting) return;
+                    if (value == 'pdf') _exportPdf();
+                    if (value == 'excel') _exportExcel();
+                  },
+                ).build(context),
+                if (_isExporting) ...[
+                  const SizedBox(height: AppSpacing.s8),
+                  const LinearProgressIndicator(color: AppColors.cyanDark),
+                ],
+              ],
+            ),
+          ),
+        ),
         SliverToBoxAdapter(
           child: AppSection(
             children: isSales

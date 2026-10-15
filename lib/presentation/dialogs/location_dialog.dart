@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/location_provider.dart';
 import '../../models/location_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../../application/form_validation.dart';
 import '../widgets/app_sheet.dart';
@@ -108,16 +109,17 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
   }
 
   Future<void> _onToggleActive(bool value) async {
-    if (!value) {
-      final confirm = await confirmCancellation(
-        context,
-        title: '¿Desactivar ubicación?',
-        message: 'La ubicación no estará disponible para nuevos registros.',
-        confirmLabel: 'Desactivar',
-        dismissLabel: 'Cancelar',
-      );
-      if (confirm != true) return;
-    }
+    final confirm = await confirmCancellation(
+      context,
+      title: value ? 'Activar la ubicación' : 'Desactivar la ubicación',
+      message: value
+          ? 'La ubicación volverá a estar disponible para nuevos registros.'
+          : 'La ubicación no estará disponible para nuevos registros.',
+      confirmLabel: value ? 'Activar' : 'Desactivar',
+      confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
+      dismissLabel: 'Cancelar',
+    );
+    if (!confirm) return;
     setState(() => _isActive = value);
   }
 

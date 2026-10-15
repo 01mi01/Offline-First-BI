@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
 import '../../models/client_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../../application/form_validation.dart';
 import '../../models/default_records.dart';
@@ -96,16 +97,17 @@ class _ClientDialogState extends ConsumerState<ClientDialog> {
   }
 
   Future<void> _onToggleActive(bool value) async {
-    if (!value) {
-      final confirm = await confirmCancellation(
-        context,
-        title: '¿Desactivar cliente?',
-        message: 'El cliente no estará disponible para nuevas ventas.',
-        confirmLabel: 'Desactivar',
-        dismissLabel: 'Cancelar',
-      );
-      if (confirm != true) return;
-    }
+    final confirm = await confirmCancellation(
+      context,
+      title: value ? 'Activar el cliente' : 'Desactivar el cliente',
+      message: value
+          ? 'El cliente volverá a estar disponible para nuevas ventas.'
+          : 'El cliente no estará disponible para nuevas ventas.',
+      confirmLabel: value ? 'Activar' : 'Desactivar',
+      confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
+      dismissLabel: 'Cancelar',
+    );
+    if (!confirm) return;
     setState(() => _isActive = value);
   }
 

@@ -153,7 +153,7 @@ void main() {
       await pumpPage(tester, confirm: true);
       expect(find.byKey(const ValueKey('bi-period')), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('bi-configure')));
+      await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
       expect(find.byType(BusinessIntelligencePage), findsOneWidget);
@@ -229,7 +229,7 @@ void main() {
       expect(config().chartTypeFor(BiIndicator.salesByCategory), BiChartType.bar);
 
       // Ir a configurar y volver: sigue en pastel.
-      await tester.tap(find.byKey(const ValueKey('bi-configure')));
+      await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
       await confirmConfig(tester);
       expect(
@@ -666,7 +666,7 @@ void main() {
         expect(find.descendant(of: dialog, matching: find.textContaining('Qué muestra')), findsOneWidget);
         expect(find.descendant(of: dialog, matching: find.textContaining('Para qué sirve')), findsOneWidget);
         expect(find.descendant(of: dialog, matching: find.textContaining(phrases[i]!)), findsOneWidget, reason: i.name);
-        await tester.tap(find.text('Entendido'));
+        await tester.tap(find.text('Cerrar'));
         await tester.pumpAndSettle();
       }
 
@@ -772,7 +772,7 @@ void main() {
         await h.sellMany(day(-2), [(a, 1, 100), (b, 1, 20)]);
         await h.sellMany(day(-3), [(a, 1, 100), (b, 1, 20)]);
         await h.refresh();
-        await tester.tap(find.byKey(const ValueKey('bi-configure')));
+        await tester.tap(find.text('Atrás'));
         await tester.pumpAndSettle();
         await confirmConfig(tester);
         expect(

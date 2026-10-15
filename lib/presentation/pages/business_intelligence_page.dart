@@ -8,10 +8,8 @@ import '../../application/sale_provider.dart';
 import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
-import '../../models/purchase_kind.dart';
-import '../../models/report_filters.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/app_buttons.dart';
+import '../widgets/profile_button.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/bi_charts.dart';
 import '../widgets/bi_config_view.dart';
@@ -65,22 +63,41 @@ class _BusinessIntelligencePageState
         saleItemsMap.isLoading ||
         purchaseItemsMap.isLoading;
 
-    return ScreenScaffold(
-      title: 'Business Intelligence',
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : _showDashboard
-          ? _buildDashboard(config)
-          : BiConfigView(
-              config: config,
-              onChanged: _update,
-              // Un panel nuevo empieza con las métricas por omisión.
-              onConfirm: () {
-                _update(_config.copyWith(metrics: const {}));
-                setState(() => _showDashboard = true);
-              },
-            ),
+    return PopScope(
+      canPop: !_showDashboard,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _showDashboard = false);
+      },
+      child: ScreenScaffold(
+        title: 'Business Intelligence',
+        actions: const [ProfileButton()],
+        showBack: _showDashboard ? true : null,
+        onBack: _showDashboard
+            ? () => setState(() => _showDashboard = false)
+            : null,
+        bottomBar: loading || _showDashboard
+            ? null
+            : ElevatedButton(
+                key: const ValueKey('bi-config-confirm'),
+                onPressed: config.indicators.isEmpty ? null : _confirm,
+                child: Text(
+                  config.indicators.isEmpty
+                      ? 'Elige al menos un indicador'
+                      : 'Ver indicadores (${config.indicators.length})',
+                ),
+              ),
+        body: loading
+            ? const Center(child: CircularProgressIndicator())
+            : _showDashboard
+            ? _buildDashboard(config)
+            : BiConfigView(config: config, onChanged: _update),
+      ),
     );
+  }
+
+  void _confirm() {
+    _update(_config.copyWith(metrics: const {}));
+    setState(() => _showDashboard = true);
   }
 
   Widget _buildDashboard(BiConfig config) {
@@ -312,10 +329,7 @@ class _BusinessIntelligencePageState
         AppSpacing.s24 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
-        _DashboardHeader(
-          config: config,
-          onConfigure: () => setState(() => _showDashboard = false),
-        ),
+        _DashboardHeader(config: config),
         for (final section in sections) ...[
           const SizedBox(height: AppSpacing.s16),
           section,
@@ -327,15 +341,12 @@ class _BusinessIntelligencePageState
 
 class _DashboardHeader extends StatelessWidget {
   final BiConfig config;
-  final VoidCallback onConfigure;
 
-  const _DashboardHeader({required this.config, required this.onConfigure});
-
-  ReportFilters get _filters => config.filters;
+  const _DashboardHeader({required this.config});
 
   String get _period {
-    final start = _filters.startDate;
-    final end = _filters.endDate;
+    final start = config.filters.startDate;
+    final end = config.filters.endDate;
     if (start == null && end == null) return 'Todo el historial hasta hoy';
     if (end == null || start == end) return formatDate((start ?? end)!);
     if (start == null) return 'Hasta ${formatDate(end)}';
@@ -344,48 +355,15 @@ class _DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notes = [
-      'No incluye ventas canceladas ni registros con fecha posterior a hoy.',
-      if (_filters.categoryId != null ||
-          _filters.productId != null ||
-          _filters.priceType != null)
-        'Categoría, producto y tipo de precio solo filtran las ventas.',
-      if (_filters.purchaseKind != PurchaseKind.all)
-        'El tipo de operación solo filtra las compras.',
-    ];
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.s20),
-      decoration: AppCards.decoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Periodo: $_period',
-            key: const ValueKey('bi-period'),
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s4),
-          Text(
-            '${config.indicators.length} indicadores · ${notes.join(' ')}',
-            style: textTheme.labelMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s16),
-          AppActionButton(
-            key: const ValueKey('bi-configure'),
-            label: 'Configurar',
-            icon: Icons.tune_rounded,
-            kind: AppButtonKind.neutral,
-            onPressed: onConfigure,
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s4),
+      child: Text(
+        'Periodo: $_period',
+        key: const ValueKey('bi-period'),
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }

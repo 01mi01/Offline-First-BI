@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../theme/app_theme.dart';
@@ -12,12 +14,10 @@ void dismissKeyboard() {
   FocusManager.instance.primaryFocus?.unfocus();
 }
 
-// Lleva un campo con resultados debajo al borde de arriba del área que se
-// desplaza, con un pequeño margen: lo escrito queda por encima del teclado y los
-// resultados se ven debajo. El margen deja entera la etiqueta del campo, que
-// flota sobre su borde superior y sobresale de su caja; sin él, quedaba cortada
-// bajo el encabezado. Si el campo ya está en su sitio no se mueve nada, así que
-// los cambios del teclado no lo hacen saltar.
+// Deja a la vista un campo con sus resultados debajo con el menor movimiento
+// posible: solo desplaza, y solo en vertical, si el bloque se sale por abajo
+// (teclado) o por arriba del área visible. Si ya cabe no se mueve nada, así que
+// abrir o cerrar el teclado no hace saltar el campo.
 Future<void> revealFieldAtTop(
   BuildContext context, {
   double margin = AppSpacing.s16,
@@ -25,47 +25,36 @@ Future<void> revealFieldAtTop(
   final box = context.findRenderObject();
   if (box is! RenderBox || !box.attached) return;
 
-  double? topIn(ScrollableState scrollable) {
-    final viewport = scrollable.context.findRenderObject();
-    if (viewport is! RenderBox || !viewport.attached || !box.attached) {
-      return null;
-    }
-    return box.localToGlobal(Offset.zero, ancestor: viewport).dy;
-  }
-
-  final nearest = Scrollable.maybeOf(context);
-  final top = nearest == null ? null : topIn(nearest);
-  if (top != null && (top - margin).abs() < 1) return;
-
-  const duration = Duration(milliseconds: 200);
-  await Scrollable.ensureVisible(
-    context,
-    alignment: 0,
-    duration: duration,
-    curve: Curves.easeOut,
-  );
-
-  // Lo anterior deja el campo pegado al borde: se sube el margen en cada área
-  // que se desplaza por encima de él.
-  if (!context.mounted) return;
   ScrollableState? scrollable = Scrollable.maybeOf(context);
   while (scrollable != null) {
-    // ignore: use_build_context_synchronously
+    final viewport = scrollable.context.findRenderObject();
     final outer = scrollable.context.findAncestorStateOfType<ScrollableState>();
-    final current = topIn(scrollable);
-    if (current != null && current < margin) {
-      final position = scrollable.position;
-      final target = (position.pixels - (margin - current)).clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
-      );
-      if (target != position.pixels) {
-        await position.animateTo(
-          target,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
+    if (viewport is RenderBox &&
+        viewport.attached &&
+        box.attached &&
+        scrollable.position.axis == Axis.vertical) {
+      final top = box.localToGlobal(Offset.zero, ancestor: viewport).dy;
+      final bottom = top + box.size.height;
+      final visible = viewport.size.height;
+      var delta = 0.0;
+      if (bottom > visible - margin) {
+        delta = math.min(bottom - (visible - margin), top - margin);
+      }
+      if (top - delta < margin) delta = top - margin;
+      if (delta.abs() >= 1) {
+        final position = scrollable.position;
+        final target = (position.pixels + delta).clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
         );
-        if (!context.mounted || !scrollable.mounted) return;
+        if (target != position.pixels) {
+          await position.animateTo(
+            target,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          );
+          if (!context.mounted || !scrollable.mounted) return;
+        }
       }
     }
     scrollable = outer;

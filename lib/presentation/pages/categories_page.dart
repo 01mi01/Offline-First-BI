@@ -205,7 +205,13 @@ class _GridView extends StatelessWidget {
           imagePath: cat.image,
           icon: Icons.category_rounded,
           title: cat.name,
-          onTap: () => _showDetail(context, cat),
+          onTap: () => showCatalogPopup(
+            context,
+            title: cat.name,
+            icon: Icons.category_rounded,
+            imagePath: cat.image,
+            description: cat.description,
+          ),
         );
       },
     );

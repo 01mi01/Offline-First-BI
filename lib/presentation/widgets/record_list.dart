@@ -14,6 +14,7 @@ import 'app_style.dart';
 // flecha. [below] va debajo de la fila, alineado con el texto.
 class RecordRow extends StatelessWidget {
   final String title;
+  final String? titleSuffix;
   final Color? titleColor;
   final List<Widget> details;
   final Widget? pill;
@@ -25,6 +26,7 @@ class RecordRow extends StatelessWidget {
   const RecordRow({
     super.key,
     required this.title,
+    this.titleSuffix,
     this.titleColor,
     this.details = const [],
     this.pill,
@@ -33,6 +35,34 @@ class RecordRow extends StatelessWidget {
     this.below,
     this.onTap,
   });
+
+  Widget _title(BuildContext context) {
+    final style = AppText.rowTitle(context, color: titleColor);
+    final suffix = titleSuffix;
+    if (suffix == null) return Text(title, style: style);
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.s6),
+        Text(
+          suffix,
+          maxLines: 1,
+          softWrap: false,
+          style: AppText.rowSubtitle(
+            context,
+            color: AppColors.textMuted,
+          ).copyWith(fontSize: AppMetrics.headerSize + 1),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +90,7 @@ class RecordRow extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          style: AppText.rowTitle(context, color: titleColor),
-                        ),
+                        _title(context),
                         for (final detail in details) ...[
                           const SizedBox(height: AppSpacing.s2),
                           detail,
@@ -147,8 +174,9 @@ class RecordThumb extends StatelessWidget {
 class RecordLine extends StatelessWidget {
   final String text;
   final int? maxLines;
+  final Color? color;
 
-  const RecordLine(this.text, {super.key, this.maxLines});
+  const RecordLine(this.text, {super.key, this.maxLines, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +184,7 @@ class RecordLine extends StatelessWidget {
       text,
       maxLines: maxLines,
       overflow: maxLines == null ? null : TextOverflow.ellipsis,
-      style: AppText.rowSubtitle(context),
+      style: AppText.rowSubtitle(context, color: color),
     );
   }
 }

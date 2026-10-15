@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/presentation/pages/reports_page.dart';
+import 'package:offline_first_bi/presentation/widgets/app_controls.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'filter_helpers.dart';
 
@@ -31,7 +32,7 @@ void main() {
         overrides: [databaseProvider.overrideWithValue(db)],
         child: MaterialApp(
           theme: lightTheme,
-          home: const Scaffold(body: ReportsBody()),
+          home: const ReportsPage(),
         ),
       ),
     );
@@ -41,7 +42,7 @@ void main() {
   Future<void> openTab(WidgetTester tester, String name) async {
     await tester.tap(
       find.descendant(
-        of: find.byType(TabBar),
+        of: find.byType(AppTabSwitcher),
         matching: find.text(name),
       ),
     );

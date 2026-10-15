@@ -20,7 +20,8 @@ import '../../config/date_formatters.dart';
 import '../../config/rounding.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/record_detail.dart';
-import '../widgets/record_list.dart';
+import '../widgets/transaction_rows.dart';
+import '../../application/report_provider.dart' show purchaseItemsMapProvider;
 import '../widgets/status_badge.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/catalog_filter_bar.dart';
@@ -186,7 +187,7 @@ void showPurchaseDetail(
   );
 }
 
-class _PurchaseRow extends StatelessWidget {
+class _PurchaseRow extends ConsumerWidget {
   final PurchaseModel purchase;
   final String supplierName;
   final VoidCallback onTap;
@@ -198,29 +199,16 @@ class _PurchaseRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final canceled = purchase.isCanceled;
-    return RecordRow(
-      title: supplierName,
-      titleColor: canceled ? AppColors.textSecondary : null,
-      details: [
-        RecordLine(formatDateTime(purchase.date)),
-        if (purchase.description != null && purchase.description!.isNotEmpty)
-          RecordLine(purchase.description!, maxLines: 1),
-      ],
-      // El tipo de la compra y, si está cancelada, su estado.
-      pill: Wrap(
-        spacing: AppSpacing.s6,
-        runSpacing: AppSpacing.s4,
-        children: [
-          StatusBadge.purchaseType(isMaterial: purchase.isMaterial),
-          if (canceled) const StatusBadge.canceled(),
-        ],
-      ),
-      trailing: RecordValue(
-        'Bs. ${fixed2(purchase.totalAmount)}',
-        canceled: canceled,
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(purchaseItemsMapProvider).valueOrNull?[purchase.id];
+    return purchaseRecordRow(
+      materialNames: [for (final i in items ?? const []) i.materialName],
+      description: purchase.description,
+      isMaterial: purchase.isMaterial,
+      supplierName: supplierName,
+      date: purchase.date,
+      amount: purchase.totalAmount,
+      canceled: purchase.isCanceled,
       onTap: onTap,
     );
   }

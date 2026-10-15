@@ -35,7 +35,7 @@ class AppColors {
   static const border = Color(0xFFE2EBEE);
   static const separator = Color(0xFFDCE1E8);
   static const chevron = Color(0xFF9AA5B4);
-  static const checkFill = Color(0xFF04787E);
+  static const cyanDeep = Color(0xFF04787E);
 
   // Efectos
   static const pressedOverlay = Color(0x1F112444);

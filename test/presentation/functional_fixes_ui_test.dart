@@ -373,10 +373,8 @@ void main() {
 
       await tester.tap(find.text('Estuches'));
       await tester.pumpAndSettle();
-      expect(find.text('Precio A'), findsOneWidget);
-      expect(find.text('Bs. 30.00'), findsOneWidget);
-      expect(find.text('Precio B'), findsOneWidget);
-      expect(find.text('Bs. 11.00'), findsOneWidget);
+      expect(find.text('Precio A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('Precio B: Bs. 11.00'), findsOneWidget);
     });
 
     testWidgets('list view follows the filter: A only, B only, none, both', (

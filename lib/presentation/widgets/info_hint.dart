@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import 'app_buttons.dart';
 import 'focus_utils.dart';
 
 // Explicación breve de un campo que puede confundir.
@@ -30,9 +31,10 @@ Future<void> showInfoDialog(
         AppSpacing.s20,
       ),
       actions: [
-        ElevatedButton(
+        AppActionButton(
+          label: 'Cerrar',
+          kind: AppButtonKind.neutral,
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Entendido'),
         ),
       ],
     ),

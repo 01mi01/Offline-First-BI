@@ -11,6 +11,7 @@ Future<bool> confirmCancellation(
   String? message,
   required String confirmLabel,
   String dismissLabel = 'Volver',
+  AppButtonKind confirmKind = AppButtonKind.destructive,
 }) async {
   // Sin esto el teclado reaparece al cerrar el diálogo (ver focus_utils.dart).
   dismissKeyboard();
@@ -41,7 +42,7 @@ Future<bool> confirmCancellation(
           children: [
             AppActionButton(
               label: confirmLabel,
-              kind: AppButtonKind.destructive,
+              kind: confirmKind,
               onPressed: () => Navigator.pop(ctx, true),
             ),
             const SizedBox(height: AppButtons.stackGap),

@@ -6,6 +6,7 @@ import '../../data/services/image_storage.dart';
 import '../../application/category_provider.dart';
 import '../../models/category_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../../application/form_validation.dart';
 import '../../models/default_records.dart';
@@ -147,17 +148,17 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   }
 
   Future<void> _onToggleActive(bool value) async {
-    if (!value) {
-      // Confirmar antes de desactivar
-      final confirm = await confirmCancellation(
-        context,
-        title: '¿Desactivar categoría?',
-        message: 'La categoría no estará disponible para nuevos productos.',
-        confirmLabel: 'Desactivar',
-        dismissLabel: 'Cancelar',
-      );
-      if (confirm != true) return;
-    }
+    final confirm = await confirmCancellation(
+      context,
+      title: value ? 'Activar la categoría' : 'Desactivar la categoría',
+      message: value
+          ? 'La categoría volverá a estar disponible para nuevos productos.'
+          : 'La categoría no estará disponible para nuevos productos.',
+      confirmLabel: value ? 'Activar' : 'Desactivar',
+      confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
+      dismissLabel: 'Cancelar',
+    );
+    if (!confirm) return;
     setState(() => _isActive = value);
   }
 

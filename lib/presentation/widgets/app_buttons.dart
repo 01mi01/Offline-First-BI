@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-enum AppButtonKind { destructive, neutral }
+enum AppButtonKind { destructive, neutral, primary }
 
 // Botón de acción a todo el ancho con el mismo estilo del botón principal:
 // rojo para cancelar o desactivar y gris para salir sin cambiar nada.
@@ -27,9 +27,11 @@ class AppActionButton extends StatelessWidget {
       padding: padding,
       child: ElevatedButton(
         onPressed: onPressed,
-        style: kind == AppButtonKind.destructive
-            ? destructiveButtonStyle
-            : neutralButtonStyle,
+        style: switch (kind) {
+          AppButtonKind.destructive => destructiveButtonStyle,
+          AppButtonKind.neutral => neutralButtonStyle,
+          AppButtonKind.primary => null,
+        },
         child: icon == null
             ? Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)
             : Row(

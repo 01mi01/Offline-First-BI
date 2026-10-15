@@ -6,7 +6,6 @@ import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/material_repository.dart';
 import 'package:offline_first_bi/presentation/dialogs/purchase_dialog.dart';
-import 'package:offline_first_bi/presentation/pages/reports_page.dart';
 import 'package:offline_first_bi/presentation/widgets/app_controls.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'form_finders.dart';
@@ -185,14 +184,5 @@ void main() {
     expect(rows.single['name'], 'Tela beige');
     expect(rows.single['price'], 12.5);
     expect(rows.single['unit'], 'metro');
-  });
-
-  group('resumen de Compras', () {
-    test('"1 Material" en singular y "Materiales" en los demás casos', () {
-      expect(materialsSummaryLabel(1), 'Material');
-      expect(materialsSummaryLabel(0), 'Materiales');
-      expect(materialsSummaryLabel(2), 'Materiales');
-      expect(materialsSummaryLabel(12), 'Materiales');
-    });
   });
 }

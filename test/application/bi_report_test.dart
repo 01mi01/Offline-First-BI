@@ -388,7 +388,7 @@ void main() {
       expect(find.byKey(const ValueKey('bi-period')), findsOneWidget);
 
       // Volver a configurar sin salir del módulo, y quitar el atajo.
-      await tester.tap(find.byKey(const ValueKey('bi-configure')));
+      await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
       await tester.tap(find.text('Hoy').last);

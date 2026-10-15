@@ -282,14 +282,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   Future<void> _cancelPurchase() async {
     final confirmed = await confirmCancellation(
       context,
-      title: '¿Cancelar compra?',
-      message: widget.purchase!.isMaterial
-          ? 'Se restará del stock de los materiales lo comprado. La compra '
-                'seguirá en la lista, marcada como cancelada y ya no se '
-                'podrá editar.'
-          : 'La compra seguirá en la lista, marcada como cancelada y ya no '
-                'se podrá editar.',
-      confirmLabel: 'Cancelar compra',
+      title: 'Cancelar la compra',
+      message: 'Se cancelará la compra pero se mantendrá el registro.',
+      confirmLabel: 'Cancelar la compra',
     );
     if (!confirmed || !mounted) return;
     final error = await ref
@@ -301,6 +296,19 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       return;
     }
     Navigator.pop(context);
+  }
+
+  void _onEventChanged(int? id) {
+    setState(() {
+      _selectedEventId = id;
+      if (id == null) return;
+      final event = ref
+          .read(eventProvider)
+          .events
+          .where((e) => e.id == id)
+          .firstOrNull;
+      _selectedLocationId = event?.locationId;
+    });
   }
 
   @override
@@ -403,8 +411,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         noneLabel: 'Sin evento',
                         keepId: _selectedEventId,
                       ),
-                      onChanged: (val) =>
-                          setState(() => _selectedEventId = val),
+                      onChanged: _onEventChanged,
                     ),
                     const SizedBox(height: AppSpacing.s16),
                     AppDateField(
@@ -533,7 +540,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                       loading: _isLoading,
                       destructive: isEditing && !widget.purchase!.isCanceled
                           ? AppActionButton(
-                              label: 'Cancelar compra',
+                              label: 'Cancelar la compra',
                               kind: AppButtonKind.destructive,
                               onPressed: _isLoading ? null : _cancelPurchase,
                             )

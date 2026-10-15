@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/supplier_provider.dart';
 import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../../application/form_validation.dart';
 import '../../models/default_records.dart';
@@ -96,16 +97,17 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
   }
 
   Future<void> _onToggleActive(bool value) async {
-    if (!value) {
-      final confirm = await confirmCancellation(
-        context,
-        title: '¿Desactivar proveedor?',
-        message: 'El proveedor no estará disponible para nuevas compras.',
-        confirmLabel: 'Desactivar',
-        dismissLabel: 'Cancelar',
-      );
-      if (confirm != true) return;
-    }
+    final confirm = await confirmCancellation(
+      context,
+      title: value ? 'Activar el proveedor' : 'Desactivar el proveedor',
+      message: value
+          ? 'El proveedor volverá a estar disponible para nuevas compras.'
+          : 'El proveedor no estará disponible para nuevas compras.',
+      confirmLabel: value ? 'Activar' : 'Desactivar',
+      confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
+      dismissLabel: 'Cancelar',
+    );
+    if (!confirm) return;
     setState(() => _isActive = value);
   }
 

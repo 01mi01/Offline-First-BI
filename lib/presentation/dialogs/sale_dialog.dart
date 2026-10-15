@@ -270,11 +270,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   Future<void> _cancelSale() async {
     final confirmed = await confirmCancellation(
       context,
-      title: '¿Cancelar venta?',
-      message:
-          'Se devolverá al inventario lo vendido. La venta seguirá en la '
-          'lista, marcada como cancelada y ya no se podrá editar.',
-      confirmLabel: 'Cancelar venta',
+      title: 'Cancelar la venta',
+      message: 'Se cancelará la venta pero se mantendrá el registro.',
+      confirmLabel: 'Cancelar la venta',
     );
     if (!confirmed || !mounted) return;
     final error = await ref
@@ -286,6 +284,19 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       return;
     }
     Navigator.pop(context);
+  }
+
+  void _onEventChanged(int? id) {
+    setState(() {
+      _selectedEventId = id;
+      if (id == null) return;
+      final event = ref
+          .read(eventProvider)
+          .events
+          .where((e) => e.id == id)
+          .firstOrNull;
+      _selectedLocationId = event?.locationId;
+    });
   }
 
   @override
@@ -355,7 +366,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   noneLabel: 'Sin evento',
                   keepId: _selectedEventId,
                 ),
-                onChanged: (val) => setState(() => _selectedEventId = val),
+                onChanged: _onEventChanged,
               ),
               const SizedBox(height: AppSpacing.s16),
               AppDateField(
@@ -540,7 +551,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 loading: _isLoading,
                 destructive: isEditing && !widget.sale!.isCanceled
                     ? AppActionButton(
-                        label: 'Cancelar venta',
+                        label: 'Cancelar la venta',
                         kind: AppButtonKind.destructive,
                         onPressed: _isLoading ? null : _cancelSale,
                       )
@@ -619,22 +630,17 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
               ),
             ],
           ),
-          SizedBox(
-            width: 220,
-            child: AppSegmented<String>(
-              segments: const [
-                AppSegment('A', 'Precio A'),
-                AppSegment('B', 'Precio B'),
-              ],
-              selected: priceType,
-              onChanged: (type) {
-                if (type == null) return;
-                setState(() {
-                  _cartChanged();
-                  _cartPriceTypes[entry.key] = type;
-                });
-              },
-            ),
+          const SizedBox(height: AppSpacing.s8),
+          AppMiniToggle<String>(
+            segments: const [
+              AppSegment('A', 'Precio A'),
+              AppSegment('B', 'Precio B'),
+            ],
+            selected: priceType,
+            onChanged: (type) => setState(() {
+              _cartChanged();
+              _cartPriceTypes[entry.key] = type;
+            }),
           ),
         ],
       ),

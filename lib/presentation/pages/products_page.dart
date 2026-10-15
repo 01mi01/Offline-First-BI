@@ -193,7 +193,7 @@ class _ListViewWidget extends ConsumerWidget {
 }
 
 // Vista de catálogo — solo activos, imagen, nombre, precio
-class _GridView extends ConsumerWidget {
+class _GridView extends StatelessWidget {
   final List<ProductModel> products;
   // Qué precio muestran las baldosas (y el detalle) de todo el catálogo.
   final PriceDisplay priceDisplay;
@@ -208,8 +208,7 @@ class _GridView extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final categories = ref.watch(categoryProvider).categories;
+  Widget build(BuildContext context) {
     final active = showInactive
         ? products
         : products.where((p) => p.isActive).toList();
@@ -230,8 +229,14 @@ class _GridView extends ConsumerWidget {
           icon: Icons.inventory_2_rounded,
           title: p.name,
           lines: _catalogPriceLines(p, priceDisplay),
-          onTap: () =>
-              _showDetail(context, p, _categoryNameOf(categories, p), priceDisplay),
+          onTap: () => showCatalogPopup(
+            context,
+            title: p.name,
+            icon: Icons.inventory_2_rounded,
+            imagePath: p.image,
+            description: p.description,
+            lines: _catalogPriceLines(p, priceDisplay, detailed: true),
+          ),
         );
       },
     );
@@ -242,7 +247,11 @@ class _GridView extends ConsumerWidget {
 // elegido la línea es solo "Precio: Bs. X", sin A/B; con "Ambos" hace falta
 // distinguirlos, así que llevan etiqueta ("A:"/"B:"). Con "Sin precio" no hay
 // líneas.
-List<String> _catalogPriceLines(ProductModel p, PriceDisplay display) {
+List<String> _catalogPriceLines(
+  ProductModel p,
+  PriceDisplay display, {
+  bool detailed = false,
+}) {
   String bs(double v) => 'Bs. ${fixed2(v)}';
   switch (display) {
     case PriceDisplay.a:
@@ -250,7 +259,9 @@ List<String> _catalogPriceLines(ProductModel p, PriceDisplay display) {
     case PriceDisplay.b:
       return ['Precio: ${bs(p.priceB)}'];
     case PriceDisplay.both:
-      return ['A: ${bs(p.priceA)}', 'B: ${bs(p.priceB)}'];
+      final a = detailed ? 'Precio A' : 'A';
+      final b = detailed ? 'Precio B' : 'B';
+      return ['$a: ${bs(p.priceA)}', '$b: ${bs(p.priceB)}'];
     case PriceDisplay.none:
       return const [];
   }
