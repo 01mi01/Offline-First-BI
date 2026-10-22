@@ -1,8 +1,5 @@
-// Un producto activo con este stock o menos se considera de "stock bajo" (se
-// cuenta en Inicio y se lista en Business Intelligence).
 const int lowStockThreshold = 3;
 
-// Modelo de producto
 class ProductModel {
   final int id;
   final int categoryId;
@@ -31,9 +28,6 @@ class ProductModel {
   });
 }
 
-// Precios de venta A y B: basta con indicar uno; el otro toma el mismo valor, de
-// modo que en la base de datos siempre hay ambos (y ningún precio queda en 0).
-// Lanza [ArgumentError] si no se indica ninguno.
 ({double priceA, double priceB}) resolveProductPrices(
   double? priceA,
   double? priceB,

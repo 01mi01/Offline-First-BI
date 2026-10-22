@@ -9,14 +9,10 @@ import 'record_detail.dart';
 import 'record_list.dart';
 import 'status_badge.dart';
 
-// Fila y detalle compartidos por Clientes y Proveedores (misma presentación en
-// ambas pantallas).
 class ContactRow extends StatelessWidget {
   final String name;
   final String? contactInfo;
   final bool isActive;
-  // Registro predeterminado del sistema: si [protectedMessage] no es nulo se
-  // muestra un candado (con ese texto de ayuda) junto a la flecha.
   final String? protectedMessage;
   final VoidCallback onTap;
 
@@ -117,8 +113,6 @@ class _ContactInfoState extends State<_ContactInfo> {
             ),
           ),
         ),
-        // Copiar: el icono pasa a una marca un momento para confirmarlo (un
-        // aviso inferior quedaría tapado por la hoja).
         IconButton(
           tooltip: _copied ? 'Copiado' : 'Copiar',
           icon: Icon(

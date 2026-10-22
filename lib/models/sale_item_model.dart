@@ -1,4 +1,3 @@
-// Modelo de ítem de venta
 class SaleItemModel {
   final int id;
   final int saleId;

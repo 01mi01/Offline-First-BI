@@ -1,9 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 
-// Verifica que la elección entre el selector de fracciones y el campo
-// numérico plano dependa únicamente de Units.type (contenedor/medida/otros),
-// para al menos una unidad representativa de cada tipo.
 void main() {
   group('isFractionFriendlyUnitType', () {
     test('"contenedor" (e.g. paquete) uses the fraction picker', () {
@@ -28,9 +25,6 @@ void main() {
       expect(isDiscreteUnit('otros', 'otro'), isFalse);
     });
 
-    // "unidad" es la única excepción dentro de "medida": es intrínsecamente
-    // contable (no "2.5 unidades"), a diferencia de metro/litro/kg/gramo,
-    // que son cantidades continuas reales y deben seguir aceptando decimales.
     test('"medida" unidad rejects decimal quantities', () {
       expect(isDiscreteUnit('medida', 'unidad'), isTrue);
     });

@@ -1,4 +1,3 @@
-// Modelo de usuario para la sesión activa
 class UserModel {
   final int id;
   final String username;

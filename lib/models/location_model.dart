@@ -1,4 +1,3 @@
-// Modelo de ubicación
 class LocationModel {
   final int id;
   final String city;

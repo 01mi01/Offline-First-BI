@@ -1,4 +1,3 @@
-// Modelo de compra
 class PurchaseModel {
   final int id;
   final int? supplierId;
@@ -11,8 +10,6 @@ class PurchaseModel {
   final String? notes;
   final DateTime createdAt;
 
-  // Una compra cancelada se conserva como historial (el stock de sus materiales
-  // ya se restó) y no cuenta como gasto.
   final bool isCanceled;
   final DateTime? canceledAt;
 

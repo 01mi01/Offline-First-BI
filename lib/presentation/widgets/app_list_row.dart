@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'app_style.dart';
 
-// Tarjeta con filas separadas por líneas finas (Actividad reciente y menús).
 class AppListCard extends StatelessWidget {
   final List<Widget> children;
 

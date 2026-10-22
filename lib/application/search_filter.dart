@@ -1,5 +1,3 @@
-// Búsqueda por texto sin distinguir mayúsculas ni tildes ("cafe" encuentra
-// "Café"), usada por los selectores con búsqueda.
 const _accents = {
   'á': 'a', 'à': 'a', 'ä': 'a', 'â': 'a',
   'é': 'e', 'è': 'e', 'ë': 'e', 'ê': 'e',

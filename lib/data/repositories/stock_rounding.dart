@@ -1,9 +1,6 @@
 import '../../config/rounding.dart';
 import '../db/app_database.dart';
 
-// Redondea una cantidad de material según el tipo de su unidad (ver
-// roundQuantity): dos decimales, o solo limpieza de ruido para las unidades
-// por fracciones. Sirve para el stock, los usos y las cantidades compradas.
 Future<double> roundForUnit(AppDatabase db, int unitId, double value) async {
   final unit = await (db.select(
     db.units,
@@ -11,7 +8,6 @@ Future<double> roundForUnit(AppDatabase db, int unitId, double value) async {
   return roundQuantity(value, unitType: unit?.type ?? 'medida');
 }
 
-// Igual, partiendo del id del material.
 Future<double> roundForMaterial(
   AppDatabase db,
   int materialId,

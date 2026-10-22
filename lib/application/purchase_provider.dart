@@ -11,7 +11,6 @@ final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {
   return PurchaseRepository(db);
 });
 
-// Estado de compras
 class PurchaseState {
   final List<PurchaseModel> purchases;
   final bool isLoading;
@@ -44,7 +43,6 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     load();
   }
 
-  // Carga todas las compras
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -55,12 +53,10 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     }
   }
 
-  // Obtiene ítems de una compra
   Future<List<PurchaseItemModel>> getItemsForPurchase(int purchaseId) async {
     return await repository.getItemsForPurchase(purchaseId);
   }
 
-  // Crea una nueva compra
   Future<String?> createPurchase({
     required int? supplierId,
     required int? locationId,
@@ -92,7 +88,6 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     }
   }
 
-  // Edita una compra existente
   Future<String?> editPurchase({
     required int purchaseId,
     required int? supplierId,
@@ -126,9 +121,6 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     }
   }
 
-  // Cancela una compra: resta del stock lo comprado y la deja marcada como
-  // cancelada. Devuelve un mensaje de error (p. ej. si algún material ya se
-  // usó), o null si salió bien.
   Future<String?> cancelPurchase(int purchaseId) async {
     try {
       final error = await repository.cancelPurchase(purchaseId);
@@ -141,8 +133,6 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
   }
 }
 
-// Filtro de tipo de la lista de Compras (materiales, gastos o ambos). Vive
-// mientras la pantalla esté abierta.
 final purchaseKindFilterProvider = StateProvider.autoDispose<PurchaseKind>(
   (ref) => PurchaseKind.all,
 );

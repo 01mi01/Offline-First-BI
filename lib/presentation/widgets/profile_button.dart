@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../pages/settings_page.dart';
 
-// Acceso a "Ajustes" (cuenta, preferencias y cerrar sesión) desde la barra
-// superior de cada pestaña principal.
 class ProfileButton extends StatelessWidget {
   const ProfileButton({super.key});
 

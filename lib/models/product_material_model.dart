@@ -1,4 +1,3 @@
-// Modelo de relación entre producto y material
 class ProductMaterialModel {
   final int id;
   final int productId;
@@ -9,8 +8,6 @@ class ProductMaterialModel {
   final double quantityUsed;
   final double pricePerUnit;
 
-  // Un registro de uso cancelado se conserva como historial (el stock del
-  // material ya se devolvió).
   final bool isCanceled;
   final DateTime? canceledAt;
 

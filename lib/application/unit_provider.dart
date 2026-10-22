@@ -8,7 +8,6 @@ final unitRepositoryProvider = Provider<UnitRepository>((ref) {
   return UnitRepository(db);
 });
 
-// Estado de unidades (datos de referencia, no editables desde la app)
 class UnitState {
   final List<UnitModel> units;
   final bool isLoading;
@@ -32,7 +31,6 @@ class UnitNotifier extends StateNotifier<UnitState> {
     load();
   }
 
-  // Carga todas las unidades
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {

@@ -4,12 +4,6 @@ import 'app_buttons.dart';
 import 'app_sheet.dart';
 import 'app_style.dart';
 
-// Detalle de un registro (se abre al tocar una fila de cualquier lista): el
-// contenido se desplaza y, fijos debajo, quedan "Editar" y "Cerrar". Sin
-// [onEdit] (registro que no se puede editar) solo queda "Cerrar". Acciones como
-// desactivar o cancelar viven únicamente en el formulario de edición.
-//
-// Se abre con [showAppSheet]; mide lo que su contenido.
 class RecordDetailSheet extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -60,8 +54,6 @@ class RecordDetailSheet extends StatelessWidget {
   }
 }
 
-// Encabezado de un detalle: imagen (solo productos y categorías), nombre y la
-// pastilla de estado, centrados.
 class RecordHeadline extends StatelessWidget {
   final String title;
   final Widget? thumb;

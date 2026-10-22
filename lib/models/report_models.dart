@@ -4,7 +4,6 @@ import 'sale_item_model.dart';
 import 'sale_model.dart';
 import 'purchase_model.dart';
 
-// Resumen agregado de ventas para el módulo de reportes
 class SalesSummary {
   final int count;
   final double totalAmount;
@@ -17,7 +16,6 @@ class SalesSummary {
   });
 }
 
-// Resumen agregado de compras para el módulo de reportes
 class PurchasesSummary {
   final int count;
   final double totalAmount;
@@ -30,16 +28,11 @@ class PurchasesSummary {
   });
 }
 
-// Línea (ítem) de una venta dentro de un reporte, con su categoría y la parte
-// del descuento de la venta que le corresponde. Los reportes de ventas
-// filtran y totalizan por línea, no por venta completa.
 class SaleLineReport {
   final SaleItemModel item;
   final int? categoryId;
   final String categoryName;
 
-  // Parte del descuento global de la venta asignada a esta línea (prorrateo
-  // proporcional a su subtotal).
   final double discountShare;
 
   const SaleLineReport({
@@ -51,16 +44,9 @@ class SaleLineReport {
 
   double get subtotal => item.subtotal;
 
-  // Monto neto de la línea: su subtotal menos su parte del descuento.
   double get netAmount => round2(item.subtotal - discountShare);
 }
 
-// Venta enriquecida con los nombres de sus entidades relacionadas.
-//
-// [lines] son las líneas de la venta que cumplen los filtros de
-// producto/categoría/tipo de precio; los montos de la fila (subtotal,
-// descuento y neto) se calculan solo con esas líneas. Si [lines] es null se
-// considera la venta completa (sin filtrado por línea).
 class SaleReportRow {
   final SaleModel sale;
   final String clientName;
@@ -89,10 +75,6 @@ class SaleReportRow {
   );
 }
 
-// Compra enriquecida con los nombres de sus entidades relacionadas.
-//
-// [items] son las líneas de material de la compra (vacío para un gasto
-// general, que no tiene ítems).
 class PurchaseReportRow {
   final PurchaseModel purchase;
   final String supplierName;

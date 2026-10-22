@@ -9,14 +9,12 @@ class AuthRepository {
 
   AuthRepository(this.database);
 
-  // Genera hash SHA-256 de la contraseña
   String _hashPassword(String password) {
     final bytes = utf8.encode(password);
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
 
-  // Convierte fila de usuario a modelo
   Future<UserModel?> _buildUserModel(User user) async {
     final userRole = await (database.select(
       database.userRoles,
@@ -40,7 +38,6 @@ class AuthRepository {
     );
   }
 
-  // Inicia sesión y persiste la sesión localmente
   Future<UserModel?> login(String username, String password) async {
     try {
       final hash = _hashPassword(password);
@@ -54,7 +51,6 @@ class AuthRepository {
       if (user == null) return null;
       if (user.passwordHash != hash) return null;
 
-      // Guarda la sesión en la tabla local
       await database.delete(database.sesionLocal).go();
       await database
           .into(database.sesionLocal)
@@ -72,7 +68,6 @@ class AuthRepository {
     }
   }
 
-  // Recupera la sesión activa al abrir la app
   Future<UserModel?> getSesionActual() async {
     try {
       final sesiones = await database.select(database.sesionLocal).get();
@@ -94,7 +89,6 @@ class AuthRepository {
     }
   }
 
-  // Cierra sesión eliminando el registro local
   Future<void> logout() async {
     await database.delete(database.sesionLocal).go();
   }

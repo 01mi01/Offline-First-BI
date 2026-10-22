@@ -1,9 +1,6 @@
 import '../config/rounding.dart';
 import 'product_model.dart';
 
-// Modelos de los indicadores del módulo de Business Intelligence.
-
-// Tarjetas de resumen del periodo filtrado.
 class BiSummary {
   final double ingresos;
   final double gastos;
@@ -13,23 +10,14 @@ class BiSummary {
   double get balance => round2(ingresos - gastos);
 }
 
-// Una barra de un ranking (producto, categoría, material, evento...).
-// [amount] es el dinero (ingresos o gasto) y [quantity] las unidades vendidas o
-// compradas; en los eventos, [quantity] es el número de ventas.
 class BiEntry {
   final String label;
   final double amount;
   final double quantity;
 
-  // Unidad de la cantidad, si tiene sentido mostrarla (materiales), y el tipo
-  // de esa unidad (decide cómo se muestra la cantidad: dos decimales en
-  // medidas, fracciones exactas en envases).
   final String? unit;
   final String? unitType;
 
-  // Id del producto, evento o material que representa (null en las categorías,
-  // que se identifican por su nombre, y en los indicadores sin detalle): es la
-  // clave del detalle que se abre al tocar la barra.
   final int? refId;
 
   const BiEntry({
@@ -42,7 +30,6 @@ class BiEntry {
   });
 }
 
-// Tamaño de los intervalos de la evolución temporal.
 enum BiGranularity {
   day('Diaria'),
   week('Semanal'),
@@ -52,16 +39,11 @@ enum BiGranularity {
   const BiGranularity(this.label);
 }
 
-// Un intervalo (día, semana o mes) de la evolución temporal. [start] es el
-// primer día del intervalo.
 class BiTimeBucket {
   final DateTime start;
   final double ingresos;
   final double gastos;
 
-  // Número de ventas del intervalo, sus ventas brutas (antes de descuentos) y
-  // los descuentos dados: de ahí salen el ticket promedio y el impacto de los
-  // descuentos en el tiempo, con los mismos intervalos que ingresos y gastos.
   final int ventas;
   final double bruto;
   final double descuentos;
@@ -75,10 +57,8 @@ class BiTimeBucket {
     this.descuentos = 0,
   });
 
-  // Ticket promedio del intervalo; null si no hubo ventas.
   double? get ticket => ventas > 0 ? round2(ingresos / ventas) : null;
 
-  // Descuentos como % de las ventas brutas del intervalo; null sin ventas.
   double? get descuentoPct =>
       bruto > 0 ? round2(descuentos / bruto * 100) : null;
 }
@@ -92,7 +72,6 @@ class BiTimeSeries {
   bool get isEmpty => buckets.isEmpty;
 }
 
-// Producto con poco stock, con el nombre de su categoría.
 class LowStockEntry {
   final ProductModel product;
   final String categoryName;
@@ -102,8 +81,6 @@ class LowStockEntry {
   bool get isOutOfStock => product.stock <= 0;
 }
 
-// Margen de ganancia de un producto vendido en el periodo: ingresos menos el
-// costo de producción de las unidades vendidas.
 class BiMarginEntry {
   final String name;
   final double revenue;
@@ -119,34 +96,23 @@ class BiMarginEntry {
 
   double get profit => round2(revenue - cost);
 
-  // Ganancia como porcentaje del ingreso (0 si no hubo ingreso).
   double get marginPct => revenue > 0 ? round2(profit / revenue * 100) : 0;
 }
 
 class BiMarginReport {
-  // De mayor a menor margen porcentual.
   final List<BiMarginEntry> entries;
 
-  // Productos vendidos en el periodo que no tienen costo de producción
-  // registrado, y por eso no pueden entrar al ranking.
   final int withoutCost;
 
   const BiMarginReport({required this.entries, required this.withoutCost});
 }
 
-// ---------------------------------------------------------------------------
-// Indicadores de ventas adicionales
-// ---------------------------------------------------------------------------
-
-// Un par de productos que aparecen juntos en las mismas ventas.
 class BiPairEntry {
   final String productA;
   final String productB;
 
-  // Ventas (del periodo) que contienen ambos productos.
   final int sales;
 
-  // Esas ventas como % de todas las ventas del periodo.
   final double pct;
 
   const BiPairEntry({
@@ -160,11 +126,8 @@ class BiPairEntry {
 }
 
 class BiCoPurchaseReport {
-  // Pares con al menos [coPurchaseMinSales] ventas, de más a menos ventas.
   final List<BiPairEntry> pairs;
 
-  // Todas las ventas del periodo (base del porcentaje) y cuántas de ellas
-  // llevan 2 o más productos distintos.
   final int totalSales;
   final int multiProductSales;
 
@@ -175,12 +138,9 @@ class BiCoPurchaseReport {
   });
 }
 
-// Mínimo de ventas en común para que un par se muestre.
 const int coPurchaseMinSales = 3;
 
-// Ingresos y ventas de un día de la semana.
 class BiWeekdayEntry {
-  // DateTime.monday (1) ... DateTime.sunday (7).
   final int weekday;
   final double ingresos;
   final int ventas;
@@ -215,7 +175,6 @@ class BiWeekdayEntry {
   String get shortName => shortNames[weekday - 1];
 }
 
-// Ticket promedio del periodo: ingresos netos ÷ número de ventas.
 class BiTicketReport {
   final int salesCount;
   final double total;
@@ -225,7 +184,6 @@ class BiTicketReport {
   double? get average => salesCount > 0 ? round2(total / salesCount) : null;
 }
 
-// Descuentos dados en el periodo frente a las ventas brutas.
 class BiDiscountReport {
   final double totalDiscount;
   final double grossSales;
@@ -243,7 +201,6 @@ class BiDiscountReport {
       grossSales > 0 ? round2(totalDiscount / grossSales * 100) : null;
 }
 
-// Resultado de un evento: ingresos de sus ventas menos todas sus compras.
 class BiEventProfitEntry {
   final String name;
   final double income;
@@ -262,9 +219,6 @@ class BiEventProfitEntry {
   double get profit => round2(income - expenses);
 }
 
-// Retorno sobre el costo de producción de un producto vendido: ganancia
-// (ingresos netos menos costo de producción × unidades) por cada Bs. 1 de ese
-// costo.
 class BiReturnEntry {
   final String name;
   final double revenue;
@@ -280,21 +234,17 @@ class BiReturnEntry {
 
   double get profit => round2(revenue - cost);
 
-  // Ganancia por cada Bs. 1 de costo (el costo siempre es mayor que 0).
   double get ratio => round2(profit / cost);
 }
 
 class BiReturnReport {
-  // Del mejor al peor retorno.
   final List<BiReturnEntry> entries;
 
-  // Productos vendidos sin costo de producción registrado (no entran).
   final int withoutCost;
 
   const BiReturnReport({required this.entries, required this.withoutCost});
 }
 
-// Un punto de la línea de tendencia/proyección.
 class BiTrendPoint {
   final DateTime start;
   final double value;
@@ -302,20 +252,14 @@ class BiTrendPoint {
   const BiTrendPoint({required this.start, required this.value});
 }
 
-// Proyección lineal simple de los ingresos. Si no se puede calcular,
-// [unavailableReason] explica por qué.
 class BiProjection {
   final String? unavailableReason;
   final BiGranularity granularity;
 
-  // Tendencia ajustada sobre los últimos intervalos completos (línea
-  // punteada sobre lo ya ocurrido).
   final List<BiTrendPoint> fitted;
 
-  // Intervalos futuros estimados, después del intervalo de hoy.
   final List<BiTrendPoint> projected;
 
-  // Cambio estimado de ingresos por intervalo.
   final double slope;
 
   const BiProjection({
@@ -338,7 +282,6 @@ class BiProjection {
       round2(projected.fold(0.0, (s, p) => s + p.value));
 }
 
-// Ventas de los días con evento frente a los días sin evento.
 class BiEventComparison {
   final int eventDays;
   final int regularDays;
@@ -374,9 +317,7 @@ class BiEventComparison {
   double? get regularPerSale =>
       regularSales > 0 ? round2(regularRevenue / regularSales) : null;
 
-  // Cuánto más (o menos) se vende por día en evento, en porcentaje.
   double? get perDayDifferencePct {
-    // Con los promedios SIN redondear (el redondeo es del resultado final).
     if (eventDays <= 0 || regularDays <= 0) return null;
     final e = eventRevenue / eventDays;
     final r = regularRevenue / regularDays;
@@ -385,19 +326,16 @@ class BiEventComparison {
   }
 }
 
-// Gasto en materiales frente a ingresos por ventas.
 class BiMaterialCost {
   final double materialSpend;
   final double revenue;
 
   const BiMaterialCost({required this.materialSpend, required this.revenue});
 
-  // Parte del ingreso que se fue en materiales (en %), si hubo ingresos.
   double? get ratioPct =>
       revenue > 0 ? round2(materialSpend / revenue * 100) : null;
 }
 
-// Producto activo sin ventas en la ventana reciente.
 class NoMovementEntry {
   final ProductModel product;
   final DateTime? lastSale;
@@ -410,7 +348,6 @@ class NoMovementEntry {
   });
 }
 
-// Comparación del periodo elegido con el anterior equivalente.
 class BiPeriodComparison {
   final String? unavailableReason;
   final DateTime? currentStart;
@@ -440,23 +377,18 @@ class BiPeriodComparison {
 
   bool get isAvailable => unavailableReason == null;
 
-  // Cambio porcentual de [current] respecto de [previous]; null si el periodo
-  // anterior es 0 (no hay base de comparación). Con base negativa se usa su
-  // valor absoluto, para que "mejor" siempre sea positivo.
   static double? changePct(double current, double previous) {
     if (previous == 0) return null;
     return round2((current - previous) / previous.abs() * 100);
   }
 }
 
-// Un producto del radar, con sus valores reales y normalizados (0 a 1).
 class BiRadarProduct {
   final int id;
   final String name;
   final double revenue;
   final int units;
   final int stock;
-  // Margen en %, o null si el producto no tiene costo de producción.
   final double? marginPct;
   final double revenueNorm;
   final double marginNorm;
@@ -480,19 +412,11 @@ class BiRadarProduct {
 class BiRadar {
   final List<BiRadarProduct> products;
 
-  // true si se eligieron solos (los de más ingresos) por no haber una
-  // selección válida.
   final bool autoSelected;
 
   const BiRadar({required this.products, required this.autoSelected});
 }
 
-// ---------------------------------------------------------------------------
-// Detalle de una barra (lo que se abre al tocarla)
-// ---------------------------------------------------------------------------
-
-// Importe y cantidad de un intervalo (día, semana o mes) en el detalle de un
-// producto o de un material; [count] son las ventas o compras del intervalo.
 class BiDrillBucket {
   final DateTime start;
   final double amount;
@@ -507,8 +431,6 @@ class BiDrillBucket {
   });
 }
 
-// Un producto: sus ingresos y unidades vendidas a lo largo del periodo, con los
-// mismos intervalos que Evolución en el tiempo.
 class BiProductDetail {
   final String name;
   final BiGranularity granularity;
@@ -529,8 +451,6 @@ class BiProductDetail {
   bool get isEmpty => salesCount == 0;
 }
 
-// Una categoría: sus productos de mayor a menor ingreso ([BiEntry.refId] es el
-// id del producto).
 class BiCategoryDetail {
   final String name;
   final double revenue;
@@ -547,7 +467,6 @@ class BiCategoryDetail {
   bool get isEmpty => products.isEmpty;
 }
 
-// Una venta vinculada a un evento.
 class BiEventSaleLine {
   final DateTime date;
   final String clientName;
@@ -560,7 +479,6 @@ class BiEventSaleLine {
   });
 }
 
-// Una compra vinculada a un evento (gasto general o de materiales).
 class BiEventExpenseLine {
   final DateTime date;
   final String description;
@@ -575,8 +493,6 @@ class BiEventExpenseLine {
   });
 }
 
-// Un evento: sus ventas y sus gastos vinculados, resumidos (las mismas cifras
-// que Rentabilidad por evento).
 class BiEventDetail {
   final String name;
   final List<BiEventSaleLine> sales;
@@ -600,8 +516,6 @@ class BiEventDetail {
   bool get isEmpty => sales.isEmpty && expenses.isEmpty;
 }
 
-// Un material: lo que se gastó y la cantidad comprada a lo largo del periodo,
-// con los mismos intervalos que Evolución en el tiempo.
 class BiMaterialDetail {
   final String name;
   final String? unit;
@@ -626,7 +540,6 @@ class BiMaterialDetail {
   bool get isEmpty => purchaseCount == 0;
 }
 
-// Todos los indicadores de la pantalla para un conjunto de parámetros.
 class BiReport {
   final BiSummary summary;
   final List<BiEntry> salesByProduct;

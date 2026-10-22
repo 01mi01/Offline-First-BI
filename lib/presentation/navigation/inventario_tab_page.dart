@@ -11,11 +11,6 @@ import '../widgets/profile_button.dart';
 import '../widgets/app_list_row.dart';
 import '../widgets/empty_state.dart';
 
-// Tab "Inventario" de la navegación inferior: pantalla de aterrizaje con
-// tarjetas (Productos, Categorías, Materiales), mostrando solo las que el
-// usuario puede leer según su propio módulo (inventario / materiales de
-// forma independiente). "Uso" vive dentro de la propia página de
-// Materiales, como siempre.
 class InventarioTabPage extends ConsumerWidget {
   const InventarioTabPage({super.key});
 

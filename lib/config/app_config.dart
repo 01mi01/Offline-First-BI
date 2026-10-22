@@ -1,5 +1,3 @@
-// Valores inyectados en tiempo de compilación vía --dart-define-from-file.
-// Ver config/dev.json (local) y config/prod.json.example (plantilla de producción).
 class AppConfig {
   static const String seedUsername = String.fromEnvironment(
     'SEED_USER_USERNAME',

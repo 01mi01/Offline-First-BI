@@ -1,4 +1,3 @@
-// Modelo de venta
 class SaleModel {
   final int id;
   final int? clientId;
@@ -11,7 +10,6 @@ class SaleModel {
   final String? notes;
   final DateTime createdAt;
 
-  // Una venta cancelada se conserva como historial (su stock ya se devolvió).
   final bool isCanceled;
   final DateTime? canceledAt;
 

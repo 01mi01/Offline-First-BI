@@ -11,9 +11,6 @@ import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/empty_state.dart';
 
-// Tab "Clientes, Proveedores y Eventos" de la navegación inferior: pantalla
-// de aterrizaje con tarjetas que llevan a cada página existente, mostrando
-// solo las tarjetas cuyo módulo el usuario puede leer.
 class ContactosEventosTabPage extends ConsumerWidget {
   const ContactosEventosTabPage({super.key});
 

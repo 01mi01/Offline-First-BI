@@ -1,7 +1,7 @@
 # Offline-FirstBI 
 
 ## Descripción 
-Aplicación móvil Full Stack con enfoque Offline-First orientada a Business Intelligence para el registro y control de las operaciones comerciales de emprendimientos artísticos. La aplicación permite la gestión de productos, categorías, materiales, ventas, compras, proveedores, clientes, eventos y ubicaciones, generando reportes exportables y un panel de Business Intelligence con indicadores clave y vistas guardadas. 
+Aplicación móvil Full Stack con enfoque Offline-First orientada a Business Intelligence para el registro y control de las operaciones comerciales de emprendimientos artísticos. La aplicación permite la gestión de productos, categorías, materiales, ventas, compras, proveedores, clientes, eventos y ubicaciones, generando reportes exportables y un panel de Business Intelligence con indicadores clave. 
 
 ## Objetivo general 
 Diseñar y desarrollar una aplicación móvil Full Stack para el registro y control de las operaciones comerciales de emprendimientos artísticos, incorporando Business Intelligence y un enfoque Offline-First con medidas de seguridad para garantizar la integridad y confidencialidad de los datos. 
@@ -21,7 +21,6 @@ Diseñar y desarrollar una aplicación móvil Full Stack para el registro y cont
 - Reportes exportables en PDF y Excel 
 
 ### No incluye (por ahora) 
-- Panel de Business Intelligence con vistas guardadas 
 - Autenticación con 2FA
 - Gestión de usuarios y permisos individuales por módulo 
 - Módulo de auditoría 

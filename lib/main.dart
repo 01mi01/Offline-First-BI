@@ -15,9 +15,6 @@ void main() async {
   await initializeDateFormatting('es', null);
 
   final container = ProviderContainer();
-  // Las imágenes que versiones anteriores dejaron en la caché (que Android
-  // puede vaciar) pasan a la carpeta permanente. Un fallo aquí nunca debe
-  // impedir que la aplicación abra.
   try {
     await container
         .read(imageStorageProvider)
@@ -41,13 +38,10 @@ class MyApp extends ConsumerWidget {
         value: appSystemOverlayStyle,
         child: child ?? const SizedBox.shrink(),
       ),
-      // Textos propios de Material (selectores de fecha, botones, etc.) en
-      // español, sin importar el idioma del dispositivo.
       locale: appLocale,
       supportedLocales: appSupportedLocales,
       localizationsDelegates: appLocalizationsDelegates,
       home: authState.isLoading
-          // Pantalla de carga mientras se verifica la sesión
           ? const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             )

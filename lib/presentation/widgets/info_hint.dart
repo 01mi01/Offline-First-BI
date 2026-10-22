@@ -3,7 +3,6 @@ import '../../theme/app_theme.dart';
 import 'app_buttons.dart';
 import 'focus_utils.dart';
 
-// Explicación breve de un campo que puede confundir.
 Future<void> showInfoDialog(
   BuildContext context, {
   required String title,

@@ -1,6 +1,5 @@
 import 'default_records.dart';
 
-// Modelo de proveedor
 class SupplierModel {
   final int id;
   final String name;
@@ -16,6 +15,5 @@ class SupplierModel {
     required this.createdAt,
   });
 
-  // Proveedor predeterminado, protegido (ver DefaultRecords)
   bool get isDefault => DefaultRecords.isSupplier(name);
 }

@@ -3,8 +3,6 @@ import '../../theme/app_theme.dart';
 
 enum AppButtonKind { destructive, neutral, primary }
 
-// Botón de acción a todo el ancho con el mismo estilo del botón principal:
-// rojo para cancelar o desactivar y gris para salir sin cambiar nada.
 class AppActionButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;

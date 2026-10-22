@@ -16,9 +16,6 @@ import 'search_helpers.dart';
 import 'form_finders.dart';
 import 'filter_helpers.dart';
 
-// Buscadores y filtros de estado de Materiales, Registro de uso, Eventos y
-// Ubicaciones, y selectores que no listan nada hasta que se escribe.
-
 void main() {
   group('StatusFilter.matches', () {
     test('all keeps everything, active/inactive split by flag', () {
@@ -78,7 +75,6 @@ void main() {
     );
   }
 
-  // El filtro de estado está en el panel de filtros.
   Future<void> chooseStatus(WidgetTester tester, String current, String next) =>
       pickFilter(tester, 'Estado', next);
 
@@ -141,9 +137,7 @@ void main() {
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
       expect(find.text('Base metálica grande para pines'), findsOneWidget);
       expect(find.text('Papel para stickers'), findsOneWidget);
-      // La pestaña ya no tiene buscador de materiales.
       expect(find.widgetWithText(TextField, 'Buscar material'), findsNothing);
-      // Solo queda el buscador en línea de Producto.
       expect(find.byType(TextField), findsOneWidget);
     });
 
@@ -161,7 +155,6 @@ void main() {
 
       await tester.tap(find.byType(SearchablePickerField<int>));
       await tester.pumpAndSettle();
-      // Sin escribir no hay lista de productos.
       expect(find.text('Escribe para buscar.'), findsOneWidget);
       expect(find.text('Estuches'), findsNothing);
       expect(find.text('Tote bag negra'), findsNothing);
@@ -173,7 +166,6 @@ void main() {
 
       await tester.tap(find.text('Tote bag negra').last);
       await tester.pumpAndSettle();
-      // Elegido: el campo muestra el producto y se habilita el registro.
       expect(find.text('Tote bag negra'), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
@@ -189,13 +181,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pumpAndSettle();
 
-      // Producto (pestaña, detrás de la hoja) y Material (hoja): dos buscadores.
       expect(find.byType(SearchablePickerField<int>), findsNWidgets(2));
       expect(find.byType(DropdownButtonFormField<int>), findsNothing);
 
       await tester.tap(find.byType(SearchablePickerField<int>).last);
       await tester.pumpAndSettle();
-      // Sin escribir no hay lista de materiales.
       expect(find.text('Escribe para buscar.'), findsOneWidget);
       expect(find.text('Base metálica grande para pines'), findsNothing);
       expect(find.text('Papel para stickers'), findsNothing);
@@ -208,7 +198,6 @@ void main() {
       expect(find.text('Papel para stickers'), findsOneWidget);
       expect(find.text('Base metálica grande para pines'), findsNothing);
 
-      // Los inactivos nunca se ofrecen.
       await tester.enterText(find.descendant(
           of: find.byType(SearchablePickerField<int>).last,
           matching: find.byType(TextField),
@@ -323,8 +312,6 @@ void main() {
       await searchProducts(tester, 'tote');
       expect(find.text('Tote bag negra'), findsOneWidget);
 
-      // Al enfocar el buscador de productos el formulario se desplazó: se
-      // vuelve al selector de cliente de arriba.
       await tester.ensureVisible(find.byType(SearchablePickerField<int>).first);
       await tester.pumpAndSettle();
       await tester.tap(find.byType(SearchablePickerField<int>).first);

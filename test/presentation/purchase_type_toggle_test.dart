@@ -10,8 +10,6 @@ import 'package:offline_first_bi/presentation/widgets/app_controls.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'form_finders.dart';
 
-// Compras: el tipo de compra son dos opciones con nombre propio, "Materiales"
-// y "Gasto general", en lugar de una etiqueta fija con un subtítulo que cambia.
 void main() {
   late AppDatabase db;
 
@@ -70,14 +68,12 @@ void main() {
   testWidgets('each option puts the form in its own, distinct state', (tester) async {
     await openPurchase(tester);
 
-    // Gasto general: descripción + total, sin sección de materiales.
     await tester.tap(option('Gasto general'));
     await tester.pumpAndSettle();
     expect(selectedValue(tester), isFalse);
     expect(fieldLabeled('Descripción del gasto'), findsOneWidget);
     expect(find.text('No hay materiales agregados.'), findsNothing);
 
-    // De vuelta a Materiales.
     await tester.tap(option('Materiales'));
     await tester.pumpAndSettle();
     expect(selectedValue(tester), isTrue);

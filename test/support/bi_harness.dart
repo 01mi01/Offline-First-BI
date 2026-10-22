@@ -20,15 +20,11 @@ import 'package:offline_first_bi/models/bi_models.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
 
-// Base Drift real en memoria + providers reales de Riverpod, con ayudantes para
-// sembrar ventas, compras, eventos y usos de material por la capa de
-// repositorios (los notifiers), igual que lo hace la app.
 class BiHarness {
   late AppDatabase db;
   late ProviderContainer container;
   final DateTime now = appNow();
 
-  // Un día relativo a hoy (0 = hoy, -3 = hace 3 días, 5 = dentro de 5 días).
   DateTime day(int offset, [int hour = 12]) =>
       DateTime(now.year, now.month, now.day + offset, hour);
 
@@ -44,7 +40,6 @@ class BiHarness {
     await db.close();
   }
 
-  // Recarga todo el estado y mantiene vivos los providers autoDispose.
   Future<void> refresh() async {
     await container.read(saleProvider.notifier).load();
     await container.read(purchaseProvider.notifier).load();
@@ -111,8 +106,6 @@ class BiHarness {
         .id;
   }
 
-  // Un material con stock 0 (así no se crea la compra automática del stock
-  // inicial); el stock se agrega con [buyMaterial].
   Future<int> newMaterial(String name) async {
     await container.read(unitProvider.notifier).load();
     final unit = container.read(unitProvider).units.first;
@@ -126,7 +119,6 @@ class BiHarness {
         .id;
   }
 
-  // Una venta de una sola línea: [qty] unidades de [productId] a [price].
   Future<void> sell(
     DateTime date,
     int productId,
@@ -159,8 +151,6 @@ class BiHarness {
     expect(error, isNull);
   }
 
-  // Una venta de varias líneas: cada una es (productId, cantidad, precio).
-  // [discount] es el descuento global de la venta.
   Future<void> sellMany(
     DateTime date,
     List<(int, int, double)> lines, {
@@ -216,7 +206,6 @@ class BiHarness {
         .id;
   }
 
-  // Cancela la venta cuyo total bruto es [totalAmount].
   Future<void> cancelSaleOf(double totalAmount) async {
     await container.read(saleProvider.notifier).load();
     final sale = container

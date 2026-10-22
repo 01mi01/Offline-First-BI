@@ -6,7 +6,6 @@ class ModulePermissionRepository {
 
   ModulePermissionRepository(this.database);
 
-  // Obtiene los nombres de los módulos donde el usuario tiene permiso de lectura
   Future<List<String>> getReadableModuleNames(int userId) async {
     final query = database.select(database.modulePermissions).join([
       innerJoin(

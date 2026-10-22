@@ -1,8 +1,5 @@
-// Identificadores de los grupos de navegación de nivel superior (tabs)
 enum NavGroupId { home, inventario, ventasCompras, contactos, reportes }
 
-// Resuelve qué tabs de nivel superior debe ver el usuario según los módulos
-// a los que tiene acceso de lectura. "Inicio" siempre está presente.
 List<NavGroupId> resolveVisibleGroups(List<String> readableModules) {
   final groups = <NavGroupId>[NavGroupId.home];
 
@@ -27,10 +24,6 @@ List<NavGroupId> resolveVisibleGroups(List<String> readableModules) {
   return groups;
 }
 
-// Tarjetas de la pantalla de aterrizaje del tab "Inventario": cada una se
-// habilita según su propio módulo (productos/categorías bajo "inventario",
-// materiales bajo "materiales"). "Uso" no es un destino de nivel superior:
-// vive dentro de la propia página de Materiales, como antes.
 enum InventarioCard { productos, categorias, materiales }
 
 List<InventarioCard> resolveInventarioCards(List<String> readableModules) {
@@ -44,7 +37,6 @@ List<InventarioCard> resolveInventarioCards(List<String> readableModules) {
   return cards;
 }
 
-// Tarjetas de la pantalla de aterrizaje del tab "Ventas y Compras"
 enum VentasComprasCard { ventas, compras }
 
 List<VentasComprasCard> resolveVentasComprasCards(
@@ -56,9 +48,6 @@ List<VentasComprasCard> resolveVentasComprasCards(
   return cards;
 }
 
-// Tarjetas de la pantalla de aterrizaje del tab "Contactos y eventos".
-// Clientes y proveedores son módulos independientes, así que cada uno tiene
-// su propia tarjeta y se filtra por su propio permiso.
 enum ContactosCard { clientes, proveedores, eventos }
 
 List<ContactosCard> resolveContactosCards(List<String> readableModules) {
@@ -73,7 +62,6 @@ List<ContactosCard> resolveContactosCards(List<String> readableModules) {
   return cards;
 }
 
-// Tarjetas de la pantalla de aterrizaje del tab "Reportes + Business Intelligence"
 enum ReportesCard { reportes, businessIntelligence }
 
 List<ReportesCard> resolveReportesCards(List<String> readableModules) {
@@ -85,5 +73,4 @@ List<ReportesCard> resolveReportesCards(List<String> readableModules) {
   return cards;
 }
 
-// Límite de tabs de navegación visibles antes de agrupar el resto en "Más".
 const int maxVisibleNavTabs = 5;

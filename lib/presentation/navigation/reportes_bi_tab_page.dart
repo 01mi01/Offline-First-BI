@@ -10,9 +10,6 @@ import 'nav_resolver.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/profile_button.dart';
 
-// Tab "Reportes + Business Intelligence" de la navegación inferior: pantalla
-// de aterrizaje con tarjetas (Reportes, Business Intelligence), mostrando
-// solo las que el usuario puede leer.
 class ReportesBiTabPage extends ConsumerWidget {
   const ReportesBiTabPage({super.key});
 

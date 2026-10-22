@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/config/date_formatters.dart';
 
-// Un solo formato de fecha (dd/MM/aaaa).
-
 void main() {
   group('date format', () {
     test('formatDate is dd/MM/yyyy with zero padding', () {

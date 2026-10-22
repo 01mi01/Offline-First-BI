@@ -8,7 +8,6 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
   return EventRepository(db);
 });
 
-// Estado de eventos
 class EventState {
   final List<EventModel> events;
   final bool isLoading;
@@ -40,7 +39,6 @@ class EventNotifier extends StateNotifier<EventState> {
     load();
   }
 
-  // Carga todos los eventos
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -51,7 +49,6 @@ class EventNotifier extends StateNotifier<EventState> {
     }
   }
 
-  // Guarda o edita un evento
   Future<void> save({
     int? id,
     required String name,

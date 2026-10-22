@@ -9,7 +9,6 @@ final modulePermissionRepositoryProvider =
   return ModulePermissionRepository(db);
 });
 
-// Nombres de los módulos donde el usuario actual tiene permiso de lectura
 final readableModulesProvider = FutureProvider<List<String>>((ref) async {
   final user = ref.watch(authProvider).user;
   if (user == null) return [];

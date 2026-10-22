@@ -23,7 +23,6 @@ import 'package:offline_first_bi/theme/app_theme.dart';
 
 Future<AppDatabase> _openDb() async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
-  // Fuerza la apertura para que se ejecute el seed inicial (onCreate).
   await db.select(db.modules).get();
   return db;
 }
@@ -168,14 +167,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // "Ventas" también aparece en el título del AppBar de esta pantalla.
       await tester.tap(find.widgetWithText(AppListRow, 'Ventas'));
       await tester.pumpAndSettle();
       expect(find.byType(SalesPage), findsOneWidget);
 
-      // La app usa un ícono de "back" propio (no el widget estándar de
-      // Cupertino/Material), así que se toca directamente en vez de usar
-      // tester.pageBack().
       await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
 
@@ -254,9 +249,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ClientsPage), findsOneWidget);
 
-      // La app usa un ícono de "back" propio (no el widget estándar de
-      // Cupertino/Material), así que se toca directamente en vez de usar
-      // tester.pageBack().
       await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
 
@@ -304,20 +296,13 @@ void main() {
       await tester.tap(find.text('Business Intelligence'));
       await tester.pumpAndSettle();
       expect(find.byType(BusinessIntelligencePage), findsOneWidget);
-      // Ya no es un marcador "Próximamente": abre en el paso de configuración
-      // (periodo e indicadores) antes de mostrar datos.
       expect(find.text('Próximamente'), findsNothing);
       expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
       expect(find.byKey(const ValueKey('bi-period')), findsNothing);
 
-      // La app usa un ícono de "back" propio (no el widget estándar de
-      // Cupertino/Material), así que se toca directamente en vez de usar
-      // tester.pageBack().
       await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
 
-      // "Reportes" también aparece en el título del AppBar de esta pantalla,
-      // así que se apunta específicamente a la tarjeta, no al texto suelto.
       await tester.tap(find.widgetWithText(AppListRow, 'Reportes'));
       await tester.pumpAndSettle();
       expect(find.byType(ReportsPage), findsOneWidget);
@@ -344,7 +329,6 @@ void main() {
       expect(find.text('Inventario'), findsNothing);
       expect(find.text('Contactos'), findsNothing);
       expect(find.text('Reportes'), findsNothing);
-
     });
 
     testWidgets('tapping the Ventas tab opens its landing menu, not a segmented control',
@@ -403,8 +387,6 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               readableModulesProvider.overrideWith((ref) async {
-                // Simula la consulta de permisos resolviendo después del
-                // primer frame, como puede ocurrir en un arranque en frío.
                 await Future.delayed(const Duration(milliseconds: 300));
                 return ['ventas', 'compras'];
               }),
@@ -413,13 +395,9 @@ void main() {
           ),
         );
 
-        // Justo después del primer frame el future todavía no se resolvió:
-        // no debe verse ningún tab todavía (solo el loader), no una barra
-        // vacía o rota.
         await tester.pump();
         expect(find.text('Inicio'), findsNothing);
 
-        // Una vez resuelto, la barra debe aparecer con sus tabs completos.
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
 

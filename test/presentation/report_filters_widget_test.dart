@@ -9,10 +9,6 @@ import 'package:offline_first_bi/presentation/widgets/report_filters_widget.dart
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'form_finders.dart';
 
-// Cobertura ligera de ReportFiltersWidget (la matriz combinatoria completa se
-// cubre a nivel de servicio en report_filters_db_test.dart): qué filtros
-// aparecen según la pestaña activa, y que limpiar un filtro (o todos) emite el
-// ReportFilters correcto vía onChanged.
 class _Harness extends StatefulWidget {
   final int activeTab;
   final ReportFilters initialFilters;

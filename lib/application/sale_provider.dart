@@ -10,7 +10,6 @@ final saleRepositoryProvider = Provider<SaleRepository>((ref) {
   return SaleRepository(db);
 });
 
-// Estado de ventas
 class SaleState {
   final List<SaleModel> sales;
   final bool isLoading;
@@ -35,7 +34,6 @@ class SaleNotifier extends StateNotifier<SaleState> {
     load();
   }
 
-  // Carga todas las ventas
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -46,12 +44,10 @@ class SaleNotifier extends StateNotifier<SaleState> {
     }
   }
 
-  // Obtiene los ítems de una venta
   Future<List<SaleItemModel>> getItemsForSale(int saleId) async {
     return await repository.getItemsForSale(saleId);
   }
 
-  // Crea una nueva venta
   Future<String?> createSale({
     required int? clientId,
     required int? locationId,
@@ -63,7 +59,6 @@ class SaleNotifier extends StateNotifier<SaleState> {
     String? notes,
     required List<Map<String, dynamic>> items,
   }) async {
-    // Devuelve el mensaje tal cual (sin el prefijo de la excepción).
     if (discount < 0 || discount.isNaN) {
       return SaleRepository.negativeDiscountMessage;
     }
@@ -87,7 +82,6 @@ class SaleNotifier extends StateNotifier<SaleState> {
     }
   }
 
-  // Edita una venta existente
   Future<String?> editSale({
     required int saleId,
     required int? clientId,
@@ -121,7 +115,6 @@ class SaleNotifier extends StateNotifier<SaleState> {
     }
   }
 
-  // Cancela una venta: devuelve su stock y la deja marcada como cancelada
   Future<String?> cancelSale(int saleId) async {
     try {
       final error = await repository.cancelSale(saleId);
@@ -133,7 +126,6 @@ class SaleNotifier extends StateNotifier<SaleState> {
     }
   }
 
-  // Unidades de cada producto que una venta ya tiene apartadas
   Future<Map<int, int>> getReservedQuantities(int saleId) async {
     return await repository.getReservedQuantities(saleId);
   }

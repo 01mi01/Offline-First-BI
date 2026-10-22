@@ -2,10 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/application/date_range_filter.dart';
 
-// Atajos de fecha, validación de rangos Desde/Hasta y coincidencia de fechas
-// de los filtros de Ventas, Compras, Eventos y Reportes.
 void main() {
-  // Miércoles 30 de septiembre de 2026.
   final wednesday = DateTime(2026, 9, 30, 15, 45);
 
   group('presets always end today (no filter date can be in the future)', () {
@@ -37,7 +34,6 @@ void main() {
     });
 
     test('the week can start in the previous month', () {
-      // Jueves 1 de octubre de 2026 -> el lunes fue el 28 de septiembre.
       final r = DateRangeFilter.forPreset(
         DatePreset.week,
         now: DateTime(2026, 10, 1),
@@ -128,7 +124,6 @@ void main() {
         ),
         futureDateMessage,
       );
-      // La hora de hoy no cuenta como "futuro".
       expect(
         validateDateRange(to: DateTime(2026, 9, 30, 23, 59), now: wednesday),
         isNull,
@@ -181,13 +176,11 @@ void main() {
         from: DateTime(2026, 9, 10),
         to: DateTime(2026, 9, 12),
       );
-      // Termina dentro / empieza dentro / abarca el rango / fuera.
       expect(r.overlaps(DateTime(2026, 9, 5), DateTime(2026, 9, 10)), isTrue);
       expect(r.overlaps(DateTime(2026, 9, 12), DateTime(2026, 9, 20)), isTrue);
       expect(r.overlaps(DateTime(2026, 9, 1), DateTime(2026, 9, 30)), isTrue);
       expect(r.overlaps(DateTime(2026, 9, 1), DateTime(2026, 9, 9)), isFalse);
       expect(r.overlaps(DateTime(2026, 9, 13), null), isFalse);
-      // Sin fecha de fin cuenta solo su día de inicio.
       expect(r.overlaps(DateTime(2026, 9, 11), null), isTrue);
     });
 

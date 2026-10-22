@@ -9,9 +9,6 @@ import 'package:offline_first_bi/presentation/pages/reports_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'filter_helpers.dart';
 
-// Con el teclado abierto, un buscador con resultados debajo no se mueve al
-// escribir ni al aparecer los resultados: lo escrito siempre queda a la vista
-// por encima del teclado y los resultados se abren debajo del campo.
 void main() {
   const screen = Size(360, 640);
   const keyboard = 300.0;
@@ -59,15 +56,11 @@ void main() {
     addTearDown(tester.view.resetViewInsets);
   }
 
-  // Deja pasar el instante que el buscador espera (tras enfocar o cambiar el
-  // teclado) antes de llevarse a la vista, y la animación que sigue.
   Future<void> settle(WidgetTester tester) async {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
-  // Escribe en el campo y comprueba que no se movió, que sigue sobre el
-  // teclado y que los resultados están debajo, también sobre el teclado.
   Future<void> typeAndCheck(
     WidgetTester tester,
     Finder field, {
@@ -75,7 +68,6 @@ void main() {
     required String second,
     required Finder results,
   }) async {
-    // El campo se toca estando a la vista (como lo haría quien lo usa).
     await tester.ensureVisible(field);
     await tester.pumpAndSettle();
     await tester.tap(field);
@@ -84,7 +76,6 @@ void main() {
     await tester.enterText(field, first);
     await settle(tester);
     final before = tester.getRect(field);
-    // Empezar a escribir (y que aparezcan los resultados) no lo mueve.
     expect(before, atFocus);
     expect(before.top, greaterThanOrEqualTo(0));
     expect(before.bottom, lessThanOrEqualTo(screen.height - keyboard));
@@ -92,7 +83,6 @@ void main() {
     expect(tester.getRect(results.first).top, greaterThanOrEqualTo(before.bottom));
     expect(tester.getRect(results.first).bottom, lessThanOrEqualTo(screen.height - keyboard));
 
-    // Seguir escribiendo (cambia la lista de resultados) no mueve el campo.
     await tester.enterText(field, second);
     await settle(tester);
     expect(tester.getRect(field), before);
@@ -103,9 +93,6 @@ void main() {
     tester,
   ) async {
     await pump(tester, const ReportsPage());
-    // Tocar el chip abre el buscador en línea (que toma el foco), y entonces
-    // sube el teclado.
-    // (en una pantalla chica el panel de filtros se desplaza por dentro)
     await openFilterPanel(tester);
     final locationField = find.descendant(
       of: find.byKey(const ValueKey('filter-search-Ubicación')),
@@ -126,7 +113,4 @@ void main() {
       results: find.text('Zona 1, Bolivia'),
     );
   });
-
-  // Al llevar el campo al borde de arriba del área que se desplaza, su etiqueta
-  // (que flota sobre el borde y sobresale de la caja) queda entera, con margen.
 }

@@ -10,9 +10,6 @@ import 'package:offline_first_bi/presentation/widgets/app_controls.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'form_finders.dart';
 
-// Correcciones tras la revisión en el dispositivo: el formulario de Compras al
-// cambiar de modo, botones siempre alcanzables en Compras/Ventas, título fijo
-// en Producto y pequeños defectos visuales.
 void main() {
   late AppDatabase db;
 
@@ -149,7 +146,6 @@ void main() {
       final total = fieldLabeled('Total (Bs.)');
       expect(tester.widget<TextFormField>(total).controller!.text, '');
     });
-
   });
 
   test('MaterialRepository.getMaterialsWithPriceForProduct incluye la unidad', () async {

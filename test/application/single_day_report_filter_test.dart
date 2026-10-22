@@ -4,7 +4,6 @@ import 'package:offline_first_bi/models/purchase_model.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/models/sale_model.dart';
 
-// Reportes: con solo "Desde" (sin "Hasta") se filtra ese único día.
 void main() {
   final service = ReportService();
 

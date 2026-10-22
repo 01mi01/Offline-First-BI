@@ -20,11 +20,7 @@ dependencies:
   path: ^1.8.3
   # Seguridad
   crypto: ^3.0.3
-  encrypt: ^5.0.3
-  otp: ^3.1.4
-  qr_flutter: ^4.1.0
   # Utilidades
-  uuid: ^4.2.2
   intl: ^0.20.2
   flutter_svg: ^2.0.10
   image_picker: ^1.1.2
@@ -32,7 +28,6 @@ dependencies:
   pdf: ^3.10.8
   excel: ^4.0.3
   share_plus: ^10.1.2
-  permission_handler: ^11.3.1
   # UI
   fl_chart: ^0.68.0
 
@@ -43,6 +38,7 @@ dev_dependencies:
   path_provider_platform_interface: ^2.1.2
   image_picker_platform_interface: ^2.10.0
   plugin_platform_interface: ^2.1.8
+  share_plus_platform_interface: ^5.0.2
   flutter_lints: ^5.0.0
   drift_dev: ^2.14.0
   build_runner: ^2.4.7

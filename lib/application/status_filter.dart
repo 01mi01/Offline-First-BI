@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Filtro por estado de una lista: activos, inactivos o todos.
 enum StatusFilter {
   all,
   active,
@@ -13,7 +12,6 @@ enum StatusFilter {
   };
 }
 
-// Estado del filtro de cada pantalla. Viven mientras la pantalla está abierta.
 final materialStatusFilterProvider = StateProvider.autoDispose<StatusFilter>(
   (ref) => StatusFilter.all,
 );
@@ -31,23 +29,19 @@ final supplierStatusFilterProvider = StateProvider.autoDispose<StatusFilter>(
   (ref) => StatusFilter.all,
 );
 
-// Filtros "País" y "Ciudad" de Ubicaciones (null = todos).
 final locationCountryFilterProvider =
     StateProvider.autoDispose<String?>((ref) => null);
 final locationCityFilterProvider =
     StateProvider.autoDispose<String?>((ref) => null);
 
-// Filtros "País" y "Ciudad" de Eventos: se aplican a la ubicación del evento.
 final eventCountryFilterProvider =
     StateProvider.autoDispose<String?>((ref) => null);
 final eventCityFilterProvider =
     StateProvider.autoDispose<String?>((ref) => null);
 
-// Texto de los buscadores de Clientes, Proveedores, Eventos y Ubicaciones.
 final clientListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 final supplierListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 final eventListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 final locationListQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 
-// Texto del buscador de la pestaña "Materiales".
 final materialListQueryProvider = StateProvider.autoDispose<String>((ref) => '');

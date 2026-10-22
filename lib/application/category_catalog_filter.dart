@@ -4,8 +4,6 @@ import 'record_search.dart';
 
 enum CategoryStatusFilter { all, active, inactive }
 
-// Búsqueda por nombre y estado de Categorías. El filtro de estado se controla
-// desde la vista de lista; el catálogo solo lo refleja.
 class CategoryCatalogFilter {
   final String query;
   final CategoryStatusFilter status;

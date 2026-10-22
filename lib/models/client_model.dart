@@ -1,6 +1,5 @@
 import 'default_records.dart';
 
-// Modelo de cliente
 class ClientModel {
   final int id;
   final String name;
@@ -16,6 +15,5 @@ class ClientModel {
     required this.createdAt,
   });
 
-  // Cliente predeterminado, protegido (ver DefaultRecords)
   bool get isDefault => DefaultRecords.isClient(name);
 }

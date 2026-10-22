@@ -9,7 +9,6 @@ import 'package:offline_first_bi/presentation/widgets/app_controls.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'filter_helpers.dart';
 
-// Reportes: las pestañas Ventas y Compras llevan cada una sus propios filtros.
 void main() {
   late AppDatabase db;
 

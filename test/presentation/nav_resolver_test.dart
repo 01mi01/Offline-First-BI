@@ -155,5 +155,4 @@ void main() {
       expect(resolveReportesCards([]), isEmpty);
     });
   });
-
 }

@@ -9,7 +9,6 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository(db);
 });
 
-// Estado de categorías
 class CategoryState {
   final List<CategoryModel> categories;
   final bool isLoading;
@@ -41,7 +40,6 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
     load();
   }
 
-  // Carga todas las categorías
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -52,7 +50,6 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
     }
   }
 
-  // Guarda o edita una categoría y recarga
   Future<void> save({
     int? id,
     required String name,
@@ -60,7 +57,6 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
     String? image,
     bool isActive = true,
   }) async {
-    // Si se intenta desactivar, verificar que no tenga productos activos
     if (id != null && !isActive) {
       final hasActive = await repository.hasActiveProducts(id);
       if (hasActive) {
@@ -80,14 +76,12 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
         isActive: isActive,
       );
     } on ProtectedRecordException catch (e) {
-      // Registro predeterminado: el formulario muestra este mensaje
       state = state.copyWith(error: e.message);
       return;
     }
     await load();
   }
 
-  // Desactiva una categoría y recarga
   Future<void> deactivate(int id) async {
     try {
       await repository.deactivate(id);

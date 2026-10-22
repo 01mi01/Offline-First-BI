@@ -1,4 +1,3 @@
-// Modelo de ítem de compra de material
 class PurchaseItemModel {
   final int id;
   final int purchaseId;
@@ -7,7 +6,6 @@ class PurchaseItemModel {
   final double quantity;
   final double unitPrice;
   final double subtotal;
-  // Unidad del material (para mostrar la cantidad con el formato que le toca).
   final String unitName;
   final String unitType;
 

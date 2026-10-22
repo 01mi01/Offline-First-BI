@@ -1,4 +1,3 @@
-// Modelo de evento comercial
 class EventModel {
   final int id;
   final String name;

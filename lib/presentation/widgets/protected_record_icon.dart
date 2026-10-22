@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-// Indicador de un registro predeterminado del sistema: reemplaza al botón de
-// editar, porque no se puede editar ni desactivar. [message] es el texto de
-// [DefaultRecords] que corresponde a cada entidad (categoría, cliente...).
 class ProtectedRecordIcon extends StatelessWidget {
   final String message;
 
