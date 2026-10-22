@@ -119,7 +119,6 @@ void main() {
     Future<void> pick(WidgetTester tester, String option) =>
         pickFilter(tester, 'Tipo', option);
 
-    // Cada fila lleva el tipo de la compra como pastilla.
     Finder typeLine(String type) => find.widgetWithText(StatusBadge, type);
 
     testWidgets('shows both by default, then only Gastos, only Materiales, and both again', (
@@ -143,7 +142,6 @@ void main() {
       expect(typeLine('Material'), findsOneWidget);
       expect(typeLine('Gasto'), findsOneWidget);
     });
-
   });
 
   group('Ventas: descuento', () {
@@ -162,7 +160,7 @@ void main() {
     TextEditingController? discountController(WidgetTester tester) =>
         tester
             .widget<TextFormField>(
-              find.widgetWithText(TextFormField, '0'),
+              find.widgetWithText(TextFormField, '0.00'),
             )
             .controller;
 
@@ -171,7 +169,7 @@ void main() {
     ) async {
       await _openSheet(tester, db, const SaleDialog());
 
-      await tester.enterText(find.widgetWithText(TextFormField, '0'), '-5');
+      await tester.enterText(find.widgetWithText(TextFormField, '0.00'), '-5');
       await tester.pumpAndSettle();
 
       expect(discountController(tester)!.text, '5');
@@ -190,14 +188,13 @@ void main() {
       await searchProducts(tester, 'Libro');
       await tester.tap(find.byIcon(Icons.add_circle_rounded));
       await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextFormField, '0'), '5');
+      await tester.enterText(find.widgetWithText(TextFormField, '0.00'), '5');
       await tester.pumpAndSettle();
 
       expect(find.text('Descuento'), findsOneWidget);
-      expect(find.text('- Bs. 5.00'), findsOneWidget);
-      expect(find.text('Bs. 15.00'), findsOneWidget);
+      expect(find.text('- Bs. 5.00'), findsOneWidget);
+      expect(find.text('Bs. 15.00'), findsOneWidget);
     });
-
   });
 
   group('Compras: total editable a mano', () {
@@ -234,7 +231,7 @@ void main() {
     ) async {
       await _openSheet(tester, db, const PurchaseDialog());
       await addTela(tester);
-      expect(find.text('12.00'), findsOneWidget); // 3 x 4 calculado
+      expect(find.text('12.00'), findsOneWidget);
 
       await tester.ensureVisible(totalField);
       await tester.enterText(totalField, '50');
@@ -247,7 +244,6 @@ void main() {
       final purchase = (await PurchaseRepository(db).getAll()).single;
       expect(purchase.totalAmount, 50.0);
 
-      // El stock y el precio del material salen de los ítems, no del total.
       final material = await db.select(db.materials).getSingle();
       expect(material.stock, 103.0);
       expect(material.pricePerUnit, 4.0);
@@ -263,7 +259,6 @@ void main() {
       await tester.enterText(totalField, '50');
       await tester.pumpAndSettle();
 
-      // "+" de la línea de Tela: la cantidad sube a 4, el total sigue en 50.
       await tester.tap(find.byTooltip('Agregar uno').first);
       await tester.pumpAndSettle();
       await tester.ensureVisible(totalField);
@@ -328,7 +323,6 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // El filtro de precio está en el panel de filtros, igual en las dos vistas.
     Future<void> pickPrice(WidgetTester tester, String option) =>
         pickFilter(tester, 'Precio', option);
 
@@ -339,8 +333,8 @@ void main() {
       await pickPrice(tester, 'Precio A');
       await toGrid(tester);
 
-      expect(find.text('Precio: Bs. 30.00'), findsOneWidget); // A
-      expect(find.text('Precio: Bs. 12.00'), findsOneWidget);
+      expect(find.text('Precio: Bs. 30.00'), findsOneWidget);
+      expect(find.text('Precio: Bs. 12.00'), findsOneWidget);
       expect(find.textContaining('A: Bs.'), findsNothing);
       expect(find.textContaining('B: Bs.'), findsNothing);
     });
@@ -352,9 +346,9 @@ void main() {
 
       await pickPrice(tester, 'Precio B');
       await toGrid(tester);
-      expect(find.text('Precio: Bs. 11.00'), findsOneWidget);
-      expect(find.text('Precio: Bs. 25.00'), findsOneWidget);
-      expect(find.text('Precio: Bs. 30.00'), findsNothing);
+      expect(find.text('Precio: Bs. 11.00'), findsOneWidget);
+      expect(find.text('Precio: Bs. 25.00'), findsOneWidget);
+      expect(find.text('Precio: Bs. 30.00'), findsNothing);
 
       await toList(tester);
       await pickPrice(tester, 'Sin precio');
@@ -365,16 +359,16 @@ void main() {
       await toList(tester);
       await pickPrice(tester, 'Ambos');
       await toGrid(tester);
-      expect(find.text('A: Bs. 30.00'), findsOneWidget);
-      expect(find.text('B: Bs. 11.00'), findsOneWidget);
-      expect(find.text('A: Bs. 12.00'), findsOneWidget);
-      expect(find.text('B: Bs. 25.00'), findsOneWidget);
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('A: Bs. 12.00'), findsOneWidget);
+      expect(find.text('B: Bs. 25.00'), findsOneWidget);
       expect(find.textContaining('Precio: Bs.'), findsNothing);
 
       await tester.tap(find.text('Estuches'));
       await tester.pumpAndSettle();
-      expect(find.text('Precio A: Bs. 30.00'), findsOneWidget);
-      expect(find.text('Precio B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('Precio A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('Precio B: Bs. 11.00'), findsOneWidget);
     });
 
     testWidgets('list view follows the filter: A only, B only, none, both', (
@@ -382,28 +376,27 @@ void main() {
     ) async {
       await openList(tester);
 
-      // Sin elegir nada, la lista sigue mostrando ambos precios.
-      expect(find.text('A: Bs. 30.00'), findsOneWidget);
-      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
 
       await pickPrice(tester, 'Precio B');
-      expect(find.text('B: Bs. 11.00'), findsOneWidget);
-      expect(find.text('B: Bs. 25.00'), findsOneWidget);
-      expect(find.text('A: Bs. 30.00'), findsNothing);
-      expect(find.text('A: Bs. 12.00'), findsNothing);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('B: Bs. 25.00'), findsOneWidget);
+      expect(find.text('A: Bs. 30.00'), findsNothing);
+      expect(find.text('A: Bs. 12.00'), findsNothing);
 
       await pickPrice(tester, 'Precio A');
-      expect(find.text('A: Bs. 30.00'), findsOneWidget);
-      expect(find.text('B: Bs. 11.00'), findsNothing);
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsNothing);
 
       await pickPrice(tester, 'Sin precio');
-      expect(find.textContaining('Bs. 30.00'), findsNothing);
-      expect(find.textContaining('Bs. 11.00'), findsNothing);
+      expect(find.textContaining('Bs. 30.00'), findsNothing);
+      expect(find.textContaining('Bs. 11.00'), findsNothing);
       expect(find.text('Estuches'), findsOneWidget);
 
       await pickPrice(tester, 'Ambos');
-      expect(find.text('A: Bs. 30.00'), findsOneWidget);
-      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('A: Bs. 30.00'), findsOneWidget);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
     });
 
     testWidgets('the chosen price is kept while switching list, catalogue and list', (
@@ -415,15 +408,14 @@ void main() {
       await toGrid(tester);
       await toList(tester);
 
-      // Sigue en "Precio B": solo la píldora B.
-      expect(find.text('B: Bs. 11.00'), findsOneWidget);
-      expect(find.text('A: Bs. 30.00'), findsNothing);
+      expect(find.text('B: Bs. 11.00'), findsOneWidget);
+      expect(find.text('A: Bs. 30.00'), findsNothing);
     });
 
     testWidgets('search by name or description narrows both views', (tester) async {
       await openList(tester);
 
-      await tester.enterText(find.byType(TextField), 'pintura'); // descripción
+      await tester.enterText(find.byType(TextField), 'pintura');
       await tester.pumpAndSettle();
       expect(find.text('Estuches'), findsOneWidget);
       expect(find.text('Miniaturas'), findsNothing);
@@ -487,11 +479,9 @@ void main() {
       (tester) async {
         await openAddLine(tester);
 
-        // "Crear nuevo material" con stock inicial 5 a Bs. 3 el metro.
         await tester.tap(find.text('Nuevo material'));
         await tester.pumpAndSettle();
         await tester.enterText(fieldLabeled('Nombre'), 'Papel para stickers');
-        // La unidad es un desplegable corto, no un buscador.
         await chooseOption(tester, 'Unidad', 'metro');
         await tester.enterText(fieldLabeled('Stock'), '5');
         await tester.enterText(
@@ -503,17 +493,14 @@ void main() {
         await tester.tap(find.text('Crear'));
         await tester.pumpAndSettle();
 
-        // Su stock inicial ya quedó como su propia compra...
         expect(await PurchaseRepository(db).getAll(), hasLength(1));
         var papelStickers = await db.select(db.materials).getSingle();
         expect(papelStickers.stock, 5.0);
 
-        // ...así que la línea de esta compra NO trae el 5 de relleno.
-        expect(find.text('Papel para stickers'), findsWidgets); // ya seleccionada
+        expect(find.text('Papel para stickers'), findsWidgets);
         expect(quantityText(tester, 'Cantidad (metro)'), isEmpty);
         expect(quantityText(tester, 'Precio por unidad (Bs.)'), '3.00');
 
-        // Se compra lo de esta ocasión: 2 metros.
         await tester.enterText(
           fieldLabeled('Cantidad (metro)'),
           '2',
@@ -526,14 +513,13 @@ void main() {
         await tester.tap(find.text('Registrar compra'));
         await tester.pumpAndSettle();
 
-        // El stock suma (5 + 2), no se reemplaza ni se duplica (5 + 5).
         papelStickers = await db.select(db.materials).getSingle();
         expect(papelStickers.stock, 7.0);
         final purchases = await PurchaseRepository(db).getAll();
         expect(purchases, hasLength(2));
         expect(
           purchases.map((p) => p.totalAmount).toList()..sort(),
-          [6.0, 15.0], // la compra de 2 x 3 y la del stock inicial 5 x 3
+          [6.0, 15.0],
         );
       },
     );

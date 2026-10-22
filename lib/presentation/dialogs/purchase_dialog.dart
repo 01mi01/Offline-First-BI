@@ -1,3 +1,4 @@
+import '../../config/quantity_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +34,9 @@ import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/picker_options.dart';
@@ -46,7 +50,8 @@ class PurchaseDialog extends ConsumerStatefulWidget {
   ConsumerState<PurchaseDialog> createState() => _PurchaseDialogState();
 }
 
-class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
+class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
+    with SingleFlight<PurchaseDialog>, LiveValidation<PurchaseDialog> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _totalController = TextEditingController();
@@ -57,14 +62,38 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   int? _selectedLocationId;
   int? _selectedEventId;
   final List<Map<String, dynamic>> _materialItems = [];
-  bool _isLoading = false;
-  // Error de la lista de materiales (vacía) y error general al registrar.
-  String? _itemsError;
+  late String _initialSignature;
   String? _error;
-  // Un total escrito a mano manda sobre el calculado de los ítems (solo el monto).
   bool _totalOverridden = false;
   late DateTime _date = widget.purchase?.date ?? appNow();
   bool _dateChanged = false;
+
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_error = null;}
+
+  String? get _itemsError =>
+      submitAttempted && _isMaterial && _materialItems.isEmpty
+          ? 'Agrega al menos un material'
+          : null;
+
+  String _signature() => [
+    _selectedSupplierId,
+    _isMaterial,
+    _selectedLocationId,
+    _selectedEventId,
+    _date.millisecondsSinceEpoch,
+    _descriptionController.text,
+    !_isMaterial || _totalOverridden ? _totalController.text : '',
+    _notesController.text,
+    for (final item in _materialItems)
+      '${item['materialId']}:${item['quantity']}:${item['unitPrice']}',
+  ].join('\u0000');
 
   @override
   void initState() {
@@ -82,6 +111,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       _notesController.text = widget.purchase!.notes ?? '';
       _loadExistingItems();
     }
+    _initialSignature = _signature();
   }
 
   Future<void> _loadExistingItems() async {
@@ -90,6 +120,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
         .read(purchaseProvider.notifier)
         .getItemsForPurchase(widget.purchase!.id);
     if (mounted) {
+      final pristine = _signature() == _initialSignature;
       setState(() {
         for (final item in items) {
           _materialItems.add({
@@ -99,7 +130,6 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
             'unitPrice': item.unitPrice,
           });
         }
-        // Un total guardado distinto de la suma de los ítems fue editado a mano.
         final calculated = ref
             .read(purchaseRepositoryProvider)
             .calculateMaterialsTotal(_materialItems);
@@ -107,6 +137,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
             (widget.purchase!.totalAmount - calculated).abs() > 0.005;
         _recalcTotal();
       });
+      if (pristine) _initialSignature = _signature();
     }
   }
 
@@ -140,20 +171,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
         return newValue;
       });
 
-  String _quantityWithUnit(double quantity, UnitModel? unit) {
-    final number = formatMaterialQuantity(
-      quantity,
-      unitType: unit?.type ?? 'medida',
-      unitName: unit?.name ?? '',
-    );
-    final unitName = unit?.name;
-    if (unitName == null || unitName.isEmpty) return number;
-    return '$number ${unitLabel(unitName, quantity)}';
-  }
-
   void _showAddSupplierSheet() {
     dismissKeyboard();
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => SupplierDialog(
         onSaved: (supplierId) {
@@ -168,19 +188,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   void _showAddMaterialItem() {
     dismissKeyboard();
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       heightFactor: 0.94,
       builder: (_) => _AddMaterialItemSheet(
-        // Un material ya agregado no se repite: se quita de la lista o se
-        // cambia su cantidad con + y −.
         existingMaterialIds: {
           for (final item in _materialItems) item['materialId'] as int,
         },
         onAdded: (item) {
           setState(() {
             _error = null;
-            _itemsError = null;
             _materialItems.add(item);
             _recalcTotal();
           });
@@ -199,18 +216,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     }
   }
 
-  // Total: obligatorio en un gasto; en una compra de materiales puede quedar
-  // vacío (se calcula de los materiales). Mayor a 0 y con dos decimales.
   String? _validateTotal(String? value) =>
       validateAmountField(value, required: !_isMaterial);
 
   Future<void> _save() async {
-    final valid = _formKey.currentState!.validate();
-    if (_isMaterial && _materialItems.isEmpty) {
-      setState(() => _itemsError = 'Agrega al menos un material');
-      return;
-    }
-    if (!valid) return;
+    final valid = validateForm();
+    if ((_isMaterial && _materialItems.isEmpty) || !valid) return;
 
     var total = round2(double.tryParse(_totalController.text.trim()) ?? 0);
     if (_isMaterial && _totalController.text.trim().isEmpty) {
@@ -223,10 +234,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() => _error = null);
 
     String? error;
     if (widget.purchase == null) {
@@ -268,17 +276,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
           );
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (error != null) {
-        setState(() => _error = error);
-      } else {
-        Navigator.pop(context);
-      }
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _error = error);
+    } else {
+      Navigator.pop(context);
     }
   }
 
-  // Cancelar no borra; si algún material ya se usó, el error se muestra aquí.
   Future<void> _cancelPurchase() async {
     final confirmed = await confirmCancellation(
       context,
@@ -313,6 +318,19 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _descriptionController,
+        _totalController,
+        _notesController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.purchase != null;
     final allSuppliers = ref.watch(supplierProvider).suppliers;
     final suppliers = allSuppliers
@@ -349,11 +367,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                 ],
                 selected: _isMaterial,
                 onChanged: (value) {
-                  if (value == null || value == _isMaterial) return;
+                  if (value == _isMaterial) return;
                   setState(() {
                     _error = null;
-                    _itemsError = null;
-                    _isMaterial = value;
+                            _isMaterial = value;
                     _totalOverridden = false;
                     _materialItems.clear();
                     _totalController.clear();
@@ -385,7 +402,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                         _selectedSupplierId = val;
                         _error = null;
                       }),
-                      labelAction: FormAddButton(onPressed: _showAddSupplierSheet),
+                      labelAction: FormAddButton(
+                        label: 'Nuevo proveedor',
+                        onPressed: _showAddSupplierSheet,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.s16),
                     SearchablePickerField<int>(
@@ -460,6 +480,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           inputFormatters: [_amountFormatter()],
                           validator: _validateTotal,
                           decoration: InputDecoration(
+                            hintText: '0.00',
                             helperText: _totalOverridden
                                 ? 'Total escrito a mano'
                                 : 'Calculado de los materiales; puedes editarlo',
@@ -494,7 +515,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                           minLines: 2,
                           maxLines: 4,
                           decoration: const InputDecoration(
-                            hintText: 'Ej: transporte, entradas a eventos, etc.',
+                            hintText: 'Descripción del gasto',
                           ),
                           validator: (v) =>
                               validateRequired(v) ?? validateOptionalText(v),
@@ -511,7 +532,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                             decimal: true,
                           ),
                           inputFormatters: [_amountFormatter()],
-                          decoration: const InputDecoration(hintText: '0'),
+                          decoration: const InputDecoration(hintText: '0.00'),
                           validator: _validateTotal,
                         ),
                       ),
@@ -536,13 +557,15 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     FormActions(
                       onSecondary: () => Navigator.pop(context),
                       primaryLabel: isEditing ? 'Guardar' : 'Registrar compra',
-                      onPrimary: _save,
-                      loading: _isLoading,
+                      onPrimary: () => runOnce(_save),
+                      busy: inFlight,
                       destructive: isEditing && !widget.purchase!.isCanceled
                           ? AppActionButton(
                               label: 'Cancelar la compra',
                               kind: AppButtonKind.destructive,
-                              onPressed: _isLoading ? null : _cancelPurchase,
+                              onPressed: inFlight
+                                  ? null
+                                  : () => runOnce(_cancelPurchase),
                             )
                           : null,
                     ),
@@ -591,7 +614,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                     style: AppText.rowTitle(context),
                   ),
                   Text(
-                    '${_quantityWithUnit(quantity, unitOf(item['materialId']))}  ·  Bs. ${fixed2(quantity * (item['unitPrice'] as double))}',
+                    '${quantityWithUnit(quantity, unitOf(item['materialId'])?.name)}  ·  Bs. ${fixed2(quantity * (item['unitPrice'] as double))}',
                     style: AppText.rowSubtitle(context),
                   ),
                 ],
@@ -632,22 +655,50 @@ class _AddMaterialItemSheet extends ConsumerStatefulWidget {
       _AddMaterialItemSheetState();
 }
 
-class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
+class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet>
+    with SingleFlight<_AddMaterialItemSheet>, LiveValidation<_AddMaterialItemSheet> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
   final _priceController = TextEditingController();
   int? _selectedMaterialId;
   String? _selectedMaterialName;
-  String? _materialError;
   double _fractionQuantity = 0;
-  String? _quantityError;
   late final LinkedPriceController _container = LinkedPriceController(
     price: _priceController,
   );
+  late final String _initialSignature;
+
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {}
+
+  String? get _materialError =>
+      _duplicateError(_selectedMaterialId) ??
+      (submitAttempted && _selectedMaterialId == null
+          ? 'Selecciona un material'
+          : null);
+
+  String? get _quantityError =>
+      submitAttempted && _isContainer(_selectedMaterialId) && _fractionQuantity <= 0
+          ? 'Selecciona una cantidad'
+          : null;
+
+  String _signature() => [
+    _selectedMaterialId,
+    _quantityController.text,
+    _fractionQuantity,
+    _priceController.text,
+  ].join('\u0000');
 
   @override
   void initState() {
     super.initState();
+    _initialSignature = _signature();
     _quantityController.addListener(() {
       if (!_isContainer(_selectedMaterialId)) {
         setState(() => _container.setQuantity(_currentQuantity));
@@ -690,13 +741,11 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
   void _resetFor(double? pricePerUnit) {
     _fractionQuantity = 0;
-    _quantityError = null;
     _quantityController.clear();
     _container.setQuantity(0);
     _container.setPrice(pricePerUnit);
   }
 
-  // Elegir un material que ya está en la compra se avisa al instante.
   String? _duplicateError(int? materialId) =>
       materialId != null && widget.existingMaterialIds.contains(materialId)
       ? 'Ese material ya está en la compra. Quítalo de la lista o cambia su cantidad con + y −.'
@@ -704,7 +753,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
   void _showCreateMaterialSheet() {
     dismissKeyboard();
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => MaterialDialog(
         onSaved: (materialId, materialName, pricePerUnit, _) {
@@ -712,9 +761,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
             setState(() {
               _selectedMaterialId = materialId;
               _selectedMaterialName = materialName;
-              _materialError = _duplicateError(materialId);
               _resetFor(pricePerUnit);
-              // El stock inicial del material ya quedó como su propia compra.
               _quantityController.clear();
             });
           }
@@ -724,22 +771,8 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
   }
 
   void _add() {
-    final valid = _formKey.currentState!.validate();
-    if (_selectedMaterialId == null) {
-      setState(() => _materialError = 'Selecciona un material');
-      return;
-    }
-    final duplicate = _duplicateError(_selectedMaterialId);
-    if (duplicate != null) {
-      setState(() => _materialError = duplicate);
-      return;
-    }
-    final container = _isContainer(_selectedMaterialId);
-    if (container && _fractionQuantity <= 0) {
-      setState(() => _quantityError = 'Selecciona una cantidad');
-      return;
-    }
-    if (!valid) return;
+    final valid = validateForm();
+    if (_materialError != null || _quantityError != null || !valid) return;
     final quantity = roundQuantity(
       _currentQuantity,
       unitType: _unitOf(_selectedMaterialId)?.type ?? 'medida',
@@ -756,6 +789,18 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _quantityController,
+        _priceController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final materials = ref
         .watch(materialProvider)
         .materials
@@ -794,7 +839,6 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                   setState(() {
                     _selectedMaterialId = val;
                     _selectedMaterialName = mat?.name;
-                    _materialError = _duplicateError(val);
                     _resetFor(mat?.pricePerUnit);
                   });
                 },
@@ -812,7 +856,6 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
                   value: _fractionQuantity,
                   onChanged: (v) => setState(() {
                     _fractionQuantity = v;
-                    _quantityError = null;
                     _container.setQuantity(v);
                   }),
                 )
@@ -877,7 +920,8 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet> {
               FormActions(
                 onSecondary: () => Navigator.pop(context),
                 primaryLabel: 'Agregar',
-                onPrimary: _add,
+                onPrimary: () => runOnce(() async => _add()),
+                busy: inFlight,
               ),
             ],
         ),

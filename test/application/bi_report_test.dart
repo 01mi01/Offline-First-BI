@@ -8,10 +8,6 @@ import 'package:offline_first_bi/presentation/pages/business_intelligence_page.d
 import 'package:offline_first_bi/theme/app_theme.dart';
 import '../support/bi_harness.dart';
 
-// Business Intelligence: cada indicador sobre una base Drift real en memoria y
-// los providers reales, con ventas y compras de distintas fechas, una venta
-// cancelada y registros con fecha futura.
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -19,7 +15,6 @@ void main() {
   setUp(h.setUp);
   tearDown(h.tearDown);
 
-  // Atajos a los ayudantes del arnés.
   DateTime day(int offset, [int hour = 12]) => h.day(offset, hour);
   final refresh = h.refresh;
   final newCategory = h.newCategory;
@@ -38,12 +33,12 @@ void main() {
   group('indicators', () {
     test('summary excludes canceled and future-dated records', () async {
       final p = await newProduct('Tote bag negra');
-      await sell(day(0), p, 2, 100); // 200
-      await sell(day(-5), p, 1, 50); // 50
-      await sell(day(3), p, 1, 999); // futura: no cuenta
-      await sell(day(-1), p, 1, 777); // se cancela
+      await sell(day(0), p, 2, 100);
+      await sell(day(-5), p, 1, 50);
+      await sell(day(3), p, 1, 999);
+      await sell(day(-1), p, 1, 777);
       await spend(day(-2), 30);
-      await spend(day(4), 888); // futura: no cuenta
+      await spend(day(4), 888);
       await h.cancelSaleOf(777);
       await refresh();
 
@@ -66,7 +61,7 @@ void main() {
       await sell(day(0), a, 1, 300);
       await sell(day(-1), b, 5, 20);
       await sell(day(-2), b, 3, 20);
-      await sell(day(2), a, 10, 1000); // futura
+      await sell(day(2), a, 10, 1000);
       await refresh();
 
       final entries = report().salesByProduct;
@@ -80,7 +75,7 @@ void main() {
     test('sales by category treats "Sin categoría" as a normal category', () async {
       final miniaturas = await newCategory('Miniaturas');
       final a = await newProduct('Tote bag negra', categoryId: miniaturas);
-      final b = await newProduct('Pines grandes'); // sin categoría
+      final b = await newProduct('Pines grandes');
       await sell(day(0), a, 1, 100);
       await sell(day(0), b, 4, 10);
       await refresh();
@@ -117,32 +112,30 @@ void main() {
 
     test('sales by event use each sale\'s own date, not the event\'s', () async {
       final p = await newProduct('Tote bag negra');
-      // El evento duró hace un mes, pero las ventas tienen fechas propias.
       final feria = await newEvent('Feria de Arte', day(-40), day(-38));
       final octubre = await newEvent('Feria de Octubre', day(-1), null);
       await sell(day(-3), p, 1, 100, eventId: feria);
-      await sell(day(-60), p, 1, 500, eventId: feria); // fuera del periodo
+      await sell(day(-60), p, 1, 500, eventId: feria);
       await sell(day(0), p, 2, 40, eventId: octubre);
-      await sell(day(0), p, 1, 10); // sin evento
-      await sell(day(5), p, 1, 999, eventId: octubre); // futura
+      await sell(day(0), p, 1, 10);
+      await sell(day(5), p, 1, 999, eventId: octubre);
       await refresh();
 
       final range = ReportFilters(startDate: day(-10), endDate: day(0));
       final entries = report(range).salesByEvent;
       expect(amounts(entries), {'Feria de Arte': 100, 'Feria de Octubre': 80});
       expect(entries.first.label, 'Feria de Arte');
-      // Sin filtro de fechas entra la venta antigua del evento.
       expect(amounts(report().salesByEvent), {'Feria de Arte': 600, 'Feria de Octubre': 80});
     });
 
     test('purchases by material add up item spending, expenses excluded', () async {
       final tela = await newMaterial('Tela negra');
       final resinaA = await newMaterial('Resina parte A');
-      await buyMaterial(day(0), tela, 3, 20); // 60
-      await buyMaterial(day(-2), tela, 2, 20); // 40
-      await buyMaterial(day(-1), resinaA, 1, 15); // 15
-      await buyMaterial(day(6), resinaA, 100, 100); // futura
-      await spend(day(0), 500); // gasto general: sin material
+      await buyMaterial(day(0), tela, 3, 20);
+      await buyMaterial(day(-2), tela, 2, 20);
+      await buyMaterial(day(-1), resinaA, 1, 15);
+      await buyMaterial(day(6), resinaA, 100, 100);
+      await spend(day(0), 500);
       await refresh();
 
       final entries = report().purchasesByMaterial;
@@ -151,7 +144,6 @@ void main() {
       expect(entries[0].quantity, 5);
       expect(entries[0].unit, isNotNull);
       expect(entries[1].amount, 15);
-      // El gasto sí cuenta en el resumen.
       expect(report().summary.gastos, 615);
     });
 
@@ -184,7 +176,6 @@ void main() {
       await newProduct('Tote bag beige', stock: 1, isActive: false);
       await refresh();
 
-      // Un rango sin ningún registro no cambia el stock bajo.
       final empty = report(
         ReportFilters(startDate: day(-400), endDate: day(-399)),
       );
@@ -246,7 +237,6 @@ void main() {
         long.buckets.fold<double>(0, (s, b) => s + b.ingresos),
         140,
       );
-      // Meses consecutivos, sin huecos.
       for (var i = 1; i < long.buckets.length; i++) {
         final prev = long.buckets[i - 1].start;
         expect(
@@ -298,9 +288,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Primero se muestra la configuración; al confirmarla, el panel.
       if (confirm) {
-        // El botón va al final del contenido que se desplaza.
         await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.pumpAndSettle();
@@ -319,13 +307,11 @@ void main() {
 
       await pumpPage(tester);
 
-      // El título se desplaza con el panel: puede quedar fuera de la vista.
       expect(
         find.text('Business Intelligence', skipOffstage: false),
         findsOneWidget,
       );
       expect(find.text('Próximamente'), findsNothing);
-      // Los predeterminados de la configuración.
       for (final title in [
         'Ventas por producto',
         'Ventas por categoría',
@@ -337,9 +323,9 @@ void main() {
       ]) {
         expect(find.text(title), findsOneWidget, reason: title);
       }
-      expect(find.text('Bs. 100.00'), findsWidgets); // ingresos
-      expect(find.text('Bs. 20.00'), findsWidgets); // gastos
-      expect(find.text('Bs. 80.00'), findsOneWidget); // balance
+      expect(find.text('Bs. 100.00'), findsWidgets);
+      expect(find.text('Bs. 20.00'), findsWidgets);
+      expect(find.text('Bs. 80.00'), findsOneWidget);
       expect(find.text('Agotado'), findsOneWidget);
       expect(find.text('Feria de Arte'), findsOneWidget);
     });
@@ -353,10 +339,9 @@ void main() {
       await refresh();
       await pumpPage(tester, confirm: false);
 
-      // Nada de datos hasta confirmar la configuración.
       expect(find.byKey(const ValueKey('bi-section-salesByProduct')), findsNothing);
       expect(find.byKey(const ValueKey('bi-period')), findsNothing);
-      expect(find.text('Bs. 600.00'), findsNothing);
+      expect(find.text('Bs. 600.00'), findsNothing);
 
       for (final preset in ['Hoy', 'Esta semana', 'Este mes', 'Este año']) {
         expect(find.text(preset), findsOneWidget);
@@ -376,28 +361,24 @@ void main() {
       expect(find.text('Cliente'), findsNothing);
       expect(find.text('Proveedor'), findsNothing);
 
-      // Con "Hoy" solo cuenta la venta de hoy.
       await tester.tap(find.text('Hoy'));
       await tester.pumpAndSettle();
-      // El botón va al final del contenido que se desplaza.
       await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.pumpAndSettle();
-      expect(find.text('Bs. 100.00'), findsWidgets);
-      expect(find.text('Bs. 600.00'), findsNothing);
+      expect(find.text('Bs. 100.00'), findsWidgets);
+      expect(find.text('Bs. 600.00'), findsNothing);
       expect(find.byKey(const ValueKey('bi-period')), findsOneWidget);
 
-      // Volver a configurar sin salir del módulo, y quitar el atajo.
       await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
       await tester.tap(find.text('Hoy').last);
       await tester.pumpAndSettle();
-      // El botón va al final del contenido que se desplaza.
       await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
       await tester.pumpAndSettle();
-      expect(find.text('Bs. 600.00'), findsWidgets);
+      expect(find.text('Bs. 600.00'), findsWidgets);
     });
   });
 }

@@ -16,14 +16,6 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
 
-// Verifica que ReportExportRepository (PDF y Excel, ventas y compras) genere
-// archivos reales y que su contenido refleje los datos YA FILTRADOS que se le
-// pasan (no el dataset completo) -- nunca un dispositivo físico. share_plus y
-// path_provider son plugins con canal de plataforma; aquí se sustituyen sus
-// PlatformInterface por fakes en proceso (patrón estándar de Flutter:
-// extender, no implementar, para satisfacer PlatformInterface.verifyToken),
-// de modo que todo corre dentro de `flutter test` en la VM del host y escribe
-// archivos reales en un directorio temporal real de esta máquina.
 class _FakePathProviderPlatform extends PathProviderPlatform {
   _FakePathProviderPlatform(this.tempPath);
   final String tempPath;
@@ -48,9 +40,6 @@ class _FakeSharePlatform extends SharePlatform {
   }
 }
 
-// excel decodifica un número entero (p. ej. 200.0) como IntCellValue aunque
-// se haya escrito con xl.DoubleCellValue, así que la comparación numérica se
-// hace por valor, no por el subtipo exacto de CellValue.
 num _cellNum(xl.CellValue? value) => switch (value) {
       xl.IntCellValue v => v.value,
       xl.DoubleCellValue v => v.value,
@@ -58,7 +47,6 @@ num _cellNum(xl.CellValue? value) => switch (value) {
     };
 
 void main() {
-  // rootBundle (fuente de los PDF) necesita el binding de pruebas.
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late Directory tempDir;
@@ -121,9 +109,6 @@ void main() {
       eventName: null,
     ),
   ];
-  // Simula lo que la página de reportes realmente pasa al exportar: solo la
-  // fila que sobrevivió al filtro (ver report_detail_page.dart -- exporta
-  // siempre widget.sales/widget.purchases ya filtrados por el caller).
   final filteredSaleRows = [fullSaleRows.first];
 
   final fullPurchaseRows = [
@@ -171,13 +156,11 @@ void main() {
         xl.TextCellValue('Notas'),
       ]);
 
-      // Solo debe haber 1 fila de datos (la filtrada), no las 3 del dataset completo.
       expect(rows.length, 2);
       final dataRow = rows[1];
       expect(dataRow[1]!.value, xl.TextCellValue('John Smith (incluida)'));
       expect(_cellNum(dataRow[6]!.value), 200);
 
-      // Los clientes excluidos por el filtro no deben aparecer en ninguna celda.
       final allText = rows
           .expand((r) => r)
           .whereType<xl.Data>()
@@ -192,13 +175,11 @@ void main() {
 
       final excel = xl.Excel.decodeBytes(bytes);
       final rows = excel.tables['Reporte']!.rows;
-      expect(rows, hasLength(1)); // solo el encabezado
+      expect(rows, hasLength(1));
     });
   });
 
   group('exportSalesExcel with per-line filtering', () {
-    // Venta mixta de 120 (descuento 12) filtrada a "Sin categoría": solo la
-    // línea Pines grandes (20, con 2 de descuento) debe salir en el reporte.
     SaleReportRow mixedSaleFilteredToPinesGrandes() => SaleReportRow(
       sale: buildSale(1, DateTime(2024, 1, 10), 108, 12),
       clientName: 'John Smith',
@@ -230,9 +211,9 @@ void main() {
       final sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
 
       final data = sheet.rows[1];
-      expect(_cellNum(data[4]!.value), 20); // subtotal de la línea
-      expect(_cellNum(data[5]!.value), 2); // descuento prorrateado
-      expect(_cellNum(data[6]!.value), 18); // neto (no 108)
+      expect(_cellNum(data[4]!.value), 20);
+      expect(_cellNum(data[5]!.value), 2);
+      expect(_cellNum(data[6]!.value), 18);
     });
 
     test('a "Detalle" sheet lists one row per included line with its category', () async {
@@ -243,14 +224,13 @@ void main() {
       final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
       final detail = xl.Excel.decodeBytes(bytes).tables['Detalle']!;
 
-      expect(detail.rows, hasLength(2)); // encabezado + 1 línea
+      expect(detail.rows, hasLength(2));
       final row = detail.rows[1];
       expect(row[2]!.value, xl.TextCellValue('Pines grandes'));
       expect(row[3]!.value, xl.TextCellValue('Sin categoría'));
       expect(row[4]!.value, xl.TextCellValue('B'));
-      expect(_cellNum(row[6]!.value), 10); // precio unitario
-      expect(_cellNum(row[7]!.value), 20); // subtotal bruto de la línea
-      // Estuches (la otra línea de la venta) no debe aparecer.
+      expect(_cellNum(row[6]!.value), 10);
+      expect(_cellNum(row[7]!.value), 20);
       final text = detail.rows.expand((r) => r).whereType<xl.Data>().join(' ');
       expect(text, isNot(contains('Estuches')));
     });
@@ -313,17 +293,14 @@ void main() {
       final pdf = await lastPdfText();
       final text = pdf.text;
 
-      // Encabezados de columna
       expect(text, contains('Ubicación'));
       expect(text, contains('Categoría'));
-      // Datos con tilde y ñ
       expect(text, contains('Ana'));
       expect(text, contains('Martínez'));
       expect(text, contains('Urubó'));
       expect(text, contains('Exposición'));
       expect(text, contains('Arte'));
       expect(text, contains('categoría'));
-      // Nada roto: ni caracteres de reemplazo ni la forma sin tilde.
       expect(text, isNot(contains('\uFFFD')));
       expect(text, isNot(contains('Ubicacion')));
       expect(text, isNot(contains('Pena ')));
@@ -369,7 +346,6 @@ void main() {
     });
 
     test('the extractor really detects garbling (control: an unsupported char is not returned as typed)', () {
-      // Sin ToUnicode para la fuente, cualquier glifo cae en U+FFFD.
       final pdf = PdfText.extract(
         Uint8List.fromList(
           '%PDF-1.5\n1 0 obj\n<<>>\nstream\nBT /F1 10 Tf [<0001>]TJ ET\nendstream\nendobj\n'
@@ -380,10 +356,6 @@ void main() {
     });
   });
 
-  // Venta multi-producto con descuento: Tote bag negra 3 x 8 (B) = 24 y Set de pines pequeños
-  // 1 x 16 (A) = 16 -> subtotal 40, descuento 4, total 36. discountShare se
-  // pasa prorrateado (2.4 / 1.6) tal como lo entrega ReportService; los
-  // exports no deben mostrarlo por línea.
   group('sales exports: line totals and sale-level discount', () {
     SaleReportRow multiProductSale() => SaleReportRow(
       sale: buildSale(1, DateTime(2024, 3, 5), 36, 4),
@@ -424,10 +396,6 @@ void main() {
 
     const summary = SalesSummary(count: 1, totalAmount: 36, totalDiscount: 4);
 
-    // package:pdf escribe cada palabra como una operación de texto aparte
-    // ('Bs.' y '24.00' son dos runs), así que los montos y textos de varias
-    // palabras se comprueban sobre el texto unido; las palabras sueltas,
-    // sobre los runs.
     Future<PdfText> salesPdf() async {
       await repository.exportSalesPdf(
         title: 'Reporte de Ventas',
@@ -442,10 +410,8 @@ void main() {
     test('PDF: each product line shows its own gross total, not the discounted sale total', () async {
       final text = (await salesPdf()).text;
 
-      expect(text, contains('Bs. 24.00')); // Tote bag negra: 3 x 8
-      expect(text, contains('Bs. 16.00')); // Set de pines pequeños: 1 x 16
-      // Ni el total de la venta con descuento (36) ni el neto prorrateado por
-      // línea (21.60 / 14.40) deben aparecer como total de una línea.
+      expect(text, contains('Bs. 24.00'));
+      expect(text, contains('Bs. 16.00'));
       expect(text, isNot(contains('Bs. 21.60')));
       expect(text, isNot(contains('Bs. 14.40')));
       expect(text, isNot(contains('Bs. 23.00')));
@@ -456,7 +422,6 @@ void main() {
 
       expect(pdf.text, contains('Bs. 8.00'));
       expect(pdf.text, contains('Bs. 16.00'));
-      // La letra del tipo de precio sigue visible, pero en su propia columna.
       expect(pdf.runs, contains('Tipo'));
       expect(pdf.runs, contains('B'));
       expect(pdf.runs, contains('A'));
@@ -465,13 +430,11 @@ void main() {
     test('PDF: the sale-level discount is shown (summary and sale table)', () async {
       final pdf = await salesPdf();
 
-      expect(pdf.text, contains('Descuentos: Bs. 4.00')); // resumen
-      expect(pdf.runs, contains('Descuento')); // columna de la tabla
+      expect(pdf.text, contains('Descuentos: Bs. 4.00'));
+      expect(pdf.runs, contains('Descuento'));
       expect(pdf.runs, contains('Subtotal'));
-      expect(pdf.text, contains('Bs. 40.00')); // subtotal de la venta
-      expect(pdf.text, contains('Bs. 36.00')); // total de la venta
-      // El descuento de la venta figura en el resumen y en su fila, y en
-      // ningún otro lado (ninguna línea de producto lo repite).
+      expect(pdf.text, contains('Bs. 40.00'));
+      expect(pdf.text, contains('Bs. 36.00'));
       expect('Bs. 4.00'.allMatches(pdf.text), hasLength(2));
     });
 
@@ -480,11 +443,11 @@ void main() {
       final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
       final sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
 
-      expect(sheet.rows, hasLength(2)); // encabezado + 1 venta
+      expect(sheet.rows, hasLength(2));
       final data = sheet.rows[1];
-      expect(_cellNum(data[4]!.value), 40); // subtotal
-      expect(_cellNum(data[5]!.value), 4); // descuento
-      expect(_cellNum(data[6]!.value), 36); // total
+      expect(_cellNum(data[4]!.value), 40);
+      expect(_cellNum(data[5]!.value), 4);
+      expect(_cellNum(data[6]!.value), 36);
     });
 
     test('Excel "Detalle": keeps one row per line but carries no per-line discount', () async {
@@ -502,7 +465,7 @@ void main() {
         xl.TextCellValue('Precio unitario'),
         xl.TextCellValue('Subtotal'),
       ]);
-      expect(detail.rows, hasLength(3)); // encabezado + 2 líneas
+      expect(detail.rows, hasLength(3));
 
       final toteNegra = detail.rows[1];
       expect(toteNegra[2]!.value, xl.TextCellValue('Tote bag negra'));
@@ -514,8 +477,6 @@ void main() {
       expect(setPines[2]!.value, xl.TextCellValue('Set de pines pequeños'));
       expect(_cellNum(setPines[7]!.value), 16);
 
-      // Sumar las líneas da el subtotal de la venta; el descuento (4) solo
-      // existe en la hoja "Reporte", así que no se cuenta dos veces.
       final lineSum = _cellNum(toteNegra[7]!.value) + _cellNum(setPines[7]!.value);
       expect(lineSum, 40);
     });
@@ -553,7 +514,6 @@ void main() {
       ],
     );
 
-    // Un gasto general no tiene ítems: solo aporta su fila de resumen.
     PurchaseReportRow generalExpense() => PurchaseReportRow(
       purchase: PurchaseModel(
         id: 2,
@@ -583,11 +543,11 @@ void main() {
         expect(pdf.runs, contains(header));
       }
       expect(pdf.text, contains('Tela beige'));
-      expect(pdf.runs, contains('2.00')); // cantidad decimal a dos decimales
+      expect(pdf.runs, contains('2'));
       expect(pdf.text, contains('Bs. 3.50'));
       expect(pdf.text, contains('Bs. 7.00'));
       expect(pdf.text, contains('Resina parte A'));
-      expect(pdf.runs, contains('2.50'));
+      expect(pdf.runs, contains('2.5'));
       expect(pdf.text, contains('Bs. 2.00'));
       expect(pdf.text, contains('Bs. 5.00'));
     });
@@ -613,7 +573,6 @@ void main() {
       final bytes = await File(fakeShare.shareCalls.single.single.path).readAsBytes();
       final excel = xl.Excel.decodeBytes(bytes);
 
-      // La hoja de resumen se mantiene igual (una fila por compra).
       expect(excel.tables['Reporte']!.rows, hasLength(3));
 
       final detail = excel.tables['Detalle']!;
@@ -625,7 +584,7 @@ void main() {
         xl.TextCellValue('Precio unitario'),
         xl.TextCellValue('Subtotal'),
       ]);
-      expect(detail.rows, hasLength(3)); // encabezado + 2 líneas (el gasto no aporta)
+      expect(detail.rows, hasLength(3));
 
       final telaBeige = detail.rows[1];
       expect(telaBeige[1]!.value, xl.TextCellValue('Riverside Supply Co.'));
@@ -771,7 +730,7 @@ void main() {
     test('PDF: sale dates, purchase dates and the generation stamp', () async {
       await repository.exportSalesPdf(
         title: 'Reporte de Ventas',
-        rows: filteredSaleRows, // venta del 01/01/2024
+        rows: filteredSaleRows,
         summary: const SalesSummary(count: 1, totalAmount: 200, totalDiscount: 0),
       );
       var text = PdfText.extract(
@@ -831,14 +790,6 @@ void main() {
   });
 
   group('exportSalesPdf / exportPurchasesPdf', () {
-    // package:pdf produce bytes comprimidos/binarios: no hay una forma
-    // confiable de leer el texto de vuelta sin una dependencia adicional de
-    // extracción de PDF (no presente en este proyecto). Se verifica en su
-    // lugar: (1) que el archivo se genera y no está vacío, (2) que no revienta
-    // con una lista vacía (filtro sin resultados), y (3) que el tamaño del
-    // archivo cambia según la cantidad de filas que realmente se le pasan --
-    // evidencia indirecta pero real de que el contenido depende de los datos
-    // filtrados y no de un dataset fijo.
     test('exportSalesPdf writes a non-empty file for filtered rows', () async {
       await repository.exportSalesPdf(
         title: 'Reporte ventas PDF',

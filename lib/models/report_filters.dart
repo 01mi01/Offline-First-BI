@@ -1,6 +1,5 @@
 import 'purchase_kind.dart';
 
-// Modelo de estado de filtros para el módulo de reportes
 class ReportFilters {
   final DateTime? startDate;
   final DateTime? endDate;
@@ -11,11 +10,8 @@ class ReportFilters {
   final int? clientId;
   final int? supplierId;
   final String? priceType;
-  // País y ciudad de la ubicación vinculada al registro. Con alguno elegido,
-  // los registros sin ubicación quedan fuera.
   final String? country;
   final String? city;
-  // Solo compras: materiales, gastos o ambos.
   final PurchaseKind purchaseKind;
 
   const ReportFilters({
@@ -33,22 +29,7 @@ class ReportFilters {
     this.purchaseKind = PurchaseKind.all,
   });
 
-  // Con solo "Desde" (sin "Hasta") se filtra ese único día.
   DateTime? get effectiveEndDate => endDate ?? startDate;
-
-  bool get hasActive =>
-      purchaseKind != PurchaseKind.all ||
-      startDate != null ||
-      endDate != null ||
-      categoryId != null ||
-      productId != null ||
-      eventId != null ||
-      locationId != null ||
-      clientId != null ||
-      supplierId != null ||
-      country != null ||
-      city != null ||
-      priceType != null;
 
   ReportFilters copyWith({
     DateTime? startDate,

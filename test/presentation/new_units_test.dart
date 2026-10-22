@@ -7,13 +7,12 @@ import 'package:offline_first_bi/application/database_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/unit_repository.dart';
 import 'package:offline_first_bi/presentation/pages/materials_page.dart';
+import 'package:offline_first_bi/config/quantity_format.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'search_helpers.dart';
 
-// Lista simplificada de unidades (12): contenedor, paquete, rollo y tira son
-// contenedores (con fracciones); el resto son medidas, más el comodín "otro".
 void main() {
   late AppDatabase db;
 
@@ -152,7 +151,6 @@ void main() {
       }
       expect(find.text('Cantidad utilizada (tira)'), findsOneWidget);
       expect(find.text('Stock disponible: 5 tiras'), findsOneWidget);
-      // Sin campo de número libre.
       expect(find.byType(WholeNumberQuantityField), findsNothing);
     });
 
@@ -180,7 +178,7 @@ void main() {
 
       expect(find.byType(FractionQuantityPicker), findsNothing);
       expect(find.byType(WholeNumberQuantityField), findsNothing);
-      expect(find.text('Stock disponible: 3.00 metros'), findsOneWidget);
+      expect(find.text('Stock disponible: 3 metros'), findsOneWidget);
 
       final field = find.widgetWithText(TextFormField, '0');
       await tester.enterText(field, '1.5');
@@ -193,7 +191,7 @@ void main() {
       await openUsage(tester, 'Papel para stickers');
 
       expect(find.byType(FractionQuantityPicker), findsNothing);
-      expect(find.text('Stock disponible: 40.00 centímetros'), findsOneWidget);
+      expect(find.text('Stock disponible: 40 centímetros'), findsOneWidget);
     });
   });
 }

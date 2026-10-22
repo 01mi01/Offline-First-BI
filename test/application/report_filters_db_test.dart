@@ -10,27 +10,6 @@ import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/models/sale_item_model.dart';
 import 'package:offline_first_bi/models/sale_model.dart';
 
-// Cobertura combinatoria exhaustiva de ReportFilters / ReportService.filterSales
-// y filterPurchases contra una base Drift sembrada en memoria.
-//
-// Los filtros se agrupan por "dimensión" tal como los expone
-// ReportFiltersWidget: el rango de fechas (startDate + endDate) cuenta como
-// una sola dimensión, igual que en la enumeración que dio el usuario ("por
-// ejemplo rango de fechas, categoría, producto, evento, ubicación, tipo de
-// precio, cliente o proveedor").
-//
-// Ventas: 7 dimensiones (rango de fechas, cliente, ubicación, evento,
-// producto, categoría, tipo de precio). Compras: 4 dimensiones (rango de
-// fechas, proveedor, ubicación, evento) -- filterPurchases no usa cliente,
-// producto, categoría ni tipo de precio (confirmado leyendo report_service.dart,
-// donde esos tres campos simplemente no aparecen en el cuerpo del método).
-//
-// Los resultados "esperados" se calculan con _expectedSaleIds /
-// _expectedPurchaseIds, una implementación paralela e independiente que NO
-// reutiliza el cuerpo de ReportService.filterSales/filterPurchases (usa
-// límites de fecha con un día-siguiente exclusivo en vez de
-// isAfter(endDate+1), y comparación por línea en vez de sets), para no limitarse a verificar
-// que el servicio esté de acuerdo consigo mismo.
 bool _inDateRange(DateTime date, DateTime? start, DateTime? end) {
   if (start != null) {
     final startOfDay = DateTime(start.year, start.month, start.day);
@@ -58,8 +37,6 @@ Set<int> _expectedSaleIds({
 
     final items = itemsMap[s.id] ?? const <SaleItemModel>[];
 
-    // Producto, categoría y tipo de precio se evalúan por línea: la venta
-    // entra solo si UNA MISMA línea cumple todos los filtros de línea activos.
     final hasLineFilters =
         f.productId != null || f.categoryId != null || f.priceType != null;
     if (hasLineFilters) {
@@ -102,11 +79,11 @@ void main() {
   final service = ReportService();
 
   late int catBolsasId, catLibrosId, catSinCategoriaId;
-  late int p1Id, p2Id, p3Id; // Pines grandes (Bolsas), Set de pines pequeños (Libros), Stickers (Sin categoría)
-  late int l1Id, l2Id, l3Id; // L3 no se usa en ninguna venta/compra
-  late int e1Id, e2Id, e3Id; // E3 no se usa en ninguna venta/compra
-  late int cl1Id, cl2Id, cl3Id; // CL3 no se usa en ninguna venta
-  late int su1Id, su2Id, su3Id; // SU3 no se usa en ninguna compra
+  late int p1Id, p2Id, p3Id;
+  late int l1Id, l2Id, l3Id;
+  late int e1Id, e2Id, e3Id;
+  late int cl1Id, cl2Id, cl3Id;
+  late int su1Id, su2Id, su3Id;
 
   late List<ProductModel> allProducts;
   late List<SaleModel> allSales;
@@ -128,8 +105,6 @@ void main() {
     catLibrosId = await db
         .into(db.categories)
         .insert(CategoriesCompanion.insert(name: 'Libros'));
-    // AppDatabase.onCreate ya siembra "Sin categoría" en toda base nueva
-    // (ver app_database.dart), así que aquí solo se recupera su id.
     catSinCategoriaId = (await (db.select(
       db.categories,
     )..where((c) => c.name.equals('Sin categoría'))).getSingle()).id;
@@ -204,10 +179,6 @@ void main() {
         .into(db.suppliers)
         .insert(SuppliersCompanion.insert(name: 'Aurelia Studio'));
 
-    // Ventas. S1 cae exactamente en el límite inicial del rango de prueba,
-    // S3 exactamente en el límite final; S4/S5 quedan justo fuera (después y
-    // antes, respectivamente), para probar que los límites del rango son
-    // inclusivos y que un rango de un solo día también funciona.
     await saleRepo.createSale(
       clientId: cl1Id,
       locationId: l1Id,
@@ -255,11 +226,6 @@ void main() {
       totalAmount: 80,
       discount: 0,
       finalAmount: 80,
-      // Fuera del rango (después del límite final). NO se usa 2024-02-01
-      // (= rangeEnd + 1 día exacto) a propósito: esa fecha exacta dispara un
-      // bug real de límite en filterSales/filterPurchases (ver el grupo
-      // 'known bugs' más abajo), así que para el resto de la suite se usa
-      // una fecha claramente fuera de rango que no toca ese borde.
       date: DateTime(2024, 2, 2),
       notes: 'S4',
       items: [
@@ -273,17 +239,13 @@ void main() {
       totalAmount: 50,
       discount: 0,
       finalAmount: 50,
-      date: DateTime(2023, 12, 31), // fuera del rango (antes del límite inicial)
+      date: DateTime(2023, 12, 31),
       notes: 'S5',
       items: [
         {'productId': p2Id, 'quantity': 1, 'unitPrice': 50.0, 'priceType': 'A'},
       ],
     );
 
-    // Compras. isMaterial:true con items:[] es válido y no requiere sembrar
-    // materiales/unidades para probar los filtros de compras (confirmado en
-    // PurchaseRepository.createPurchase: los ítems solo se procesan si la
-    // lista no está vacía).
     await purchaseRepo.createPurchase(
       supplierId: su1Id,
       isMaterial: true,
@@ -322,8 +284,6 @@ void main() {
       isMaterial: true,
       description: 'Pasaje de avión',
       totalAmount: 20,
-      // Ver el comentario sobre S4 más arriba: se evita a propósito la fecha
-      // exacta rangeEnd + 1 día por el bug documentado en el grupo 'known bugs'.
       date: DateTime(2024, 2, 2),
       locationId: l2Id,
       eventId: e2Id,
@@ -335,7 +295,7 @@ void main() {
       isMaterial: true,
       description: 'Hotel',
       totalAmount: 10,
-      date: DateTime(2023, 12, 31), // fuera del rango (antes)
+      date: DateTime(2023, 12, 31),
       locationId: l1Id,
       eventId: e1Id,
       notes: 'PU5',
@@ -400,22 +360,6 @@ void main() {
   }
 
   group('regression: endDate + 1 day boundary (previously a known bug)', () {
-    // Previously a KNOWN BUG in report_service.dart's date-range check: it
-    // used `s.date.isAfter(filters.endDate!.add(const Duration(days: 1)))`,
-    // an exclusive upper threshold that DateTime.isAfter treats an exact
-    // match against as NOT after -- so a record dated exactly at midnight on
-    // the day right after endDate leaked into the filtered result, one full
-    // day past the requested end date. Realistic because dates picked via
-    // showDatePicker (see ReportFiltersWidget) and many seeded/manual dates
-    // in this app carry no time component.
-    //
-    // Discovered while seeding this file's S4/PU4 boundary fixtures at
-    // exactly rangeEnd + 1 day; the fixtures were moved off that exact
-    // boundary (see the comments on S4/PU4 above) so the rest of the suite
-    // wasn't contaminated, and these two tests pin the exact repro on their
-    // own. Now fixed in report_service.dart (endExclusive computed from
-    // filters.endDate truncated to date-only, compared with isBefore), so
-    // these are kept as permanent regression tests instead of being deleted.
     test('a sale dated exactly at endDate + 1 day (midnight) is excluded', () {
       final oneDayAfterEndDate = rangeEnd.add(const Duration(days: 1));
       final leakingSale = SaleModel(
@@ -524,7 +468,6 @@ void main() {
           pairsChecked++;
         }
       }
-      // C(7,2) = 21
       expect(pairsChecked, 21);
     });
 
@@ -684,7 +627,6 @@ void main() {
           pairsChecked++;
         }
       }
-      // C(4,2) = 6
       expect(pairsChecked, 6);
     });
 
@@ -710,12 +652,10 @@ void main() {
       });
 
       test('filterPurchases ignores clientId/productId/categoryId/priceType entirely', () {
-        // Confirmed by reading report_service.dart: filterPurchases never
-        // reads those four ReportFilters fields, unlike filterSales.
         final withIrrelevantFilters = ReportFilters(
           startDate: rangeStart,
           endDate: rangeEnd,
-          clientId: cl2Id, // no purchase has a clientId at all
+          clientId: cl2Id,
           productId: p1Id,
           categoryId: catBolsasId,
           priceType: 'B',
@@ -749,14 +689,6 @@ void main() {
   });
 
   group('summarizeSaleRows / summarizePurchases / test-side balance over a filtered window', () {
-    // "Balance", "ventas por producto", "compras por material" y "top de
-    // productos más vendidos" NO existen hoy en la app (no hay ningún método
-    // ni en ReportService ni en ningún otro archivo bajo lib/ que los calcule
-    // -- se verificó con una búsqueda exhaustiva por esos términos). Lo único
-    // que se puede probar de forma honesta es lo que el servicio realmente
-    // expone: summarizeSaleRows y summarizePurchases. El "balance" de abajo es
-    // aritmética hecha aquí mismo, en el test, sobre esos dos resultados ya
-    // verificados -- no es una función de la app.
     test('totals for the [rangeStart, rangeEnd] window match hand computation', () {
       final filters = ReportFilters(startDate: rangeStart, endDate: rangeEnd);
       final sales = service.filterSales(
@@ -777,12 +709,10 @@ void main() {
       );
       final purchasesSummary = service.summarizePurchases(purchases);
 
-      // S1 (200) + S2 (40) + S3 (100) = 340
       expect(salesSummary.count, 3);
       expect(salesSummary.totalAmount, 340);
-      expect(salesSummary.totalDiscount, 10); // only S3 has a discount, of 10
+      expect(salesSummary.totalDiscount, 10);
 
-      // PU1 (100) + PU2 (30) + PU3 (70) = 200; PU2 is isMaterial:false
       expect(purchasesSummary.count, 3);
       expect(purchasesSummary.totalAmount, 200);
       expect(purchasesSummary.materialCount, 2);

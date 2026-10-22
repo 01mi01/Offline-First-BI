@@ -8,6 +8,10 @@ import 'location_dialog.dart';
 import '../../config/date_formatters.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
+import '../widgets/date_pickers.dart';
 import '../widgets/focus_utils.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/transaction_date_field.dart';
@@ -27,7 +31,8 @@ class EventDialog extends ConsumerStatefulWidget {
   ConsumerState<EventDialog> createState() => _EventDialogState();
 }
 
-class _EventDialogState extends ConsumerState<EventDialog> {
+class _EventDialogState extends ConsumerState<EventDialog>
+    with SingleFlight<EventDialog>, LiveValidation<EventDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _notesController;
@@ -36,8 +41,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
   DateTime? _endDate;
   late bool _isActive;
   String? _saveError;
-  // Tras un intento de guardar sin fecha de inicio se marca el campo.
-  bool _submitted = false;
+  late final String _initialSignature;
 
   @override
   void initState() {
@@ -48,7 +52,26 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     _startDate = widget.event?.startDate;
     _endDate = widget.event?.endDate;
     _isActive = widget.event?.isActive ?? true;
+    _initialSignature = _signature();
   }
+
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_saveError = null;}
+
+  String _signature() => [
+    _nameController.text,
+    _notesController.text,
+    _selectedLocationId,
+    _startDate,
+    _endDate,
+    _isActive,
+  ].join('\u0000');
 
   @override
   void dispose() {
@@ -59,34 +82,22 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
   Future<void> _pickStartDate() async {
     dismissKeyboard();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await showAppDatePicker(
+      context,
       initialDate: _startDate ?? appNow(),
       firstDate: transactionFirstDate,
       lastDate: transactionLastDate,
-      builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
-        child: child!,
-      ),
     );
     if (picked != null) setState(() => _startDate = picked);
   }
 
   Future<void> _pickEndDate() async {
     dismissKeyboard();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await showAppDatePicker(
+      context,
       initialDate: _endDate ?? _startDate ?? appNow(),
       firstDate: _startDate ?? transactionFirstDate,
       lastDate: transactionLastDate,
-      builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.cyanDark)),
-        child: child!,
-      ),
     );
     if (picked != null) {
       setState(() => _endDate = picked);
@@ -95,8 +106,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
   String _formatDate(DateTime date) => formatDate(date);
 
-  // Desactivar un evento (no se borra): deja de ofrecerse al registrar
-  // ventas y compras, pero sigue en el historial y en los reportes.
   Future<void> _onToggleActive(bool value) async {
     final confirm = await confirmCancellation(
       context,
@@ -106,7 +115,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
           : 'El evento no estará disponible para nuevos registros.',
       confirmLabel: value ? 'Activar' : 'Desactivar',
       confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
-      dismissLabel: 'Cancelar',
     );
     if (!confirm) return;
     setState(() => _isActive = value);
@@ -114,7 +122,7 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
   void _showAddLocationSheet() {
     dismissKeyboard();
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => LocationDialog(
         onSaved: (locationId) {
@@ -124,8 +132,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
     );
   }
 
-  // La fecha de fin no puede ser anterior a la de inicio (se avisa en cuanto
-  // pasa, también si se cambia el inicio después de elegir el fin).
   String? get _endDateError {
     final start = _startDate;
     final end = _endDate;
@@ -136,11 +142,10 @@ class _EventDialogState extends ConsumerState<EventDialog> {
   }
 
   String? get _startDateError =>
-      _submitted && _startDate == null ? 'Selecciona la fecha de inicio' : null;
+      submitAttempted && _startDate == null ? 'Selecciona la fecha de inicio' : null;
 
   Future<void> _save() async {
-    final valid = _formKey.currentState!.validate();
-    setState(() => _submitted = true);
+    final valid = validateForm();
     if (!valid || _startDate == null || _endDateError != null) return;
     setState(() => _saveError = null);
 
@@ -163,6 +168,18 @@ class _EventDialogState extends ConsumerState<EventDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _nameController,
+        _notesController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.event != null;
     final locations = ref
         .watch(locationProvider)
@@ -176,25 +193,23 @@ class _EventDialogState extends ConsumerState<EventDialog> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
-        onPrimary: _save,
+        onPrimary: () => runOnce(_save),
+        busy: inFlight,
       ),
       children: [
-        // Nombre del evento
         LabeledField(
           label: 'Nombre del evento',
           builder: (_) => TextFormField(
             autovalidateMode: AutovalidateMode.onUserInteraction,
             controller: _nameController,
             decoration: const InputDecoration(
-              hintText: 'Ej: Feria, exposición, etc.',
+              hintText: 'Nombre del evento',
             ),
             validator: validateName,
           ),
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Ubicación, con opción de crear una nueva. Búsqueda en línea: el botón
-        // va en la fila del campo y los resultados se abren debajo.
         SearchablePickerField<int>(
           label: 'Ubicación',
           searchHint: 'Buscar ubicación',
@@ -205,11 +220,13 @@ class _EventDialogState extends ConsumerState<EventDialog> {
             onlyActive: false,
           ),
           onChanged: (val) => setState(() => _selectedLocationId = val),
-          labelAction: FormAddButton(onPressed: _showAddLocationSheet),
+          labelAction: FormAddButton(
+            label: 'Nueva ubicación',
+            onPressed: _showAddLocationSheet,
+          ),
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Fechas
         AppDateField(
           label: 'Fecha de inicio',
           hint: 'Seleccionar fecha',
@@ -228,7 +245,6 @@ class _EventDialogState extends ConsumerState<EventDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Notas
         LabeledField(
           label: 'Notas',
           builder: (_) => TextFormField(
@@ -242,12 +258,13 @@ class _EventDialogState extends ConsumerState<EventDialog> {
           ),
         ),
 
-        // Estado: solo al editar
         if (isEditing) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Evento activo',
-            subtitle: _isActive ? 'Visible en el sistema' : 'Oculto en el sistema',
+            subtitle: _isActive
+                ? 'Disponible en el sistema'
+                : 'No disponible en el sistema',
             value: _isActive,
             onChanged: _onToggleActive,
           ),

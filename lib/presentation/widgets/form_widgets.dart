@@ -8,21 +8,6 @@ import 'record_list.dart' show imagePlaceholderColor;
 import 'app_style.dart';
 import 'form_style.dart';
 
-// Piezas comunes de los formularios (crear y editar): campo con su etiqueta,
-// selector de fecha, desplegable con alto limitado, interruptor de estado,
-// foto y botones de abajo. Los campos toman su aspecto de [AppFormTheme].
-
-// Campo con su etiqueta: un texto pequeño y tenue ENCIMA del campo, con, si
-// se da, un botón de acción ([action], p. ej. "+ Agregar") a la derecha de la
-// etiqueta. [builder] recibe siempre `null` como `labelText` (el campo no lleva
-// etiqueta flotante).
-//
-//   LabeledField(
-//     label: 'Nombre',
-//     builder: (_) => TextFormField(
-//       decoration: const InputDecoration(hintText: '...'),
-//     ),
-//   )
 class LabeledField extends StatelessWidget {
   final String label;
   final Widget Function(String? labelText) builder;
@@ -50,8 +35,6 @@ class LabeledField extends StatelessWidget {
           action: action,
           inset: math.max(0.0, inset),
         ),
-        // Sin botón, la etiqueta es una línea; con botón, la fila ya mide lo
-        // que un botón y no hace falta más espacio.
         SizedBox(height: action == null ? AppSpacing.s6 : 0),
         builder(null),
       ],
@@ -59,12 +42,8 @@ class LabeledField extends StatelessWidget {
   }
 }
 
-// Alto de la fila de una etiqueta con botón: el botón conserva su zona de toque
-// de 48 sin hacer más alto el hueco sobre el campo.
 const double _actionRowHeight = 36;
 
-// Título de una sección de un formulario (p. ej. "Carrito", "Materiales"): el
-// mismo texto de la etiqueta de un campo, con un [action] opcional a la derecha.
 class FormSectionLabel extends StatelessWidget {
   final String text;
   final Widget? action;
@@ -83,8 +62,6 @@ class FormSectionLabel extends StatelessWidget {
       padding: EdgeInsets.only(left: inset),
       child: Text(
         text,
-        // Fuera de un formulario (p. ej. los filtros de Reportes) conserva su
-        // tamaño de siempre.
         style: AppFormTheme.isActive(context)
             ? AppText.formLabel(context)
             : Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -106,9 +83,6 @@ class FormSectionLabel extends StatelessWidget {
   }
 }
 
-// Botón "+ Agregar" de un formulario: el mismo para agregar un cliente, un
-// proveedor, una ubicación o un material. Va a la derecha de la etiqueta del
-// campo, en el cian oscuro de los menús.
 class FormAddButton extends StatelessWidget {
   final VoidCallback onPressed;
   final String label;
@@ -135,8 +109,6 @@ class FormAddButton extends StatelessWidget {
   }
 }
 
-// Campo que muestra una fecha y abre un selector al tocarlo. Sin fecha muestra
-// [hint]; con [onClear] se puede quitar la fecha elegida.
 class AppDateField extends StatelessWidget {
   final String label;
   final String? valueText;
@@ -195,8 +167,6 @@ class AppDateField extends StatelessWidget {
   }
 }
 
-// Opción de un [AppDropdownField]. [value] puede ser null (p. ej. "Sin
-// categoría").
 class DropdownOption<T> {
   final T? value;
   final String label;
@@ -204,9 +174,6 @@ class DropdownOption<T> {
   const DropdownOption(this.value, this.label);
 }
 
-// Desplegable de un formulario, con el aspecto de los demás campos. La lista
-// abierta mide lo mismo que el campo y tiene un alto máximo: con muchas
-// opciones se desplaza dentro de ese alto en vez de salirse de la pantalla.
 class AppDropdownField<T> extends FormField<T> {
   AppDropdownField({
     super.key,
@@ -215,8 +182,8 @@ class AppDropdownField<T> extends FormField<T> {
     required List<DropdownOption<T>> options,
     required ValueChanged<T?>? onChanged,
     super.validator,
-    String? hint,
     String? helperText,
+    String? hint,
   }) : super(
          initialValue: value,
          autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -282,26 +249,21 @@ class AppDropdownField<T> extends FormField<T> {
        );
 }
 
-// Botones de abajo de un formulario: la acción principal (crear, guardar,
-// registrar) arriba y, debajo, salir sin cambiar nada.
 class FormActions extends StatelessWidget {
-  final String secondaryLabel;
   final VoidCallback onSecondary;
   final String primaryLabel;
   final VoidCallback? onPrimary;
-  // Mientras se guarda, el botón principal muestra un indicador.
   final bool loading;
-  // Botón rojo opcional (cancelar el registro): va entre el principal y el de
-  // salir, que siempre queda al final.
+  final bool busy;
   final Widget? destructive;
 
   const FormActions({
     super.key,
-    this.secondaryLabel = 'Cancelar',
     required this.onSecondary,
     required this.primaryLabel,
     required this.onPrimary,
     this.loading = false,
+    this.busy = false,
     this.destructive,
   });
 
@@ -312,7 +274,7 @@ class FormActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ElevatedButton(
-          onPressed: loading ? null : onPrimary,
+          onPressed: loading || busy ? null : onPrimary,
           child: loading
               ? const SizedBox(
                   height: AppSpacing.s20,
@@ -330,7 +292,7 @@ class FormActions extends StatelessWidget {
         ],
         const SizedBox(height: AppButtons.stackGap),
         AppActionButton(
-          label: secondaryLabel,
+          label: 'Volver',
           kind: AppButtonKind.neutral,
           onPressed: onSecondary,
         ),
@@ -339,8 +301,6 @@ class FormActions extends StatelessWidget {
   }
 }
 
-// Fila con título, aclaración y un interruptor (p. ej. "Producto activo"), con
-// el mismo aspecto de caja que los campos.
 class AppToggleRow extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -398,9 +358,6 @@ class AppToggleRow extends StatelessWidget {
   }
 }
 
-// Marcador para elegir la foto de un producto o una categoría: la imagen
-// elegida, o un cuadro neutro con el icono de cámara (también si el archivo de
-// la imagen ya no existe).
 class AppPhotoSlot extends StatelessWidget {
   final String? imagePath;
   final VoidCallback onTap;

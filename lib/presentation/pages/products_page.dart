@@ -23,7 +23,6 @@ import '../widgets/app_controls.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/empty_state.dart';
 
-// Productos: lista y catálogo de baldosas. Tocar un producto abre su detalle.
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
 
@@ -49,8 +48,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FlatFab(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
         heroTag: 'products_page_fab',
         onPressed: () => _showForm(context, null),
       ),
@@ -122,11 +119,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     child: AppEmptyState.noMatch(),
                   )
                 : _isGrid
-                ? _GridView(
-                    products: visible,
-                    priceDisplay: priceDisplay,
-                    showInactive: filter.status == StatusFilter.inactive,
-                  )
+                ? _GridView(products: visible, priceDisplay: priceDisplay)
                 : _ListViewWidget(products: visible, priceDisplay: priceDisplay),
           ),
         ],
@@ -136,7 +129,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 }
 
 void _showForm(BuildContext context, ProductModel? product) {
-  showAppSheet<void>(context, builder: (_) => ProductDialog(product: product));
+  showFormSheet<void>(context, builder: (_) => ProductDialog(product: product));
 }
 
 void _showDetail(
@@ -156,7 +149,6 @@ void _showDetail(
   );
 }
 
-// Nombre de la categoría de un producto ("Sin categoría" si no se encuentra).
 String _categoryNameOf(List<CategoryModel> categories, ProductModel p) =>
     categories
         .where((c) => c.id == p.categoryId)
@@ -164,10 +156,8 @@ String _categoryNameOf(List<CategoryModel> categories, ProductModel p) =>
         .firstOrNull ??
     'Sin categoría';
 
-// Vista de lista
 class _ListViewWidget extends ConsumerWidget {
   final List<ProductModel> products;
-  // Qué precios muestra cada fila (mismo filtro que el catálogo).
   final PriceDisplay priceDisplay;
 
   const _ListViewWidget({required this.products, required this.priceDisplay});
@@ -192,27 +182,14 @@ class _ListViewWidget extends ConsumerWidget {
   }
 }
 
-// Vista de catálogo — solo activos, imagen, nombre, precio
 class _GridView extends StatelessWidget {
   final List<ProductModel> products;
-  // Qué precio muestran las baldosas (y el detalle) de todo el catálogo.
   final PriceDisplay priceDisplay;
-  // El catálogo muestra solo productos activos, salvo que el filtro de estado
-  // pida los inactivos: entonces los refleja.
-  final bool showInactive;
 
-  const _GridView({
-    required this.products,
-    required this.priceDisplay,
-    this.showInactive = false,
-  });
+  const _GridView({required this.products, required this.priceDisplay});
 
   @override
   Widget build(BuildContext context) {
-    final active = showInactive
-        ? products
-        : products.where((p) => p.isActive).toList();
-
     return GridView.builder(
       padding: AppFlat.gridWithFab,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -221,13 +198,14 @@ class _GridView extends StatelessWidget {
         mainAxisSpacing: AppSpacing.s16,
         childAspectRatio: 0.78,
       ),
-      itemCount: active.length,
+      itemCount: products.length,
       itemBuilder: (context, index) {
-        final p = active[index];
+        final p = products[index];
         return FlatTile(
           imagePath: p.image,
           icon: Icons.inventory_2_rounded,
           title: p.name,
+          pill: p.isActive ? null : StatusBadge.forState(isActive: false),
           lines: _catalogPriceLines(p, priceDisplay),
           onTap: () => showCatalogPopup(
             context,
@@ -243,16 +221,12 @@ class _GridView extends StatelessWidget {
   }
 }
 
-// Líneas de precio del catálogo según el filtro de precio. Con un solo precio
-// elegido la línea es solo "Precio: Bs. X", sin A/B; con "Ambos" hace falta
-// distinguirlos, así que llevan etiqueta ("A:"/"B:"). Con "Sin precio" no hay
-// líneas.
 List<String> _catalogPriceLines(
   ProductModel p,
   PriceDisplay display, {
   bool detailed = false,
 }) {
-  String bs(double v) => 'Bs. ${fixed2(v)}';
+  String bs(double v) => 'Bs. ${fixed2(v)}';
   switch (display) {
     case PriceDisplay.a:
       return ['Precio: ${bs(p.priceA)}'];
@@ -267,9 +241,6 @@ List<String> _catalogPriceLines(
   }
 }
 
-// Fila de la vista de lista: imagen, nombre, categoría, stock, estado y, debajo,
-// los precios (más pequeños). Los materiales y el costo solo están en el
-// detalle.
 class _ProductRow extends StatelessWidget {
   final ProductModel product;
   final String categoryName;
@@ -286,13 +257,11 @@ class _ProductRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = product;
-    // Solo los precios que pide el filtro de precio (con "Sin precio" no hay
-    // ninguno). Mismas etiquetas cortas "A:" / "B:" que el catálogo.
     final prices = [
       if (priceDisplay == PriceDisplay.a || priceDisplay == PriceDisplay.both)
-        'A: Bs. ${fixed2(p.priceA)}',
+        'A: Bs. ${fixed2(p.priceA)}',
       if (priceDisplay == PriceDisplay.b || priceDisplay == PriceDisplay.both)
-        'B: Bs. ${fixed2(p.priceB)}',
+        'B: Bs. ${fixed2(p.priceB)}',
     ];
 
     return RecordRow(
@@ -311,7 +280,6 @@ class _ProductRow extends StatelessWidget {
   }
 }
 
-// Detalle de un producto: imagen, datos y materiales vinculados.
 class _ProductDetailSheet extends ConsumerStatefulWidget {
   final ProductModel product;
   final String categoryName;
@@ -356,7 +324,7 @@ class _ProductDetailSheetState extends ConsumerState<_ProductDetailSheet> {
   Widget build(BuildContext context) {
     final p = widget.product;
     final display = widget.priceDisplay;
-    String bs(double v) => 'Bs. ${fixed2(v)}';
+    String bs(double v) => 'Bs. ${fixed2(v)}';
     return RecordDetailSheet(
       title: 'Detalle del producto',
       onEdit: widget.onEdit,

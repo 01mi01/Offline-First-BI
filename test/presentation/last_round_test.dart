@@ -180,7 +180,7 @@ void main() {
     expect(find.text('+1 más'), findsOneWidget);
     expect(find.text('Ana Martínez'), findsOneWidget);
     expect(find.text('Stickers'), findsNothing);
-    final discount = tester.widget<Text>(find.text('Desc. Bs. 5.00'));
+    final discount = tester.widget<Text>(find.text('Desc. Bs. 5.00'));
     expect(discount.style?.color, AppColors.cyanDeep);
   });
 

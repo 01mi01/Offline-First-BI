@@ -15,9 +15,6 @@ import 'search_helpers.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
 import 'form_finders.dart';
 
-// La fecha de una venta, compra o evento al crearlo NO tiene límite: se puede
-// registrar algo pasado (se anota tarde) o futuro (se deja preparado). Solo los
-// filtros y reportes se limitan a hoy o antes.
 String _us(DateTime d) =>
     '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}/${d.year}';
 
@@ -26,7 +23,6 @@ final _pickerEdit = find.descendant(
   matching: find.byIcon(Icons.edit_outlined),
 );
 
-// Escribe [date] en el selector de fecha (mm/dd/aaaa) y confirma.
 Future<void> _typeDate(WidgetTester tester, DateTime date) async {
   await tester.tap(_pickerEdit);
   await tester.pumpAndSettle();
@@ -35,7 +31,7 @@ Future<void> _typeDate(WidgetTester tester, DateTime date) async {
     _us(date),
   );
   await tester.pump();
-  await tester.tap(find.text('OK'));
+  await tester.tap(find.text('Aceptar'));
   await tester.pumpAndSettle();
 }
 
@@ -185,7 +181,6 @@ void main() {
         fieldLabeled('Nombre del evento'),
         'Feria de Arte',
       );
-      // El primer campo de fecha es el de inicio.
       await tester.ensureVisible(find.text('Seleccionar fecha').first);
       await tester.tap(find.text('Seleccionar fecha').first);
       await tester.pumpAndSettle();

@@ -193,12 +193,10 @@ void main() {
     });
 
     test('filters by product', () {
-      // product 2 appears in s2 and s3
       expect(filter(const ReportFilters(productId: 2)), [s2, s3]);
     });
 
     test('filters by category (via product -> category mapping)', () {
-      // category 2 belongs to product 2, which appears in s2 and s3
       expect(filter(const ReportFilters(categoryId: 2)), [s2, s3]);
     });
 
@@ -210,7 +208,6 @@ void main() {
           productId: 1,
         ),
       );
-      // Only s1 is both in range and has product 1 (s3 is out of the Jan-Mar 1 range)
       expect(result, [s1]);
     });
 
@@ -231,11 +228,6 @@ void main() {
       expect(result, isEmpty);
     });
 
-    // Full combination matrix for the four report filters (date, product,
-    // event, location). Fixture recap:
-    //   s1: 2024-01-05, locationId 10, eventId 100, product 1
-    //   s2: 2024-02-10, locationId 20, eventId 200, product 2
-    //   s3: 2024-03-15, locationId 10, eventId 100, products 1 and 2
     group('two-filter combinations', () {
       test('date + event', () {
         final result = filter(
@@ -260,7 +252,6 @@ void main() {
       });
 
       test('product + event', () {
-        // product 2 -> {s2, s3}; event 100 -> {s1, s3}; intersection -> {s3}
         expect(
           filter(const ReportFilters(productId: 2, eventId: 100)),
           [s3],
@@ -268,7 +259,6 @@ void main() {
       });
 
       test('product + location', () {
-        // product 2 -> {s2, s3}; location 10 -> {s1, s3}; intersection -> {s3}
         expect(
           filter(const ReportFilters(productId: 2, locationId: 10)),
           [s3],
@@ -283,7 +273,6 @@ void main() {
       });
 
       test('event + location (zero matching records)', () {
-        // event 100 -> {s1, s3}; location 20 -> {s2}; no overlap
         expect(
           filter(const ReportFilters(eventId: 100, locationId: 20)),
           isEmpty,
@@ -351,8 +340,6 @@ void main() {
       });
 
       test('date + product + event + location (zero matching records)', () {
-        // product 1 -> {s1, s3}; event 200 -> {s2}; no overlap regardless
-        // of date range or location.
         final result = filter(
           ReportFilters(
             startDate: DateTime(2024, 1, 1),
@@ -490,7 +477,7 @@ void main() {
       );
 
       expect(summary.count, 2);
-      expect(summary.totalAmount, 140); // 90 + 50
+      expect(summary.totalAmount, 140);
       expect(summary.totalDiscount, 10);
     });
 

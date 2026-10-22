@@ -68,8 +68,8 @@ void main() {
     await db.close();
   });
 
-  Future<Unit> unitNamed(String name) async =>
-      (await (db.select(db.units)..where((u) => u.name.equals(name))).getSingle());
+  Future<Unit> unitNamed(String name) =>
+      (db.select(db.units)..where((u) => u.name.equals(name))).getSingle();
 
   group('SearchIndex (texto escrito -> coincidencias)', () {
     final names = ['Ana Martínez', 'Sarah Davis', 'Café Central', 'Cañete', 'Laura Thompson'];
@@ -150,10 +150,8 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'cliente 11');
       await tester.pumpAndSettle();
-      // 110..119 y 011: todas contienen "cliente 11"
       expect(find.text('Cliente 110'), findsOneWidget);
       expect(find.text('Cliente 012'), findsNothing);
-      // La lista de resultados se desplaza: el resto está más abajo.
       await tester.scrollUntilVisible(
         find.text('Cliente 119'),
         50,
@@ -199,7 +197,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(selected.value, 77);
-      expect(find.text('Cliente 077'), findsOneWidget); // ahora en el campo
+      expect(find.text('Cliente 077'), findsOneWidget);
 
       await tester.tap(find.byType(SearchablePickerField<int>));
       await tester.pumpAndSettle();
@@ -219,7 +217,7 @@ void main() {
 
       await tester.tap(find.byType(SearchablePickerField<int>));
       await tester.pumpAndSettle();
-      await tester.tapAt(const Offset(200, 40)); // fuera de la hoja
+      await tester.tapAt(const Offset(200, 40));
       await tester.pumpAndSettle();
 
       expect(selected.value, 3);
@@ -267,7 +265,6 @@ void main() {
         );
       }
       await _openSheet(tester, db, const SaleDialog());
-      // Sin escribir no se muestra ninguna fila: solo la invitación a buscar.
       expect(find.text('Estuches'), findsNothing);
       expect(find.text('Miniaturas'), findsNothing);
       expect(find.text('Escribe para buscar un producto.'), findsOneWidget);
@@ -288,7 +285,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('No se encontraron resultados.'), findsOneWidget);
 
-      // Borrar lo escrito vuelve al estado inicial: otra vez sin lista.
       await tester.enterText(find.widgetWithText(TextField, 'Buscar producto'), '');
       await tester.pumpAndSettle();
       expect(find.text('Miniaturas'), findsNothing);
@@ -341,7 +337,6 @@ void main() {
       await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
 
-      // Crear uno nuevo sigue siendo un botón aparte, sin búsqueda.
       expect(find.text('Nuevo material'), findsOneWidget);
 
       await tester.tap(find.byType(SearchablePickerField<int>).last);
@@ -354,7 +349,6 @@ void main() {
 
       await tester.tap(find.text('Tela beige'));
       await tester.pumpAndSettle();
-      // El precio del material elegido se rellena igual que antes.
       expect(find.text('Cantidad (metro)'), findsOneWidget);
     });
 
@@ -442,12 +436,10 @@ void main() {
     ) async {
       final value = await pumpPicker(tester, initial: 3.5);
 
-      // 3 y la mitad: cambiar la fracción conserva los 3.
       await tester.tap(find.text('Tres cuartos'));
       await tester.pump();
       expect(value.value, 3.75);
 
-      // Quitar un envase completo conserva la fracción.
       await tester.tap(find.byKey(const ValueKey('container-whole-minus')));
       await tester.pump();
       expect(value.value, 2.75);
@@ -536,7 +528,7 @@ void main() {
     List<UnitModel> all = [];
 
     setUp(() async {
-      final rows = await (db.select(db.units)).get();
+      final rows = await db.select(db.units).get();
       all = [for (final r in rows) UnitModel(id: r.id, name: r.name, type: r.type)];
     });
 
@@ -559,13 +551,6 @@ void main() {
       expect(names, containsAll(['unidad', 'metro', 'kg', 'litro']));
       expect(names, isNot(contains('tira')));
       expect(names, isNot(contains('otro')));
-    });
-
-    test('isUnitChangeAllowed compares types', () {
-      expect(isUnitChangeAllowed(unit('tira'), unit('rollo')), isTrue);
-      expect(isUnitChangeAllowed(unit('tira'), unit('litro')), isFalse);
-      expect(isUnitChangeAllowed(unit('metro'), unit('kg')), isTrue);
-      expect(isUnitChangeAllowed(unit('otro'), unit('metro')), isFalse);
     });
 
     Future<int> seedMaterial(String unitName) async => db.into(db.materials).insert(

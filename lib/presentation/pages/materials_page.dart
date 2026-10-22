@@ -1,3 +1,4 @@
+import '../../config/quantity_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
@@ -8,12 +9,16 @@ import '../../application/record_search.dart';
 import '../../application/status_filter.dart';
 import '../../application/unit_provider.dart';
 import '../../models/material_model.dart';
+import '../../models/unit_model.dart';
 import '../../models/product_material_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/material_dialog.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/app_group.dart';
@@ -32,9 +37,6 @@ import '../widgets/app_style.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/picker_options.dart';
 
-// Página de Materiales: lista de materiales y registro de uso por producto,
-// como dos tabs internos. Se llega aquí desde la tarjeta "Materiales" del
-// tab "Inventario" de la navegación inferior.
 class MaterialsPage extends ConsumerWidget {
   const MaterialsPage({super.key});
 
@@ -54,7 +56,6 @@ class MaterialsPage extends ConsumerWidget {
   }
 }
 
-// Tab de lista de materiales, sin AppBar propia (la aporta MaterialsPage).
 class MaterialsListTab extends ConsumerWidget {
   const MaterialsListTab({super.key});
 
@@ -73,8 +74,6 @@ class MaterialsListTab extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FlatFab(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
         heroTag: 'materials_list_tab_fab',
         onPressed: () => _showDialog(context, null),
       ),
@@ -137,15 +136,13 @@ class MaterialsListTab extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, MaterialModel? material) {
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => MaterialDialog(material: material),
     );
   }
 }
 
-// Tab de registro de uso de materiales por producto. Se usa como sub-tab
-// dentro del tab "Inventario" de la navegación inferior; no tiene AppBar propia.
 class MaterialsUsageTab extends ConsumerStatefulWidget {
   const MaterialsUsageTab({super.key});
 
@@ -157,6 +154,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
   int? _selectedProductId;
   List<ProductMaterialModel> _usageLog = [];
   bool _loading = false;
+  bool _searching = false;
 
   Future<void> _loadUsageLog(int productId) async {
     setState(() => _loading = true);
@@ -173,7 +171,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
 
   void _showRegisterSheet() {
     if (_selectedProductId == null) return;
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => _RegisterUsageSheet(
         productId: _selectedProductId!,
@@ -183,7 +181,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
   }
 
   void _showEditSheet(ProductMaterialModel entry) {
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => _EditUsageSheet(
         entry: entry,
@@ -192,11 +190,9 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
     );
   }
 
-  // Detalle de un registro de uso. Uno cancelado es solo historial: sin
-  // "Editar".
   void _showUsageDetail(ProductMaterialModel entry) {
     final quantity =
-        '${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}';
+        quantityWithUnit(entry.quantityUsed, entry.materialUnitName);
     showAppSheet<void>(
       context,
       builder: (_) => RecordDetailSheet(
@@ -218,7 +214,7 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
               AppValueRow(
                 label: 'Precio por unidad',
                 value:
-                    'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
+                    'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
               ),
             ],
           ),
@@ -237,18 +233,14 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: _selectedProductId != null
+      floatingActionButton: _selectedProductId != null && !_searching
           ? FlatFab(
-              // Tag único: evita colisiones de Hero cuando varias pestañas
-              // con FAB conviven montadas a la vez bajo el shell de
-              // navegación inferior.
               heroTag: 'materials_usage_tab_fab',
               onPressed: _showRegisterSheet,
             )
           : null,
       body: Column(
         children: [
-          // Selector de producto: búsqueda por nombre, sin lista hasta escribir.
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.s16,
@@ -266,6 +258,13 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                 products,
                 ref.watch(categoryProvider).categories,
               ),
+              onFocusChanged: (focused) {
+                if (focused != _searching) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _searching = focused);
+                  });
+                }
+              },
               onChanged: (val) {
                 setState(() {
                   _selectedProductId = val;
@@ -276,7 +275,9 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
             ),
           ),
 
-          if (_selectedProductId == null)
+          if (_searching)
+            const Spacer()
+          else if (_selectedProductId == null)
             const Expanded(
               child: Center(
                 child: AppEmptyState.hint(
@@ -310,10 +311,10 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
                         : AppColors.textPrimary,
                     details: [
                       RecordLine(
-                        'Cantidad: ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} ${unitLabel(entry.materialUnitName, entry.quantityUsed)}',
+                        'Cantidad: ${quantityWithUnit(entry.quantityUsed, entry.materialUnitName)}',
                       ),
                       RecordLine(
-                        'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
+                        'Bs. ${fixed2(entry.pricePerUnit)} / ${entry.materialUnitName}',
                       ),
                     ],
                     pill: entry.isCanceled
@@ -330,7 +331,6 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
   }
 }
 
-// Hoja para registrar nuevo uso de material
 class _RegisterUsageSheet extends ConsumerStatefulWidget {
   final int productId;
   final VoidCallback onRegistered;
@@ -345,32 +345,71 @@ class _RegisterUsageSheet extends ConsumerStatefulWidget {
       _RegisterUsageSheetState();
 }
 
-class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
+class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet>
+    with SingleFlight<_RegisterUsageSheet>, LiveValidation<_RegisterUsageSheet> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
   int? _selectedMaterialId;
   double _fractionQuantity = 0;
-  // Errores del formulario: del material, de la cantidad elegida con las
-  // fracciones y los del registro (p. ej. stock insuficiente).
-  String? _materialError;
-  String? _quantityError;
   String? _error;
+  late final String _initialSignature;
+
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_error = null;}
+
+  MaterialModel? get _selectedMaterial => ref
+      .read(materialProvider)
+      .materials
+      .where((m) => m.id == _selectedMaterialId)
+      .firstOrNull;
+
+  UnitModel? get _selectedUnit {
+    final material = _selectedMaterial;
+    if (material == null) return null;
+    return ref
+        .read(unitProvider)
+        .units
+        .where((u) => u.id == material.unitId)
+        .firstOrNull;
+  }
+
+  String? get _materialError =>
+      submitAttempted && _selectedMaterialId == null
+          ? 'Selecciona un material'
+          : null;
+
+  String? get _quantityError {
+    final material = _selectedMaterial;
+    final unit = _selectedUnit;
+    if (!submitAttempted ||
+        material == null ||
+        unit == null ||
+        !isFractionFriendlyUnitType(unit.type)) {
+      return null;
+    }
+    if (_fractionQuantity <= 0) return 'Selecciona una cantidad';
+    if (_fractionQuantity > roundQuantity(material.stock, unitType: unit.type)) {
+      return 'Cantidad máxima disponible: ${quantityWithUnit(material.stock, unit.name)}';
+    }
+    return null;
+  }
+
+  String _signature() => [
+    _selectedMaterialId,
+    _quantityController.text,
+    _fractionQuantity,
+  ].join('\u0000');
 
   @override
   void initState() {
     super.initState();
-    _quantityController.addListener(_clearError);
-  }
-
-  // Un aviso de error desaparece en cuanto la persona cambia la cantidad o el
-  // material.
-  void _clearError() {
-    if (_error != null || _quantityError != null) {
-      setState(() {
-        _error = null;
-        _quantityError = null;
-      });
-    }
+    _initialSignature = _signature();
   }
 
   @override
@@ -394,14 +433,10 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         : null;
     final usesFractions = unit != null && isFractionFriendlyUnitType(unit.type);
 
-    if (_selectedMaterialId == null) {
-      setState(() => _materialError = 'Selecciona un material');
-      return;
-    }
-    if (!usesFractions && !_formKey.currentState!.validate()) return;
+    markAttempted();
+    if (_materialError != null) return;
+    if (!usesFractions && !validateForm()) return;
 
-    // Lo escrito con más decimales de los permitidos se redondea (dos en
-    // medidas; fracciones sin ruido).
     final quantity = roundQuantity(
       usesFractions
           ? _fractionQuantity
@@ -409,25 +444,9 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
       unitType: unit?.type ?? 'medida',
     );
 
-    if (quantity <= 0) {
-      setState(() => _quantityError = 'Selecciona una cantidad');
-      return;
-    }
-    // Se compara el stock ya redondeado: el ruido no bloquea ni deja pasar.
-    if (material != null &&
-        quantity >
-            roundQuantity(material.stock, unitType: unit?.type ?? 'medida')) {
-      setState(
-        () => _quantityError =
-            'Cantidad máxima disponible: ${_qty(material.stock, unit?.type, unit?.name)}',
-      );
-      return;
-    }
+    if (quantity <= 0 || _quantityError != null) return;
 
-    setState(() {
-      _error = null;
-      _quantityError = null;
-    });
+    setState(() => _error = null);
 
     final error = await ref
         .read(materialProvider.notifier)
@@ -437,20 +456,29 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
           quantityUsed: quantity,
         );
 
+    if (!mounted) return;
     if (error != null) {
       setState(() => _error = error);
       return;
     }
 
-    if (mounted) {
-      Navigator.pop(context);
-      widget.onRegistered();
-    }
+    Navigator.pop(context);
+    widget.onRegistered();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Solo materiales activos con stock mayor a 0
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _quantityController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final materials = ref
         .watch(materialProvider)
         .materials
@@ -465,7 +493,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
         : null;
     final availableText = selectedMaterial == null
         ? ''
-        : _qty(selectedMaterial.stock, selectedUnit?.type, selectedUnit?.name);
+        : quantityWithUnit(selectedMaterial.stock, selectedUnit?.name);
 
     return FormSheet(
       title: 'Registrar uso de material',
@@ -473,12 +501,10 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: 'Registrar',
-        onPrimary: _register,
+        onPrimary: () => runOnce(_register),
+        busy: inFlight,
       ),
       children: [
-        // Selector de material: buscar y elegir por nombre, igual que el
-        // producto; escala con la cantidad de materiales y no lista nada hasta
-        // escribir.
         SearchablePickerField<int>(
           label: 'Material',
           searchHint: 'Buscar material',
@@ -487,39 +513,26 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
             materials,
             ref.watch(unitProvider).units,
           ),
-          onChanged: (val) => setState(() {
-            _selectedMaterialId = val;
-            _materialError = null;
-            _quantityError = null;
-            _error = null;
-          }),
+          onChanged: (val) => setState(() => _selectedMaterialId = val),
         ),
         if (_materialError != null) FormErrorText(_materialError!),
-        // Muestra el stock disponible del material seleccionado
         if (selectedMaterial != null) ...[
           const SizedBox(height: AppSpacing.s6),
           Padding(
             padding: const EdgeInsets.only(left: AppSpacing.s4),
             child: Text(
-              'Stock disponible: $availableText${selectedUnit != null ? ' ${unitLabel(selectedUnit.name, selectedMaterial.stock)}' : ''}',
+              'Stock disponible: $availableText',
               style: AppText.footnote(context),
             ),
           ),
         ],
         const SizedBox(height: AppSpacing.s16),
 
-        // Cantidad: para unidades tipo envase (contenedor, paquete, rollo, tira)
-        // se ofrecen fracciones simples en vez de pedir un decimal exacto; para
-        // unidades "por pieza" (unidad genérica) se exige un entero.
         if (selectedUnit != null && isFractionFriendlyUnitType(selectedUnit.type))
           FractionQuantityPicker(
             unit: selectedUnit.name,
             value: _fractionQuantity,
-            onChanged: (v) => setState(() {
-              _fractionQuantity = v;
-              _quantityError = null;
-              _error = null;
-            }),
+            onChanged: (v) => setState(() => _fractionQuantity = v),
             label: 'Cantidad utilizada',
           )
         else if (selectedUnit != null &&
@@ -563,14 +576,12 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet> {
           ),
         if (_quantityError != null) FormErrorText(_quantityError!),
 
-        // Error del registro
         if (_error != null) FormErrorText(_error!),
       ],
     );
   }
 }
 
-// Hoja para editar cantidad de un registro de uso existente
 class _EditUsageSheet extends ConsumerStatefulWidget {
   final ProductMaterialModel entry;
   final VoidCallback onEdited;
@@ -581,11 +592,49 @@ class _EditUsageSheet extends ConsumerStatefulWidget {
   ConsumerState<_EditUsageSheet> createState() => _EditUsageSheetState();
 }
 
-class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
+class _EditUsageSheetState extends ConsumerState<_EditUsageSheet>
+    with SingleFlight<_EditUsageSheet>, LiveValidation<_EditUsageSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _quantityController;
   late double _fractionQuantity;
   String? _error;
+  late final String _initialSignature;
+
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_error = null;}
+
+  String? get _quantityError {
+    if (!submitAttempted || !_usesFractions) return null;
+    if (_fractionQuantity <= 0) return 'Selecciona una cantidad';
+    final available = _availableQuantity;
+    if (_fractionQuantity > available) {
+      return 'Máximo disponible: ${quantityWithUnit(available, widget.entry.materialUnitName)}';
+    }
+    return null;
+  }
+
+  double get _availableQuantity => roundQuantity(
+    (ref
+                .read(materialProvider)
+                .materials
+                .where((m) => m.id == widget.entry.materialId)
+                .firstOrNull
+                ?.stock ??
+            0) +
+        widget.entry.quantityUsed,
+    unitType: widget.entry.materialUnitType,
+  );
+
+  String _signature() => [
+    _quantityController.text,
+    _fractionQuantity,
+  ].join('\u0000');
 
   bool get _usesFractions =>
       isFractionFriendlyUnitType(widget.entry.materialUnitType);
@@ -598,22 +647,11 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   @override
   void initState() {
     super.initState();
-    // Precarga la cantidad actual formateada
     _quantityController = TextEditingController(
-      text: _qty(
-        widget.entry.quantityUsed,
-        widget.entry.materialUnitType,
-        widget.entry.materialUnitName,
-      ),
+      text: formatQuantity(widget.entry.quantityUsed),
     );
     _fractionQuantity = widget.entry.quantityUsed;
-    _quantityController.addListener(_clearError);
-  }
-
-  // Un aviso de error (p. ej. "Selecciona una cantidad") desaparece en cuanto
-  // la persona cambia la cantidad o el material.
-  void _clearError() {
-    if (_error != null) setState(() => _error = null);
+    _initialSignature = _signature();
   }
 
   @override
@@ -622,17 +660,14 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
     super.dispose();
   }
 
-  // Cancela el registro de uso (no lo borra): devuelve la cantidad al stock
-  // del material y deja el registro en el historial marcado como cancelado.
-  // Solo se ofrece dentro de este formulario de edición.
   Future<void> _cancelUsage() async {
     final entry = widget.entry;
     final confirmed = await confirmCancellation(
       context,
       title: 'Cancelar el registro de uso',
       message:
-          'Se devolverá ${_qty(entry.quantityUsed, entry.materialUnitType, entry.materialUnitName)} '
-          '${unitLabel(entry.materialUnitName, entry.quantityUsed)} de '
+          '${round2(entry.quantityUsed) == 1 ? 'Se devolverá' : 'Se devolverán'} '
+          '${quantityWithUnit(entry.quantityUsed, entry.materialUnitName)} de '
           '"${entry.materialName}" al stock.',
       confirmLabel: 'Cancelar el registro de uso',
     );
@@ -648,35 +683,13 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   }
 
   Future<void> _save() async {
-    if (!_usesFractions && !_formKey.currentState!.validate()) return;
+    markAttempted();
+    if (!_usesFractions && !validateForm()) return;
+    if (_quantityError != null) return;
 
     final newQuantity = _usesFractions
         ? _fractionQuantity
         : double.tryParse(_quantityController.text.trim()) ?? 0;
-
-    if (_usesFractions && newQuantity <= 0) {
-      setState(() => _error = 'Selecciona una cantidad');
-      return;
-    }
-    // Se compara el stock ya redondeado, como al registrar.
-    final available = roundQuantity(
-      (ref
-                  .read(materialProvider)
-                  .materials
-                  .where((m) => m.id == widget.entry.materialId)
-                  .firstOrNull
-                  ?.stock ??
-              0) +
-          widget.entry.quantityUsed,
-      unitType: widget.entry.materialUnitType,
-    );
-    if (_usesFractions && newQuantity > available) {
-      setState(
-        () => _error =
-            'Máximo disponible: ${_qty(available, widget.entry.materialUnitType, widget.entry.materialUnitName)}',
-      );
-      return;
-    }
 
     setState(() => _error = null);
 
@@ -684,34 +697,41 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
         .read(materialProvider.notifier)
         .editUsage(recordId: widget.entry.id, newQuantity: newQuantity);
 
+    if (!mounted) return;
     if (error != null) {
       setState(() => _error = error);
       return;
     }
 
-    if (mounted) {
-      Navigator.pop(context);
-      widget.onEdited();
-    }
+    Navigator.pop(context);
+    widget.onEdited();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Calcula stock disponible para validación
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _quantityController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final material = ref
         .watch(materialProvider)
         .materials
         .where((m) => m.id == widget.entry.materialId)
         .firstOrNull;
 
-    // Stock disponible = stock actual + cantidad original del registro
     final availableStock = roundQuantity(
       (material?.stock ?? 0) + widget.entry.quantityUsed,
       unitType: widget.entry.materialUnitType,
     );
-    final availableText = _qty(
+    final availableText = quantityWithUnit(
       availableStock,
-      widget.entry.materialUnitType,
       widget.entry.materialUnitName,
     );
 
@@ -721,16 +741,15 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: 'Guardar',
-        onPrimary: _save,
-        // Cancelar el registro: solo aquí, dentro del formulario de edición.
+        onPrimary: () => runOnce(_save),
+        busy: inFlight,
         destructive: AppActionButton(
           label: 'Cancelar el registro de uso',
           kind: AppButtonKind.destructive,
-          onPressed: _cancelUsage,
+          onPressed: inFlight ? null : () => runOnce(_cancelUsage),
         ),
       ),
       children: [
-        // Muestra el material que se está editando
         Padding(
           padding: const EdgeInsets.only(left: AppSpacing.s4),
           child: Text(
@@ -740,8 +759,6 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Campo de cantidad: fracciones simples para unidades tipo envase,
-        // número decimal para el resto.
         if (_usesFractions) ...[
           FractionQuantityPicker(
             unit: widget.entry.materialUnitName,
@@ -756,7 +773,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
           ),
           const SizedBox(height: AppSpacing.s6),
           Text(
-            'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+            'Máximo disponible: $availableText',
             style: AppText.footnote(context),
           ),
         ] else if (_isDiscrete)
@@ -764,7 +781,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
             controller: _quantityController,
             labelText: 'Nueva cantidad (${widget.entry.materialUnitName})',
             helperText:
-                'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                'Máximo disponible: $availableText',
             extraValidator: (qty) =>
                 qty > availableStock ? 'Máximo: $availableText' : null,
           )
@@ -778,7 +795,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
               decoration: InputDecoration(
                 hintText: '0',
                 helperText:
-                    'Máximo disponible: $availableText ${unitLabel(widget.entry.materialUnitName, availableStock)}',
+                    'Máximo disponible: $availableText',
               ),
               validator: (v) {
                 final error = validateDecimal(
@@ -795,7 +812,6 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
             ),
           ),
 
-        // Error del registro
         if (_error != null) FormErrorText(_error!),
 
       ],
@@ -803,8 +819,6 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet> {
   }
 }
 
-// Fila de material en la lista: nombre, descripción y precio por unidad a la
-// izquierda; el stock, el dato clave, a la derecha.
 class _MaterialRow extends StatelessWidget {
   final MaterialModel material;
   final String? unitName;
@@ -819,10 +833,10 @@ class _MaterialRow extends StatelessWidget {
   });
 
   String get _stockText =>
-      '${_qty(material.stock, unitType, unitName)}${unitName != null ? ' ${unitLabel(unitName!, material.stock)}' : ''}';
+      quantityWithUnit(material.stock, unitName);
 
   String get _priceText =>
-      'Bs. ${fixed2(material.pricePerUnit)}${unitName != null ? ' / $unitName' : ''}';
+      'Bs. ${fixed2(material.pricePerUnit)}${unitName != null ? ' / $unitName' : ''}';
 
   void _showDetail(BuildContext context) {
     final description = material.description;
@@ -868,10 +882,3 @@ class _MaterialRow extends StatelessWidget {
   }
 }
 
-// Cantidad de un material según su unidad: dos decimales en medidas, fracciones
-// exactas en unidades por fracciones y enteros en piezas (ver formatQuantity).
-String _qty(double value, String? unitType, String? unitName) => formatMaterialQuantity(
-  value,
-  unitType: unitType ?? 'medida',
-  unitName: unitName ?? '',
-);

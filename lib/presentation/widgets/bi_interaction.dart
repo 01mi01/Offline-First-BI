@@ -4,21 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-// Interacción común de los gráficos de Business Intelligence: animación de
-// entrada, globo de detalle al tocar, leyenda que oculta series y vista con
-// zoom y arrastre sobre el eje del tiempo. Los colores de los gráficos siguen
-// saliendo de chartColorAt; aquí solo se usan los colores de la interfaz.
-
-// ---------------------------------------------------------------------------
-// Animación de entrada
-// ---------------------------------------------------------------------------
-
 const Duration kBiEntranceDuration = Duration(milliseconds: 700);
 
-// Reproduce una vez, al aparecer, un avance [t] de 0 a 1 (con una curva suave)
-// que el gráfico usa para crecer, dibujarse o barrerse. Si el sistema pide
-// reducir las animaciones, [t] vale 1 desde el primer cuadro. Al cambiar el
-// tipo de gráfico el widget se reemplaza y la animación vuelve a correr.
 class BiEntrance extends StatefulWidget {
   final Widget Function(BuildContext context, double t) builder;
 
@@ -66,7 +53,6 @@ class _BiEntranceState extends State<BiEntrance>
   }
 }
 
-// Revela el gráfico de izquierda a derecha (las líneas se dibujan solas).
 class BiRevealClip extends StatelessWidget {
   final double t;
   final Widget child;
@@ -92,8 +78,6 @@ class _RevealClipper extends CustomClipper<Rect> {
   bool shouldReclip(_RevealClipper oldClipper) => oldClipper.t != t;
 }
 
-// Revela el pastel con un barrido en el sentido de las agujas del reloj,
-// desde el mismo punto donde empieza la primera rebanada.
 class BiSweepClip extends StatelessWidget {
   final double t;
   final Widget child;
@@ -130,11 +114,6 @@ class _SweepClipper extends CustomClipper<Path> {
   bool shouldReclip(_SweepClipper oldClipper) => oldClipper.t != t;
 }
 
-// ---------------------------------------------------------------------------
-// Globo de detalle
-// ---------------------------------------------------------------------------
-
-// Contenido de un globo: lo que se tocó (título) y sus valores ya formateados.
 class BiTip {
   final String title;
   final List<String> lines;
@@ -143,15 +122,9 @@ class BiTip {
   const BiTip({required this.title, this.lines = const [], this.color});
 }
 
-// Capa que muestra el globo de detalle sobre el gráfico que envuelve. Se
-// maneja desde fuera con una GlobalKey (showLocal / showGlobal / hide). El
-// globo no captura toques, se cierra solo a los pocos segundos y siempre queda
-// dentro de la capa.
 class BiTooltipLayer extends StatefulWidget {
   final Widget child;
 
-  // Se llama cuando el globo desaparece (cerrado por el gráfico o por el
-  // tiempo), para que el gráfico quite también la marca del punto tocado.
   final VoidCallback? onHidden;
 
   const BiTooltipLayer({super.key, required this.child, this.onHidden});
@@ -167,9 +140,6 @@ class BiTooltipLayerState extends State<BiTooltipLayer> {
   BiTip? _tip;
   Timer? _timer;
 
-  bool get isShowing => _tip != null;
-
-  // [local] está en las coordenadas de esta capa.
   void showLocal(Offset local, BiTip tip) {
     _timer?.cancel();
     _timer = Timer(visibleFor, hide);
@@ -185,8 +155,6 @@ class BiTooltipLayerState extends State<BiTooltipLayer> {
     showLocal(box.globalToLocal(global), tip);
   }
 
-  // [notify] en false evita avisar a [BiTooltipLayer.onHidden] (por ejemplo
-  // al reconstruirse el gráfico, que ya limpia su propio estado).
   void hide({bool notify = true}) {
     _timer?.cancel();
     _timer = null;
@@ -231,8 +199,6 @@ class _BubbleLayout extends SingleChildLayoutDelegate {
 
   _BubbleLayout(this.anchor);
 
-  // El globo puede ser más alto que la capa (p. ej. un ranking de pocas filas):
-  // solo se le limita el ancho.
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
       BoxConstraints(maxWidth: constraints.maxWidth);
@@ -242,7 +208,6 @@ class _BubbleLayout extends SingleChildLayoutDelegate {
     final x = (anchor.dx - childSize.width / 2)
         .clamp(0.0, math.max(0.0, size.width - childSize.width))
         .toDouble();
-    // Encima del punto tocado; si no cabe, debajo.
     var y = anchor.dy - childSize.height - 12;
     if (y < 0) y = anchor.dy + 16;
     y = y.clamp(0.0, math.max(0.0, size.height - childSize.height)).toDouble();
@@ -312,8 +277,6 @@ class _Bubble extends StatelessWidget {
                 ),
               ],
             ),
-            // Una línea vacía (p. ej. el texto de cantidad de un indicador que no
-            // tiene) no deja un hueco en el globo.
             for (final line in tip.lines.where((l) => l.isNotEmpty))
               Text(
                 line,
@@ -328,10 +291,6 @@ class _Bubble extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Leyenda que oculta series
-// ---------------------------------------------------------------------------
-
 class BiLegendItem {
   final String label;
   final Color color;
@@ -344,9 +303,6 @@ class BiLegendItem {
   });
 }
 
-// Resultado de tocar la serie [index] en una leyenda de [total] series: la
-// oculta o la vuelve a mostrar, pero nunca deja todas ocultas (ocultar la
-// última visible no hace nada).
 Set<int> toggleSeries(Set<int> hidden, int index, int total) {
   final next = {...hidden};
   if (next.contains(index)) {
@@ -357,8 +313,6 @@ Set<int> toggleSeries(Set<int> hidden, int index, int total) {
   return next;
 }
 
-// Leyenda de un gráfico con varias series: tocar un elemento oculta o muestra
-// esa serie.
 class BiToggleLegend extends StatelessWidget {
   final List<BiLegendItem> items;
   final Set<int> hidden;
@@ -460,39 +414,19 @@ class _LegendChip extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Zoom y arrastre sobre el eje del tiempo
-// ---------------------------------------------------------------------------
-
-// Ancho reservado a la izquierda del gráfico para el eje de montos; el eje del
-// tiempo se dibuja aparte y necesita saber dónde empieza el área de trazado.
 const double kBiMoneyAxisReserved = 40;
 
 typedef BiZoomChartBuilder =
     Widget Function(BuildContext context, double minX, double maxX);
 
-// Un gráfico de líneas sobre el tiempo con zoom de dos dedos y arrastre
-// horizontal para moverse. fl_chart 0.68 no trae zoom, así que la ventana
-// visible del eje X (minX–maxX) la controla este widget con los punteros en
-// bruto: esos eventos no entran en la competencia de gestos, de modo que el
-// gráfico conserva sus toques y la lista sigue desplazándose en vertical.
-// Las etiquetas del eje de abajo se dibujan aquí, alineadas con la ventana.
-//
-// [chartBuilder] debe crear el gráfico con [minX]/[maxX] recibidos, sin ejes
-// inferiores y con los datos recortados al área (FlClipData.all()).
 class BiZoomableTimeChart extends StatefulWidget {
-  // El eje X completo va de 0 a [maxX]; hay [count] posiciones enteras con
-  // etiqueta ([labelOf]).
   final double maxX;
   final int count;
   final String Function(int index) labelOf;
   final BiZoomChartBuilder chartBuilder;
   final GlobalKey<BiTooltipLayerState>? tooltipKey;
-  // Se llama cuando el globo del gráfico desaparece (ver
-  // [BiTooltipLayer.onHidden]).
   final VoidCallback? onTooltipHidden;
   final double height;
-  final double rightPadding;
 
   const BiZoomableTimeChart({
     super.key,
@@ -503,10 +437,8 @@ class BiZoomableTimeChart extends StatefulWidget {
     this.tooltipKey,
     this.onTooltipHidden,
     this.height = 220,
-    this.rightPadding = AppSpacing.s8,
   });
 
-  // Menor ancho visible, en intervalos.
   static const double minVisibleSpan = 2;
 
   @override
@@ -520,13 +452,10 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
   final Map<int, Offset> _pointers = {};
   double _plotWidth = 1;
 
-  // Dos dedos: distancia y ventana al empezar, y el valor de X bajo los dedos.
   double _pinchStartDistance = 1;
   double _pinchStartSpan = 1;
   double _pinchFocalValue = 0;
 
-  // Arrastre de un dedo: dónde empezó, la ventana de entonces y si es
-  // horizontal (null mientras no se sabe).
   Offset _dragOrigin = Offset.zero;
   double _dragStartMin = 0;
   bool? _dragIsHorizontal;
@@ -561,7 +490,6 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
 
   void reset() => _setWindow(0, widget.maxX);
 
-  // Posición de un dedo como fracción del área de trazado (0 a 1).
   double _fraction(double dx) =>
       ((dx - kBiMoneyAxisReserved) / _plotWidth).clamp(0.0, 1.0);
 
@@ -601,7 +529,6 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
       final distance = math.max(1.0, (points[0] - points[1]).distance);
       final span = _pinchStartSpan * _pinchStartDistance / distance;
       final focal = (points[0].dx + points[1].dx) / 2;
-      // El valor que estaba bajo los dedos sigue bajo ellos.
       final clamped = span
           .clamp(
             math.min(BiZoomableTimeChart.minVisibleSpan, widget.maxX),
@@ -642,7 +569,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
                 1,
                 constraints.maxWidth -
                     kBiMoneyAxisReserved -
-                    widget.rightPadding,
+                    AppSpacing.s8,
               );
               return Listener(
                 behavior: HitTestBehavior.translucent,
@@ -651,7 +578,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
                 onPointerUp: _onUp,
                 onPointerCancel: _onUp,
                 child: Padding(
-                  padding: EdgeInsets.only(right: widget.rightPadding),
+                  padding: EdgeInsets.only(right: AppSpacing.s8),
                   child: BiTooltipLayer(
                     key: widget.tooltipKey,
                     onHidden: widget.onTooltipHidden,
@@ -674,7 +601,7 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
           count: widget.count,
           labelOf: widget.labelOf,
           plotWidthOf: (width) =>
-              math.max(1, width - kBiMoneyAxisReserved - widget.rightPadding),
+              math.max(1, width - kBiMoneyAxisReserved - AppSpacing.s8),
         ),
         SizedBox(
           height: 36,
@@ -701,8 +628,6 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
   }
 }
 
-// Etiquetas del eje del tiempo: unas 5 a la vez sea cual sea el zoom, cada una
-// pegada a su intervalo.
 class _TimeAxisLabels extends StatelessWidget {
   final double min;
   final double max;
@@ -749,10 +674,7 @@ class _TimeAxisLabels extends StatelessWidget {
                       labelOf(i),
                       textAlign: TextAlign.center,
                       maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: chartAxisStyle,
                     ),
                   ),
             ],

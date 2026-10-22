@@ -16,14 +16,7 @@ import '../models/unit_model.dart';
 import 'date_range_filter.dart';
 import '../config/app_clock.dart';
 
-// Agregación de los indicadores de Business Intelligence.
-//
-// Trabaja SOLO con datos ya filtrados por ReportService (fechas propias de
-// cada registro, sin ventas canceladas ni registros con fecha futura, filtros
-// de producto/categoría/tipo de precio/evento/ubicación): así todos los
-// indicadores suman exactamente lo mismo que Reportes.
 class BiService {
-  // Un ranking sale ordenado de mayor a menor monto (y por nombre si empatan).
   List<BiEntry> _ranked(Iterable<BiEntry> entries) {
     final list = entries.toList();
     list.sort((a, b) {
@@ -33,7 +26,6 @@ class BiService {
     return list;
   }
 
-  // Ingresos y gastos del periodo filtrado.
   BiSummary summarize({
     required SalesSummary sales,
     required PurchasesSummary purchases,
@@ -44,8 +36,6 @@ class BiService {
     );
   }
 
-  // Ventas por producto: ingresos netos (con la parte del descuento de cada
-  // línea) y unidades vendidas.
   List<BiEntry> salesByProduct({
     required List<SaleReportRow> rows,
     required List<ProductModel> products,
@@ -73,7 +63,6 @@ class BiService {
     ]);
   }
 
-  // Ventas por categoría. "Sin categoría" cuenta como una categoría más.
   List<BiEntry> salesByCategory({required List<SaleReportRow> rows}) {
     final amounts = <String, double>{};
     final quantities = <String, double>{};
@@ -94,8 +83,6 @@ class BiService {
     ]);
   }
 
-  // Compras por material: gasto y cantidad comprada de cada material en las
-  // compras de materiales del periodo (los gastos generales no tienen ítems).
   List<BiEntry> purchasesByMaterial({
     required List<PurchaseModel> purchases,
     required Map<int, List<PurchaseItemModel>> itemsByPurchase,
@@ -123,8 +110,6 @@ class BiService {
         BiEntry(
           label: materialById[id]?.name ?? fallbackNames[id] ?? 'Material',
           amount: round2(amounts[id]!),
-          // Cantidad según el tipo de unidad: dos decimales, o fracciones
-          // exactas (solo sin ruido) en las unidades por fracciones.
           quantity: roundQuantity(
             quantities[id]!,
             unitType: unitTypes[materialById[id]?.unitId] ?? 'medida',
@@ -136,8 +121,6 @@ class BiService {
     ]);
   }
 
-  // Ventas por tipo de precio: siempre en el orden A, B (para que cada tipo
-  // conserve su color), solo con los tipos que tuvieron ventas.
   List<BiEntry> salesByPriceType({required List<SaleReportRow> rows}) {
     final amounts = <String, double>{};
     final quantities = <String, double>{};
@@ -159,9 +142,6 @@ class BiService {
     ];
   }
 
-  // Ventas por evento: solo eventos con ventas vinculadas en el periodo. Cada
-  // venta cuenta por su propia fecha (ya filtrada), nunca por la del evento.
-  // [BiEntry.quantity] es el número de ventas.
   List<BiEntry> salesByEvent({required List<SaleReportRow> rows}) {
     final amounts = <int, double>{};
     final counts = <int, double>{};
@@ -184,8 +164,6 @@ class BiService {
     ]);
   }
 
-  // Granularidad según el tamaño del rango: diaria hasta 31 días, semanal hasta
-  // 18 semanas y mensual a partir de ahí.
   BiGranularity granularityFor(int days) {
     if (days <= 31) return BiGranularity.day;
     if (days <= 126) return BiGranularity.week;
@@ -196,7 +174,6 @@ class BiService {
     final day = dateOnly(date);
     return switch (granularity) {
       BiGranularity.day => day,
-      // Las semanas empiezan en lunes, igual que el atajo "Esta semana".
       BiGranularity.week => DateTime(
         day.year,
         day.month,
@@ -213,14 +190,10 @@ class BiService {
         BiGranularity.month => DateTime(start.year, start.month + 1),
       };
 
-  // Evolución de ingresos y gastos en el tiempo. El rango va de "Desde" (o del
-  // primer registro, si no hay) hasta "Hasta" o hoy, lo que sea anterior; los
-  // intervalos sin movimiento aparecen con 0 para que la línea sea continua.
   BiTimeSeries timeSeries({
     required List<SaleReportRow> rows,
     required List<PurchaseModel> purchases,
     required ReportFilters filters,
-    DateTime? now,
   }) {
     final dates = [
       for (final r in rows) dateOnly(r.sale.date),
@@ -230,7 +203,7 @@ class BiService {
       return const BiTimeSeries(granularity: BiGranularity.day, buckets: []);
     }
 
-    final today = dateOnly(now ?? appNow());
+    final today = dateOnly(appNow());
     var first = dates.reduce((a, b) => a.isBefore(b) ? a : b);
     if (filters.startDate != null) first = dateOnly(filters.startDate!);
     var last = today;
@@ -278,8 +251,6 @@ class BiService {
     return BiTimeSeries(granularity: granularity, buckets: buckets);
   }
 
-  // Productos activos con stock bajo, del más escaso al menos. Es el estado
-  // ACTUAL del inventario: no depende de ningún filtro ni de fechas.
   List<LowStockEntry> lowStock({
     required List<ProductModel> products,
     required List<CategoryModel> categories,
@@ -301,11 +272,6 @@ class BiService {
     ];
   }
 
-  // ---------------------------------------------------------------------
-  // Indicadores avanzados
-  // ---------------------------------------------------------------------
-
-  // Ingresos netos y unidades de cada producto vendido en las ventas dadas.
   Map<int, _ProductStat> _productStats(List<SaleReportRow> rows) {
     final stats = <int, _ProductStat>{};
     for (final row in rows) {
@@ -321,9 +287,6 @@ class BiService {
     return stats;
   }
 
-  // Margen de ganancia por producto: ingresos netos menos el costo de
-  // producción de las unidades vendidas. Los productos sin costo de producción
-  // registrado no entran al ranking (solo se cuentan).
   BiMarginReport productMargins({
     required List<SaleReportRow> rows,
     required List<ProductModel> products,
@@ -356,23 +319,10 @@ class BiService {
     return BiMarginReport(entries: entries, withoutCost: withoutCost);
   }
 
-  // ---------------------------------------------------------------------
-  // Indicadores de ventas adicionales
-  // ---------------------------------------------------------------------
-
-  // Productos comprados juntos: para cada par de productos DISTINTOS, en
-  // cuántas ventas del periodo aparecen los dos (una venta cuenta una sola vez
-  // por par, aunque repita un producto en varias líneas). Solo cuentan ventas
-  // con 2 o más productos distintos y solo se devuelven los pares vistos en al
-  // menos [minSales] ventas. Se usan TODOS los ítems de cada venta (no solo las
-  // líneas que pasan los filtros de producto/categoría/precio), para poder ver
-  // con qué se compra un producto. El porcentaje es sobre todas las ventas del
-  // periodo.
   BiCoPurchaseReport coPurchases({
     required List<SaleReportRow> rows,
     required Map<int, List<SaleItemModel>> saleItemsMap,
     required List<ProductModel> products,
-    int minSales = coPurchaseMinSales,
   }) {
     final names = {for (final p in products) p.id: p.name};
     final counts = <(int, int), int>{};
@@ -397,7 +347,7 @@ class BiService {
     String nameOf(int id) => names[id] ?? fallbackNames[id] ?? 'Producto';
     final pairs = <BiPairEntry>[];
     counts.forEach((key, sales) {
-      if (sales < minSales) return;
+      if (sales < coPurchaseMinSales) return;
       final a = nameOf(key.$1);
       final b = nameOf(key.$2);
       final aFirst = a.compareTo(b) <= 0;
@@ -421,8 +371,6 @@ class BiService {
     );
   }
 
-  // Ingresos netos y número de ventas de cada día de la semana (lunes
-  // primero), con 0 en los días sin ventas. Cada venta cuenta por su fecha.
   List<BiWeekdayEntry> salesByWeekday({required List<SaleReportRow> rows}) {
     final ingresos = List<double>.filled(7, 0);
     final ventas = List<int>.filled(7, 0);
@@ -441,7 +389,6 @@ class BiService {
     ];
   }
 
-  // Ticket promedio: ingresos netos de las ventas del periodo entre su número.
   BiTicketReport ticket({required List<SaleReportRow> rows}) {
     return BiTicketReport(
       salesCount: rows.length,
@@ -449,7 +396,6 @@ class BiService {
     );
   }
 
-  // Descuentos dados frente a las ventas brutas (antes de descontar).
   BiDiscountReport discountImpact({required List<SaleReportRow> rows}) {
     return BiDiscountReport(
       totalDiscount: round2(rows.fold(0.0, (sum, r) => sum + r.discountAmount)),
@@ -459,12 +405,6 @@ class BiService {
     );
   }
 
-  // Resultado por evento: ingresos netos de sus ventas vinculadas menos el
-  // total de TODAS sus compras vinculadas (gastos generales y compras de
-  // materiales). [rows] y [purchases] ya vienen del periodo (cada registro por
-  // su propia fecha); el llamador no debe haberles aplicado el filtro de tipo
-  // de operación ni de proveedor. Aparecen los eventos con ventas o compras,
-  // del mejor al peor resultado.
   List<BiEventProfitEntry> eventProfitability({
     required List<SaleReportRow> rows,
     required List<PurchaseModel> purchases,
@@ -506,12 +446,6 @@ class BiService {
     return entries;
   }
 
-  // Retorno sobre el costo de producción: por cada Bs. 1 de costo de
-  // producción de las unidades vendidas, cuánto fue la ganancia (ingresos
-  // netos después de descuentos menos ese costo). Usa SOLO el costo de
-  // producción actual de cada producto (nunca precios ni cantidades de
-  // materiales). Los productos sin costo de producción (o con costo 0, que no
-  // permite dividir) no entran al ranking; solo se cuentan.
   BiReturnReport costReturn({
     required List<SaleReportRow> rows,
     required List<ProductModel> products,
@@ -544,8 +478,6 @@ class BiService {
     return BiReturnReport(entries: entries, withoutCost: withoutCost);
   }
 
-  // Primer y último día del periodo: de "Desde" (o del primer registro, si no
-  // hay) hasta "Hasta" u hoy, lo que sea anterior. Null sin registros.
   ({DateTime first, DateTime last})? resolveRange({
     required Iterable<DateTime> recordDates,
     required ReportFilters filters,
@@ -564,24 +496,18 @@ class BiService {
     return (first: first, last: last);
   }
 
-  // Proyección lineal simple de los ingresos. Ajusta una recta (mínimos
-  // cuadrados) a los últimos intervalos COMPLETOS (un intervalo en curso no
-  // cuenta: está a medias) y la prolonga unos intervalos hacia adelante, sin
-  // bajar de 0. Solo se calcula si el periodo llega hasta hoy y hay al menos 3
-  // intervalos completos.
   BiProjection projectSales({
     required BiTimeSeries series,
     required ReportFilters filters,
-    DateTime? now,
   }) {
-    final today = dateOnly(now ?? appNow());
+    final today = dateOnly(appNow());
     if (series.isEmpty) {
-      return const BiProjection.unavailable('No hay ventas en el periodo.');
+      return const BiProjection.unavailable('No hay ventas en el período.');
     }
     final end = filters.effectiveEndDate;
     if (end != null && dateOnly(end).isBefore(today)) {
       return const BiProjection.unavailable(
-        'El periodo termina antes de hoy; la proyección necesita un periodo '
+        'El período termina antes de hoy; la proyección necesita un período '
         'que llegue hasta hoy.',
       );
     }
@@ -599,7 +525,6 @@ class BiService {
     };
 
     final buckets = series.buckets;
-    // Completo = todo el intervalo es anterior a hoy.
     final completeCount = buckets
         .where((b) => !_nextBucket(b.start, g).isAfter(today))
         .length;
@@ -607,12 +532,11 @@ class BiService {
     if (used < 3) {
       return const BiProjection.unavailable(
         'Se necesitan al menos 3 intervalos completos para estimar una '
-        'tendencia. Amplía el periodo.',
+        'tendencia. Amplía el período.',
       );
     }
     final firstIndex = completeCount - used;
 
-    // Mínimos cuadrados sobre x = 0..used-1.
     var sumX = 0.0, sumY = 0.0, sumXY = 0.0, sumXX = 0.0;
     for (var i = 0; i < used; i++) {
       final y = buckets[firstIndex + i].ingresos;
@@ -633,7 +557,6 @@ class BiService {
         BiTrendPoint(start: buckets[firstIndex + i].start, value: at(i)),
     ];
 
-    // Los intervalos futuros empiezan después del intervalo de hoy.
     final currentBucket = _bucketStart(today, g);
     final todayX = buckets.indexWhere((b) => b.start == currentBucket) - firstIndex;
     final baseX = todayX >= 0 ? todayX : used - 1;
@@ -651,20 +574,14 @@ class BiService {
     );
   }
 
-  // Días de evento frente a días regulares dentro del periodo. Un día es "de
-  // evento" si cae entre el inicio y el fin de algún evento (sin fin, solo el
-  // día de inicio); cada venta se clasifica por SU fecha, esté o no vinculada
-  // al evento.
   BiEventComparison compareEventDays({
     required List<SaleReportRow> rows,
     required List<EventModel> events,
     required ReportFilters filters,
-    DateTime? now,
   }) {
     final range = resolveRange(
       recordDates: [for (final r in rows) r.sale.date],
       filters: filters,
-      now: now,
     );
     if (range == null || range.last.isBefore(range.first)) {
       return BiEventComparison.empty;
@@ -704,7 +621,6 @@ class BiService {
     );
   }
 
-  // Gasto en compras de materiales frente a los ingresos del periodo.
   BiMaterialCost materialCost({
     required List<PurchaseModel> purchases,
     required double revenue,
@@ -719,23 +635,18 @@ class BiService {
     );
   }
 
-  // Productos activos sin ninguna venta en los últimos [windowDays] días
-  // (contando hoy). Mide recencia: usa TODAS las ventas válidas (no canceladas
-  // ni con fecha futura), sin filtros ni periodo. Primero los que más tiempo
-  // llevan sin venderse (y los que nunca se vendieron).
   List<NoMovementEntry> noMovement({
     required List<ProductModel> products,
     required List<SaleModel> sales,
     required Map<int, List<SaleItemModel>> saleItemsMap,
     required int windowDays,
-    DateTime? now,
   }) {
-    final today = dateOnly(now ?? appNow());
+    final today = dateOnly(appNow());
     final cutoff = DateTime(today.year, today.month, today.day - (windowDays - 1));
 
     final lastSale = <int, DateTime>{};
     for (final sale in sales) {
-      if (sale.isCanceled || isFutureDated(sale.date, now: now)) continue;
+      if (sale.isCanceled || isFutureDated(sale.date)) continue;
       final day = dateOnly(sale.date);
       for (final item in saleItemsMap[sale.id] ?? const <SaleItemModel>[]) {
         final previous = lastSale[item.productId];
@@ -759,7 +670,6 @@ class BiService {
       );
     }
     entries.sort((a, b) {
-      // Los que nunca se vendieron, primero.
       final da = a.daysSinceLastSale ?? 1 << 30;
       final db = b.daysSinceLastSale ?? 1 << 30;
       final byDays = db.compareTo(da);
@@ -768,14 +678,6 @@ class BiService {
     return entries;
   }
 
-  // Periodo inmediatamente anterior y equivalente a [start]–[end]:
-  //  - de un mes (desde el día 1): el mismo tramo del mes anterior (si [end] es
-  //    el último día del mes, todo el mes anterior);
-  //  - de una semana (desde el lunes, 2 a 7 días): la semana anterior;
-  //  - de un año (desde el 1 de enero): el mismo tramo del año anterior;
-  //  - cualquier otro: los mismos días justo antes de [start].
-  // Siempre con el mismo número de días transcurridos, para comparar lo
-  // comparable.
   ({DateTime start, DateTime end}) previousPeriod(DateTime start, DateTime end) {
     final s = dateOnly(start);
     final e = dateOnly(end);
@@ -816,11 +718,6 @@ class BiService {
     );
   }
 
-  // Radar de productos: ingresos, margen, unidades y rotación, normalizados de
-  // 0 a 1. Ingresos y unidades se miden contra el producto que más vendió en el
-  // periodo; el margen es el % de ganancia (0 sin costo de producción); la
-  // rotación es unidades vendidas ÷ (vendidas + stock actual). Si [selectedIds]
-  // no trae al menos 2 productos válidos, se toman los 3 de más ingresos.
   BiRadar radar({
     required List<SaleReportRow> rows,
     required List<ProductModel> products,
@@ -872,16 +769,6 @@ class BiService {
     return BiRadar(products: result, autoSelected: auto);
   }
 
-  // ---------------------------------------------------------------------
-  // Detalle de una barra (lo que se abre al tocarla)
-  // ---------------------------------------------------------------------
-  //
-  // Parten de las mismas ventas y compras ya filtradas que los indicadores
-  // (cada registro por su propia fecha, sin ventas canceladas ni registros
-  // con fecha futura, con los filtros vigentes), así que sus totales
-  // coinciden con los de la barra que se tocó. Los intervalos son los de
-  // [series] (los de Evolución en el tiempo).
-
   List<BiDrillBucket> _drillBuckets(
     BiTimeSeries series,
     Map<DateTime, double> amounts,
@@ -900,7 +787,6 @@ class BiService {
     ];
   }
 
-  // Ingresos netos y unidades de un producto en el tiempo.
   BiProductDetail productDetail({
     required List<SaleReportRow> rows,
     required List<ProductModel> products,
@@ -943,7 +829,6 @@ class BiService {
     );
   }
 
-  // Los productos de una categoría, de mayor a menor ingreso.
   BiCategoryDetail categoryDetail({
     required List<SaleReportRow> rows,
     required List<ProductModel> products,
@@ -979,9 +864,6 @@ class BiService {
     );
   }
 
-  // Ventas y compras (gastos generales y de materiales) vinculadas a un
-  // evento. [purchases] debe venir sin el filtro de tipo de operación ni de
-  // proveedor, igual que en Rentabilidad por evento.
   BiEventDetail eventDetail({
     required List<SaleReportRow> rows,
     required List<PurchaseModel> purchases,
@@ -1033,7 +915,6 @@ class BiService {
     );
   }
 
-  // Lo gastado y la cantidad comprada de un material en el tiempo.
   BiMaterialDetail materialDetail({
     required List<PurchaseModel> purchases,
     required Map<int, List<PurchaseItemModel>> itemsByPurchase,

@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../application/home_dashboard.dart';
 import '../../theme/app_theme.dart';
+import 'chart_metrics.dart';
 
 class HomeProfitChart extends StatelessWidget {
   final HomeProfitSeries series;
@@ -20,6 +21,9 @@ class HomeProfitChart extends StatelessWidget {
 
   static const double height = 180;
   static const double axisHeight = 24;
+
+  static double axisHeightFor(BuildContext context) =>
+      scaledAxisSize(context, axisHeight);
   static const double sidePadding = AppSpacing.s12;
 
   @override
@@ -50,7 +54,7 @@ class HomeProfitChart extends StatelessWidget {
           onHorizontalDragEnd: (_) => release(),
           onHorizontalDragCancel: release,
           child: SizedBox(
-            height: height + axisHeight,
+            height: height + axisHeightFor(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: sidePadding),
               child: IgnorePointer(child: _line(context)),
@@ -105,7 +109,7 @@ class HomeProfitChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: axisHeight,
+              reservedSize: axisHeightFor(context),
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final i = value.round();

@@ -20,11 +20,6 @@ import 'package:offline_first_bi/theme/app_theme.dart';
 
 import '../support/bi_harness.dart';
 
-// Inicio con una base real en memoria y los providers reales. El reloj está
-// fijado (miércoles 18/03/2026): ninguna prueba depende del día en que se
-// corre. El periodo del mes es del 01/03 al 18/03; el anterior equivalente, del
-// 01/02 al 18/02.
-
 const _allModules = [
   'ventas',
   'compras',
@@ -34,7 +29,6 @@ const _allModules = [
   'business_intelligence',
 ];
 
-// Sesión ya iniciada, para que Inicio salude por el nombre.
 class _SessionRepository extends AuthRepository {
   _SessionRepository(super.database);
 
@@ -72,7 +66,6 @@ void main() {
     _restoreClock();
   });
 
-  // Reemplaza el contenedor por uno con los módulos legibles y la sesión.
   void useModules(List<String> modules) {
     h.container.dispose();
     h.container = ProviderContainer(
@@ -84,26 +77,23 @@ void main() {
     );
   }
 
-  // Ventas y compras del escenario "sube": este mes ingresos 180 (17 y 15),
-  // gasto 40 (16) = ganancia 140; el mes pasado, ingreso 100 = ganancia 100.
   Future<void> seedUp(WidgetTester tester) => tester.runAsync(() async {
     final cat = await h.newCategory('Joyas');
     final anillo = await h.newProduct('Anillo', categoryId: cat, priceA: 50);
     final collar = await h.newProduct('Collar', categoryId: cat, priceA: 80);
-    await h.sell(h.day(-1), anillo, 2, 50); // 17/03: 100
-    await h.sell(h.day(-3), collar, 1, 80); // 15/03: 80
-    await h.spend(h.day(-2), 40); // 16/03: gasto 40
-    await h.sell(DateTime(2026, 2, 10, 12), anillo, 2, 50); // mes pasado: 100
+    await h.sell(h.day(-1), anillo, 2, 50);
+    await h.sell(h.day(-3), collar, 1, 80);
+    await h.spend(h.day(-2), 40);
+    await h.sell(DateTime(2026, 2, 10, 12), anillo, 2, 50);
     await h.refresh();
   });
 
-  // Escenario "baja": este mes ganancia 60 (100 - 40); el mes pasado, 200.
   Future<void> seedDown(WidgetTester tester) => tester.runAsync(() async {
     final cat = await h.newCategory('Joyas');
     final anillo = await h.newProduct('Anillo', categoryId: cat, priceA: 50);
-    await h.sell(h.day(-1), anillo, 2, 50); // 100
+    await h.sell(h.day(-1), anillo, 2, 50);
     await h.spend(h.day(-2), 40);
-    await h.sell(DateTime(2026, 2, 10, 12), anillo, 4, 50); // mes pasado: 200
+    await h.sell(DateTime(2026, 2, 10, 12), anillo, 4, 50);
     await h.refresh();
   });
 
@@ -140,7 +130,7 @@ void main() {
       await pumpHome(tester);
 
       expect(textIn(key('home-hero'), 'Ganancias del mes'), findsOneWidget);
-      expect(textIn(key('home-hero'), 'Bs. 140.00'), findsOneWidget);
+      expect(textIn(key('home-hero'), 'Bs. 140.00'), findsOneWidget);
       final pill = key('home-change-pill');
       expect(textIn(pill, '+40.00%'), findsOneWidget);
     });
@@ -152,7 +142,7 @@ void main() {
       await seedDown(tester);
       await pumpHome(tester);
 
-      expect(textIn(key('home-hero'), 'Bs. 60.00'), findsOneWidget);
+      expect(textIn(key('home-hero'), 'Bs. 60.00'), findsOneWidget);
       final pill = key('home-change-pill');
       expect(textIn(pill, '-70.00%'), findsOneWidget);
     });
@@ -168,12 +158,11 @@ void main() {
       });
       await pumpHome(tester);
 
-      expect(textIn(key('home-hero'), 'Bs. 100.00'), findsOneWidget);
+      expect(textIn(key('home-hero'), 'Bs. 100.00'), findsOneWidget);
       expect(textIn(key('home-change-pill'), 'Sin datos previos'), findsOneWidget);
       expect(find.textContaining('NaN'), findsNothing);
       expect(find.textContaining('Infinity'), findsNothing);
     });
-
   });
 
   group('indicadores', () {
@@ -183,13 +172,13 @@ void main() {
       await pumpHome(tester);
 
       expect(textIn(key('home-kpi-ventas'), 'Ventas del mes'), findsOneWidget);
-      expect(textIn(key('home-kpi-ventas'), 'Bs. 180.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-ventas'), 'Bs. 180.00'), findsOneWidget);
       expect(textIn(key('home-kpi-gastos'), 'Gastos del mes'), findsOneWidget);
-      expect(textIn(key('home-kpi-gastos'), 'Bs. 40.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-gastos'), 'Bs. 40.00'), findsOneWidget);
       expect(textIn(key('home-kpi-cantidad'), 'Cantidad de ventas'), findsOneWidget);
       expect(textIn(key('home-kpi-cantidad'), '2'), findsOneWidget);
       expect(textIn(key('home-kpi-margen'), 'Margen de ganancia'), findsOneWidget);
-      expect(textIn(key('home-kpi-margen'), '77.78%'), findsOneWidget); // 140 / 180
+      expect(textIn(key('home-kpi-margen'), '77.78%'), findsOneWidget);
     });
 
     testWidgets('canceled, future-dated and last-month records stay out of the month figures', (
@@ -198,20 +187,20 @@ void main() {
       useModules(_allModules);
       await tester.runAsync(() async {
         final anillo = await h.newProduct('Anillo', priceA: 50);
-        await h.sell(h.day(-1), anillo, 2, 50); // cuenta: 100
-        await h.sell(h.day(2), anillo, 1, 999); // futura: no cuenta
-        await h.sell(h.day(-2), anillo, 1, 777); // se cancela
+        await h.sell(h.day(-1), anillo, 2, 50);
+        await h.sell(h.day(2), anillo, 1, 999);
+        await h.sell(h.day(-2), anillo, 1, 777);
         await h.cancelSaleOf(777);
-        await h.sell(DateTime(2026, 2, 10, 12), anillo, 1, 555); // mes pasado
-        await h.spend(h.day(3), 888); // gasto futuro: no cuenta
+        await h.sell(DateTime(2026, 2, 10, 12), anillo, 1, 555);
+        await h.spend(h.day(3), 888);
         await h.refresh();
       });
       await pumpHome(tester);
 
-      expect(textIn(key('home-kpi-ventas'), 'Bs. 100.00'), findsOneWidget);
-      expect(textIn(key('home-kpi-gastos'), 'Bs. 0.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-ventas'), 'Bs. 100.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-gastos'), 'Bs. 0.00'), findsOneWidget);
       expect(textIn(key('home-kpi-cantidad'), '1'), findsOneWidget);
-      expect(find.text('Bs. 999.00'), findsNothing);
+      expect(find.text('Bs. 999.00'), findsNothing);
       expect(find.textContaining('888'), findsNothing);
     });
   });
@@ -239,7 +228,6 @@ void main() {
       expect(find.text('Accesos rápidos'), findsNothing);
       expect(find.byType(HomeShortcutRow), findsNothing);
     });
-
   });
 
   group('gráficos', () {
@@ -252,7 +240,6 @@ void main() {
 
       expect(key('home-chart-categorias'), findsOneWidget);
       expect(key('home-chart-productos'), findsOneWidget);
-      // Mezclan gastos: no se muestran sin permiso de Compras.
       expect(key('home-chart-evolucion'), findsNothing);
       expect(key('home-chart-comparacion'), findsNothing);
       expect(find.text('Ver más'), findsNothing);
@@ -269,11 +256,11 @@ void main() {
 
       expect(find.byType(HomeChartCard), findsNothing);
       expect(key('home-hero'), findsNothing);
-      expect(textIn(key('home-kpi-gastos'), 'Bs. 40.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-gastos'), 'Bs. 40.00'), findsOneWidget);
       expect(key('home-kpi-ventas'), findsNothing);
       expect(key('home-kpi-cantidad'), findsNothing);
       expect(key('home-kpi-ticket'), findsNothing);
-      expect(find.text('Bs. 180.00'), findsNothing);
+      expect(find.text('Bs. 180.00'), findsNothing);
     });
 
     testWidgets('a person with no readable module sees only the greeting', (
@@ -294,14 +281,14 @@ void main() {
   group('actividad reciente', () {
     Future<void> seedActivity(WidgetTester tester) => tester.runAsync(() async {
       final anillo = await h.newProduct('Anillo', priceA: 50);
-      await h.sell(h.day(-1), anillo, 2, 50); // 17/03 (la más reciente)
-      await h.spend(h.day(-2), 40); // 16/03
-      await h.sell(h.day(-3), anillo, 1, 80); // 15/03
-      await h.sell(h.day(-4), anillo, 1, 500); // 14/03: se cancela
+      await h.sell(h.day(-1), anillo, 2, 50);
+      await h.spend(h.day(-2), 40);
+      await h.sell(h.day(-3), anillo, 1, 80);
+      await h.sell(h.day(-4), anillo, 1, 500);
       await h.cancelSaleOf(500);
-      await h.sell(DateTime(2026, 2, 10, 12), anillo, 1, 60); // 10/02
-      await h.sell(DateTime(2026, 2, 5, 12), anillo, 1, 70); // 05/02: sobra
-      await h.sell(h.day(2), anillo, 1, 999); // futura: no aparece
+      await h.sell(DateTime(2026, 2, 10, 12), anillo, 1, 60);
+      await h.sell(DateTime(2026, 2, 5, 12), anillo, 1, 70);
+      await h.sell(h.day(2), anillo, 1, 999);
       await h.refresh();
     });
 
@@ -318,18 +305,15 @@ void main() {
             (w.key as ValueKey<String>).value.startsWith('home-activity-'),
       );
       expect(rows, findsNWidgets(5));
-      // La venta futura no aparece y la sexta más reciente queda fuera.
-      expect(find.text('- Bs. 40.00'), findsOneWidget);
-      expect(find.text('+ Bs. 999.00'), findsNothing);
-      expect(find.text('+ Bs. 70.00'), findsNothing);
-      // Orden: de la más reciente a la más antigua.
+      expect(find.text('- Bs. 40.00'), findsOneWidget);
+      expect(find.text('+ Bs. 999.00'), findsNothing);
+      expect(find.text('+ Bs. 70.00'), findsNothing);
       final dates = [
         for (final r in rows.evaluate())
           tester.getTopLeft(find.byWidget(r.widget)).dy,
       ];
       expect(dates, [...dates]..sort());
       expect(find.text('Sin nombre · 17/03/2026'), findsOneWidget);
-      // La cancelada aparece marcada como tal.
       expect(find.text('Cancelada'), findsOneWidget);
     });
 
@@ -345,7 +329,7 @@ void main() {
       final row = key('home-activity-sale-${firstSale.id}');
       expect(textIn(row, 'Venta'), findsOneWidget);
       expect(textIn(row, 'Sin nombre · 17/03/2026'), findsOneWidget);
-      expect(textIn(row, '+ Bs. 100.00'), findsOneWidget);
+      expect(textIn(row, '+ Bs. 100.00'), findsOneWidget);
     });
 
     testWidgets('only purchases for someone who can read Compras but not Ventas', (
@@ -355,7 +339,7 @@ void main() {
       await seedActivity(tester);
       await pumpHome(tester);
 
-      expect(find.text('- Bs. 40.00'), findsOneWidget);
+      expect(find.text('- Bs. 40.00'), findsOneWidget);
       expect(find.textContaining('+ Bs.'), findsNothing);
       expect(find.text('Cancelada'), findsNothing);
     });
@@ -369,13 +353,12 @@ void main() {
       await tester.runAsync(() async => h.refresh());
       await pumpHome(tester);
 
-      expect(textIn(key('home-hero'), 'Bs. 0.00'), findsOneWidget);
+      expect(textIn(key('home-hero'), 'Bs. 0.00'), findsOneWidget);
       expect(textIn(key('home-change-pill'), 'Sin datos previos'), findsOneWidget);
-      expect(textIn(key('home-kpi-ventas'), 'Bs. 0.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-ventas'), 'Bs. 0.00'), findsOneWidget);
       expect(textIn(key('home-kpi-cantidad'), '0'), findsOneWidget);
-      expect(textIn(key('home-kpi-gastos'), 'Bs. 0.00'), findsOneWidget);
+      expect(textIn(key('home-kpi-gastos'), 'Bs. 0.00'), findsOneWidget);
       expect(textIn(key('home-kpi-margen'), '—'), findsOneWidget);
-      // En la tarjeta principal y en los gráficos de evolución y comparación.
       expect(find.text('No se registraron movimientos este mes.'), findsNWidgets(3));
       expect(find.text('No se registraron ventas este mes.'), findsNWidgets(2));
       expect(find.text('No hay movimientos registrados.'), findsOneWidget);
@@ -398,7 +381,6 @@ void main() {
       await tester.tap(find.text('Reintentar'));
       expect(retried, 1);
     });
-
   });
 
   group('lógica de Inicio', () {
@@ -414,7 +396,7 @@ void main() {
 
       final none = HomeAccess.from(const []);
       expect(none.needsReport, isFalse);
-      expect(none.hasAnyShortcut, isFalse);
+      expect(none.shortcuts, isEmpty);
     });
 
     test('HomeChange: sign, arrow direction and zero guards', () {
@@ -424,11 +406,9 @@ void main() {
       expect(HomeChange.of(90, 100).trend, HomeTrend.down);
       expect(HomeChange.of(100, 100).label, '0.00%');
       expect(HomeChange.of(100, 100).trend, HomeTrend.flat);
-      // Sin base: nada de infinitos ni NaN.
       expect(HomeChange.of(50, 0).trend, HomeTrend.none);
       expect(HomeChange.of(50, 0).pct, isNull);
       expect(HomeChange.of(0, 0).label, 'Sin datos previos');
-      // Con base negativa, "mejor" sigue siendo positivo.
       expect(HomeChange.of(-10, -20).label, '+50.00%');
     });
 
@@ -459,7 +439,7 @@ void main() {
       final sales = [
         sale(1, DateTime(2026, 3, 1)),
         sale(2, DateTime(2026, 3, 10), canceled: true),
-        sale(3, DateTime(2026, 3, 25)), // futura
+        sale(3, DateTime(2026, 3, 25)),
       ];
       final purchases = [purchase(1, DateTime(2026, 3, 12))];
 

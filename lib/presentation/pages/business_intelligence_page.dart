@@ -6,8 +6,9 @@ import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
 import '../../application/sale_provider.dart';
 import '../../config/date_formatters.dart';
-import '../../config/rounding.dart';
+import '../../config/quantity_format.dart';
 import '../../models/bi_config.dart';
+import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/screen_header.dart';
@@ -17,10 +18,6 @@ import '../widgets/bi_drilldown.dart';
 import '../widgets/bi_insight_widgets.dart';
 import '../widgets/bi_sales_widgets.dart';
 
-// Business Intelligence: primero se configura el periodo, los filtros y los
-// indicadores; al confirmar se muestra el panel, y desde él se puede volver a
-// la configuración sin salir del módulo. Las ventas canceladas, los usos
-// cancelados y los registros con fecha posterior a hoy nunca cuentan.
 class BusinessIntelligencePage extends ConsumerStatefulWidget {
   const BusinessIntelligencePage({super.key});
 
@@ -31,10 +28,18 @@ class BusinessIntelligencePage extends ConsumerStatefulWidget {
 
 class _BusinessIntelligencePageState
     extends ConsumerState<BusinessIntelligencePage> {
-  // false = paso de configuración (siempre al entrar), true = panel.
   bool _showDashboard = false;
 
   BiConfig get _config => ref.read(biConfigProvider);
+
+  String _timeSeriesSubtitle(BiTimeSeries series, bool showExpenses) {
+    final base = showExpenses
+        ? BiIndicator.timeSeries.description
+        : 'Ingresos a lo largo del período';
+    return series.isEmpty
+        ? base
+        : '$base · vista ${series.granularity.label.toLowerCase()}';
+  }
 
   void _update(BiConfig config) =>
       ref.read(biConfigProvider.notifier).state = config;
@@ -43,8 +48,6 @@ class _BusinessIntelligencePageState
     _config.copyWith(chartTypes: {..._config.chartTypes, indicator: type}),
   );
 
-  // La opción del interruptor de métrica vive en la configuración (no en el
-  // gráfico) para que no se pierda al salir de pantalla y volver.
   void _setMetric(BiIndicator indicator, int metric) => _update(
     _config.copyWith(metrics: {..._config.metrics, indicator: metric}),
   );
@@ -104,6 +107,8 @@ class _BusinessIntelligencePageState
     final report = ref.watch(biReportProvider(config.query));
     final products = ref.watch(productProvider).products;
 
+    final showExpenses = config.query.filters.productId == null;
+
     Widget? sectionFor(BiIndicator indicator) {
       final type = config.chartTypeFor(indicator);
       void onType(BiChartType t) => _setChartType(indicator, t);
@@ -112,19 +117,21 @@ class _BusinessIntelligencePageState
 
       switch (indicator) {
         case BiIndicator.summary:
-          return BiSummaryCards(summary: report.summary);
+          return BiSummaryCards(
+            summary: report.summary,
+            showExpenses: showExpenses,
+          );
         case BiIndicator.periodComparison:
           return BiPeriodComparisonSection(
             comparison: report.periodComparison,
             chartType: type,
             onChartTypeChanged: onType,
+            showExpenses: showExpenses,
           );
         case BiIndicator.timeSeries:
           return BiSectionCard(
             title: indicator.title,
-            subtitle: report.timeSeries.isEmpty
-                ? 'Ingresos y gastos'
-                : 'Ingresos y gastos · vista ${report.timeSeries.granularity.label.toLowerCase()}',
+            subtitle: _timeSeriesSubtitle(report.timeSeries, showExpenses),
             info: indicator.info,
             controls: BiControls.of(
               indicator: indicator,
@@ -134,6 +141,7 @@ class _BusinessIntelligencePageState
             child: BiTimeSeriesChart(
               series: report.timeSeries,
               asBars: type == BiChartType.bar,
+              showExpenses: showExpenses,
             ),
           );
         case BiIndicator.salesProjection:
@@ -148,7 +156,6 @@ class _BusinessIntelligencePageState
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
-            subtitle: 'Los productos que más se vendieron',
             entries: report.salesByProduct,
             onEntryTap: (e) => showBiDrillDown(
               context,
@@ -158,7 +165,7 @@ class _BusinessIntelligencePageState
             ),
             amountLabel: 'Ingresos',
             quantityLabel: 'Unidades',
-            quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
+            quantityText: (e) => unitsText(e.quantity),
           );
         case BiIndicator.productMargin:
           return BiMarginSection(
@@ -175,7 +182,6 @@ class _BusinessIntelligencePageState
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
-            subtitle: 'Ingresos o unidades por categoría de producto',
             entries: report.salesByCategory,
             onEntryTap: (e) => showBiDrillDown(
               context,
@@ -185,7 +191,7 @@ class _BusinessIntelligencePageState
             ),
             amountLabel: 'Ingresos',
             quantityLabel: 'Unidades',
-            quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
+            quantityText: (e) => unitsText(e.quantity),
           );
         case BiIndicator.salesByPriceType:
           return BiRankingSection(
@@ -194,12 +200,11 @@ class _BusinessIntelligencePageState
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
-            subtitle: 'Cuánto se vendió con Precio A y con Precio B',
             entries: report.salesByPriceType,
             amountLabel: 'Ingresos',
             quantityLabel: 'Unidades',
             keepOrder: true,
-            quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
+            quantityText: (e) => unitsText(e.quantity),
           );
         case BiIndicator.salesByEvent:
           return BiRankingSection(
@@ -208,7 +213,6 @@ class _BusinessIntelligencePageState
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
-            subtitle: 'Ingresos de las ventas vinculadas a cada evento',
             entries: report.salesByEvent,
             onEntryTap: (e) => showBiDrillDown(
               context,
@@ -275,7 +279,6 @@ class _BusinessIntelligencePageState
             indicator: indicator,
             chartType: type,
             onChartTypeChanged: onType,
-            subtitle: 'Gasto en cada material comprado',
             entries: report.purchasesByMaterial,
             onEntryTap: (e) => showBiDrillDown(
               context,
@@ -285,7 +288,7 @@ class _BusinessIntelligencePageState
             ),
             amountLabel: 'Gasto',
             quantityText: (e) =>
-                '${formatMaterialQuantity(e.quantity, unitType: e.unitType ?? 'medida', unitName: e.unit ?? '')}${e.unit == null ? '' : ' ${e.unit}'}',
+                quantityWithUnit(e.quantity, e.unit),
           );
         case BiIndicator.materialCostRatio:
           return BiMaterialCostSection(
@@ -358,7 +361,7 @@ class _DashboardHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.s4),
       child: Text(
-        'Periodo: $_period',
+        'Período: $_period',
         key: const ValueKey('bi-period'),
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,

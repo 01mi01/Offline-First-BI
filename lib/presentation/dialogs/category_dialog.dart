@@ -8,6 +8,9 @@ import '../../models/category_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../../application/form_validation.dart';
 import '../../models/default_records.dart';
 import '../widgets/app_sheet.dart';
@@ -23,17 +26,17 @@ class CategoryDialog extends ConsumerStatefulWidget {
   ConsumerState<CategoryDialog> createState() => _CategoryDialogState();
 }
 
-class _CategoryDialogState extends ConsumerState<CategoryDialog> {
+class _CategoryDialogState extends ConsumerState<CategoryDialog>
+    with SingleFlight<CategoryDialog>, LiveValidation<CategoryDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
   String? _imagePath;
-  // Copia permanente de la imagen elegida en esta sesión (aún sin guardar).
   String? _pickedImagePath;
-  // Se guarda al iniciar: `ref` ya no se puede usar dentro de dispose().
   late final ImageStorage _imageStorage;
   late bool _isActive;
   String? _saveError;
+  late final String _initialSignature;
 
   @override
   void initState() {
@@ -46,10 +49,25 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
     _imagePath = widget.category?.image;
     _isActive = widget.category?.isActive ?? true;
     _nameController.addListener(_clearSaveError);
+    _initialSignature = _signature();
   }
 
-  // Un error de guardado (p. ej. nombre repetido) deja de mostrarse en
-  // cuanto se corrige el nombre.
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_saveError = null;}
+
+  String _signature() => [
+    _nameController.text,
+    _descController.text,
+    _imagePath ?? '',
+    _isActive,
+  ].join('\u0000');
+
   void _clearSaveError() {
     if (_saveError != null) setState(() => _saveError = null);
   }
@@ -58,7 +76,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
-    // Si se cierra sin guardar, la copia elegida no se usa.
     _discardPickedImage();
     super.dispose();
   }
@@ -67,29 +84,22 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
-    // La foto elegida vive en la caché, que Android puede vaciar: se copia a
-    // la carpeta permanente y se guarda esa ruta.
     final permanentPath = await _imageStorage.save(picked.path);
     if (!mounted) {
       await _imageStorage.deleteIfManaged(permanentPath);
       return;
     }
-    // Una imagen elegida antes en esta misma sesión y reemplazada ya no se usa.
     _discardPickedImage();
     _pickedImagePath = permanentPath;
     setState(() => _imagePath = permanentPath);
   }
 
-  // Borra la imagen elegida en esta sesión (si la hay) para no dejar copias
-  // huérfanas. La imagen que ya tenía el registro nunca se borra aquí.
   void _discardPickedImage() {
     final path = _pickedImagePath;
     _pickedImagePath = null;
     if (path != null) _imageStorage.deleteIfManaged(path);
   }
 
-  // Nombre obligatorio, distinto del reservado del sistema y sin repetirse con
-  // otra categoría (sin distinguir mayúsculas ni tildes).
   String? _validateName(String? value) {
     final error = validateName(value);
     if (error != null) return error;
@@ -109,9 +119,8 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!validateForm()) return;
 
-    // Limpiar error anterior
     setState(() => _saveError = null);
 
     await ref
@@ -128,16 +137,14 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
     final error = ref.read(categoryProvider).error;
     if (error != null) {
-      // Mostrar error en el formulario y revertir toggle
       setState(() {
         _saveError = error;
         _isActive = true;
       });
+      acceptValues();
       return;
     }
 
-    // La imagen elegida quedó guardada: ya no se descarta al cerrar. Si
-    // reemplazó a otra que tenía la categoría, la anterior se borra.
     _pickedImagePath = null;
     final previous = widget.category?.image;
     if (previous != null && previous != _imagePath) {
@@ -156,7 +163,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
           : 'La categoría no estará disponible para nuevos productos.',
       confirmLabel: value ? 'Activar' : 'Desactivar',
       confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
-      dismissLabel: 'Cancelar',
     );
     if (!confirm) return;
     setState(() => _isActive = value);
@@ -164,6 +170,18 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _nameController,
+        _descController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.category != null;
 
     return FormSheet(
@@ -172,14 +190,13 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
-        onPrimary: _save,
+        onPrimary: () => runOnce(_save),
+        busy: inFlight,
       ),
       children: [
-        // Selector de imagen
         AppPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
         const SizedBox(height: AppSpacing.s16),
 
-        // Nombre
         LabeledField(
           label: 'Nombre',
           builder: (_) => TextFormField(
@@ -191,7 +208,6 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Descripción
         LabeledField(
           label: 'Descripción',
           builder: (_) => TextFormField(
@@ -203,17 +219,17 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
           ),
         ),
 
-        // Estado: solo al editar
         if (isEditing) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Categoría activa',
-            subtitle: _isActive ? 'Visible en el sistema' : 'Oculta en el sistema',
+            subtitle: _isActive
+                ? 'Disponible en el sistema'
+                : 'No disponible en el sistema',
             value: _isActive,
             onChanged: _onToggleActive,
           ),
         ],
-        // Error al guardar
         if (_saveError != null) FormErrorText(_saveError!),
       ],
     );

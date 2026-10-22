@@ -27,10 +27,10 @@ RecordRow saleRecordRow({
       RecordLine(formatDateTime(date)),
       for (final line in extraLines) RecordLine(line),
       if (discount > 0)
-        RecordLine('Desc. Bs. ${fixed2(discount)}', color: AppColors.cyanDeep),
+        RecordLine('Desc. Bs. ${fixed2(discount)}', color: AppColors.cyanDeep),
     ],
     pill: canceled ? const StatusBadge.canceled() : null,
-    trailing: RecordValue('Bs. ${fixed2(amount)}', canceled: canceled),
+    trailing: RecordValue('Bs. ${fixed2(amount)}', canceled: canceled),
     onTap: onTap,
   );
 }
@@ -74,7 +74,7 @@ RecordRow purchaseRecordRow({
         if (canceled) const StatusBadge.canceled(),
       ],
     ),
-    trailing: RecordValue('Bs. ${fixed2(amount)}', canceled: canceled),
+    trailing: RecordValue('Bs. ${fixed2(amount)}', canceled: canceled),
     onTap: onTap,
   );
 }

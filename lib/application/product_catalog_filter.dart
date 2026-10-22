@@ -3,19 +3,12 @@ import '../models/product_model.dart';
 import 'record_search.dart';
 import 'status_filter.dart';
 
-// Qué precio(s) muestran las tarjetas de Productos (lista y catálogo).
-// El orden de las opciones es el del menú: Ambos, Precio A, Precio B, Sin precio.
 enum PriceDisplay { both, a, b, none }
 
-// Búsqueda, categoría, estado y precio mostrado de Productos. El filtro de precio se
-// controla desde la vista de lista; el catálogo solo lo refleja.
 class ProductCatalogFilter {
   final String query;
-  // null = todas las categorías
   final int? categoryId;
-  // Por defecto "Ambos", en la lista y en el catálogo.
   final PriceDisplay priceDisplay;
-  // Activos, inactivos o todos (por defecto, todos).
   final StatusFilter status;
 
   const ProductCatalogFilter({
@@ -40,11 +33,6 @@ class ProductCatalogFilter {
     );
   }
 
-  bool get isFiltering =>
-      query.trim().isNotEmpty ||
-      categoryId != null ||
-      status != StatusFilter.all;
-
   List<ProductModel> apply(
     List<ProductModel> products, {
     SearchIndex<ProductModel>? index,
@@ -58,8 +46,6 @@ class ProductCatalogFilter {
   }
 }
 
-// Vive mientras la pantalla de Productos está abierta (se reinicia al salir) y
-// lo comparten la vista de lista y la de catálogo.
 final productCatalogFilterProvider =
     StateProvider.autoDispose<ProductCatalogFilter>(
       (ref) => const ProductCatalogFilter(),

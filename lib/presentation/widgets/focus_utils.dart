@@ -4,24 +4,12 @@ import 'package:flutter/widgets.dart';
 
 import '../../theme/app_theme.dart';
 
-// Quita el foco del campo de texto activo (y con él el teclado) antes de abrir
-// un diálogo, un selector de fecha o una hoja inferior.
-//
-// Si no se hace, Flutter le devuelve el foco al campo que lo tenía cuando esa
-// ruta se cierra, y el teclado reaparece sin que la persona haya tocado ningún
-// campo. Así, el teclado solo se muestra cuando la persona enfoca un campo.
 void dismissKeyboard() {
   FocusManager.instance.primaryFocus?.unfocus();
 }
 
-// Deja a la vista un campo con sus resultados debajo con el menor movimiento
-// posible: solo desplaza, y solo en vertical, si el bloque se sale por abajo
-// (teclado) o por arriba del área visible. Si ya cabe no se mueve nada, así que
-// abrir o cerrar el teclado no hace saltar el campo.
-Future<void> revealFieldAtTop(
-  BuildContext context, {
-  double margin = AppSpacing.s16,
-}) async {
+Future<void> revealFieldAtTop(BuildContext context) async {
+  const margin = AppSpacing.s16;
   final box = context.findRenderObject();
   if (box is! RenderBox || !box.attached) return;
 

@@ -10,7 +10,6 @@ TextStyle? screenTitleStyle(BuildContext context) =>
       color: AppColors.textPrimary,
     );
 
-// Fila fija de arriba: volver a la izquierda y acciones a la derecha.
 class ScreenTopBar extends StatelessWidget {
   final bool? showBack;
   final List<Widget> actions;
@@ -87,8 +86,6 @@ class ScreenTitle extends StatelessWidget {
   }
 }
 
-// Pantalla con la cabecera común. [body] conserva su propio desplazamiento y el
-// título sale con él; con [ScreenScaffold.slivers] el título va dentro de la lista.
 class ScreenScaffold extends StatelessWidget {
   final String title;
   final List<Widget> actions;
@@ -107,22 +104,22 @@ class ScreenScaffold extends StatelessWidget {
     this.actions = const [],
     this.showBack,
     this.bottom,
-    this.floatingActionButton,
     this.bottomBar,
     this.onBack,
-  }) : slivers = null;
+  }) : slivers = null,
+       floatingActionButton = null;
 
   const ScreenScaffold.slivers({
     super.key,
     required this.title,
     required List<Widget> this.slivers,
     this.actions = const [],
-    this.showBack,
     this.floatingActionButton,
-    this.bottomBar,
-    this.onBack,
   }) : body = null,
-       bottom = null;
+       bottom = null,
+       showBack = null,
+       bottomBar = null,
+       onBack = null;
 
   @override
   Widget build(BuildContext context) {

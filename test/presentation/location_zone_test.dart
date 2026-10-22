@@ -19,14 +19,10 @@ import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'filter_helpers.dart';
 
-// La zona de una ubicación (su descripción) se busca y se ve en todas partes:
-// todos los buscadores de ubicaciones aciertan por ella, y donde se muestra una
-// ubicación se ve "Ciudad, País" y la zona.
 void main() {
   late AppDatabase db;
   late Map<String, int> ids;
 
-  // Ciudad, país y zona (las zonas aprobadas del seed).
   const zones = [
     ('La Paz', 'Bolivia', 'Calacoto'),
     ('La Paz', 'Bolivia', 'San Miguel'),
@@ -171,10 +167,8 @@ void main() {
       await openFilterPanel(tester);
       await tester.tap(find.byTooltip('Ciudad'));
       await tester.pumpAndSettle();
-      // Cada ciudad una sola vez, aunque tenga varias zonas.
       expect(find.text('La Paz'), findsOneWidget);
       expect(find.text('Santa Cruz'), findsOneWidget);
-      // La lista abierta tiene un alto máximo y se desplaza.
       await tester.ensureVisible(find.text('Santa Cruz').last);
       await tester.tap(find.text('Santa Cruz').last);
       await tester.pumpAndSettle();
@@ -182,7 +176,6 @@ void main() {
       expect(find.text('Urubó'), findsOneWidget);
       expect(find.text('Calacoto'), findsNothing);
 
-      // La búsqueda por zona respeta el filtro de ciudad.
       await tester.enterText(find.byType(TextField), 'calacoto');
       await tester.pumpAndSettle();
       expect(find.text('No se encontraron resultados.'), findsOneWidget);
@@ -199,7 +192,7 @@ void main() {
       await tester.enterText(field, 'san miguel');
       await tester.pumpAndSettle();
       expect(find.text('La Paz, Bolivia'), findsOneWidget);
-      expect(find.text('San Miguel'), findsOneWidget); // segunda línea
+      expect(find.text('San Miguel'), findsOneWidget);
       expect(find.text('Santa Cruz, Bolivia'), findsNothing);
 
       await tester.tap(find.text('San Miguel'));
@@ -309,5 +302,4 @@ void main() {
       );
     });
   });
-
 }

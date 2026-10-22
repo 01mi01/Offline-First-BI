@@ -11,9 +11,6 @@ import 'package:offline_first_bi/theme/app_theme.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'search_helpers.dart';
 
-// "Registro de uso" de materiales por producto: el campo de cantidad depende
-// del tipo de unidad (contenedor -> fracciones; unidad -> solo enteros; metro ->
-// decimales), y los textos de stock/precio muestran el nombre de la unidad.
 Future<void> _openUsageTab(WidgetTester tester, AppDatabase db) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1.0;
@@ -31,7 +28,6 @@ Future<void> _openUsageTab(WidgetTester tester, AppDatabase db) async {
   );
   await tester.pumpAndSettle();
 
-  // Elige el producto y abre la hoja "Registrar el uso de un material".
   await pickFromSearch(tester, find.byType(SearchablePickerField<int>).first, 'Estuches', 'Estuches');
   await tester.tap(find.byIcon(Icons.add_rounded));
   await tester.pumpAndSettle();
@@ -85,7 +81,6 @@ void main() {
     await _pickMaterial(tester, 'Base metálica grande para pines');
 
     expect(find.text('Cantidad utilizada (unidad)'), findsOneWidget);
-    // El stock disponible muestra el nombre de la unidad.
     expect(find.text('Stock disponible: 30 unidades'), findsOneWidget);
 
     final quantity = find.byType(WholeNumberQuantityField);
@@ -114,7 +109,7 @@ void main() {
     await tester.pump();
 
     expect(tester.widget<TextFormField>(field).controller!.text, '1.5');
-    expect(find.text('Stock disponible: 10.00 metros'), findsOneWidget);
+    expect(find.text('Stock disponible: 10 metros'), findsOneWidget);
   });
 
   testWidgets('contenedor: fraction picker, no free-text decimal field', (
@@ -143,18 +138,14 @@ void main() {
       await tester.tap(find.text('Registrar').last);
       await tester.pumpAndSettle();
 
-      // Se registró el uso y descontó el stock: 30 - 3.
       final material = await (db.select(
         db.materials,
       )..where((m) => m.name.equals('Base metálica grande para pines'))).getSingle();
       expect(material.stock, 27);
 
-      // El renglón del registro muestra la unidad junto a la cantidad y al
-      // precio.
       expect(find.textContaining('3 unidades'), findsOneWidget);
       expect(find.textContaining('/ unidad'), findsOneWidget);
 
-      // Edita el registro: mismo rechazo de decimales.
       await tester.tap(find.textContaining('3 unidades'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Editar'));
@@ -173,5 +164,4 @@ void main() {
       expect(find.textContaining('Máximo disponible: 30 unidades'), findsOneWidget);
     },
   );
-
 }

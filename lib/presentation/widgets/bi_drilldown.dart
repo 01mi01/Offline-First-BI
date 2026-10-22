@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/bi_provider.dart';
 import '../../config/date_formatters.dart';
-import '../../config/rounding.dart';
+import '../../config/quantity_format.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
@@ -14,13 +14,6 @@ import 'app_sheet.dart';
 import 'app_style.dart';
 import 'bi_charts.dart';
 import 'bi_interaction.dart';
-
-// Detalle de una barra de Business Intelligence: al tocar un producto, una
-// categoría, un evento o un material de su ranking se abre esta hoja con lo que
-// hay detrás de la cifra. Usa los mismos filtros que el panel (cada registro
-// por su propia fecha, sin ventas canceladas ni registros con fecha futura) y
-// el estilo de las demás hojas del módulo (esquinas redondeadas, contenido con
-// scroll).
 
 enum BiDrillKind { product, category, event, material }
 
@@ -110,10 +103,6 @@ class _DrillSheet extends ConsumerWidget {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Producto: ingresos y unidades en el tiempo
-  // -------------------------------------------------------------------------
-
   List<Widget> _productBody(BiProductDetail d) {
     if (d.isEmpty) return const [BiEmptyState()];
     return [
@@ -131,7 +120,7 @@ class _DrillSheet extends ConsumerWidget {
             child: _DrillStat(
               statKey: 'units',
               label: 'Unidades',
-              value: '${formatQuantity(d.units)} uds.',
+              value: unitsText(d.units),
             ),
           ),
           Expanded(
@@ -153,19 +142,15 @@ class _DrillSheet extends ConsumerWidget {
           _Metric(
             'Unidades',
             (b) => b.quantity,
-            (v) => '${formatQuantity(v)} uds.',
+            unitsText,
           ),
         ],
         rowText: (b) =>
-            '${formatMoney(b.amount)} · ${formatQuantity(b.quantity)} uds.'
+            '${formatMoney(b.amount)} · ${unitsText(b.quantity)}'
             ' · ${b.count == 1 ? '1 venta' : '${b.count} ventas'}',
       ),
     ];
   }
-
-  // -------------------------------------------------------------------------
-  // Categoría: sus productos, de mayor a menor ingreso
-  // -------------------------------------------------------------------------
 
   List<Widget> _categoryBody(BuildContext context, BiCategoryDetail d) {
     if (d.isEmpty) return const [BiEmptyState()];
@@ -187,7 +172,7 @@ class _DrillSheet extends ConsumerWidget {
             child: _DrillStat(
               statKey: 'units',
               label: 'Unidades',
-              value: '${formatQuantity(d.units)} uds.',
+              value: unitsText(d.units),
             ),
           ),
           Expanded(
@@ -239,9 +224,9 @@ class _DrillSheet extends ConsumerWidget {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 24),
+                padding: const EdgeInsets.only(left: AppSpacing.s24),
                 child: Text(
-                  '${formatQuantity(d.products[i].quantity)} uds. · '
+                  '${unitsText(d.products[i].quantity)} · '
                   '${d.revenue > 0 ? formatPercent(d.products[i].amount / d.revenue * 100) : '0.0%'} '
                   'de la categoría',
                   style: small?.copyWith(color: AppColors.textSecondary),
@@ -249,7 +234,7 @@ class _DrillSheet extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.s4),
               Padding(
-                padding: const EdgeInsets.only(left: 24),
+                padding: const EdgeInsets.only(left: AppSpacing.s24),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: Container(
@@ -270,10 +255,6 @@ class _DrillSheet extends ConsumerWidget {
         ),
     ];
   }
-
-  // -------------------------------------------------------------------------
-  // Evento: ventas y gastos vinculados, resumidos
-  // -------------------------------------------------------------------------
 
   List<Widget> _eventBody(BuildContext context, BiEventDetail d) {
     if (d.isEmpty) return const [BiEmptyState()];
@@ -374,7 +355,7 @@ class _DrillSheet extends ConsumerWidget {
       section('Ventas'),
       if (d.sales.isEmpty)
         Text(
-          'Ninguna venta vinculada en el periodo.',
+          'Ninguna venta vinculada en el período.',
           style: small?.copyWith(color: AppColors.textSecondary),
         ),
       for (var i = 0; i < d.sales.length; i++)
@@ -387,7 +368,7 @@ class _DrillSheet extends ConsumerWidget {
       section('Gastos vinculados'),
       if (d.expenses.isEmpty)
         Text(
-          'Ninguna compra vinculada en el periodo.',
+          'Ninguna compra vinculada en el período.',
           style: small?.copyWith(color: AppColors.textSecondary),
         ),
       for (var i = 0; i < d.expenses.length; i++)
@@ -401,14 +382,10 @@ class _DrillSheet extends ConsumerWidget {
     ];
   }
 
-  // -------------------------------------------------------------------------
-  // Material: compras en el tiempo
-  // -------------------------------------------------------------------------
-
   List<Widget> _materialBody(BiMaterialDetail d) {
     if (d.isEmpty) return const [BiEmptyState()];
     String quantityText(double v) =>
-        '${formatMaterialQuantity(v, unitType: d.unitType, unitName: d.unit ?? '')}${d.unit == null ? '' : ' ${d.unit}'}';
+        quantityWithUnit(v, d.unit);
     return [
       Row(
         children: [
@@ -453,7 +430,6 @@ class _DrillSheet extends ConsumerWidget {
   }
 }
 
-// Cifra grande con su etiqueta debajo (el estilo de las tarjetas de resumen).
 class _DrillStat extends StatelessWidget {
   final String statKey;
   final String label;
@@ -484,8 +460,6 @@ class _Metric {
   const _Metric(this.name, this.valueOf, this.format);
 }
 
-// Una métrica por intervalo en barras (con un interruptor entre las dos
-// métricas) y debajo la lista de los intervalos con movimiento.
 class _OverTime extends StatefulWidget {
   final List<BiDrillBucket> buckets;
   final BiGranularity granularity;
@@ -577,6 +551,7 @@ class _OverTimeState extends State<_OverTime> {
                       leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
                       bottomTitles: AxisTitles(
                         sideTitles: bucketAxisTitles(
+                          context: context,
                           count: n,
                           labelOf: (i) => bucketAxisLabel(
                             buckets[i].start,

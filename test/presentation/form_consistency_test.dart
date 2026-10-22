@@ -11,11 +11,6 @@ import 'package:offline_first_bi/presentation/dialogs/material_dialog.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'form_finders.dart';
 
-// Formularios: un mismo comportamiento en toda la app.
-//  - El botón de guardar nunca queda desactivado en silencio: si falta algo,
-//    el error aparece en el campo ("Campo requerido").
-//  - Un error desaparece en cuanto el campo pasa a ser válido, sin reenviar.
-//  - El teclado no reaparece solo al cerrar un selector o un diálogo.
 void main() {
   late AppDatabase db;
 
@@ -139,18 +134,14 @@ void main() {
         await tester.tap(find.text('Crear'));
         await tester.pumpAndSettle();
 
-        // Nombre, Stock y Precio: todos con el mismo texto.
         expect(find.text('Campo requerido'), findsNWidgets(3));
         expect(find.text('Requerido'), findsNothing);
         expect(find.text('Selecciona una unidad'), findsOneWidget);
 
-        // Unidad: elegir una quita SU error, los demás siguen.
         await chooseOption(tester, 'Unidad', 'metro');
         expect(find.text('Selecciona una unidad'), findsNothing);
         expect(find.text('Campo requerido'), findsNWidgets(3));
 
-        // Stock y precio: escribir un valor quita el suyo (caso que dejaba el
-        // aviso "Requerido" pegado aunque el campo ya tuviera valor).
         await tester.enterText(fieldLabeled('Stock'), '10');
         await tester.pump();
         expect(find.text('Campo requerido'), findsNWidgets(2));
@@ -159,7 +150,7 @@ void main() {
           '1.5',
         );
         await tester.pump();
-        expect(find.text('Campo requerido'), findsOneWidget); // solo el nombre
+        expect(find.text('Campo requerido'), findsOneWidget);
       },
     );
 
@@ -177,10 +168,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Selecciona la fecha de inicio'), findsOneWidget);
 
-        // El primer campo de fecha es el de inicio.
         await tester.tap(find.text('Seleccionar fecha').first);
         await tester.pumpAndSettle();
-        await tester.tap(find.text('OK'));
+        await tester.tap(find.text('Aceptar'));
         await tester.pumpAndSettle();
 
         expect(find.text('Selecciona la fecha de inicio'), findsNothing);

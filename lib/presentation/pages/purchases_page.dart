@@ -17,6 +17,7 @@ import '../widgets/screen_header.dart';
 import '../widgets/app_sheet.dart';
 import '../widgets/app_style.dart';
 import '../../config/date_formatters.dart';
+import '../../config/quantity_format.dart';
 import '../../config/rounding.dart';
 import '../widgets/flat_list.dart';
 import '../widgets/record_detail.dart';
@@ -163,7 +164,7 @@ class PurchasesListBody extends ConsumerWidget {
 }
 
 void showPurchaseForm(BuildContext context, [PurchaseModel? purchase]) {
-  showAppSheet<void>(
+  showFormSheet<void>(
     context,
     heightFactor: 0.94,
     builder: (_) => PurchaseDialog(purchase: purchase),
@@ -282,7 +283,7 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
       children: [
           AppBigTotal(
             label: 'Total',
-            value: 'Bs. ${fixed2(purchase.totalAmount)}',
+            value: 'Bs. ${fixed2(purchase.totalAmount)}',
             pill: purchase.isCanceled ? const StatusBadge.canceled() : null,
           ),
           AppSection(
@@ -320,11 +321,11 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
                     AppRow(
                       title: item.materialName,
                       subtitle: Text(
-                        '${formatMaterialQuantity(item.quantity, unitType: item.unitType, unitName: item.unitName)} × Bs. ${fixed2(item.unitPrice)}',
+                        '${quantityWithUnit(item.quantity, item.unitName)} × Bs. ${fixed2(item.unitPrice)}',
                         style: AppText.rowSubtitle(context),
                       ),
                       trailing: Text(
-                        'Bs. ${fixed2(item.subtotal)}',
+                        'Bs. ${fixed2(item.subtotal)}',
                         style: AppText.rowTitle(context).copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -336,7 +337,7 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
             children: [
               AppValueRow(
                 label: 'Total',
-                value: 'Bs. ${fixed2(purchase.totalAmount)}',
+                value: 'Bs. ${fixed2(purchase.totalAmount)}',
                 bold: true,
                 valueColor: AppColors.textPrimary,
               ),

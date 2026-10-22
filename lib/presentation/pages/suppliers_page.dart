@@ -17,8 +17,6 @@ import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/empty_state.dart';
 
-// Página de Proveedores, con su propio módulo de permisos ("proveedores"),
-// independiente de Clientes.
 class SuppliersPage extends ConsumerWidget {
   const SuppliersPage({super.key});
 
@@ -32,7 +30,6 @@ class SuppliersPage extends ConsumerWidget {
   }
 }
 
-// Contenido de la lista de proveedores, sin AppBar propia.
 class SuppliersListBody extends ConsumerWidget {
   const SuppliersListBody({super.key});
 
@@ -120,7 +117,7 @@ class SuppliersListBody extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, SupplierModel? supplier) {
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => SupplierDialog(supplier: supplier),
     );

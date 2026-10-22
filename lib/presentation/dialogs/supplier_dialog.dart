@@ -5,6 +5,9 @@ import '../../models/supplier_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../../application/form_validation.dart';
 import '../../models/default_records.dart';
 import '../widgets/app_sheet.dart';
@@ -21,12 +24,14 @@ class SupplierDialog extends ConsumerStatefulWidget {
   ConsumerState<SupplierDialog> createState() => _SupplierDialogState();
 }
 
-class _SupplierDialogState extends ConsumerState<SupplierDialog> {
+class _SupplierDialogState extends ConsumerState<SupplierDialog>
+    with SingleFlight<SupplierDialog>, LiveValidation<SupplierDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _contactController;
   late bool _isActive;
   String? _saveError;
+  late final String _initialSignature;
 
   @override
   void initState() {
@@ -37,10 +42,24 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
     );
     _isActive = widget.supplier?.isActive ?? true;
     _nameController.addListener(_clearSaveError);
+    _initialSignature = _signature();
   }
 
-  // Un error de guardado (p. ej. nombre repetido) deja de mostrarse en
-  // cuanto se corrige el nombre.
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_saveError = null;}
+
+  String _signature() => [
+    _nameController.text,
+    _contactController.text,
+    _isActive,
+  ].join('\u0000');
+
   void _clearSaveError() {
     if (_saveError != null) setState(() => _saveError = null);
   }
@@ -52,8 +71,6 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
     super.dispose();
   }
 
-  // Nombre obligatorio, distinto del reservado del sistema y sin repetirse con
-  // otro registro (sin distinguir mayúsculas ni tildes).
   String? _validateName(String? value) {
     final error = validateName(value);
     if (error != null) return error;
@@ -69,11 +86,11 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!validateForm()) return;
     setState(() => _saveError = null);
-    final error = await ref
+    final result = await ref
         .read(supplierProvider.notifier)
-        .save(
+        .saveWithId(
           id: widget.supplier?.id,
           name: _nameController.text.trim(),
           contactInfo: _contactController.text.trim().isEmpty
@@ -82,17 +99,12 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
           isActive: _isActive,
         );
     if (!mounted) return;
+    final error = result.error;
     if (error != null) {
       setState(() => _saveError = error);
       return;
     }
-    if (widget.onSaved != null) {
-      final suppliers = ref.read(supplierProvider).suppliers;
-      final saved = suppliers
-          .where((s) => s.name == _nameController.text.trim())
-          .firstOrNull;
-      if (saved != null) widget.onSaved!(saved.id);
-    }
+    if (result.id != null) widget.onSaved?.call(result.id!);
     Navigator.pop(context);
   }
 
@@ -105,7 +117,6 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
           : 'El proveedor no estará disponible para nuevas compras.',
       confirmLabel: value ? 'Activar' : 'Desactivar',
       confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
-      dismissLabel: 'Cancelar',
     );
     if (!confirm) return;
     setState(() => _isActive = value);
@@ -113,6 +124,18 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _nameController,
+        _contactController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.supplier != null;
 
     return FormSheet(
@@ -121,10 +144,10 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
-        onPrimary: _save,
+        onPrimary: () => runOnce(_save),
+        busy: inFlight,
       ),
       children: [
-        // Nombre
         LabeledField(
           label: 'Nombre',
           builder: (_) => TextFormField(
@@ -136,7 +159,6 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Información de contacto
         LabeledField(
           label: 'Información de contacto',
           builder: (_) => TextFormField(
@@ -150,7 +172,6 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
           ),
         ),
 
-        // Estado: solo al editar
         if (isEditing) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
@@ -163,7 +184,6 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog> {
           ),
         ],
 
-        // Error al guardar
         if (_saveError != null) FormErrorText(_saveError!),
       ],
     );

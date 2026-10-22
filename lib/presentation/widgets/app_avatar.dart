@@ -3,23 +3,17 @@ import '../../theme/app_theme.dart';
 
 class AppAvatar extends StatelessWidget {
   final String name;
-  final double size;
-  final Color color;
 
-  const AppAvatar({
-    super.key,
-    required this.name,
-    this.size = 56,
-    this.color = AppColors.cyanDark,
-  });
+  const AppAvatar({super.key, required this.name});
 
   @override
   Widget build(BuildContext context) {
+    const color = AppColors.cyanDark;
     final onColor = onColorOf(color);
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      width: 56,
+      height: 56,
+      decoration: const BoxDecoration(color: color, shape: BoxShape.circle),
       child: Center(
         child: name.isEmpty
             ? Icon(Icons.person_rounded, color: onColor)

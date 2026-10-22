@@ -18,9 +18,6 @@ Future<AppDatabase> _openDbWithUser({
   required String password,
 }) async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
-  // Fuerza la apertura para que se ejecute el seed inicial (onCreate), como
-  // ocurriría en una instalación limpia real (sin --dart-define de usuario
-  // semilla: el usuario se crea aquí a mano, igual que lo haría un registro).
   await db.select(db.modules).get();
   await db
       .into(db.users)
@@ -58,11 +55,9 @@ void main() {
         'usuario_prueba',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Tu contraseña'),
+        find.widgetWithText(TextFormField, 'Contraseña'),
         '123456',
       );
-      // En la superficie de prueba (800x600) el botón queda más abajo de lo
-      // visible: se desplaza hasta él, como haría la persona.
       await tester.ensureVisible(
         find.widgetWithText(ElevatedButton, 'Iniciar sesión'),
       );

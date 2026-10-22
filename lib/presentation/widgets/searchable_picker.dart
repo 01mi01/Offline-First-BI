@@ -9,8 +9,6 @@ import 'app_controls.dart';
 import 'app_style.dart';
 import 'empty_state.dart';
 
-// Opción de un [SearchablePickerField]. [value] puede ser null para la opción
-// predeterminada ("Sin nombre", "Sin proveedor"...).
 class PickerOption<T> {
   final T? value;
   final String label;
@@ -27,15 +25,6 @@ class PickerOption<T> {
   });
 }
 
-// Selector de un registro existente con búsqueda en línea, igual que el
-// buscador de productos: se escribe directamente en el campo y los resultados
-// aparecen justo debajo (sin abrir ninguna ventana). Tocar un resultado lo
-// elige. Pensado para listas largas, donde desplazarse por un desplegable
-// corriente es impracticable.
-//
-// Con el campo vacío no se lista nada (podría haber cientos de elementos): solo
-// la opción predeterminada ("Sin nombre", "Sin proveedor"), para poder volver a
-// ella, y la invitación a escribir.
 class SearchablePickerField<T> extends StatefulWidget {
   final String label;
   final T? value;
@@ -43,21 +32,13 @@ class SearchablePickerField<T> extends StatefulWidget {
   final ValueChanged<T?> onChanged;
   final String searchHint;
 
-  // Toma el foco (y abre los resultados) apenas se muestra el campo.
-  final bool autofocus;
-
-  // Se llama cuando el campo pierde el foco (se eligió algo o se tocó fuera).
-  final VoidCallback? onDismissed;
-
-  // Botón junto a la etiqueta (p. ej. "+ Agregar"): se queda en la fila de la
-  // etiqueta y los resultados se abren debajo del campo.
   final Widget? labelAction;
 
-  // Campo de búsqueda con el aspecto común de las listas (opt-in).
   final bool searchStyle;
 
-  // Sin etiqueta encima del campo (el texto de ayuda lo describe).
   final bool showLabel;
+
+  final ValueChanged<bool>? onFocusChanged;
 
   const SearchablePickerField({
     super.key,
@@ -66,11 +47,10 @@ class SearchablePickerField<T> extends StatefulWidget {
     required this.options,
     required this.onChanged,
     this.searchHint = 'Buscar',
-    this.autofocus = false,
-    this.onDismissed,
     this.labelAction,
     this.searchStyle = false,
     this.showLabel = true,
+    this.onFocusChanged,
   });
 
   @override
@@ -115,8 +95,6 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
   @override
   void didUpdateWidget(SearchablePickerField<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Sin foco, el campo muestra siempre lo elegido (aunque cambie desde
-    // fuera o las opciones terminen de cargar).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _focus.hasFocus) return;
       final label = _selectedLabel;
@@ -134,30 +112,21 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
     super.dispose();
   }
 
-  // El teclado terminó de abrirse (o cambió de alto): los resultados deben
-  // seguir a la vista.
   @override
   void didChangeMetrics() => _reveal();
 
   void _onFocusChange() {
+    widget.onFocusChanged?.call(_focus.hasFocus);
     if (_focus.hasFocus) {
-      // Se empieza a buscar de cero: lo elegido vuelve a verse al salir.
       _controller.clear();
       setState(() {});
       _reveal();
     } else {
       _controller.text = _selectedLabel;
       setState(() {});
-      widget.onDismissed?.call();
     }
   }
 
-  // Deja el campo con sus resultados debajo a la vista, por encima del teclado.
-  // Solo se hace al enfocar y cuando el teclado termina de abrirse o cambia de
-  // alto; escribir o que cambie la lista de resultados no vuelve a mover la
-  // pantalla (el campo está por encima de los resultados, así que su posición
-  // no cambia). Se espera un instante para que el propio campo de texto (que
-  // también se desplaza para mostrar el cursor) termine primero y no se pisen.
   void _reveal() {
     _revealTimer?.cancel();
     _revealTimer = Timer(const Duration(milliseconds: 120), () {
@@ -241,22 +210,14 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             builder: (labelText) => _sized(TextField(
             controller: _controller,
             focusNode: _focus,
-            autofocus: widget.autofocus,
-            // Tocar fuera cierra los resultados (los toques dentro del campo o
-            // de la lista no cuentan como "fuera").
             onTapOutside: (_) => _focus.unfocus(),
             textInputAction: TextInputAction.search,
-            // Sin margen extra: si el campo ya está a la vista, escribir no lo
-            // desplaza (la pantalla solo se mueve al enfocar).
             scrollPadding: EdgeInsets.zero,
             onChanged: (_) => setState(() {}),
             decoration: _decoration(context, labelText, focused, query),
           ))),
           if (focused) ...[
             const SizedBox(height: AppSpacing.s8),
-            // Alto fijo: la lista de resultados no cambia de tamaño mientras se
-            // escribe, así que lo que hay encima (el campo) no se mueve cuando
-            // los resultados aparecen, aumentan o disminuyen.
             Container(
               height: resultsHeight,
               decoration: BoxDecoration(

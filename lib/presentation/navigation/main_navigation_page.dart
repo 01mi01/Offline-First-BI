@@ -54,11 +54,6 @@ Widget bodyForGroup(NavGroupId group) {
   }
 }
 
-// Shell de navegación inferior que reemplaza el drawer lateral. Los tabs
-// visibles se resuelven en tiempo de ejecución a partir de los módulos a
-// los que el usuario tiene acceso, no de una lista fija: por eso todo el
-// árbol se construye desde las listas resueltas por nav_resolver.dart en
-// cada build.
 class MainNavigationPage extends ConsumerStatefulWidget {
   const MainNavigationPage({super.key});
 
@@ -82,13 +77,6 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          // El shell en sí no tiene campos de texto propios (los diálogos con
-          // formularios se abren en rutas separadas), así que no necesita
-          // encogerse por el teclado. Sin esto, en un arranque en frío el
-          // engine puede reportar momentáneamente un inset de teclado
-          // incorrecto (por `adjustResize` en el manifest de Android),
-          // haciendo que el bottomNavigationBar se colapse/oculte hasta que
-          // la app se reabre y el inset se recalcula correctamente.
           resizeToAvoidBottomInset: false,
           body: IndexedStack(
             index: index,
@@ -126,7 +114,6 @@ class MainBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Si hay más tabs que el límite, los que exceden se agrupan en "Más".
     final overflow = groups.length > maxVisibleNavTabs;
     final visibleGroups = overflow
         ? groups.sublist(0, maxVisibleNavTabs - 1)
@@ -221,9 +208,14 @@ class _NavTabButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: color, size: 22),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppSpacing.s2),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textScaler: MediaQuery.textScalerOf(
+              context,
+            ).clamp(maxScaleFactor: 1.2),
             style: TextStyle(
               color: color,
               fontSize: 11,

@@ -16,7 +16,6 @@ import 'search_helpers.dart';
 import 'package:offline_first_bi/presentation/widgets/searchable_picker.dart';
 import 'package:offline_first_bi/presentation/widgets/record_list.dart';
 
-// Edición y cancelación de ventas / registros de uso desde la interfaz.
 void main() {
   late AppDatabase db;
 
@@ -36,11 +35,10 @@ void main() {
     child: MaterialApp(theme: lightTheme, home: home),
   );
 
-  // Producto con 5 en stock; una venta suya de 2 unidades lo deja en 3.
   Future<SaleModel> seedSaleOfTwo() async {
     final repository = SaleRepository(db);
     await repository.createSale(
-      clientId: 1, // "Sin nombre", sembrado al crear la base
+      clientId: 1,
       locationId: null,
       eventId: null,
       totalAmount: 20,
@@ -103,22 +101,16 @@ void main() {
 
         await openEditDialog(tester, sale);
 
-        // El carrito arranca con las 2 unidades de la venta, y el catálogo
-        // ofrece 5 (3 en inventario + 2 de esta venta), no 3. El catálogo
-        // aparece al escribir en el buscador de productos.
         await searchProducts(tester, 'Tote bag negra');
         expect(find.textContaining('Stock: 5'), findsOneWidget);
         expect(find.text('2'), findsOneWidget);
 
-        // El único "+" visible es el del carrito (en el catálogo el producto
-        // ya aparece marcado).
         final plus = find.byTooltip('Agregar uno');
         for (var i = 0; i < 6; i++) {
           await tester.ensureVisible(plus);
           await tester.tap(plus);
           await tester.pumpAndSettle();
         }
-        // Tras 6 toques solo sube hasta 5: el tope es 3 + 2, no el 3 de antes.
         expect(find.text('5'), findsOneWidget);
         expect(find.text('6'), findsNothing);
 
@@ -128,7 +120,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(SaleDialog), findsNothing);
-        expect(await productStock(), 0); // 3 + 2 devueltos - 5 nuevos
+        expect(await productStock(), 0);
         final items = await SaleRepository(db).getItemsForSale(sale.id);
         expect(items.single.quantity, 5);
       },
@@ -159,9 +151,8 @@ void main() {
 
         await searchProducts(tester, 'Tote bag negra');
         expect(find.textContaining('Stock: 5'), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.add_circle_rounded)); // agrega al carrito (1)
+        await tester.tap(find.byIcon(Icons.add_circle_rounded));
         await tester.pumpAndSettle();
-        // Ahora el "+" del carrito: el producto del catálogo ya aparece marcado.
         final plus = find.byTooltip('Agregar uno');
         for (var i = 0; i < 8; i++) {
           await tester.ensureVisible(plus);
@@ -204,8 +195,6 @@ void main() {
 
         expect(find.text('Cancelada'), findsNothing);
 
-        // La opción de cancelar vive al final del formulario "Editar venta",
-        // al que se llega desde el detalle de la venta.
         await tester.tap(find.byType(RecordRow));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Editar'));
@@ -219,9 +208,8 @@ void main() {
         await tester.tap(find.text('Cancelar la venta').last);
         await tester.pumpAndSettle();
 
-        expect(await productStock(), 5); // lo vendido volvió al inventario
+        expect(await productStock(), 5);
         expect(find.text('Cancelada'), findsOneWidget);
-        // La venta sigue en la lista, pero ya no se puede editar ni cancelar.
         expect(find.text('Sin nombre'), findsOneWidget);
         await tester.tap(find.byType(RecordRow));
         await tester.pumpAndSettle();
@@ -250,17 +238,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancelar la venta'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Volver'));
+      await tester.tap(find.text('Volver').last);
       await tester.pumpAndSettle();
 
       expect(await productStock(), 3);
       expect((await SaleRepository(db).getAll()).single.isCanceled, isFalse);
-      // El formulario sigue abierto: se cierra con su propio "Cancelar".
       expect(find.text('Editar venta'), findsOneWidget);
-      await tester.tap(find.text('Cancelar').first);
+      await tester.tap(find.text('Volver').first);
       await tester.pumpAndSettle();
       expect(find.text('Cancelada'), findsNothing);
-      // Se vuelve a la lista, con la venta intacta.
       expect(find.byType(RecordRow), findsOneWidget);
       expect((await SaleRepository(db).getAll()).single.isCanceled, isFalse);
     });
@@ -297,7 +283,6 @@ void main() {
 
         expect(find.text('Papel para stickers'), findsOneWidget);
         expect(find.text('Cancelado'), findsNothing);
-        // Ya no hay ícono de cancelar en la lista: se edita desde el detalle.
         expect(find.byIcon(Icons.cancel_outlined), findsNothing);
 
         await tester.tap(find.text('Papel para stickers'));
@@ -312,8 +297,8 @@ void main() {
         await tester.tap(find.text('Cancelar el registro de uso').last);
         await tester.pumpAndSettle();
 
-        expect(await materialStock(), 10); // los 4 metros volvieron
-        expect(find.text('Papel para stickers'), findsOneWidget); // sigue en la lista
+        expect(await materialStock(), 10);
+        expect(find.text('Papel para stickers'), findsOneWidget);
         expect(find.text('Cancelado'), findsOneWidget);
         await tester.tap(find.text('Papel para stickers'));
         await tester.pumpAndSettle();

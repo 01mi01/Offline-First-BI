@@ -2,11 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'bi_models.dart' show coPurchaseMinSales;
 import 'report_filters.dart';
 
-// Configuración de Business Intelligence: qué periodo y filtros se aplican,
-// qué indicadores se ven y con qué tipo de gráfico.
-
-// Formas de visualizar un indicador. No todas valen para todos los
-// indicadores: cada [BiIndicator] declara las suyas.
 enum BiChartType {
   bar('Barras'),
   pie('Pastel'),
@@ -19,7 +14,6 @@ enum BiChartType {
   const BiChartType(this.label);
 }
 
-// Grupo con el que se agrupan los indicadores al elegirlos.
 enum BiGroup {
   resumen('Resumen'),
   ventas('Ventas'),
@@ -30,46 +24,44 @@ enum BiGroup {
   const BiGroup(this.label);
 }
 
-// Los indicadores del módulo, en el orden en que se muestran. Cada uno lleva
-// el texto de su icono de información: qué muestra y para qué sirve.
 enum BiIndicator {
   summary(
     group: BiGroup.resumen,
-    title: 'Resumen del periodo',
+    title: 'Resumen del período',
     description: 'Ingresos, gastos y balance',
     defaultSelected: true,
     info:
         'Qué muestra: el total de ingresos (ventas ya descontados los '
         'descuentos), el total de gastos (todas las compras) y el balance '
-        '(ingresos − gastos) del periodo y los filtros elegidos.\n\n'
+        '(ingresos − gastos) del período y los filtros elegidos.\n\n'
         'Para qué sirve: saber de un vistazo si el negocio ganó o perdió '
-        'dinero en ese periodo.',
+        'dinero en ese período.',
   ),
   periodComparison(
     group: BiGroup.resumen,
-    title: 'Comparación entre periodos',
-    description: 'Este periodo frente al anterior equivalente',
+    title: 'Comparación entre períodos',
+    description: 'Este período frente al anterior equivalente',
     chartTypes: [BiChartType.cards, BiChartType.bar],
     defaultSelected: true,
     info:
-        'Qué muestra: los ingresos, gastos y balance del periodo elegido junto '
-        'a los del periodo inmediatamente anterior de igual tamaño (este mes '
+        'Qué muestra: los ingresos, gastos y balance del período elegido junto '
+        'a los del período inmediatamente anterior de igual tamaño (este mes '
         'frente al mes pasado, esta semana frente a la semana pasada, o los '
         'mismos días justo antes si el rango es a medida), con el porcentaje '
         'de cambio. Se compara el mismo número de días transcurridos, para '
         'que un mes a medias no se mida contra un mes completo.\n\n'
         'Para qué sirve: ver si el negocio va mejor o peor que antes. Requiere '
-        'un periodo con fechas (no "todo el historial").',
+        'un período con fechas (no "todo el historial").',
   ),
   timeSeries(
     group: BiGroup.ventas,
     title: 'Evolución en el tiempo',
-    description: 'Ingresos y gastos a lo largo del periodo',
+    description: 'Ingresos y gastos a lo largo del período',
     chartTypes: [BiChartType.line, BiChartType.bar],
     defaultSelected: true,
     info:
         'Qué muestra: cómo cambian los ingresos y los gastos dentro del '
-        'periodo, por día, semana o mes según lo largo que sea el rango.\n\n'
+        'período, por día, semana o mes según lo largo que sea el rango.\n\n'
         'Para qué sirve: detectar picos, caídas y temporadas fuertes o '
         'flojas.',
   ),
@@ -78,12 +70,12 @@ enum BiIndicator {
     title: 'Proyección de ventas',
     description: 'Tendencia reciente extendida hacia adelante',
     info:
-        'Qué muestra: los ingresos del periodo (línea continua) y una línea '
+        'Qué muestra: los ingresos del período (línea continua) y una línea '
         'punteada con la tendencia de los últimos intervalos completos, '
         'prolongada hacia el futuro con una proyección lineal simple.\n\n'
         'Es una estimación basada en la tendencia reciente, no una garantía: '
         'no considera temporadas, eventos ni cambios de precio. Requiere un '
-        'periodo que llegue hasta hoy y al menos 3 intervalos completos.\n\n'
+        'período que llegue hasta hoy y al menos 3 intervalos completos.\n\n'
         'Para qué sirve: tener una idea orientativa de hacia dónde van las '
         'ventas.',
   ),
@@ -94,7 +86,7 @@ enum BiIndicator {
     chartTypes: [BiChartType.bar, BiChartType.pie],
     defaultSelected: true,
     info:
-        'Qué muestra: los productos más vendidos del periodo, por ingresos o '
+        'Qué muestra: los productos más vendidos del período, por ingresos o '
         'por unidades.\n\n'
         'Para qué sirve: saber qué productos sostienen las ventas y cuáles '
         'aportan poco.',
@@ -106,7 +98,7 @@ enum BiIndicator {
     chartTypes: [BiChartType.bar, BiChartType.list],
     defaultSelected: true,
     info:
-        'Qué muestra: la ganancia de cada producto vendido en el periodo: '
+        'Qué muestra: la ganancia de cada producto vendido en el período: '
         'ingresos menos costo de producción de las unidades vendidas, como '
         'porcentaje del ingreso (margen) y en monto. Solo aparecen productos '
         'con costo de producción registrado.\n\n'
@@ -139,7 +131,7 @@ enum BiIndicator {
   salesByEvent(
     group: BiGroup.ventas,
     title: 'Ventas por evento',
-    description: 'Ingresos de las ventas ligadas a cada evento',
+    description: 'Ingresos de las ventas vinculadas a cada evento',
     chartTypes: [BiChartType.bar, BiChartType.pie],
     defaultSelected: true,
     info:
@@ -155,7 +147,7 @@ enum BiIndicator {
     info:
         'Qué muestra: el promedio de ventas por día y por venta en los días '
         'de evento (según las fechas de cada evento) frente a los días sin '
-        'evento, dentro del periodo.\n\n'
+        'evento, dentro del período.\n\n'
         'Para qué sirve: responder si vale la pena asistir a eventos. Es una '
         'comparación orientativa: no descuenta lo que cuesta ir al evento.',
   ),
@@ -167,10 +159,10 @@ enum BiIndicator {
     info:
         'Qué muestra: los pares de productos que aparecen juntos en una misma '
         'venta, con el número de ventas que incluyen a ambos y el porcentaje '
-        'que eso representa sobre todas las ventas del periodo. Solo cuentan '
+        'que eso representa sobre todas las ventas del período. Solo cuentan '
         'las ventas con 2 o más productos distintos, y solo se muestran los '
         'pares que coinciden en al menos $coPurchaseMinSales ventas, para no '
-        'confundir una casualidad con un patrón. Respeta el periodo, el '
+        'confundir una casualidad con un patrón. Respeta el período, el '
         'evento y la ubicación elegidos; si filtras por producto, categoría o '
         'tipo de precio, se consideran las ventas que incluyen ese producto, '
         'con todos sus productos.\n\n'
@@ -185,7 +177,7 @@ enum BiIndicator {
     info:
         'Qué muestra: los ingresos (ya descontados los descuentos) y el número '
         'de ventas de cada día de la semana, de lunes a domingo, sumando todo '
-        'el periodo. Cada venta cuenta en el día de su propia fecha. Puedes '
+        'el período. Cada venta cuenta en el día de su propia fecha. Puedes '
         'alternar entre ingresos y número de ventas.\n\n'
         'Para qué sirve: saber qué días se vende más y cuáles menos, para '
         'planificar cuándo producir, abrir o asistir a una feria.',
@@ -196,7 +188,7 @@ enum BiIndicator {
     description: 'Cuánto se vende en promedio por cada venta',
     chartTypes: [BiChartType.cards, BiChartType.line],
     info:
-        'Qué muestra: el monto promedio de cada venta del periodo (ingresos '
+        'Qué muestra: el monto promedio de cada venta del período (ingresos '
         'después de descuentos ÷ número de ventas) y cómo cambia en el '
         'tiempo, con los mismos intervalos (día, semana o mes) que '
         'Evolución en el tiempo.\n\n'
@@ -214,7 +206,7 @@ enum BiIndicator {
         'menos el total de TODAS las compras vinculadas a ese evento: tanto '
         'los gastos generales (hotel, pasajes, participación en la feria...) '
         'como las compras de materiales. Cada venta y cada compra cuenta por '
-        'su propia fecha dentro del periodo elegido, no por la fecha del '
+        'su propia fecha dentro del período elegido, no por la fecha del '
         'evento. Se incluyen todas las compras vinculadas aunque filtres por '
         'tipo de operación o proveedor. Las pérdidas aparecen en rojo.\n\n'
         'No descuenta el costo de producción de lo vendido ni las compras que '
@@ -228,7 +220,7 @@ enum BiIndicator {
     description: 'Cuánto se dejó de cobrar en descuentos',
     chartTypes: [BiChartType.cards, BiChartType.line],
     info:
-        'Qué muestra: el total de descuentos dados en el periodo, como monto '
+        'Qué muestra: el total de descuentos dados en el período, como monto '
         'y como porcentaje de las ventas brutas (antes de descontar), y cómo '
         'evolucionan en el tiempo con los mismos intervalos que Evolución en '
         'el tiempo.\n\n'
@@ -238,11 +230,11 @@ enum BiIndicator {
   costReturn(
     group: BiGroup.ventas,
     title: 'Retorno sobre el costo de producción',
-    description: 'Ganancia por cada Bs. 1 de costo de producción',
+    description: 'Ganancia por cada Bs. 1 de costo de producción',
     chartTypes: [BiChartType.bar, BiChartType.list],
     info:
         'Qué muestra: para cada producto vendido, cuánto ganaste por cada '
-        'Bs. 1 que costó producirlo: (ingresos después de descuentos − costo '
+        'Bs. 1 que costó producirlo: (ingresos después de descuentos − costo '
         'de producción × unidades vendidas) ÷ (costo de producción × '
         'unidades vendidas). Se ordena del mejor al peor retorno y las '
         'pérdidas aparecen en rojo. Los productos sin costo de producción '
@@ -263,22 +255,22 @@ enum BiIndicator {
     defaultSelected: true,
     info:
         'Qué muestra: cuánto se gastó en cada material comprado en el '
-        'periodo, con la cantidad comprada.\n\n'
+        'período, con la cantidad comprada.\n\n'
         'Para qué sirve: ver en qué materiales se va el dinero.',
   ),
   materialCostRatio(
     group: BiGroup.compras,
     title: 'Costo de materiales vs. ingresos',
-    description: 'Cuánto se gasta en materiales por cada Bs. vendido',
+    description: 'Cuánto se gasta en materiales por cada Bs. vendido',
     chartTypes: [BiChartType.cards, BiChartType.bar],
     info:
         'Qué muestra: el total gastado en compras de materiales frente al '
-        'total de ingresos por ventas del periodo, y qué porcentaje del '
+        'total de ingresos por ventas del período, y qué porcentaje del '
         'ingreso representa.\n\n'
         'Es un indicador aproximado, no un costo de ventas exacto: el costo '
         'de producción de cada producto se carga a mano y los materiales no '
         'se registran venta por venta; además compras y ventas de un mismo '
-        'periodo no siempre corresponden entre sí.\n\n'
+        'período no siempre corresponden entre sí.\n\n'
         'Para qué sirve: una señal rápida de cuánto de lo que vendes se va en '
         'materiales.',
   ),
@@ -292,7 +284,7 @@ enum BiIndicator {
         'centro llega un vértice, mejor es el producto en ese eje. Un '
         'polígono grande y parejo es un producto fuerte en todo.\n\n'
         'Ejes (todos de 0 a 100 %): Ingresos y Unidades, frente al producto '
-        'que más vendió en el periodo; Margen, el porcentaje de ganancia '
+        'que más vendió en el período; Margen, el porcentaje de ganancia '
         '(0 si no tiene costo de producción); Rotación, la parte del stock '
         'disponible que ya se vendió (unidades vendidas ÷ (vendidas + stock '
         'actual)).\n\n'
@@ -307,7 +299,7 @@ enum BiIndicator {
     defaultSelected: true,
     info:
         'Qué muestra: los productos activos con 3 unidades o menos en '
-        'inventario ahora mismo. No depende del periodo ni de los filtros.\n\n'
+        'inventario ahora mismo. No depende del período ni de los filtros.\n\n'
         'Para qué sirve: saber qué producir o reponer antes de quedarte sin '
         'stock.',
   ),
@@ -319,7 +311,7 @@ enum BiIndicator {
     info:
         'Qué muestra: los productos activos sin ninguna venta en los últimos '
         'días que elijas (7, 15, 30, 60 o 90), con la fecha de su última '
-        'venta. No depende del periodo ni de los filtros: mide la '
+        'venta. No depende del período ni de los filtros: mide la '
         'recencia.\n\n'
         'Para qué sirve: detectar inventario que no se está vendiendo.',
   );
@@ -329,11 +321,8 @@ enum BiIndicator {
   final String description;
   final String info;
 
-  // Tipos de gráfico permitidos; el primero es el predeterminado. Con un solo
-  // tipo no hay selector.
   final List<BiChartType> chartTypes;
 
-  // ¿Viene marcado al abrir la configuración por primera vez?
   final bool defaultSelected;
 
   const BiIndicator({
@@ -348,11 +337,9 @@ enum BiIndicator {
   bool get hasChartPicker => chartTypes.length > 1;
 }
 
-// Ventanas ofrecidas para "sin movimiento reciente", en días.
 const List<int> noMovementWindowOptions = [7, 15, 30, 60, 90];
 const int defaultNoMovementDays = 30;
 
-// Mínimo y máximo de productos del radar.
 const int radarMinProducts = 2;
 const int radarMaxProducts = 4;
 
@@ -361,11 +348,7 @@ class BiConfig {
   final Set<BiIndicator> indicators;
   final Map<BiIndicator, BiChartType> chartTypes;
   final int noMovementDays;
-  // Productos elegidos para el radar; vacío = los 3 con más ingresos.
   final List<int> radarProductIds;
-  // Opción elegida en el interruptor de métrica de cada indicador (Ingresos /
-  // Unidades, Margen % / Ganancia...): 0 es la primera. Solo cambia lo que se
-  // ve, no los cálculos, y se descarta al empezar un panel nuevo.
   final Map<BiIndicator, int> metrics;
 
   BiConfig({
@@ -382,8 +365,6 @@ class BiConfig {
       if (i.defaultSelected) i,
   };
 
-  // Tipo de gráfico vigente de un indicador: el elegido si sigue siendo
-  // válido, y si no, el predeterminado.
   BiChartType chartTypeFor(BiIndicator indicator) {
     final chosen = chartTypes[indicator];
     return chosen != null && indicator.chartTypes.contains(chosen)
@@ -391,7 +372,6 @@ class BiConfig {
         : indicator.chartTypes.first;
   }
 
-  // Opción vigente del interruptor de métrica de un indicador (0 = la primera).
   int metricFor(BiIndicator indicator) => metrics[indicator] ?? 0;
 
   BiConfig copyWith({
@@ -412,7 +392,6 @@ class BiConfig {
     );
   }
 
-  // Lo único que cambia los CÁLCULOS (el resto es presentación).
   BiQuery get query => BiQuery(
     filters: filters,
     noMovementDays: noMovementDays,
@@ -420,7 +399,6 @@ class BiConfig {
   );
 }
 
-// Parámetros de cálculo de un reporte (clave del provider).
 class BiQuery {
   final ReportFilters filters;
   final int noMovementDays;

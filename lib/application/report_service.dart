@@ -15,16 +15,12 @@ import 'date_range_filter.dart';
 import 'location_options.dart';
 import '../config/app_clock.dart';
 
-// Filtrado, agregación y enriquecimiento de datos para el módulo de reportes
 class ReportService {
-  // ¿Hay algún filtro que se evalúe sobre las líneas de la venta?
   bool _hasLineFilters(ReportFilters filters) =>
       filters.productId != null ||
       filters.categoryId != null ||
       filters.priceType != null;
 
-  // Una línea cumple los filtros de producto, categoría y tipo de precio
-  // cuando cumple TODOS los que estén activos (sobre la misma línea).
   bool _lineMatches(
     SaleItemModel item,
     Map<int, int?> categoryByProduct,
@@ -43,13 +39,6 @@ class ReportService {
     return true;
   }
 
-  // ¿La fecha propia de un registro (venta o compra) cae dentro del rango de
-  // los filtros? Trabaja con días completos: [startDate] incluye ese día desde
-  // las 00:00 y el fin incluye ese día completo (con solo "Desde" el fin es
-  // ese mismo día). Un registro con fecha posterior a hoy está solo
-  // "preparado": todavía no ocurrió, así que nunca cuenta, ni siquiera con un
-  // reporte sin fecha de fin. Se usa SIEMPRE la fecha del registro, nunca la de
-  // un evento al que esté vinculado.
   bool isInReportRange(DateTime date, ReportFilters filters, {DateTime? now}) {
     final today = dateOnly(now ?? appNow());
     if (filters.startDate != null &&
@@ -61,32 +50,24 @@ class ReportService {
     if (requestedEnd != null && dateOnly(requestedEnd).isBefore(today)) {
       lastDay = dateOnly(requestedEnd);
     }
-    // Límite superior exclusivo: el inicio del día siguiente al último día.
     final endExclusive = DateTime(lastDay.year, lastDay.month, lastDay.day + 1);
     return date.isBefore(endExclusive);
   }
 
-  // Filtra ventas según fecha, cliente, ubicación y evento (a nivel de venta)
-  // y según producto, categoría y tipo de precio (a nivel de línea): una venta
-  // se incluye si al menos una de sus líneas cumple todos los filtros de línea
-  // activos a la vez. [now] solo existe para poder probar el corte "hoy".
   List<SaleModel> filterSales({
     required List<SaleModel> sales,
     required List<ProductModel> products,
     required Map<int, List<SaleItemModel>> saleItemsMap,
     required ReportFilters filters,
-    // Ubicaciones existentes: hacen falta para filtrar por país y ciudad.
     List<LocationModel> locations = const [],
-    DateTime? now,
   }) {
     final locationById = {for (final l in locations) l.id: l};
     final categoryByProduct = {for (final p in products) p.id: p.categoryId};
     final lineFilters = _hasLineFilters(filters);
 
     return sales.where((s) {
-      // Una venta cancelada ya no es un ingreso: su stock se devolvió.
       if (s.isCanceled) return false;
-      if (!isInReportRange(s.date, filters, now: now)) return false;
+      if (!isInReportRange(s.date, filters)) return false;
       if (filters.clientId != null && s.clientId != filters.clientId) {
         return false;
       }
@@ -115,10 +96,6 @@ class ReportService {
     }).toList();
   }
 
-  // Líneas de cada venta que cumplen los filtros de producto/categoría/tipo
-  // de precio, con su categoría y su parte prorrateada del descuento de la
-  // venta. Solo incluye entradas para ventas que tienen ítems; una venta sin
-  // ítems no aparece y se reporta completa (ver SaleReportRow.lines).
   Map<int, List<SaleLineReport>> buildSaleLines({
     required List<SaleModel> sales,
     required List<ProductModel> products,
@@ -133,9 +110,6 @@ class ReportService {
     for (final sale in sales) {
       final items = saleItemsMap[sale.id];
       if (items == null || items.isEmpty) continue;
-      // Prorrateo del descuento a centavos: cada línea recibe su parte
-      // redondeada y la última lo que falta, para que las partes de TODAS las
-      // líneas sumen exactamente el descuento de la venta.
       final shares = <double>[];
       var assigned = 0.0;
       for (var i = 0; i < items.length; i++) {
@@ -163,20 +137,16 @@ class ReportService {
     return result;
   }
 
-  // Filtra compras según fecha, proveedor, ubicación y evento
   List<PurchaseModel> filterPurchases({
     required List<PurchaseModel> purchases,
     required ReportFilters filters,
-    // Ubicaciones existentes: hacen falta para filtrar por país y ciudad.
     List<LocationModel> locations = const [],
-    DateTime? now,
   }) {
     final locationById = {for (final l in locations) l.id: l};
     return purchases.where((p) {
-      // Una compra cancelada ya no es un gasto: su stock se restó.
       if (p.isCanceled) return false;
       if (!filters.purchaseKind.includes(p)) return false;
-      if (!isInReportRange(p.date, filters, now: now)) return false;
+      if (!isInReportRange(p.date, filters)) return false;
       if (filters.supplierId != null && p.supplierId != filters.supplierId) {
         return false;
       }
@@ -197,9 +167,6 @@ class ReportService {
     }).toList();
   }
 
-  // Resume las ventas de un reporte: cuenta las ventas que tienen al menos
-  // una línea incluida y suma los montos de esas líneas (no de la venta
-  // completa).
   SalesSummary summarizeSaleRows(List<SaleReportRow> rows) {
     return SalesSummary(
       count: rows.length,
@@ -208,7 +175,6 @@ class ReportService {
     );
   }
 
-  // Resume el total gastado y conteo de materiales de una lista de compras
   PurchasesSummary summarizePurchases(List<PurchaseModel> purchases) {
     return PurchasesSummary(
       count: purchases.length,
@@ -217,9 +183,6 @@ class ReportService {
     );
   }
 
-  // Enriquece ventas con el nombre de cliente, ubicación y evento. Si se
-  // pasa [linesBySale] (ver buildSaleLines), cada fila queda limitada a las
-  // líneas indicadas; una venta sin entrada se reporta completa.
   List<SaleReportRow> buildSaleRows({
     required List<SaleModel> sales,
     required List<ClientModel> clients,
@@ -245,9 +208,6 @@ class ReportService {
     }).toList();
   }
 
-  // Enriquece compras con el nombre de proveedor, ubicación y evento, y con
-  // sus líneas de material ([itemsByPurchase], indexado por id de compra; una
-  // compra sin entrada, como un gasto general, queda sin ítems).
   List<PurchaseReportRow> buildPurchaseRows({
     required List<PurchaseModel> purchases,
     required List<SupplierModel> suppliers,

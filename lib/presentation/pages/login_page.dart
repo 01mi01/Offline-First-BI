@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../application/auth_provider.dart';
+import '../../application/form_validation.dart';
 import '../../theme/app_theme.dart';
 import '../navigation/main_navigation_page.dart';
 import 'dart:math' as math;
@@ -51,8 +52,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     required IconData icon,
     Widget? suffix,
   }) {
-    // Bordes, relleno y estilo del error vienen de [AppFormTheme], los mismos
-    // que usan todos los formularios de la app.
     return InputDecoration(
       hintText: hint,
       prefixIcon: Icon(icon),
@@ -152,6 +151,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           TextFormField(
             autovalidateMode: AutovalidateMode.onUserInteraction,
             controller: _usernameController,
+            onChanged: (_) => ref.read(authProvider.notifier).clearError(),
             style: fieldStyle,
             cursorColor: AppColors.cyanDark,
             cursorErrorColor: AppColors.cyanDark,
@@ -161,19 +161,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               hint: 'Nombre de usuario',
               icon: Icons.person_rounded,
             ),
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+            validator: (v) => v == null || v.isEmpty ? requiredMessage : null,
           ),
           const SizedBox(height: AppSpacing.s20),
           TextFormField(
             autovalidateMode: AutovalidateMode.onUserInteraction,
             controller: _passwordController,
+            onChanged: (_) => ref.read(authProvider.notifier).clearError(),
             obscureText: _obscurePassword,
             style: fieldStyle,
             cursorColor: AppColors.cyanDark,
             cursorErrorColor: AppColors.cyanDark,
             textInputAction: TextInputAction.done,
             decoration: _decoration(
-              hint: 'Tu contraseña',
+              hint: 'Contraseña',
               icon: Icons.lock_rounded,
               suffix: Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.s4),
@@ -192,7 +193,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ),
             ),
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+            validator: (v) => v == null || v.isEmpty ? requiredMessage : null,
           ),
           const SizedBox(height: AppSpacing.s32),
           AnimatedSize(

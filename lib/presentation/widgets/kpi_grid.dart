@@ -40,9 +40,10 @@ class AppKpiGrid extends StatelessWidget {
         ],
       );
       rows.add(
-        cardHeight == null
-            ? IntrinsicHeight(child: row)
-            : SizedBox(height: cardHeight, child: row),
+        ConstrainedBox(
+          constraints: BoxConstraints(minHeight: cardHeight ?? 0),
+          child: IntrinsicHeight(child: row),
+        ),
       );
       if (i + 2 < items.length) {
         rows.add(const SizedBox(height: AppSpacing.s12));
@@ -60,43 +61,46 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Container(
-      key: ValueKey('home-kpi-${kpi.key}'),
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: AppCards.decoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: kpi.background ?? kpi.color.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.15,
+      child: Container(
+        key: ValueKey('home-kpi-${kpi.key}'),
+        padding: const EdgeInsets.all(AppSpacing.s16),
+        decoration: AppCards.decoration,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: kpi.background ?? kpi.color.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(kpi.icon, size: 20, color: kpi.color),
             ),
-            child: Icon(kpi.icon, size: 20, color: kpi.color),
-          ),
-          const SizedBox(height: AppSpacing.s12),
-          Text(
-            kpi.label,
-            style: textTheme.labelMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              kpi.value,
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: AppColors.textPrimary,
+            const SizedBox(height: AppSpacing.s12),
+            Text(
+              kpi.label,
+              style: textTheme.labelMedium?.copyWith(
+                color: AppColors.textSecondary,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.s4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                kpi.value,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

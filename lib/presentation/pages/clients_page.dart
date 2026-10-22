@@ -17,8 +17,6 @@ import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/empty_state.dart';
 
-// Página de Clientes, con su propio módulo de permisos ("clientes"),
-// independiente de Proveedores.
 class ClientsPage extends ConsumerWidget {
   const ClientsPage({super.key});
 
@@ -32,7 +30,6 @@ class ClientsPage extends ConsumerWidget {
   }
 }
 
-// Contenido de la lista de clientes, sin AppBar propia.
 class ClientsListBody extends ConsumerWidget {
   const ClientsListBody({super.key});
 
@@ -120,7 +117,7 @@ class ClientsListBody extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, ClientModel? client) {
-    showAppSheet<void>(context, builder: (_) => ClientDialog(client: client));
+    showFormSheet<void>(context, builder: (_) => ClientDialog(client: client));
   }
 }
 

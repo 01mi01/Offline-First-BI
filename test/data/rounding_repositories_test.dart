@@ -7,8 +7,6 @@ import 'package:offline_first_bi/data/repositories/product_repository.dart';
 import 'package:offline_first_bi/data/repositories/purchase_repository.dart';
 import 'package:offline_first_bi/data/repositories/sale_repository.dart';
 
-// Redondeo en el origen: lo que se guarda y lo que se compara ya va a dos
-// decimales, sin ruido de coma flotante (72.6 - 15 = 57.599999999999994).
 void main() {
   late AppDatabase db;
   late PurchaseRepository purchases;
@@ -83,11 +81,10 @@ void main() {
   group('purchases', () {
     test('canceling a 15 m purchase leaves exactly 57.60, not 57.599999999999994', () async {
       final id = await buy(tela, 15, 2);
-      // El stock actual (72.6) ya incluye esa compra, como en los datos de ejemplo.
       await (db.update(db.materials)..where((m) => m.id.equals(tela))).write(
         const MaterialsCompanion(stock: Value(72.6)),
       );
-      expect(72.6 - 15, isNot(57.6)); // la resta cruda da 57.599999999999994
+      expect(72.6 - 15, isNot(57.6));
 
       expect(await purchases.cancelPurchase(id), isNull);
 
@@ -101,7 +98,6 @@ void main() {
 
     test('canceling is blocked, by the rounded values, when the stock was used', () async {
       final id = await buy(tela, 15, 2);
-      // Se usan 80 de los 87.6: quedan 7.6 y la compra sumó 15.
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
@@ -165,7 +161,6 @@ void main() {
         for (var i = 0; i < 30; i++)
           {'materialId': tela, 'quantity': 0.1, 'unitPrice': 0.3},
       ];
-      // 30 x (0.1 x 0.3) = 0.90 con ruido si se suma crudo.
       expect(purchases.calculateMaterialsTotal(items), 0.9);
       expect(
         purchases.calculateMaterialsTotal([
@@ -230,7 +225,6 @@ void main() {
     });
 
     test('using the rounded available stock exactly is allowed', () async {
-      // 72.6 se guarda tal cual; se usa todo.
       expect(
         await materials.registerMaterialUsage(
           productId: productId,

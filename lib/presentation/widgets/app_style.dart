@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-// Estilos de texto de las listas agrupadas y las hojas.
 class AppText {
   static TextStyle _base(BuildContext context) =>
       Theme.of(context).textTheme.bodyLarge ?? const TextStyle();
@@ -27,7 +26,6 @@ class AppText {
 
   static TextStyle footnote(BuildContext context) => header(context);
 
-  // Etiqueta de un campo o de una sección de un formulario o de un detalle.
   static TextStyle formLabel(BuildContext context) => _base(context).copyWith(
     fontSize: AppMetrics.formLabelSize,
     fontWeight: FontWeight.w600,
@@ -49,11 +47,6 @@ class AppText {
     fontSize: AppMetrics.largeTitleSize,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
-  );
-
-  static TextStyle error(BuildContext context) => _base(context).copyWith(
-    fontSize: AppMetrics.headerSize,
-    color: AppColors.error,
   );
 }
 

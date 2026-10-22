@@ -18,14 +18,12 @@ class SettingsPage extends ConsumerWidget {
       context,
       title: '¿Cerrar sesión?',
       confirmLabel: 'Cerrar sesión',
-      dismissLabel: 'Cancelar',
     );
     if (!confirmed || !context.mounted) return;
 
     final navigator = Navigator.of(context);
     final auth = ref.read(authProvider.notifier);
     await auth.logout();
-    // Se vacía toda la pila (Ajustes y el shell) y queda solo el inicio de sesión.
     navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
       (route) => false,

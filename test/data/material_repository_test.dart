@@ -4,9 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/data/repositories/material_repository.dart';
 
-// Registro de uso de materiales (product_materials): editar ajusta el stock
-// por diferencia; cancelar devuelve el stock y conserva el registro marcado
-// como cancelado (no se borra).
 void main() {
   late AppDatabase db;
   late MaterialRepository repository;
@@ -72,11 +69,11 @@ void main() {
         final error = await repository.cancelMaterialUsage(record.id);
 
         expect(error, isNull);
-        expect(await stockOf(1), 10); // devuelto
+        expect(await stockOf(1), 10);
         final after = await recordFor(1, 1);
         expect(after.isCanceled, isTrue);
         expect(after.canceledAt, isNotNull);
-        expect(after.quantityUsed, 2.5); // el registro se conserva intacto
+        expect(after.quantityUsed, 2.5);
       },
     );
 
@@ -88,7 +85,7 @@ void main() {
       );
       final record = await recordFor(1, 1);
       await repository.editMaterialUsage(recordId: record.id, newQuantity: 4);
-      expect(await stockOf(1), 6); // 10 - 4
+      expect(await stockOf(1), 6);
 
       await repository.cancelMaterialUsage(record.id);
 
@@ -108,7 +105,7 @@ void main() {
       final second = await repository.cancelMaterialUsage(record.id);
 
       expect(second, 'El registro ya está cancelado');
-      expect(await stockOf(1), 10); // no 13
+      expect(await stockOf(1), 10);
     });
 
     test('a canceled record cannot be edited and leaves the stock alone', () async {
@@ -155,7 +152,7 @@ void main() {
 
         expect(error, isNull);
         final after = await recordFor(1, 1);
-        expect(after.id, record.id); // misma fila
+        expect(after.id, record.id);
         expect(after.isCanceled, isFalse);
         expect(after.canceledAt, isNull);
         expect(after.quantityUsed, 1);
@@ -218,14 +215,13 @@ void main() {
         materialId: 1,
         quantityUsed: 0.25,
       );
-      expect(await stockOf(1), 9.75); // 10 - 0.25
+      expect(await stockOf(1), 9.75);
 
       await repository.registerMaterialUsage(
         productId: 1,
         materialId: 1,
         quantityUsed: 0.75,
       );
-      // Baja 0.75 (lo nuevo), no 1.0 (el acumulado): 9.75 - 0.75.
       expect(await stockOf(1), 9.0);
     });
 
@@ -256,11 +252,11 @@ void main() {
       await repository.registerMaterialUsage(productId: 1, materialId: 2, quantityUsed: 3);
       await repository.registerMaterialUsage(productId: 1, materialId: 1, quantityUsed: 1);
 
-      expect((await recordFor(1, 1)).quantityUsed, 2); // 1 + 1
+      expect((await recordFor(1, 1)).quantityUsed, 2);
       expect((await recordFor(2, 1)).quantityUsed, 2);
       expect((await recordFor(1, 2)).quantityUsed, 3);
-      expect(await stockOf(1), 6); // 10 - (1 + 2 + 1)
-      expect(await stockOf(2), 7); // 10 - 3
+      expect(await stockOf(1), 6);
+      expect(await stockOf(2), 7);
     });
 
     test('still checks the stock for the newly added amount', () async {
@@ -269,11 +265,11 @@ void main() {
       final error = await repository.registerMaterialUsage(
         productId: 1,
         materialId: 1,
-        quantityUsed: 5, // solo quedan 4
+        quantityUsed: 5,
       );
 
-      expect(error, 'Stock insuficiente. Disponible: 4');
-      expect((await recordFor(1, 1)).quantityUsed, 6); // sin cambios
+      expect(error, 'Stock insuficiente. Disponible: 4 contenedores');
+      expect((await recordFor(1, 1)).quantityUsed, 6);
       expect(await stockOf(1), 4);
     });
   });
@@ -288,8 +284,8 @@ void main() {
         isNull,
       );
 
-      expect((await recordFor(1, 1)).quantityUsed, 5); // no 7
-      expect(await stockOf(1), 5); // 10 - 5
+      expect((await recordFor(1, 1)).quantityUsed, 5);
+      expect(await stockOf(1), 5);
     });
 
     test('editing down also replaces, and gives the difference back', () async {

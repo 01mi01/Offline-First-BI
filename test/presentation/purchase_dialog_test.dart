@@ -14,10 +14,6 @@ import 'search_helpers.dart';
 import 'form_finders.dart';
 
 Future<void> _openPurchaseDialog(WidgetTester tester, AppDatabase db) async {
-  // Usa un tamaño de pantalla realista (tipo teléfono) en vez del lienzo de
-  // prueba por defecto (800x600), que dispara el ancho máximo de 640 que
-  // Flutter aplica a los bottom sheets en pantallas anchas y no representa
-  // ningún teléfono real.
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
@@ -85,36 +81,23 @@ void main() {
 
       expect(find.text('Nueva compra'), findsOneWidget);
 
-      // No se elige proveedor: la compra no debe quedar bloqueada y se asigna
-      // al proveedor por defecto "Sin proveedor".
-
-      // Abre la hoja para agregar un material
       await tester.ensureVisible(materialsAddButton());
       await tester.tap(materialsAddButton());
       await tester.pumpAndSettle();
 
       expect(find.text('Agregar material'), findsOneWidget);
 
-      // Selecciona el material existente. La hoja anidada se apila sobre el
-      // diálogo de compra, cuyos propios dropdowns (Proveedor/Ubicación/
-      // Evento) siguen montados debajo, así que el dropdown de esta hoja es
-      // el último en el árbol, no el primero.
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, 'Tela negra', 'Tela negra');
 
-      // Cantidad
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, '3');
       await tester.pumpAndSettle();
 
-      // Confirma el material (segundo botón "Agregar", dentro de la hoja)
       await tester.ensureVisible(find.text('Agregar').last);
       await tester.tap(find.text('Agregar').last);
       await tester.pumpAndSettle();
 
-      // De regreso en el diálogo principal: el total se calculó automáticamente
-      // (3 * 4.0 = 12), sin que el diálogo haga el cálculo por su cuenta.
       expect(find.text('12.00'), findsOneWidget);
 
-      // Registra la compra
       await tester.ensureVisible(find.text('Registrar compra'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Registrar compra'));
@@ -136,7 +119,7 @@ void main() {
       final material = await (db.select(
         db.materials,
       )..where((m) => m.id.equals(1))).getSingle();
-      expect(material.stock, 103); // 100 + 3
+      expect(material.stock, 103);
     },
   );
 
@@ -145,15 +128,14 @@ void main() {
     (tester) async {
       await _openPurchaseDialog(tester, db);
 
-      // Cambia a "Gasto general"
       await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),
+        find.widgetWithText(TextFormField, 'Descripción del gasto'),
         'Pasaje de bus',
       );
-      await tester.enterText(find.widgetWithText(TextFormField, '0'), '50');
+      await tester.enterText(find.widgetWithText(TextFormField, '0.00'), '50');
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Registrar compra'));
@@ -173,7 +155,7 @@ void main() {
       final material = await (db.select(
         db.materials,
       )..where((m) => m.id.equals(1))).getSingle();
-      expect(material.stock, 100); // sin cambios
+      expect(material.stock, 100);
     },
   );
 
@@ -186,10 +168,10 @@ void main() {
       await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),
+        find.widgetWithText(TextFormField, 'Descripción del gasto'),
         'Pasajes',
       );
-      await tester.enterText(find.widgetWithText(TextFormField, '0'), '20');
+      await tester.enterText(find.widgetWithText(TextFormField, '0.00'), '20');
       await tester.ensureVisible(find.text('Registrar compra'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Registrar compra'));
@@ -214,10 +196,10 @@ void main() {
       await tester.tap(find.text('Gasto general'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Ej: transporte, entradas a eventos, etc.'),
+        find.widgetWithText(TextFormField, 'Descripción del gasto'),
         'Pasajes',
       );
-      await tester.enterText(find.widgetWithText(TextFormField, '0'), '20');
+      await tester.enterText(find.widgetWithText(TextFormField, '0.00'), '20');
       await tester.ensureVisible(find.text('Registrar compra'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Registrar compra'));
@@ -244,7 +226,6 @@ void main() {
       );
     }
 
-    // Abre la hoja "Agregar material" y elige el material indicado.
     Future<Finder> openAddSheetWith(WidgetTester tester, String material) async {
       await _openPurchaseDialog(tester, db);
       await tester.ensureVisible(materialsAddButton());
@@ -253,7 +234,6 @@ void main() {
 
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, material, material);
 
-      // Primer TextFormField de la hoja con hint "0" = cantidad.
       return find.widgetWithText(TextFormField, '0').first;
     }
 
@@ -261,7 +241,6 @@ void main() {
       WidgetTester tester,
       Finder quantity,
     ) async {
-      // El usuario escribe "2" y luego intenta el punto de "2.5".
       await tester.enterText(quantity, '2');
       await tester.pump();
       await tester.enterText(quantity, '2.');
@@ -273,7 +252,6 @@ void main() {
     }
 
     testWidgets('unidad rejects a decimal with visible feedback', (tester) async {
-      // "Tela" (unidad) ya existe en el setUp.
       final quantity = await openAddSheetWith(tester, 'Tela negra');
       expect(find.text('Cantidad (unidad)'), findsOneWidget);
       await expectDecimalRejected(tester, quantity);

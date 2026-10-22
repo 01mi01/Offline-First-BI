@@ -8,11 +8,6 @@ import 'package:offline_first_bi/models/report_filters.dart';
 import '../support/bi_harness.dart';
 import 'package:offline_first_bi/config/rounding.dart';
 
-// Los seis indicadores de ventas adicionales de Business Intelligence (productos
-// comprados juntos, ventas por día de la semana, ticket promedio, rentabilidad
-// por evento, impacto de los descuentos y retorno sobre el costo de producción)
-// sobre una base Drift real en memoria y los providers reales. Todos los
-// valores esperados están calculados a mano en los comentarios.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -22,8 +17,6 @@ void main() {
 
   DateTime day(int offset, [int hour = 12]) => h.day(offset, hour);
 
-  // El [weekday] (DateTime.monday...sunday) de la semana que empezó hace
-  // [weeksAgo] semanas (>= 1: siempre en el pasado), a las 12:00.
   DateTime weekday(int weekday, int weeksAgo) {
     final t = h.now;
     final monday = DateTime(t.year, t.month, t.day - (t.weekday - 1), 12);
@@ -42,23 +35,6 @@ void main() {
   const sat = DateTime.saturday;
   const sun = DateTime.sunday;
 
-  // Un conjunto de 9 ventas válidas de un solo producto repartidas por la
-  // semana (más una cancelada y una futura que no cuentan). Devuelve el id del
-  // evento al que está ligada la venta del viernes.
-  //
-  //   Lun (hace 1 sem.)  1 × 100            neto 100
-  //   Lun (hace 2 sem.)  1 × 50             neto  50
-  //   Mié (hace 1 sem.)  1 × 80  desc. 10   neto  70
-  //   Sáb (hace 1 sem.)  1 × 200            neto 200
-  //   Sáb (hace 2 sem.)  2 × 20             neto  40
-  //   Sáb (hace 3 sem.)  1 × 60             neto  60
-  //   Dom (hace 1 sem.)  1 × 30             neto  30
-  //   Dom (hace 2 sem.)  2 × 50  desc. 15   neto  85   (bruto 100)
-  //   Vie (hace 1 sem.)  1 × 25  (evento)   neto  25
-  //   Mar (hace 1 sem.)  1 × 999  CANCELADA
-  //   dentro de 3 días   1 × 777  FUTURA
-  //
-  // Neto total 660, bruto 685, descuentos 25, 9 ventas.
   Future<int> seedWeek() async {
     final p = await h.newProduct('Tote bag negra', stock: 1000);
     final feria = await h.newEvent('Feria de Arte', day(-40), day(-38));
@@ -148,17 +124,6 @@ void main() {
   });
 
   group('productos comprados juntos', () {
-    // Productos: A = Tote bag negra, B = Pines grandes, C = Stickers,
-    // D = Libro. Ventas válidas (10), con sus productos:
-    //   S1  A+B          S2  A+B+C        S3  A+B       S4  A+C      S5  A+C
-    //   S6  B            S7  A (dos líneas del mismo producto: 1 solo distinto)
-    //   S10 A+B (evento) S11 A+D          S12 A+D
-    // Más una venta A+B CANCELADA y otra FUTURA que no cuentan.
-    //
-    // Pares: A+B en S1, S2, S3, S10 = 4 → 4/10 = 40 %
-    //        A+C en S2, S4, S5      = 3 → 3/10 = 30 %   (justo el mínimo)
-    //        B+C solo en S2 = 1 y A+D en S11, S12 = 2 → no se muestran.
-    // Ventas con 2+ productos distintos: S1, S2, S3, S4, S5, S10, S11, S12 = 8.
     late int a, b, c, d, feria;
 
     Future<void> seedPairs() async {
@@ -167,24 +132,24 @@ void main() {
       c = await h.newProduct('Stickers', stock: 1000);
       d = await h.newProduct('Libro', stock: 1000);
       feria = await h.newEvent('Feria de Lima', day(-30), day(-28));
-      await h.sellMany(day(-1), [(a, 1, 100), (b, 1, 20)]); // S1
-      await h.sellMany(day(-2), [(a, 1, 100), (b, 1, 20), (c, 1, 10)]); // S2
-      await h.sellMany(day(-3), [(a, 2, 100), (b, 1, 20)]); // S3
-      await h.sellMany(day(-4), [(a, 1, 100), (c, 1, 10)]); // S4
-      await h.sellMany(day(-5), [(a, 1, 100), (c, 2, 10)]); // S5
-      await h.sell(day(-6), b, 1, 20); // S6
+      await h.sellMany(day(-1), [(a, 1, 100), (b, 1, 20)]);
+      await h.sellMany(day(-2), [(a, 1, 100), (b, 1, 20), (c, 1, 10)]);
+      await h.sellMany(day(-3), [(a, 2, 100), (b, 1, 20)]);
+      await h.sellMany(day(-4), [(a, 1, 100), (c, 1, 10)]);
+      await h.sellMany(day(-5), [(a, 1, 100), (c, 2, 10)]);
+      await h.sell(day(-6), b, 1, 20);
       await h.sellMany(day(-6), [
         (a, 1, 100),
         (a, 1, 90),
-      ]); // S7: mismo producto
+      ]);
       await h.sellMany(day(-7), [
         (a, 1, 100),
         (b, 1, 20),
-      ], eventId: feria); // S10
-      await h.sellMany(day(-8), [(a, 1, 100), (d, 1, 50)]); // S11
-      await h.sellMany(day(-9), [(a, 1, 100), (d, 1, 50)]); // S12
-      await h.sellMany(day(-1), [(a, 1, 999), (b, 1, 999)]); // se cancela
-      await h.sellMany(day(5), [(a, 1, 100), (b, 1, 20)]); // futura
+      ], eventId: feria);
+      await h.sellMany(day(-8), [(a, 1, 100), (d, 1, 50)]);
+      await h.sellMany(day(-9), [(a, 1, 100), (d, 1, 50)]);
+      await h.sellMany(day(-1), [(a, 1, 999), (b, 1, 999)]);
+      await h.sellMany(day(5), [(a, 1, 100), (b, 1, 20)]);
       await h.refresh();
       await h.cancelSaleOf(1998);
       await h.refresh();
@@ -217,20 +182,17 @@ void main() {
         expect(
           r.pairs.any((p) => p.label.contains('Libro')),
           isFalse,
-        ); // 2 ventas
+        );
         expect(
           r.pairs.any((p) => p.label == 'Pines grandes + Stickers'),
           isFalse,
-        ); // 1
-        // La cancelada y la futura habrían subido A+B a 6.
+        );
         expect(r.pairs.first.sales, 4);
       },
     );
 
     test('respects the period filter', () async {
       await seedPairs();
-      // Del día -3 a hoy: S1, S2, S3 → 3 ventas; A+B en las 3 (100 %), A+C solo
-      // en S2 (1, no se muestra).
       final r = h
           .report(ReportFilters(startDate: day(-3), endDate: day(0)))
           .coPurchases;
@@ -243,7 +205,6 @@ void main() {
 
     test('respects the event filter', () async {
       await seedPairs();
-      // Solo S10 está ligada al evento: 1 venta, ningún par llega a 3.
       final r = h.report(ReportFilters(eventId: feria)).coPurchases;
       expect(r.totalSales, 1);
       expect(r.multiProductSales, 1);
@@ -255,7 +216,6 @@ void main() {
       final y = await h.newLocation('Santa Cruz - Equipetrol');
       final a = await h.newProduct('Tote bag negra', stock: 1000);
       final b = await h.newProduct('Pines grandes', stock: 1000);
-      // 3 ventas A+B en La Paz y 3 en Santa Cruz, más una A sola en La Paz.
       for (var i = 1; i <= 3; i++) {
         await h.sellMany(day(-i), [(a, 1, 100), (b, 1, 20)], locationId: x);
         await h.sellMany(day(-i), [(a, 1, 100), (b, 1, 20)], locationId: y);
@@ -269,7 +229,7 @@ void main() {
       expect(all.pairs.single.pct, closeTo(6 / 7 * 100, 1e-9));
 
       final paz = h.report(ReportFilters(locationId: x)).coPurchases;
-      expect(paz.totalSales, 3); // la venta suelta no tiene ubicación
+      expect(paz.totalSales, 3);
       expect(paz.pairs.single.sales, 3);
       expect(paz.pairs.single.pct, closeTo(100, 1e-9));
     });
@@ -278,8 +238,6 @@ void main() {
       'a product filter looks at the whole sale, so it shows what goes with it',
       () async {
         await seedPairs();
-        // Stickers está en S2, S4 y S5. Con los ítems completos: A+C 3 (100 %);
-        // A+B y B+C solo en S2 (1 venta cada uno, no se muestran).
         final r = h.report(ReportFilters(productId: c)).coPurchases;
         expect(r.totalSales, 3);
         expect(r.pairs.map((p) => p.label), ['Stickers + Tote bag negra']);
@@ -324,8 +282,6 @@ void main() {
           'Sáb',
           'Dom',
         ]);
-        // Lunes 100 + 50; Miércoles 80 − 10; Viernes 25; Sábado 200 + 40 + 60;
-        // Domingo 30 + (100 − 15); martes (cancelada) y jueves sin ventas.
         expect(w.map((e) => e.ingresos), [150, 0, 70, 0, 25, 300, 115]);
         expect(w.map((e) => e.ventas), [2, 0, 1, 0, 1, 3, 2]);
         expect(w.fold(0.0, (t, e) => t + e.ingresos), 660);
@@ -336,14 +292,12 @@ void main() {
     test('the canceled and the future sale never count', () async {
       await seedWeek();
       final w = h.report().weekdays;
-      expect(w[1].ventas, 0); // martes: solo la cancelada
-      expect(w.every((e) => e.ingresos < 700), isTrue); // ni 999 ni 777
+      expect(w[1].ventas, 0);
+      expect(w.every((e) => e.ingresos < 700), isTrue);
     });
 
     test('respects the period filter', () async {
       await seedWeek();
-      // Solo la semana que empezó hace 1 semana (lun–dom): Lun 100, Mié 70,
-      // Vie 25, Sáb 200, Dom 30 (la cancelada del martes no cuenta).
       final w = h
           .report(
             ReportFilters(startDate: weekday(mon, 1), endDate: weekday(sun, 1)),
@@ -364,7 +318,7 @@ void main() {
       final loc = await h.newLocation('La Paz - Calacoto');
       final p = await h.newProduct('Tote bag negra');
       await h.sellMany(weekday(wed, 1), [(p, 1, 40)], locationId: loc);
-      await h.sell(weekday(wed, 1), p, 1, 500); // sin ubicación
+      await h.sell(weekday(wed, 1), p, 1, 500);
       await h.refresh();
       final w = h.report(ReportFilters(locationId: loc)).weekdays;
       expect(w[2].ingresos, 40);
@@ -385,12 +339,11 @@ void main() {
       final t = h.report().ticket;
       expect(t.salesCount, 9);
       expect(t.total, 660);
-      expect(t.average, closeTo(round2(660 / 9), 1e-9)); // 73.33...
+      expect(t.average, closeTo(round2(660 / 9), 1e-9));
     });
 
     test('respects the period filter', () async {
       await seedWeek();
-      // Semana pasada: 100 + 70 + 25 + 200 + 30 = 425 en 5 ventas → 85.
       final t = h
           .report(
             ReportFilters(startDate: weekday(mon, 1), endDate: weekday(sun, 1)),
@@ -417,13 +370,11 @@ void main() {
       );
       expect(bucketOf(weekday(sat, 2)).ventas, 1);
       expect(bucketOf(weekday(sat, 2)).ticket, 40);
-      expect(bucketOf(weekday(sun, 2)).ticket, 85); // 100 − 15
+      expect(bucketOf(weekday(sun, 2)).ticket, 85);
       expect(bucketOf(weekday(mon, 1)).ticket, 100);
-      // Un día sin ventas (el jueves, hace 1 semana) no tiene ticket.
-      final thu = DateTime.thursday;
+      const thu = DateTime.thursday;
       expect(bucketOf(weekday(thu, 1)).ventas, 0);
       expect(bucketOf(weekday(thu, 1)).ticket, isNull);
-      // Los intervalos suman lo mismo que el indicador.
       expect(series.buckets.fold(0, (t, b) => t + b.ventas), 9);
       expect(series.buckets.fold(0.0, (t, b) => t + b.ingresos), 660);
     });
@@ -432,7 +383,6 @@ void main() {
       'over a long period the trend is weekly, like the time series',
       () async {
         final p = await h.newProduct('Tote bag negra', stock: 1000);
-        // Mié y jue de la semana de hace 8 semanas: 100 y 50 → una sola semana.
         await h.sell(weekday(wed, 8), p, 1, 100);
         await h.sell(weekday(DateTime.thursday, 8), p, 1, 50);
         await h.sell(weekday(fri, 1), p, 1, 30);
@@ -443,8 +393,6 @@ void main() {
         expect(first.start, weekday(mon, 8).copyWith(hour: 0));
         expect(first.ventas, 2);
         expect(first.ticket, closeTo(75, 1e-9));
-        // The series runs up to today, so the last bucket is the current week;
-        // the Friday sale sits in the week that started one week ago.
         final lastWeek = series.buckets.singleWhere(
           (b) => b.start == weekday(mon, 1).copyWith(hour: 0),
         );
@@ -464,19 +412,17 @@ void main() {
       () async {
         await seedWeek();
         final d = h.report().discounts;
-        expect(d.totalDiscount, 25); // 10 + 15
+        expect(d.totalDiscount, 25);
         expect(d.grossSales, 685);
-        expect(d.pct, closeTo(round2(25 / 685 * 100), 1e-9)); // 3.6496...
+        expect(d.pct, closeTo(round2(25 / 685 * 100), 1e-9));
         expect(d.salesCount, 9);
         expect(d.discountedSales, 2);
-        // Bruto − descuentos = ingresos del resumen.
         expect(d.grossSales - d.totalDiscount, h.report().summary.ingresos);
       },
     );
 
     test('respects the period filter', () async {
       await seedWeek();
-      // Semana pasada: bruto 100 + 80 + 25 + 200 + 30 = 435, descuento 10.
       final d = h
           .report(
             ReportFilters(startDate: weekday(mon, 1), endDate: weekday(sun, 1)),
@@ -525,18 +471,6 @@ void main() {
   });
 
   group('rentabilidad por evento', () {
-    // Productos y eventos (las fechas de los eventos no importan: cada venta y
-    // cada compra cuenta por su propia fecha).
-    //   Feria de Arte    ventas -10: 300 y -9: 2×100 desc. 20 (180) → 480 (2)
-    //                    compras: gasto Hotel 150 (-11) + material 10×5 (-12)
-    //                    = 200 (2) → resultado +280
-    //   Feria de Lima    venta -5: 100 → gastos 400 (-6) + 250 (-4) = 650 (2)
-    //                    → resultado −550 (pérdida)
-    //   Feria Activa     sin ventas; gasto 80 (-20) → −80
-    //   Feria de Octubre venta -1: 60, sin gastos → +60
-    // Sin evento (no cuentan): venta 500, gasto 999. Excluidos: gasto futuro
-    // 5000 de Feria de Arte, venta futura 5000 de Feria de Lima y venta
-    // cancelada 777 de Feria de Octubre.
     late int arte, lima, activa, octubre, proveedor;
 
     Future<void> seedEvents() async {
@@ -596,9 +530,7 @@ void main() {
         final arteEntry = h.report().eventProfit.firstWhere(
           (x) => x.name == 'Feria de Arte',
         );
-        // 150 de gasto general + 50 de material (10 × 5).
         expect(arteEntry.expenses, 200);
-        // El gasto de 999 sin evento y la venta de 500 sin evento no aparecen.
         final total = h.report().eventProfit.fold(0.0, (t, x) => t + x.income);
         expect(total, 640);
       },
@@ -612,23 +544,20 @@ void main() {
         expect(
           e.firstWhere((x) => x.name == 'Feria de Octubre').income,
           60,
-        ); // sin los 777
+        );
         expect(
           e.firstWhere((x) => x.name == 'Feria de Lima').income,
           100,
-        ); // sin los 5000
+        );
         expect(
           e.firstWhere((x) => x.name == 'Feria de Arte').expenses,
           200,
-        ); // sin los 5000
+        );
       },
     );
 
     test('each record counts by its own date, within the period', () async {
       await seedEvents();
-      // Del día -7 a hoy: Feria de Arte y Feria Activa (registros anteriores)
-      // desaparecen; Lima y Octubre quedan completas. Los eventos son de hace
-      // meses, pero lo que cuenta es la fecha de cada venta y compra.
       final e = h
           .report(ReportFilters(startDate: day(-7), endDate: day(0)))
           .eventProfit;
@@ -640,8 +569,6 @@ void main() {
       'a purchase outside the period is left out even if its sale is inside',
       () async {
         await seedEvents();
-        // Del día -5 a hoy: de Lima solo cuenta la venta (-5) y el gasto de -4;
-        // el gasto de 400 es del día -6.
         final e = h
             .report(ReportFilters(startDate: day(-5), endDate: day(0)))
             .eventProfit;
@@ -663,8 +590,6 @@ void main() {
       'the purchase type and supplier filters do not drop linked purchases',
       () async {
         await seedEvents();
-        // Con "solo gastos" y con un proveedor, el resumen general recorta las
-        // compras, pero la rentabilidad por evento sigue sumando todas.
         final onlyExpenses = h.report(
           const ReportFilters(purchaseKind: PurchaseKind.expense),
         );
@@ -672,13 +597,13 @@ void main() {
           onlyExpenses.eventProfit
               .firstWhere((x) => x.name == 'Feria de Arte')
               .expenses,
-          200, // incluye el material
+          200,
         );
         final bySupplier = h.report(ReportFilters(supplierId: proveedor));
         expect(
           bySupplier.summary.gastos,
           400,
-        ); // el filtro sí recorta el resumen
+        );
         expect(
           bySupplier.eventProfit
               .firstWhere((x) => x.name == 'Feria de Lima')
@@ -693,7 +618,7 @@ void main() {
       final p = await h.newProduct('Tote bag negra', stock: 1000);
       final lima = await h.newEvent('Feria de Lima', day(-30), day(-28));
       await h.sellMany(day(-5), [(p, 1, 100)], eventId: lima, locationId: loc);
-      await h.sell(day(-5), p, 1, 900, eventId: lima); // otra ubicación
+      await h.sell(day(-5), p, 1, 900, eventId: lima);
       await h.spend(day(-6), 300, eventId: lima, locationId: loc);
       await h.spend(day(-6), 1000, eventId: lima);
       await h.refresh();
@@ -713,16 +638,6 @@ void main() {
   });
 
   group('retorno sobre el costo de producción', () {
-    // Costos de producción actuales: Tote bag negra 40, Stickers 5, Pines
-    // grandes 10; Libro sin costo y Miniaturas con costo 0 (no entran).
-    //   Tote bag negra: 2 × 100 (200) + 1 × 100 de la venta mixta (100 − 10 de
-    //     descuento = 90) → 3 uds., ingresos 290, costo 120, ganancia 170,
-    //     retorno 170 ÷ 120 = 1.41666...
-    //   Stickers: 2 × 12 de la venta mixta (24 − 2.4 = 21.6) + 8 × 12 (96) →
-    //     10 uds., ingresos 117.6, costo 50, ganancia 67.6, retorno 1.352
-    //   Pines grandes: 5 × 8 = 40, costo 50 → ganancia −10, retorno −0.2
-    // La venta mixta (Tote 1 × 100 + Stickers 2 × 12 = 124) lleva un descuento
-    // de 12.4 repartido en proporción: 10 para la Tote y 2.4 para Stickers.
     late int tote, stickers, pines;
 
     Future<void> seedReturns() async {
@@ -737,7 +652,7 @@ void main() {
         productionCost: 10,
         stock: 1000,
       );
-      final libro = await h.newProduct('Libro', stock: 1000); // sin costo
+      final libro = await h.newProduct('Libro', stock: 1000);
       final miniaturas = await h.newProduct(
         'Miniaturas',
         productionCost: 0,
@@ -752,8 +667,8 @@ void main() {
       await h.sell(day(-3), pines, 5, 8);
       await h.sell(day(-3), libro, 1, 95);
       await h.sell(day(-2), miniaturas, 1, 70);
-      await h.sell(day(-2), pines, 4, 8); // se cancela (32)
-      await h.sell(day(4), tote, 9, 100); // futura
+      await h.sell(day(-2), pines, 4, 8);
+      await h.sell(day(4), tote, 9, 100);
       await h.refresh();
       await h.cancelSaleOf(32);
       await h.refresh();
@@ -781,7 +696,7 @@ void main() {
         expect(s.units, 10);
         expect(s.revenue, closeTo(117.6, 1e-9));
         expect(s.cost, 50);
-        expect(s.ratio, closeTo(round2(67.6 / 50), 1e-9)); // 1.352
+        expect(s.ratio, closeTo(round2(67.6 / 50), 1e-9));
 
         final p = r.entries[2];
         expect(p.units, 5);
@@ -795,7 +710,6 @@ void main() {
     test('skips products without a production cost and counts them', () async {
       await seedReturns();
       final r = h.report().costReturn;
-      // Libro (sin costo) y Miniaturas (costo 0, no se puede dividir).
       expect(r.withoutCost, 2);
       expect(
         r.entries.any((e) => e.name == 'Libro' || e.name == 'Miniaturas'),
@@ -851,7 +765,6 @@ void main() {
         final t = h.report().costReturn.entries.firstWhere(
           (e) => e.name == 'Tote bag negra',
         );
-        // Costo 80 × 3 = 240; ganancia 290 − 240 = 50; retorno 50 ÷ 240.
         expect(t.cost, 240);
         expect(t.ratio, closeTo(round2(50 / 240), 1e-9));
       },
@@ -859,7 +772,6 @@ void main() {
 
     test('respects the period filter', () async {
       await seedReturns();
-      // Solo el día -3: Pines grandes (5 uds.) y Libro sin costo.
       final r = h
           .report(ReportFilters(startDate: day(-3), endDate: day(-3)))
           .costReturn;

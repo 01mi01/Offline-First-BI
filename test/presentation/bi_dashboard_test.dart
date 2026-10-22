@@ -10,9 +10,6 @@ import 'package:offline_first_bi/presentation/pages/business_intelligence_page.d
 import 'package:offline_first_bi/theme/app_theme.dart';
 import '../support/bi_harness.dart';
 
-// Pantalla de Business Intelligence: paso de configuración, panel con los
-// indicadores elegidos, iconos de información, selector de tipo de gráfico
-// (que se recuerda) y cada indicador nuevo.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -23,7 +20,6 @@ void main() {
   DateTime day(int offset, [int hour = 12]) => h.day(offset, hour);
 
   Future<void> confirmConfig(WidgetTester tester) async {
-    // El botón va al final del contenido que se desplaza.
     await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.pumpAndSettle();
@@ -86,7 +82,6 @@ void main() {
       }
       final defaults = BiIndicator.values.where((i) => i.defaultSelected).length;
       expect(find.text('Ver indicadores ($defaults)'), findsOneWidget);
-      // Los 8 indicadores originales vienen marcados.
       for (final i in [
         BiIndicator.summary,
         BiIndicator.salesByProduct,
@@ -158,7 +153,6 @@ void main() {
       expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
       expect(find.byType(BusinessIntelligencePage), findsOneWidget);
 
-      // Se conserva lo elegido: quitar un indicador y volver al panel.
       await tester.tap(find.byKey(const ValueKey('bi-indicator-summary')));
       await tester.pumpAndSettle();
       await confirmConfig(tester);
@@ -188,7 +182,7 @@ void main() {
       expect(BiIndicator.materialCostRatio.info, contains('costo de producción'));
       expect(BiIndicator.productRadar.info, contains('Cómo leerlo'));
       expect(BiIndicator.productMargin.info, contains('rentabilidad real'));
-      expect(BiIndicator.noMovement.info, contains('No depende del periodo'));
+      expect(BiIndicator.noMovement.info, contains('No depende del período'));
       for (final i in BiIndicator.values) {
         expect(i.info, isNotEmpty);
         expect(i.info, contains('Para qué sirve'), reason: i.name);
@@ -225,10 +219,8 @@ void main() {
       expect(find.descendant(of: byProduct, matching: find.byType(PieChart)), findsOneWidget);
       expect(find.descendant(of: byProduct, matching: find.byKey(const ValueKey('bi-bar-0'))), findsNothing);
       expect(config().chartTypeFor(BiIndicator.salesByProduct), BiChartType.pie);
-      // Los otros indicadores conservan el suyo.
       expect(config().chartTypeFor(BiIndicator.salesByCategory), BiChartType.bar);
 
-      // Ir a configurar y volver: sigue en pastel.
       await tester.tap(find.text('Atrás'));
       await tester.pumpAndSettle();
       await confirmConfig(tester);
@@ -271,11 +263,11 @@ void main() {
       expect(find.descendant(of: s, matching: find.text('Margen 70.00%')), findsOneWidget);
       await tester.tap(find.descendant(of: s, matching: find.text('Ganancia')));
       await tester.pumpAndSettle();
-      expect(find.descendant(of: s, matching: find.text('Bs. 420.00')), findsOneWidget);
+      expect(find.descendant(of: s, matching: find.text('Bs. 420.00')), findsOneWidget);
 
       await tester.tap(find.descendant(of: s, matching: find.byKey(const ValueKey('bi-chart-type-list'))));
       await tester.pumpAndSettle();
-      expect(find.descendant(of: s, matching: find.textContaining('Costo Bs. 180.00')), findsOneWidget);
+      expect(find.descendant(of: s, matching: find.textContaining('Costo Bs. 180.00')), findsOneWidget);
       expect(find.descendant(of: s, matching: find.text('70.00%')), findsOneWidget);
       expect(find.descendant(of: s, matching: find.text('11.11%')), findsOneWidget);
       expect(config().chartTypeFor(BiIndicator.productMargin), BiChartType.list);
@@ -305,7 +297,6 @@ void main() {
         expect(find.descendant(of: s, matching: find.byType(BarChart)), findsNothing, reason: i.name);
         await tester.tap(find.descendant(of: s, matching: find.byKey(const ValueKey('bi-chart-type-bar'))));
         await tester.pumpAndSettle();
-        // Barras: una gráfica de barras agrupadas, o las barras del ranking.
         final hasBars =
             find.descendant(of: s, matching: find.byType(BarChart)).evaluate().isNotEmpty ||
             find.descendant(of: s, matching: find.byKey(const ValueKey('bi-bar-0'))).evaluate().isNotEmpty;
@@ -318,8 +309,6 @@ void main() {
   group('indicadores nuevos en pantalla', () {
     testWidgets('period comparison shows previous, current and the % change', (tester) async {
       final p = await h.newProduct('Tote bag negra', stock: 1000);
-      // Un rango de ~10 días que termina hoy y que no empieza el día 1 ni es
-      // de semana: así el periodo anterior son los mismos días de justo antes.
       var len = 10;
       while (day(-(len - 1)).day == 1) {
         len++;
@@ -340,10 +329,9 @@ void main() {
         ),
       );
       final s = section(BiIndicator.periodComparison);
-      expect(find.descendant(of: s, matching: find.text('Anterior: Bs. 400.00')), findsOneWidget);
-      expect(find.descendant(of: s, matching: find.text('Actual: Bs. 600.00')), findsOneWidget);
+      expect(find.descendant(of: s, matching: find.text('Anterior: Bs. 400.00')), findsOneWidget);
+      expect(find.descendant(of: s, matching: find.text('Actual: Bs. 600.00')), findsOneWidget);
       expect(find.descendant(of: s, matching: find.text('+50.00%')), findsOneWidget);
-      // Gastos bajaron (200 → 100): -50 %, y eso es bueno (verde).
       expect(find.descendant(of: s, matching: find.text('−50.00%')), findsOneWidget);
       final gastosChange = tester.widget<Text>(
         find.descendant(
@@ -352,7 +340,6 @@ void main() {
         ),
       );
       expect(gastosChange.style!.color, AppColors.cyanDark);
-      // Balance: 200 → 500 = +150 %.
       expect(find.descendant(of: s, matching: find.text('+150.00%')), findsOneWidget);
     });
 
@@ -366,7 +353,7 @@ void main() {
       expect(
         find.descendant(
           of: section(BiIndicator.periodComparison),
-          matching: find.textContaining('Elige un periodo con fecha de inicio'),
+          matching: find.textContaining('Elige un período con fecha de inicio'),
         ),
         findsOneWidget,
       );
@@ -395,16 +382,15 @@ void main() {
         find.descendant(of: s, matching: find.byKey(const ValueKey('bi-projection-summary'))),
         findsOneWidget,
       );
-      expect(find.descendant(of: s, matching: find.textContaining('≈ Bs. 4160.00')), findsOneWidget);
+      expect(find.descendant(of: s, matching: find.textContaining('≈ Bs. 4160.00')), findsOneWidget);
       expect(find.descendant(of: s, matching: find.textContaining('Tendencia al alza')), findsOneWidget);
       expect(find.descendant(of: s, matching: find.textContaining('no es una garantía')), findsOneWidget);
       expect(find.descendant(of: s, matching: find.textContaining('punteada')), findsOneWidget);
 
       final chart = tester.widget<LineChart>(find.descendant(of: s, matching: find.byType(LineChart)));
       expect(chart.data.lineBarsData.length, 2);
-      expect(chart.data.lineBarsData[0].dashArray, isNull); // real
-      expect(chart.data.lineBarsData[1].dashArray, isNotNull); // tendencia
-      // La proyección se extiende más allá de lo real (4 intervalos más).
+      expect(chart.data.lineBarsData[0].dashArray, isNull);
+      expect(chart.data.lineBarsData[1].dashArray, isNotNull);
       expect(
         chart.data.lineBarsData[1].spots.last.x,
         greaterThan(chart.data.lineBarsData[0].spots.last.x),
@@ -444,9 +430,8 @@ void main() {
         ),
       );
       final s = section(BiIndicator.eventComparison);
-      // Evento: 600 en 2 días = 300/día. Regular: 300 en 3 días = 100/día.
-      expect(find.descendant(of: s, matching: find.text('Bs. 300.00')), findsWidgets);
-      expect(find.descendant(of: s, matching: find.text('Bs. 100.00')), findsWidgets);
+      expect(find.descendant(of: s, matching: find.text('Bs. 300.00')), findsWidgets);
+      expect(find.descendant(of: s, matching: find.text('Bs. 100.00')), findsWidgets);
       final verdict = tester.widget<Text>(
         find.descendant(of: s, matching: find.byKey(const ValueKey('bi-event-verdict'))),
       );
@@ -467,7 +452,7 @@ void main() {
       final s = section(BiIndicator.materialCostRatio);
       expect(find.descendant(of: s, matching: find.text('20.00%')), findsOneWidget);
       expect(
-        find.descendant(of: s, matching: find.textContaining('Bs. 0.20 en materiales')),
+        find.descendant(of: s, matching: find.textContaining('Bs. 0.20 en materiales')),
         findsOneWidget,
       );
       expect(find.descendant(of: s, matching: find.textContaining('no es un costo de ventas exacto')), findsOneWidget);
@@ -502,7 +487,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(config().noMovementDays, 7);
       expect(find.descendant(of: s, matching: find.text('Pines grandes')), findsOneWidget);
-      expect(find.descendant(of: s, matching: find.text('Stickers')), findsNothing); // hace 5 días
+      expect(find.descendant(of: s, matching: find.text('Stickers')), findsNothing);
     });
 
     testWidgets('radar: pick 2-4 products, limited to 4, and reset to the best sellers', (tester) async {
@@ -519,7 +504,6 @@ void main() {
         config: BiConfig(indicators: {BiIndicator.productRadar}),
       );
       final s = section(BiIndicator.productRadar);
-      // Por defecto, los 3 con más ingresos.
       expect(find.descendant(of: s, matching: find.byType(RadarChart)), findsOneWidget);
       expect(find.descendant(of: s, matching: find.text('Producto 0')), findsOneWidget);
       expect(find.descendant(of: s, matching: find.text('Producto 3')), findsNothing);
@@ -527,8 +511,6 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('bi-radar-pick')));
       await tester.pumpAndSettle();
-      // Mínimo 2: con los 3 que vienen marcados, quitar 2 deja 1 y "Listo" se
-      // desactiva; con 4 marcados, el resto queda deshabilitado.
       Finder option(int id) => find.byKey(ValueKey('bi-radar-option-$id'));
       bool enabled(int id) =>
           tester.widget<AppRoundCheck>(
@@ -538,8 +520,8 @@ void main() {
 
       await tester.tap(option(ids[3]));
       await tester.pumpAndSettle();
-      expect(enabled(ids[4]), isFalse); // 4 elegidos: el quinto no se puede
-      expect(enabled(ids[0]), isTrue); // los marcados sí se pueden quitar
+      expect(enabled(ids[4]), isFalse);
+      expect(enabled(ids[0]), isTrue);
 
       await tester.tap(option(ids[0]));
       await tester.tap(option(ids[1]));
@@ -547,7 +529,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester.widget<ElevatedButton>(find.byKey(const ValueKey('bi-radar-done'))).onPressed,
-        isNull, // solo queda 1
+        isNull,
       );
       await tester.tap(option(ids[5]));
       await tester.pumpAndSettle();
@@ -560,7 +542,6 @@ void main() {
       expect(find.descendant(of: s, matching: find.text('Producto 0')), findsNothing);
       expect(find.textContaining('Mostrando los productos con más ingresos'), findsNothing);
 
-      // "Los más vendidos" vuelve a la selección automática.
       await tester.tap(find.byKey(const ValueKey('bi-radar-pick')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Los más vendidos'));
@@ -610,7 +591,6 @@ void main() {
       BiIndicator.costReturn,
     ];
 
-    // The given weekday of the week that started [weeksAgo] weeks ago (>= 1).
     DateTime weekday(int weekday, int weeksAgo) {
       final t = h.now;
       final monday = DateTime(t.year, t.month, t.day - (t.weekday - 1), 12);
@@ -650,8 +630,6 @@ void main() {
         final tile = find.byKey(ValueKey('bi-indicator-${i.name}'));
         expect(tile, findsOneWidget, reason: i.name);
         expect(checked(tester, i), isFalse, reason: i.name);
-        // In the Ventas group: after the first Ventas indicators and before
-        // the "Compras y materiales" header.
         final top = tester.getTopLeft(tile).dy;
         expect(top, greaterThan(timeSeriesTop), reason: i.name);
         expect(top, lessThan(materialsHeaderTop), reason: i.name);
@@ -670,7 +648,6 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // They are not part of the default selection; ticking one adds it.
       final defaults = BiIndicator.values.where((i) => i.defaultSelected).length;
       expect(find.text('Ver indicadores ($defaults)'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('bi-indicator-eventProfit')));
@@ -685,7 +662,6 @@ void main() {
         final b = await h.newProduct('Pines grandes', stock: 1000);
         final c = await h.newProduct('Stickers', stock: 1000);
         final d = await h.newProduct('Libro', stock: 1000);
-        // A+B in 4 sales, A+C in 3, A+D in only 2, plus a single-product sale.
         for (var i = 1; i <= 4; i++) {
           await h.sellMany(day(-i), [(a, 1, 100), (b, 1, 20)]);
         }
@@ -706,7 +682,7 @@ void main() {
 
         expect(inSection(i, find.byKey(const ValueKey('bi-pair-0'))), findsOneWidget);
         expect(inSection(i, find.byKey(const ValueKey('bi-pair-1'))), findsOneWidget);
-        expect(inSection(i, find.byKey(const ValueKey('bi-pair-2'))), findsNothing); // A+D: 2 sales
+        expect(inSection(i, find.byKey(const ValueKey('bi-pair-2'))), findsNothing);
         expect(inSection(i, find.text('Pines grandes + Tote bag negra')), findsOneWidget);
         expect(inSection(i, find.text('4 ventas')), findsOneWidget);
         expect(inSection(i, find.text('40.00%')), findsOneWidget);
@@ -719,7 +695,7 @@ void main() {
         expect(first, lessThan(second));
         expect(
           tester.widget<Text>(inSection(i, find.byKey(const ValueKey('bi-pair-footnote')))).data,
-          'Solo pares vistos en al menos 3 ventas. 10 ventas en el periodo, '
+          'Solo pares vistos en al menos 3 ventas. 10 ventas en el período, '
           '9 con 2 o más productos distintos.',
         );
 
@@ -727,10 +703,9 @@ void main() {
         expect(inSection(i, find.byKey(const ValueKey('bi-bar-0'))), findsOneWidget);
         expect(inSection(i, find.byKey(const ValueKey('bi-bar-1'))), findsOneWidget);
         expect(inSection(i, find.byKey(const ValueKey('bi-bar-2'))), findsNothing);
-        expect(inSection(i, find.text('40.00% de las ventas del periodo')), findsOneWidget);
+        expect(inSection(i, find.text('40.00% de las ventas del período')), findsOneWidget);
         expect(barColor(tester, i, 0), chartColorAt(0));
         expect(config().chartTypeFor(i), BiChartType.bar);
-        // The 4-sale bar is longer than the 3-sale bar (proportional).
         final w0 = tester.getSize(inSection(i, find.byKey(const ValueKey('bi-bar-0')))).width;
         final w1 = tester.getSize(inSection(i, find.byKey(const ValueKey('bi-bar-1')))).width;
         expect(w1 / w0, closeTo(3 / 4, 0.01));
@@ -741,7 +716,6 @@ void main() {
 
       testWidgets('respects the period filter', (tester) async {
         await seedPairs();
-        // Last 3 days: 3 sales, all A+B → 3 sales, 100 %.
         await pumpPage(
           tester,
           confirm: true,
@@ -764,11 +738,10 @@ void main() {
         await h.refresh();
         await pumpPage(tester, confirm: true, config: only(BiIndicator.coPurchase));
         expect(
-          inSection(BiIndicator.coPurchase, find.text('Ninguna venta del periodo incluye 2 o más productos distintos.')),
+          inSection(BiIndicator.coPurchase, find.text('Ninguna venta del período incluye 2 o más productos distintos.')),
           findsOneWidget,
         );
 
-        // Two sales of the same pair: below the 3-sale minimum.
         await h.sellMany(day(-2), [(a, 1, 100), (b, 1, 20)]);
         await h.sellMany(day(-3), [(a, 1, 100), (b, 1, 20)]);
         await h.refresh();
@@ -776,7 +749,7 @@ void main() {
         await tester.pumpAndSettle();
         await confirmConfig(tester);
         expect(
-          inSection(BiIndicator.coPurchase, find.text('Ningún par de productos coincide en al menos 3 ventas del periodo.')),
+          inSection(BiIndicator.coPurchase, find.text('Ningún par de productos coincide en al menos 3 ventas del período.')),
           findsOneWidget,
         );
       });
@@ -809,10 +782,10 @@ void main() {
         }
         Finder rowText(int d, String text) =>
             find.descendant(of: inSection(i, find.byKey(ValueKey('bi-weekday-row-$d'))), matching: find.text(text));
-        expect(rowText(0, 'Bs. 150.00 · 2 ventas'), findsOneWidget); // Lunes: 100 + 50
-        expect(rowText(1, 'Bs. 0.00 · 0 ventas'), findsOneWidget);
-        expect(rowText(5, 'Bs. 200.00 · 1 venta'), findsOneWidget); // Sábado
-        expect(rowText(6, 'Bs. 30.00 · 1 venta'), findsOneWidget); // Domingo
+        expect(rowText(0, 'Bs. 150.00 · 2 ventas'), findsOneWidget);
+        expect(rowText(1, 'Bs. 0.00 · 0 ventas'), findsOneWidget);
+        expect(rowText(5, 'Bs. 200.00 · 1 venta'), findsOneWidget);
+        expect(rowText(6, 'Bs. 30.00 · 1 venta'), findsOneWidget);
         expect(find.byType(BarChart), findsOneWidget);
         expect(find.byType(LineChart), findsNothing);
 
@@ -830,8 +803,7 @@ void main() {
         const i = BiIndicator.weekdaySales;
 
         Finder best = inSection(i, find.byKey(const ValueKey('bi-weekday-best')));
-        // By revenue Saturday (200) beats Monday (150); by sales Monday wins (2).
-        expect(tester.widget<Text>(best).data, 'Día más fuerte: Sábado (Bs. 200.00).');
+        expect(tester.widget<Text>(best).data, 'Día más fuerte: Sábado (Bs. 200.00).');
         BarChart chart() => tester.widget<BarChart>(find.byType(BarChart));
         expect(chart().data.barGroups.map((g) => g.barRods.single.toY), [150, 0, 0, 0, 0, 200, 30]);
 
@@ -849,7 +821,7 @@ void main() {
         await h.refresh();
         await pumpPage(tester, confirm: true, config: only(BiIndicator.weekdaySales));
         const i = BiIndicator.weekdaySales;
-        expect(inSection(i, find.text('No se registraron datos en el periodo.')), findsOneWidget);
+        expect(inSection(i, find.text('No se registraron datos en el período.')), findsOneWidget);
         expect(inSection(i, find.byKey(const ValueKey('bi-chart-type-line'))), findsNothing);
       });
     });
@@ -868,9 +840,8 @@ void main() {
         await pumpPage(tester, confirm: true, config: only(BiIndicator.averageTicket));
         const i = BiIndicator.averageTicket;
 
-        // (100 + 50 + 200) / 3 = 116.666...
-        expect(tester.widget<Text>(find.descendant(of: inSection(i, find.byKey(const ValueKey('bi-ticket-average'))), matching: find.text('Bs. 116.67'))).data, 'Bs. 116.67');
-        expect(inSection(i, find.text('Bs. 350.00')), findsOneWidget);
+        expect(tester.widget<Text>(find.descendant(of: inSection(i, find.byKey(const ValueKey('bi-ticket-average'))), matching: find.text('Bs. 116.67'))).data, 'Bs. 116.67');
+        expect(inSection(i, find.text('Bs. 350.00')), findsOneWidget);
         expect(inSection(i, find.text('3')), findsOneWidget);
         expect(find.byType(LineChart), findsNothing);
 
@@ -878,11 +849,10 @@ void main() {
         expect(find.byType(LineChart), findsOneWidget);
         expect(
           tester.widget<Text>(inSection(i, find.byKey(const ValueKey('bi-ticket-summary')))).data,
-          'Promedio del periodo: Bs. 116.67 (3 ventas).',
+          'Promedio del período: Bs. 116.67 (3 ventas).',
         );
         expect(inSection(i, find.text('Por venta · vista diaria')), findsOneWidget);
         final chart = tester.widget<LineChart>(find.byType(LineChart));
-        // One point per day with sales: ticket 50, 100 and 200.
         expect(chart.data.lineBarsData.single.spots.map((s) => s.y), [50, 100, 200]);
         expect(config().chartTypeFor(i), BiChartType.line);
         await pickType(tester, i, BiChartType.cards);
@@ -893,7 +863,7 @@ void main() {
         await h.refresh();
         await pumpPage(tester, confirm: true, config: only(BiIndicator.averageTicket));
         const i = BiIndicator.averageTicket;
-        expect(inSection(i, find.text('No se registraron datos en el periodo.')), findsOneWidget);
+        expect(inSection(i, find.text('No se registraron datos en el período.')), findsOneWidget);
         expect(inSection(i, find.byKey(const ValueKey('bi-chart-type-line'))), findsNothing);
       });
     });
@@ -908,12 +878,11 @@ void main() {
         await pumpPage(tester, confirm: true, config: only(BiIndicator.discountImpact));
         const i = BiIndicator.discountImpact;
 
-        // Gross 400, discounts 30 → 7.5 %, 2 of the 3 sales had a discount.
         Finder tile(String key, String text) =>
             find.descendant(of: inSection(i, find.byKey(ValueKey(key))), matching: find.text(text));
-        expect(tile('bi-discount-total', 'Bs. 30.00'), findsOneWidget);
+        expect(tile('bi-discount-total', 'Bs. 30.00'), findsOneWidget);
         expect(tile('bi-discount-pct', '7.50%'), findsOneWidget);
-        expect(tile('bi-discount-gross', 'Bs. 400.00'), findsOneWidget);
+        expect(tile('bi-discount-gross', 'Bs. 400.00'), findsOneWidget);
         expect(
           tester.widget<Text>(inSection(i, find.byKey(const ValueKey('bi-discount-summary')))).data,
           '2 de 3 ventas tuvieron descuento.',
@@ -922,7 +891,6 @@ void main() {
 
         await pickType(tester, i, BiChartType.line);
         final chart = tester.widget<LineChart>(find.byType(LineChart));
-        // Daily buckets: -3 → 10, -2 → 0, -1 → 20 (days with sales only).
         expect(chart.data.lineBarsData.single.spots.map((s) => s.y), [10, 0, 20]);
         expect(inSection(i, find.text('Descuentos dados · vista diaria')), findsOneWidget);
         expect(config().chartTypeFor(i), BiChartType.line);
@@ -934,7 +902,7 @@ void main() {
         await h.refresh();
         await pumpPage(tester, confirm: true, config: only(BiIndicator.discountImpact));
         const i = BiIndicator.discountImpact;
-        expect(inSection(i, find.text('Ninguna venta del periodo tuvo descuento.')), findsOneWidget);
+        expect(inSection(i, find.text('Ninguna venta del período tuvo descuento.')), findsOneWidget);
         expect(inSection(i, find.text('0.00%')), findsOneWidget);
       });
     });
@@ -959,22 +927,19 @@ void main() {
 
         expect(inSection(i, find.text('Feria de Arte')), findsOneWidget);
         expect(inSection(i, find.text('Feria de Lima')), findsOneWidget);
-        // Arte: 300 − 100 = +200; Lima: 100 − (400 + 250) = −550.
         final gain = inSection(i, find.byKey(const ValueKey('bi-bar-value-0')));
         final loss = inSection(i, find.byKey(const ValueKey('bi-bar-value-1')));
-        expect(tester.widget<Text>(gain).data, 'Bs. 200.00');
-        expect(tester.widget<Text>(loss).data, 'Bs. -550.00');
+        expect(tester.widget<Text>(gain).data, 'Bs. 200.00');
+        expect(tester.widget<Text>(loss).data, 'Bs. -550.00');
         expect(textColor(tester, gain), AppColors.textPrimary);
         expect(textColor(tester, loss), AppColors.error);
         expect(barColor(tester, i, 0), chartColorAt(0));
         expect(barColor(tester, i, 1), AppColors.error);
-        expect(inSection(i, find.text('Ingresos Bs. 300.00 (1 venta) · Gastos Bs. 100.00')), findsOneWidget);
-        expect(inSection(i, find.text('Ingresos Bs. 100.00 (1 venta) · Gastos Bs. 650.00')), findsOneWidget);
-        // The loss bar ends where the profit bar starts (the zero line).
+        expect(inSection(i, find.text('Ingresos Bs. 300.00 (1 venta) · Gastos Bs. 100.00')), findsOneWidget);
+        expect(inSection(i, find.text('Ingresos Bs. 100.00 (1 venta) · Gastos Bs. 650.00')), findsOneWidget);
         final lossRight = tester.getTopRight(inSection(i, find.byKey(const ValueKey('bi-bar-1')))).dx;
         final gainLeft = tester.getTopLeft(inSection(i, find.byKey(const ValueKey('bi-bar-0')))).dx;
         expect(lossRight, closeTo(gainLeft, 1.0));
-        // Proportional: 550 against 200.
         final lossW = tester.getSize(inSection(i, find.byKey(const ValueKey('bi-bar-1')))).width;
         final gainW = tester.getSize(inSection(i, find.byKey(const ValueKey('bi-bar-0')))).width;
         expect(lossW / gainW, closeTo(550 / 200, 0.02));
@@ -996,8 +961,8 @@ void main() {
         expect(find.descendant(of: second, matching: find.text('Feria de Lima')), findsOneWidget);
         final gain = find.byKey(const ValueKey('bi-event-profit-value-0'));
         final loss = find.byKey(const ValueKey('bi-event-profit-value-1'));
-        expect(tester.widget<Text>(gain).data, 'Bs. 200.00');
-        expect(tester.widget<Text>(loss).data, 'Bs. -550.00');
+        expect(tester.widget<Text>(gain).data, 'Bs. 200.00');
+        expect(tester.widget<Text>(loss).data, 'Bs. -550.00');
         expect(textColor(tester, gain), AppColors.textPrimary);
         expect(textColor(tester, loss), AppColors.error);
         expect(config().chartTypeFor(i), BiChartType.list);
@@ -1010,7 +975,7 @@ void main() {
         await pumpPage(tester, confirm: true, config: only(BiIndicator.eventProfit));
         const i = BiIndicator.eventProfit;
         expect(
-          inSection(i, find.text('Ningún evento tuvo ventas ni compras vinculadas en el periodo.')),
+          inSection(i, find.text('Ningún evento tuvo ventas ni compras vinculadas en el período.')),
           findsOneWidget,
         );
         expect(inSection(i, find.byKey(const ValueKey('bi-chart-type-list'))), findsNothing);
@@ -1022,11 +987,11 @@ void main() {
         final tote = await h.newProduct('Tote bag negra', productionCost: 40, stock: 1000);
         final stickers = await h.newProduct('Stickers', productionCost: 5, stock: 1000);
         final pines = await h.newProduct('Pines grandes', productionCost: 10, stock: 1000);
-        final libro = await h.newProduct('Libro', stock: 1000); // no production cost
-        await h.sell(day(-3), tote, 2, 100); // 200 vs 80  → +1.50
-        await h.sell(day(-3), stickers, 10, 12); // 120 vs 50 → +1.40
-        await h.sell(day(-3), pines, 5, 8); // 40 vs 50 → −0.20
-        await h.sell(day(-3), libro, 1, 95); // left out
+        final libro = await h.newProduct('Libro', stock: 1000);
+        await h.sell(day(-3), tote, 2, 100);
+        await h.sell(day(-3), stickers, 10, 12);
+        await h.sell(day(-3), pines, 5, 8);
+        await h.sell(day(-3), libro, 1, 95);
         await h.refresh();
       }
 
@@ -1035,8 +1000,6 @@ void main() {
         await pumpPage(tester, confirm: true, config: only(BiIndicator.costReturn));
         const i = BiIndicator.costReturn;
 
-        // The sentence uses non-breaking spaces after "Bs." so it never wraps
-        // the amount away from its currency on a narrow phone.
         expect(inSection(i, find.text('Por cada Bs.\u00A01 de costo, la ganancia fue Bs.\u00A01.50')), findsOneWidget);
         expect(inSection(i, find.text('Por cada Bs.\u00A01 de costo, la ganancia fue Bs.\u00A01.40')), findsOneWidget);
         expect(inSection(i, find.text('Por cada Bs.\u00A01 de costo, la ganancia fue Bs.\u00A0-0.20')), findsOneWidget);
@@ -1047,10 +1010,10 @@ void main() {
         expect(tops[0], lessThan(tops[1]));
         expect(tops[1], lessThan(tops[2]));
         expect(inSection(i, find.textContaining('Libro')), findsNothing);
-        expect(inSection(i, find.text('Ingresos Bs. 200.00 · Costo Bs. 80.00 · 2 uds.')), findsOneWidget);
+        expect(inSection(i, find.text('Ingresos Bs. 200.00 · Costo Bs. 80.00 · 2 unidades')), findsOneWidget);
 
         final loss = inSection(i, find.byKey(const ValueKey('bi-bar-value-2')));
-        expect(tester.widget<Text>(loss).data, 'Bs. -0.20');
+        expect(tester.widget<Text>(loss).data, 'Bs. -0.20');
         expect(textColor(tester, loss), AppColors.error);
         expect(textColor(tester, inSection(i, find.byKey(const ValueKey('bi-bar-value-0')))), AppColors.textPrimary);
         expect(barColor(tester, i, 2), AppColors.error);
@@ -1071,8 +1034,8 @@ void main() {
           find.descendant(of: find.byKey(const ValueKey('bi-return-row-0')), matching: find.text('Tote bag negra')),
           findsOneWidget,
         );
-        expect(tester.widget<Text>(find.byKey(const ValueKey('bi-return-value-0'))).data, 'Bs. 1.50');
-        expect(tester.widget<Text>(find.byKey(const ValueKey('bi-return-value-2'))).data, 'Bs. -0.20');
+        expect(tester.widget<Text>(find.byKey(const ValueKey('bi-return-value-0'))).data, 'Bs. 1.50');
+        expect(tester.widget<Text>(find.byKey(const ValueKey('bi-return-value-2'))).data, 'Bs. -0.20');
         expect(textColor(tester, find.byKey(const ValueKey('bi-return-value-2'))), AppColors.error);
         expect(textColor(tester, find.byKey(const ValueKey('bi-return-phrase-2'))), AppColors.error);
         expect(textColor(tester, find.byKey(const ValueKey('bi-return-value-1'))), AppColors.textPrimary);
@@ -1116,6 +1079,5 @@ void main() {
         );
       });
     });
-
   });
 }

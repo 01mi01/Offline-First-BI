@@ -41,7 +41,6 @@ class EventsPage extends ConsumerWidget {
   }
 }
 
-// Tab de eventos
 class _EventsTab extends ConsumerWidget {
   const _EventsTab();
 
@@ -55,8 +54,6 @@ class _EventsTab extends ConsumerWidget {
     final city = ref.watch(eventCityFilterProvider);
     final query = ref.watch(eventListQueryProvider);
     final locationById = {for (final l in locations) l.id: l};
-    // Un evento de varios días entra si alguno de sus días cae en el rango.
-    // País y ciudad se miden contra la ubicación del evento.
     final visible = ref
         .watch(eventSearchIndexProvider)
         .search(query)
@@ -174,11 +171,10 @@ class _EventsTab extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, EventModel? event) {
-    showAppSheet<void>(context, builder: (_) => EventDialog(event: event));
+    showFormSheet<void>(context, builder: (_) => EventDialog(event: event));
   }
 }
 
-// Tab de ubicaciones
 class _LocationsTab extends ConsumerWidget {
   const _LocationsTab();
 
@@ -290,16 +286,14 @@ class _LocationsTab extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, LocationModel? location) {
-    showAppSheet<void>(context, builder: (_) => LocationDialog(location: location));
+    showFormSheet<void>(context, builder: (_) => LocationDialog(location: location));
   }
 }
 
-// Fecha de un evento: un día, o el rango de inicio a fin.
 String _eventDates(EventModel event) => event.endDate != null
     ? '${formatDate(event.startDate)} — ${formatDate(event.endDate!)}'
     : formatDate(event.startDate);
 
-// Fila de evento
 class _EventRow extends StatelessWidget {
   final EventModel event;
   final LocationModel? location;
@@ -358,7 +352,6 @@ class _EventRow extends StatelessWidget {
   }
 }
 
-// Fila de ubicación
 class _LocationRow extends StatelessWidget {
   final LocationModel location;
   final VoidCallback onEdit;

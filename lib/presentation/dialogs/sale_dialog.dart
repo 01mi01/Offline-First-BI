@@ -26,9 +26,13 @@ import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/picker_options.dart';
+import '../widgets/status_badge.dart';
 import '../../application/record_search.dart';
 
 class SaleDialog extends ConsumerStatefulWidget {
@@ -40,7 +44,8 @@ class SaleDialog extends ConsumerStatefulWidget {
   ConsumerState<SaleDialog> createState() => _SaleDialogState();
 }
 
-class _SaleDialogState extends ConsumerState<SaleDialog> {
+class _SaleDialogState extends ConsumerState<SaleDialog>
+    with SingleFlight<SaleDialog>, LiveValidation<SaleDialog> {
   final _formKey = GlobalKey<FormState>();
   final _discountController = TextEditingController();
   final _notesController = TextEditingController();
@@ -49,18 +54,44 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   int? _selectedClientId;
   final Map<int, int> _cartItems = {};
   final Map<int, String> _cartPriceTypes = {};
-  // Al editar: unidades que esta venta ya tiene apartadas; vuelven al stock al guardar.
+  final Map<int, ({double price, String type})> _savedLines = {};
   final Map<int, int> _reservedByThisSale = {};
-  bool _isLoading = false;
+  late String _initialSignature;
   int? _selectedLocationId;
   int? _selectedEventId;
-  // Error de los productos (carrito vacío, sin stock) y error general al
-  // registrar.
   String? _cartError;
   String? _error;
   final _discountKey = GlobalKey<FormFieldState<String>>();
   late DateTime _date = widget.sale?.date ?? appNow();
   bool _dateChanged = false;
+
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_cartError = null;
+    _error = null;
+  }
+
+  String? get _cartMessage =>
+      _cartError ??
+      (submitAttempted && _cartItems.isEmpty
+          ? 'Agrega al menos un producto'
+          : null);
+
+  String _signature() => [
+    _selectedClientId,
+    _selectedLocationId,
+    _selectedEventId,
+    _date.millisecondsSinceEpoch,
+    _discountController.text,
+    _notesController.text,
+    for (final id in _cartItems.keys.toList()..sort())
+      '$id:${_cartItems[id]}:${_cartPriceTypes[id]}',
+  ].join('\u0000');
 
   @override
   void initState() {
@@ -75,6 +106,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       _selectedLocationId = widget.sale?.locationId;
       _selectedEventId = widget.sale?.eventId;
     }
+    _initialSignature = _signature();
   }
 
   Future<void> _loadExistingItems() async {
@@ -85,6 +117,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         .read(saleProvider.notifier)
         .getReservedQuantities(widget.sale!.id);
     if (mounted) {
+      final pristine = _signature() == _initialSignature;
       setState(() {
         _reservedByThisSale
           ..clear()
@@ -92,8 +125,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         for (final item in items) {
           _cartItems[item.productId] = item.quantity;
           _cartPriceTypes[item.productId] = item.priceType;
+          _savedLines[item.productId] = (
+            price: item.unitPrice,
+            type: item.priceType,
+          );
         }
       });
+      if (pristine) _initialSignature = _signature();
     }
   }
 
@@ -113,22 +151,37 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     super.dispose();
   }
 
+  Map<int, double> get _savedUnitPrices => {
+    for (final id in _cartItems.keys)
+      if (_savedLines[id] case final saved?
+          when saved.type == (_cartPriceTypes[id] ?? 'A'))
+        id: saved.price,
+  };
+
   double get _subtotal {
     final products = ref.read(productProvider).products;
     return ref
         .read(saleRepositoryProvider)
-        .calculateSubtotal(products, _cartItems, priceTypes: _cartPriceTypes);
+        .calculateSubtotal(
+          products,
+          _cartItems,
+          priceTypes: _cartPriceTypes,
+          savedUnitPrices: _savedUnitPrices,
+        );
   }
 
-  double get _discount =>
-      round2(double.tryParse(_discountController.text.trim()) ?? 0);
+  double get _discount {
+    final text = _discountController.text.trim();
+    if (text.isEmpty || _validateDiscount(text) != null) return 0;
+    return round2(double.tryParse(text) ?? 0);
+  }
 
   double get _total =>
       ref.read(saleRepositoryProvider).calculateTotal(_subtotal, _discount);
 
   void _showAddClientSheet() {
     dismissKeyboard();
-    showAppSheet<void>(
+    showFormSheet<void>(
       context,
       builder: (_) => ClientDialog(
         onSaved: (clientId) {
@@ -148,8 +201,6 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     }
   }
 
-  // El carrito cambió: se limpian sus avisos y se revisa de nuevo el descuento
-  // (puede haber quedado por encima del subtotal).
   void _cartChanged() {
     _cartError = null;
     _error = null;
@@ -160,8 +211,6 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     });
   }
 
-  // El descuento es opcional: no negativo, con hasta dos decimales y sin pasar
-  // del subtotal.
   String? _validateDiscount(String? value) {
     final error = validateDecimal(value, required: false, allowZero: true);
     if (error != null) return error;
@@ -171,12 +220,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
   }
 
   Future<void> _save() async {
-    final valid = _formKey.currentState!.validate();
-    if (_cartItems.isEmpty) {
-      setState(() => _cartError = 'Agrega al menos un producto');
-      return;
-    }
-    if (!valid) return;
+    final valid = validateForm();
+    if (_cartItems.isEmpty || !valid) return;
 
     final discount = _discount;
     final discountError = ref
@@ -187,10 +232,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() => _error = null);
 
     final products = ref.read(productProvider).products;
     final items = <Map<String, dynamic>>[];
@@ -202,7 +244,6 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
         if (entry.value > availableStock) {
           setState(() {
-            _isLoading = false;
             _cartError =
                 'Stock insuficiente para ${product.name}. Disponible: $availableStock';
           });
@@ -210,7 +251,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
         }
 
         final priceType = _cartPriceTypes[entry.key] ?? 'A';
-        final unitPrice = priceType == 'B' ? product.priceB : product.priceA;
+        final unitPrice =
+            _savedUnitPrices[entry.key] ??
+            (priceType == 'B' ? product.priceB : product.priceA);
         items.add({
           'productId': product.id,
           'quantity': entry.value,
@@ -256,17 +299,14 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
           );
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (error != null) {
-        setState(() => _error = error);
-      } else {
-        Navigator.pop(context);
-      }
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _error = error);
+    } else {
+      Navigator.pop(context);
     }
   }
 
-  // Cancelar no borra: devuelve el stock y deja la venta marcada como cancelada.
   Future<void> _cancelSale() async {
     final confirmed = await confirmCancellation(
       context,
@@ -301,6 +341,18 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _discountController,
+        _notesController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.sale != null;
     final allClients = ref.watch(clientProvider).clients;
     final clients = allClients
@@ -309,11 +361,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     final clientValue = clients.any((c) => c.id == _selectedClientId)
         ? _selectedClientId
         : null;
-    final products = ref
-        .watch(productProvider)
-        .products
-        .where((p) => p.isActive)
-        .toList();
+    final allProducts = ref.watch(productProvider).products;
     final searchingProducts = _productQuery.trim().isNotEmpty;
     final visibleProducts = searchingProducts
         ? ref
@@ -341,7 +389,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   _selectedClientId = val;
                   _error = null;
                 }),
-                labelAction: FormAddButton(onPressed: _showAddClientSheet),
+                labelAction: FormAddButton(
+                  label: 'Nuevo cliente',
+                  onPressed: _showAddClientSheet,
+                ),
               ),
               const SizedBox(height: AppSpacing.s16),
               SearchablePickerField<int>(
@@ -388,7 +439,6 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                             setState(() => _productQuery = value),
                       ),
                       const SizedBox(height: AppSpacing.s8),
-                      // Alto fijo: al escribir, el buscador de arriba no se mueve.
                       Container(
                         height: 200,
                         clipBehavior: Clip.antiAlias,
@@ -421,7 +471,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                   return AppRow(
                                     title: p.name,
                                     subtitle: Text(
-                                      'A: Bs. ${fixed2(p.priceA)}  •  B: Bs. ${fixed2(p.priceB)}  •  Stock: ${_availableStock(p)}',
+                                      'A: Bs. ${fixed2(p.priceA)}  •  B: Bs. ${fixed2(p.priceB)}  •  Stock: ${_availableStock(p)}',
                                       style: AppText.rowSubtitle(context),
                                     ),
                                     trailing: Icon(
@@ -437,6 +487,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                                       if (inCart) {
                                         _cartItems.remove(p.id);
                                         _cartPriceTypes.remove(p.id);
+                                        _savedLines.remove(p.id);
                                       } else if (_availableStock(p) < 1) {
                                         _cartError =
                                             'No hay stock disponible de ${p.name}';
@@ -453,7 +504,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   ),
                 ),
               ),
-              if (_cartError != null) FormErrorText(_cartError!),
+              if (_cartMessage != null) FormErrorText(_cartMessage!),
               const SizedBox(height: AppSpacing.s16),
               if (_cartItems.isNotEmpty) ...[
                 const FormSectionLabel('Carrito'),
@@ -466,7 +517,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   child: Column(
                     children: [
                       for (final entry in _cartItems.entries)
-                        _cartRow(context, entry, products),
+                        _cartRow(context, entry, allProducts),
                     ],
                   ),
                 ),
@@ -481,9 +532,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(hintText: '0'),
+                  decoration: const InputDecoration(hintText: '0.00'),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    FilteringTextInputFormatter.allow(RegExp('[0-9.]')),
                     TextInputFormatter.withFunction((oldValue, newValue) {
                       if (newValue.text.isEmpty) return newValue;
                       if (newValue.text == '0') return newValue;
@@ -522,18 +573,18 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                 children: [
                   AppValueRow(
                     label: 'Subtotal',
-                    value: 'Bs. ${fixed2(_subtotal)}',
+                    value: 'Bs. ${fixed2(_subtotal)}',
                   ),
                   AppValueRow(
                     label: 'Descuento',
                     value: _discount > 0
-                        ? '- Bs. ${fixed2(_discount)}'
-                        : 'Bs. 0.00',
+                        ? '- Bs. ${fixed2(_discount)}'
+                        : 'Bs. 0.00',
                     valueColor: _discount > 0 ? AppColors.error : null,
                   ),
                   AppValueRow(
                     label: 'Total',
-                    value: 'Bs. ${fixed2(_total)}',
+                    value: 'Bs. ${fixed2(_total)}',
                     bold: true,
                     valueColor: AppColors.textPrimary,
                   ),
@@ -547,13 +598,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
               FormActions(
                 onSecondary: () => Navigator.pop(context),
                 primaryLabel: isEditing ? 'Guardar' : 'Registrar venta',
-                onPrimary: _save,
-                loading: _isLoading,
+                onPrimary: () => runOnce(_save),
+                busy: inFlight,
                 destructive: isEditing && !widget.sale!.isCanceled
                     ? AppActionButton(
                         label: 'Cancelar la venta',
                         kind: AppButtonKind.destructive,
-                        onPressed: _isLoading ? null : _cancelSale,
+                        onPressed: inFlight ? null : () => runOnce(_cancelSale),
                       )
                     : null,
               ),
@@ -571,7 +622,9 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
     final product = products.where((p) => p.id == entry.key).firstOrNull;
     if (product == null) return const SizedBox();
     final priceType = _cartPriceTypes[entry.key] ?? 'A';
-    final linePrice = (priceType == 'B' ? product.priceB : product.priceA);
+    final linePrice =
+        _savedUnitPrices[entry.key] ??
+        (priceType == 'B' ? product.priceB : product.priceA);
     final available = _availableStock(product);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -590,8 +643,15 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(product.name, style: AppText.rowTitle(context)),
+                    if (!product.isActive) ...[
+                      const SizedBox(height: AppSpacing.s4),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: StatusBadge.forState(isActive: false),
+                      ),
+                    ],
                     Text(
-                      'Bs. ${fixed2(linePrice * entry.value)}',
+                      'Bs. ${fixed2(linePrice * entry.value)}',
                       style: AppText.rowSubtitle(
                         context,
                         color: AppColors.cyanDark,
@@ -617,6 +677,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog> {
                   _cartChanged();
                   if (entry.value <= 1) {
                     _cartItems.remove(entry.key);
+                    _cartPriceTypes.remove(entry.key);
+                    _savedLines.remove(entry.key);
                   } else {
                     _cartItems[entry.key] = entry.value - 1;
                   }

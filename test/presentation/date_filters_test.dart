@@ -11,26 +11,19 @@ import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/presentation/pages/events_page.dart';
 import 'package:offline_first_bi/presentation/pages/purchases_page.dart';
 import 'package:offline_first_bi/presentation/pages/sales_page.dart';
-import 'package:offline_first_bi/presentation/widgets/date_range_filter_bar.dart';
 import 'package:offline_first_bi/presentation/widgets/report_filters_widget.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
 import 'filter_helpers.dart';
 
-// Filtros por fecha de Ventas, Compras y Eventos (atajos + Desde/Hasta) y la
-// validación de rangos (Hasta no antes que Desde, hoy como fecha máxima) en
-// esos filtros y en Reportes.
-
 String _us(DateTime d) =>
     '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}/${d.year}';
 
-// El lápiz del selector (no el de las tarjetas de la lista de detrás).
 final _pickerEditIcon = find.descendant(
   of: find.byType(Dialog),
   matching: find.byIcon(Icons.edit_outlined),
 );
 
-// Escribe [date] en el selector de fecha (modo texto, mm/dd/aaaa) y confirma.
 Future<void> _typeDate(WidgetTester tester, DateTime date) async {
   await tester.tap(_pickerEditIcon);
   await tester.pumpAndSettle();
@@ -40,7 +33,7 @@ Future<void> _typeDate(WidgetTester tester, DateTime date) async {
   );
   await tester.enterText(field, _us(date));
   await tester.pump();
-  await tester.tap(find.text('OK'));
+  await tester.tap(find.text('Aceptar'));
   await tester.pumpAndSettle();
 }
 
@@ -50,7 +43,6 @@ void main() {
   final today = DateTime(now.year, now.month, now.day);
   final yesterday = DateTime(now.year, now.month, now.day - 1);
   final tomorrow = DateTime(now.year, now.month, now.day + 1);
-  // Una fecha de hace más de un año, fuera de cualquier atajo.
   final longAgo = DateTime(now.year - 1, 6, 15);
 
   setUp(() {
@@ -77,145 +69,6 @@ void main() {
 
   ProviderContainer containerOf(WidgetTester tester, Type page) =>
       ProviderScope.containerOf(tester.element(find.byType(page)));
-
-  group('DateRangeFilterBar', () {
-    // Banca el estado del filtro y registra cada cambio que emite la barra.
-    late List<DateRangeFilter> emitted;
-
-    Future<void> pumpBar(
-      WidgetTester tester, {
-      DateRangeFilter initial = const DateRangeFilter(),
-    }) async {
-      emitted = [];
-      await pump(
-        tester,
-        Scaffold(
-          body: StatefulBuilder(
-            builder: (context, setState) {
-              var value = initial;
-              return StatefulBuilder(
-                builder: (context, setInner) => DateRangeFilterBar(
-                  value: value,
-                  onChanged: (v) {
-                    emitted.add(v);
-                    setInner(() => value = v);
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    }
-
-    testWidgets('shows the four presets and empty Desde / Hasta', (tester) async {
-      await pumpBar(tester);
-      for (final label in ['Hoy', 'Esta semana', 'Este mes', 'Este año']) {
-        expect(find.text(label), findsOneWidget, reason: label);
-      }
-      expect(find.text('Desde'), findsOneWidget);
-      expect(find.text('Hasta'), findsOneWidget);
-    });
-
-    testWidgets('a preset fills Desde / Hasta and tapping it again clears them', (
-      tester,
-    ) async {
-      await pumpBar(tester);
-      await tester.tap(find.text('Hoy'));
-      await tester.pumpAndSettle();
-      expect(emitted.last.preset, DatePreset.today);
-      expect(find.text('Desde: ${formatDate(today)}'), findsOneWidget);
-      expect(find.text('Hasta: ${formatDate(today)}'), findsOneWidget);
-
-      await tester.tap(find.text('Hoy'));
-      await tester.pumpAndSettle();
-      expect(emitted.last.isActive, isFalse);
-      expect(find.text('Desde'), findsOneWidget);
-    });
-
-    testWidgets('a custom range via the pickers drops the preset', (tester) async {
-      await pumpBar(tester, initial: DateRangeFilter.forPreset(DatePreset.year));
-      await tester.tap(find.textContaining('Desde:'));
-      await tester.pumpAndSettle();
-      await _typeDate(tester, yesterday);
-      expect(emitted.last.from, yesterday);
-      expect(emitted.last.preset, isNull);
-      expect(find.text('Desde: ${formatDate(yesterday)}'), findsOneWidget);
-    });
-
-    testWidgets('the X on a date chip clears just that date', (tester) async {
-      await pumpBar(tester, initial: DateRangeFilter.forPreset(DatePreset.today));
-      await tester.tap(find.byIcon(Icons.close_rounded).first);
-      await tester.pumpAndSettle();
-      expect(emitted.last.from, isNull);
-      expect(emitted.last.to, today);
-    });
-
-    testWidgets('Desde = Hasta = today is a valid range', (tester) async {
-      await pumpBar(tester, initial: DateRangeFilter(from: today));
-      await tester.tap(find.text('Hasta'));
-      await tester.pumpAndSettle();
-      await _typeDate(tester, today);
-      expect(emitted.last.from, today);
-      expect(emitted.last.to, today);
-      expect(find.text(rangeOrderMessage), findsNothing);
-    });
-
-    testWidgets('Hasta before Desde is rejected with a message', (tester) async {
-      await pumpBar(tester, initial: DateRangeFilter(from: today));
-      await tester.tap(find.text('Hasta'));
-      await tester.pumpAndSettle();
-      await _typeDate(tester, yesterday);
-      expect(find.text(rangeOrderMessage), findsOneWidget);
-      expect(emitted, isEmpty);
-      expect(find.text('Hasta'), findsOneWidget); // sigue sin fecha
-    });
-
-    testWidgets('Desde after an existing Hasta is rejected too', (tester) async {
-      await pumpBar(tester, initial: DateRangeFilter(to: yesterday));
-      await tester.tap(find.text('Desde'));
-      await tester.pumpAndSettle();
-      await _typeDate(tester, today);
-      expect(find.text(rangeOrderMessage), findsOneWidget);
-      expect(emitted, isEmpty);
-    });
-
-    testWidgets('a future date cannot be picked: the picker refuses it', (
-      tester,
-    ) async {
-      await pumpBar(tester);
-      await tester.tap(find.text('Hasta'));
-      await tester.pumpAndSettle();
-      await tester.tap(_pickerEditIcon);
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.descendant(of: find.byType(Dialog), matching: find.byType(TextField)),
-        _us(tomorrow),
-      );
-      await tester.pump();
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
-      // El selector sigue abierto con el aviso y no se aplicó nada.
-      expect(find.textContaining('Out of range'), findsOneWidget);
-      expect(emitted, isEmpty);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect(find.text('Hasta'), findsOneWidget);
-    });
-
-    testWidgets('the picker opens on today at most (never beyond it)', (
-      tester,
-    ) async {
-      await pumpBar(tester);
-      await tester.tap(find.text('Desde'));
-      await tester.pumpAndSettle();
-      final picker = tester.widget<CalendarDatePicker>(
-        find.byType(CalendarDatePicker),
-      );
-      expect(picker.lastDate, today);
-      expect(picker.initialDate, today);
-    });
-  });
 
   group('Ventas', () {
     setUp(() async {
@@ -275,7 +128,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('No se encontraron resultados.'), findsOneWidget);
 
-      // "Limpiar" quita el filtro activo.
       await tester.tap(find.text('Limpiar'));
       await tester.pumpAndSettle();
       expect(find.text('John Smith'), findsOneWidget);
@@ -326,7 +178,6 @@ void main() {
           .read(saleDateFilterProvider.notifier)
           .state = DateRangeFilter.forPreset(DatePreset.today);
       await tester.pumpAndSettle();
-      // El filtro de Ventas no toca la lista de Compras.
       expect(find.text('Pasaje de bus'), findsOneWidget);
     });
   });
@@ -371,7 +222,6 @@ void main() {
       tester,
     ) async {
       await pump(tester, const EventsPage());
-      // Ambos filtros conviven en el panel: las fechas y el estado.
       await openFilterPanel(tester);
       expect(find.text('Hoy'), findsOneWidget);
       expect(find.text('Estado'), findsOneWidget);
@@ -384,7 +234,6 @@ void main() {
       await tester.pumpAndSettle();
       await _typeDate(tester, yesterday);
       expect(find.text(rangeOrderMessage), findsOneWidget);
-      // Sigue el rango de "Hoy".
       final filter = containerOf(tester, EventsPage).read(eventDateFilterProvider);
       expect(filter.preset, DatePreset.today);
     });
@@ -435,16 +284,13 @@ void main() {
       expect(emitted.last.startDate, today);
       expect(emitted.last.endDate, today);
 
-      // El 1 de enero "Hoy" y "Este año" son el mismo rango: tocar el segundo
-      // ya activo lo quitaría, así que ese día solo se comprueba "Hoy".
       if (today == DateTime(now.year)) return;
 
       await tester.tap(find.text('Este año').last);
       await tester.pumpAndSettle();
       expect(emitted.last.startDate, DateTime(now.year));
-      expect(emitted.last.endDate, today); // nunca más allá de hoy
+      expect(emitted.last.endDate, today);
 
-      // Volver a tocarlo quita el rango.
       await tester.tap(find.text('Este año').last);
       await tester.pumpAndSettle();
       expect(emitted.last.startDate, isNull);
@@ -480,7 +326,7 @@ void main() {
         _us(tomorrow),
       );
       await tester.pump();
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('Aceptar'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Out of range'), findsOneWidget);
       expect(emitted, isEmpty);
@@ -495,7 +341,6 @@ void main() {
     });
   });
 
-  // Con solo "Desde" (sin "Hasta") se muestra ese único día.
   group('Solo Desde = un solo día', () {
     testWidgets('Ventas: picking only Desde shows that day only', (tester) async {
       final ana = await db.into(db.clients).insert(ClientsCompanion.insert(name: 'John Smith'));
@@ -516,10 +361,8 @@ void main() {
       await tester.tap(dateBox('Desde'));
       await tester.pumpAndSettle();
       await _typeDate(tester, longAgo);
-      // Solo hay Desde: aparece su fecha y Hasta sigue vacío.
       expect(find.text(formatDateShort(longAgo)), findsOneWidget);
       expect(find.text('Seleccionar'), findsOneWidget);
-      // Solo la venta de ese día (a cualquier hora); ni hoy ni el día siguiente.
       expect(find.text('John Smith'), findsNothing);
       expect(find.text('Emily Johnson'), findsOneWidget);
     });
@@ -595,7 +438,6 @@ void main() {
           ),
         );
 
-    // "Ventas actuales" / "Compras actuales" y "Todas" son las dos pestañas.
     Future<void> choose(WidgetTester tester, String from, String to) async {
       await tester.tap(find.text(to));
       await tester.pumpAndSettle();
@@ -608,7 +450,7 @@ void main() {
       await sale('Futuro Cliente', tomorrow);
       await pump(tester, const SalesListBody());
       expect(find.text('Ventas actuales'), findsOneWidget);
-      expect(find.text('Hoy Cliente'), findsOneWidget); // hoy ya cuenta
+      expect(find.text('Hoy Cliente'), findsOneWidget);
       expect(find.text('Futuro Cliente'), findsNothing);
 
       await choose(tester, 'Ventas actuales', 'Todas');
@@ -628,7 +470,6 @@ void main() {
       expect(find.text('Antiguo Cliente'), findsOneWidget);
       expect(find.text('Hoy Cliente'), findsNothing);
 
-      // "Todas" no quita el rango: solo deja de ocultar lo futuro.
       await choose(tester, 'Ventas actuales', 'Todas');
       expect(find.text('Antiguo Cliente'), findsOneWidget);
       expect(find.text('Futuro Cliente'), findsNothing);
@@ -656,5 +497,4 @@ void main() {
       expect(RecordTimeFilter.all.includes(tomorrow), isTrue);
     });
   });
-
 }

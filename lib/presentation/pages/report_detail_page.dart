@@ -148,11 +148,11 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                     ),
                     AppValueRow(
                       label: 'Ingresos totales',
-                      value: 'Bs. ${fixed2(saleSummary.totalAmount)}',
+                      value: 'Bs. ${fixed2(saleSummary.totalAmount)}',
                     ),
                     AppValueRow(
                       label: 'Descuentos',
-                      value: 'Bs. ${fixed2(saleSummary.totalDiscount)}',
+                      value: 'Bs. ${fixed2(saleSummary.totalDiscount)}',
                     ),
                   ]
                 : [
@@ -162,7 +162,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                     ),
                     AppValueRow(
                       label: 'Gasto total',
-                      value: 'Bs. ${fixed2(purchaseSummary.totalAmount)}',
+                      value: 'Bs. ${fixed2(purchaseSummary.totalAmount)}',
                     ),
                   ],
           ),

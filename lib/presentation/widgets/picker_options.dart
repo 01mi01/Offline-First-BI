@@ -71,12 +71,10 @@ List<PickerOption<int>> supplierPickerOptions(
 
 List<PickerOption<int>> productPickerOptions(
   Iterable<ProductModel> products,
-  Iterable<CategoryModel> categories, {
-  String? noneLabel,
-}) {
+  Iterable<CategoryModel> categories,
+) {
   final names = {for (final c in categories) c.id: c.name};
   return [
-    if (noneLabel != null) PickerOption<int>(null, noneLabel),
     for (final p in products)
       PickerOption<int>(
         p.id,
@@ -91,12 +89,10 @@ List<PickerOption<int>> productPickerOptions(
 
 List<PickerOption<int>> materialPickerOptions(
   Iterable<MaterialModel> materials,
-  Iterable<UnitModel> units, {
-  String? noneLabel,
-}) {
+  Iterable<UnitModel> units,
+) {
   final names = {for (final u in units) u.id: u.name};
   return [
-    if (noneLabel != null) PickerOption<int>(null, noneLabel),
     for (final m in materials)
       PickerOption<int>(
         m.id,

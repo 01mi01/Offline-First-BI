@@ -15,8 +15,6 @@ import 'package:offline_first_bi/presentation/navigation/main_navigation_page.da
 import 'package:offline_first_bi/presentation/pages/login_page.dart';
 import 'package:offline_first_bi/presentation/pages/settings_page.dart';
 
-// Repositorio real que además cuenta cuántas veces se llama a logout(): así
-// se comprueba que el botón usa el logout() que ya existía, no otro camino.
 class _SpyAuthRepository extends AuthRepository {
   _SpyAuthRepository(super.database);
 
@@ -38,7 +36,7 @@ void main() {
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     spy = _SpyAuthRepository(db);
-    await db.select(db.modules).get(); // fuerza el seed inicial
+    await db.select(db.modules).get();
     final userId = await db.into(db.users).insert(
       UsersCompanion.insert(
         username: 'usuario_prueba',
@@ -46,7 +44,6 @@ void main() {
         passwordHash: _hash('123456'),
       ),
     );
-    // Permiso de lectura sobre todos los módulos: aparecen todas las pestañas.
     for (final module in await db.select(db.modules).get()) {
       await db.into(db.modulePermissions).insert(
         ModulePermissionsCompanion.insert(
@@ -79,15 +76,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Sin sesión guardada: aparece el inicio de sesión. Se entra por el
-    // formulario, igual que en una instalación real.
     expect(find.byType(LoginPage), findsOneWidget);
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Nombre de usuario'),
       'usuario_prueba',
     );
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Tu contraseña'),
+      find.widgetWithText(TextFormField, 'Contraseña'),
       '123456',
     );
     await tester.tap(find.widgetWithText(ElevatedButton, 'Iniciar sesión'));
@@ -110,7 +105,6 @@ void main() {
       'returns to the login screen',
       (tester) async {
         await pumpAppLoggedIn(tester);
-        // El inicio de sesión guardó la sesión local.
         expect(await db.select(db.sesionLocal).get(), hasLength(1));
         expect(spy.logoutCalls, 0);
 
@@ -128,7 +122,6 @@ void main() {
 
         expect(spy.logoutCalls, 1);
         expect(await db.select(db.sesionLocal).get(), isEmpty);
-        // De vuelta al inicio de sesión: ni el shell ni Ajustes quedan apilados.
         expect(find.byType(LoginPage), findsOneWidget);
         expect(find.byType(SettingsPage), findsNothing);
         expect(find.byType(MainNavigationPage), findsNothing);
@@ -155,7 +148,7 @@ void main() {
         'usuario_prueba',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Tu contraseña'),
+        find.widgetWithText(TextFormField, 'Contraseña'),
         '123456',
       );
       await tester.tap(find.widgetWithText(ElevatedButton, 'Iniciar sesión'));
@@ -172,7 +165,7 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
-        await spy.login('usuario_prueba', '123456'); // deja una sesión guardada
+        await spy.login('usuario_prueba', '123456');
         spy.logoutCalls = 0;
 
         await tester.pumpWidget(
@@ -185,7 +178,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.byType(MainNavigationPage), findsOneWidget); // sesión restaurada
+        expect(find.byType(MainNavigationPage), findsOneWidget);
 
         await openSettings(tester);
         await tester.tap(find.widgetWithText(ElevatedButton, 'Cerrar sesión'));
@@ -216,7 +209,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byType(AlertDialog),
-          matching: find.widgetWithText(ElevatedButton, 'Cancelar'),
+          matching: find.widgetWithText(ElevatedButton, 'Volver'),
         ),
       );
       await tester.pumpAndSettle();

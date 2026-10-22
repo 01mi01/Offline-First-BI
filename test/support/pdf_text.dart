@@ -2,24 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-// Extractor mínimo de texto para los PDF que genera el paquete `pdf` (fuentes
-// TrueType Type0/Identity-H con mapa ToUnicode), usado solo en pruebas: el
-// paquete pdf únicamente escribe PDFs y no hay un lector en las dependencias.
-//
-// Los glifos se escriben como ids hexadecimales de 2 bytes en las
-// operaciones TJ del contenido; cada fuente incrusta un CMap ToUnicode que
-// los traduce a código Unicode. Si una fuente no soporta un carácter (p. ej.
-// Helvetica con "ó"), ese carácter no llega a la salida como el original.
 class PdfText {
-  // Cadenas mostradas (una por operación TJ), en orden de aparición.
   final List<String> runs;
 
-  // Nombres BaseFont de las fuentes del documento (p. ej. Roboto-Regular).
   final Set<String> fontNames;
 
   PdfText(this.runs, this.fontNames);
 
-  // Todo el texto, con las operaciones unidas por espacios.
   String get text => runs.join(' ');
 
   static PdfText extract(Uint8List bytes) {
@@ -52,7 +41,6 @@ class PdfText {
       }
     }
 
-    // Fuentes Type0: nombre de recurso (F5...) -> CMap glifo -> Unicode.
     final cmaps = <String, Map<int, int>>{};
     final fontNames = <String>{};
     for (final entry in dicts.entries) {
@@ -67,7 +55,6 @@ class PdfText {
       if (resource == null || toUnicode == null) continue;
       cmaps[resource] = _parseCMap(streams[int.parse(toUnicode)] ?? '');
     }
-    // Fuentes estándar (Helvetica...) no llevan ToUnicode: se registran igual.
     for (final d in dicts.values) {
       final m = RegExp(r'/Subtype\s*/Type1\s*/BaseFont\s*/(\w[\w-]*)').firstMatch(d) ??
           RegExp(r'/BaseFont\s*/(\w[\w-]*)\s*/Subtype\s*/Type1').firstMatch(d);
@@ -87,7 +74,7 @@ class PdfText {
           continue;
         }
         final buffer = StringBuffer();
-        for (final hex in RegExp(r'<([0-9A-Fa-f]*)>').allMatches(m.group(2)!)) {
+        for (final hex in RegExp('<([0-9A-Fa-f]*)>').allMatches(m.group(2)!)) {
           final h = hex.group(1)!;
           for (var i = 0; i + 4 <= h.length; i += 4) {
             final glyph = int.parse(h.substring(i, i + 4), radix: 16);
@@ -103,8 +90,7 @@ class PdfText {
 
   static Map<int, int> _parseCMap(String cmap) {
     final map = <int, int>{};
-    // Solo las secciones bfchar (glifo -> carácter) que escribe el paquete pdf.
-    for (final section in RegExp(r'beginbfchar(.*?)endbfchar', dotAll: true)
+    for (final section in RegExp('beginbfchar(.*?)endbfchar', dotAll: true)
         .allMatches(cmap)) {
       for (final m in RegExp(r'<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>')
           .allMatches(section.group(1)!)) {

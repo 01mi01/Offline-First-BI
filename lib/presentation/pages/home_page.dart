@@ -1,3 +1,4 @@
+import '../../config/quantity_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
@@ -308,7 +309,7 @@ class HomePage extends ConsumerWidget {
                   : BiPieChart(
                       entries: report.salesByCategory,
                       byQuantity: false,
-                      quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
+                      quantityText: (e) => unitsText(e.quantity),
                       maxItems: 5,
                     ),
             ),
@@ -325,7 +326,7 @@ class HomePage extends ConsumerWidget {
                   : BiRankingChart(
                       entries: report.salesByProduct,
                       byQuantity: false,
-                      quantityText: (e) => '${formatQuantity(e.quantity)} uds.',
+                      quantityText: (e) => unitsText(e.quantity),
                       maxItems: 5,
                       onEntryTap: access.businessIntelligence
                           ? (entry) => showBiDrillDown(
@@ -421,8 +422,6 @@ class HomePage extends ConsumerWidget {
     HomeShortcut.businessIntelligence => Icons.insights_rounded,
   };
 
-  // Los accesos rápidos abren la misma pantalla que el módulo, sin la barra de
-  // navegación inferior; al volver se regresa a Inicio con la barra visible.
   void _open(BuildContext context, HomeShortcut shortcut) {
     final Widget page = switch (shortcut) {
       HomeShortcut.products => const ProductsScreen(),

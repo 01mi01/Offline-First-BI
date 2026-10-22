@@ -7,12 +7,6 @@ import 'package:offline_first_bi/models/report_filters.dart';
 import '../support/bi_drill_seed.dart';
 import '../support/bi_harness.dart';
 
-// Detalle de una barra de Business Intelligence (producto, categoría, evento y
-// material) sobre una base Drift real en memoria y los providers reales. Los
-// valores esperados están calculados a mano en bi_drill_seed.dart. El detalle
-// sigue las mismas reglas que los indicadores: fecha propia de cada registro,
-// sin ventas canceladas ni registros con fecha futura, y con los filtros
-// vigentes.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -36,19 +30,16 @@ void main() {
 
   group('producto', () {
     test(
-      'ingresos y unidades en el tiempo, sin canceladas, futuras ni fuera del periodo',
+      'ingresos y unidades en el tiempo, sin canceladas, futuras ni fuera del período',
       () async {
         final s = await DrillSeed.create(h);
         final d = product(s.anillo, s.filters);
 
         expect(d.name, 'Anillo');
-        // 100 + 50 + 45 (la de Bs. 5 de descuento cuenta neta); no cuentan la
-        // cancelada (250), la futura (999) ni la de hace 30 días (50).
         expect(d.revenue, 195);
         expect(d.units, 4);
         expect(d.salesCount, 3);
 
-        // 14 intervalos diarios; solo tres tienen movimiento.
         expect(d.granularity, BiGranularity.day);
         expect(d.buckets.length, 14);
         final byDay = {for (final b in d.buckets) b.start: b};
@@ -77,15 +68,14 @@ void main() {
     });
 
     test(
-      'un producto con un solo registro y otro sin ventas en el periodo',
+      'un producto con un solo registro y otro sin ventas en el período',
       () async {
         final s = await DrillSeed.create(h);
         final collar = product(s.collar, s.filters);
-        expect(collar.revenue, 70); // 80 - 10 de descuento
+        expect(collar.revenue, 70);
         expect(collar.units, 1);
         expect(collar.salesCount, 1);
 
-        // Un periodo en el que Cuadro no se vendió.
         final empty = product(
           s.cuadro,
           ReportFilters(startDate: day(-3), endDate: day(0)),
@@ -97,18 +87,15 @@ void main() {
 
     test('respeta los filtros vigentes', () async {
       final s = await DrillSeed.create(h);
-      // Filtrando por la categoría Arte, el Anillo (Joyas) no tiene ventas.
       expect(
         product(s.anillo, s.filters.copyWith(categoryId: s.arte)).isEmpty,
         isTrue,
       );
-      // Y por un solo día ("Desde" sin "Hasta") solo cuenta ese día.
       final oneDay = product(s.anillo, ReportFilters(startDate: day(-1)));
       expect(oneDay.revenue, 100);
       expect(oneDay.units, 2);
       expect(oneDay.salesCount, 1);
       expect(oneDay.granularity, BiGranularity.day);
-      // Un evento: solo las ventas de ese evento.
       expect(
         product(s.anillo, s.filters.copyWith(eventId: s.feria)).revenue,
         100,
@@ -130,7 +117,7 @@ void main() {
     test('sus productos de mayor a menor ingreso', () async {
       final s = await DrillSeed.create(h);
       final joyas = category('Joyas', s.filters);
-      expect(joyas.revenue, 265); // 195 + 70
+      expect(joyas.revenue, 265);
       expect(joyas.units, 5);
       expect(joyas.products.map((p) => p.label), ['Anillo', 'Collar']);
       expect(joyas.products.map((p) => p.amount), [195, 70]);
@@ -143,17 +130,14 @@ void main() {
       expect(arte.products.single.label, 'Cuadro');
     });
 
-    test('respeta el periodo y los filtros', () async {
+    test('respeta el período y los filtros', () async {
       final s = await DrillSeed.create(h);
-      // Solo hoy: del Anillo, 45 en 1 unidad; el Collar no se vendió hoy.
       final today = category('Joyas', ReportFilters(startDate: day(0)));
       expect(today.products.map((p) => p.label), ['Anillo']);
       expect(today.revenue, 45);
-      // Filtrando por el producto Collar, la categoría solo muestra ese.
       final collar = category('Joyas', s.filters.copyWith(productId: s.collar));
       expect(collar.products.map((p) => p.label), ['Collar']);
       expect(collar.revenue, 70);
-      // Una categoría sin ventas en el periodo.
       expect(
         category('Arte', ReportFilters(startDate: day(0))).isEmpty,
         isTrue,
@@ -176,20 +160,16 @@ void main() {
       final d = event(s.feria, s.filters);
 
       expect(d.name, 'Feria');
-      // Ventas A (100), B (70, ya sin el descuento) y D (120).
       expect(d.sales.length, 3);
       expect(d.income, 290);
-      // Gastos: general 40.50 (día -2) y materiales 30 (día -3). No cuentan
-      // el gasto futuro (999), el de hace 40 días (500) ni el suelto sin evento.
       expect(d.expenses.length, 2);
       expect(d.generalExpenses, 40.5);
       expect(d.materialExpenses, 30);
       expect(d.totalExpenses, 70.5);
       expect(d.profit, 219.5);
 
-      // Cronológico: la venta D (día -5) antes que A y B (día -1).
       expect(d.sales.first.amount, 120);
-      expect(d.expenses.first.isMaterial, isTrue); // día -3
+      expect(d.expenses.first.isMaterial, isTrue);
       expect(d.expenses.first.description, 'Hilo');
       expect(d.expenses.last.description, 'Participación en feria');
     });
@@ -204,7 +184,6 @@ void main() {
       expect(profit.profit, d.profit);
       expect(profit.salesCount, d.sales.length);
       expect(profit.purchaseCount, d.expenses.length);
-      // Y los ingresos son los de la barra de Ventas por evento.
       final bar = h.report(s.filters).salesByEvent.single;
       expect(bar.amount, d.income);
       expect(bar.refId, s.feria);
@@ -223,9 +202,8 @@ void main() {
       },
     );
 
-    test('respeta el periodo', () async {
+    test('respeta el período', () async {
       final s = await DrillSeed.create(h);
-      // Solo hace 5 días: la venta D (120) y ningún gasto.
       final d = event(s.feria, ReportFilters(startDate: day(-5)));
       expect(d.income, 120);
       expect(d.sales.length, 1);
@@ -236,15 +214,13 @@ void main() {
 
   group('material', () {
     test(
-      'sus compras en el tiempo, sin las futuras ni las de fuera del periodo',
+      'sus compras en el tiempo, sin las futuras ni las de fuera del período',
       () async {
         final s = await DrillSeed.create(h);
         final d = material(s.hilo, s.filters);
 
         expect(d.name, 'Hilo');
         expect(d.unit, isNotNull);
-        // 30 (día -3) + 20 (día -8); no cuentan la de hace 20 días (100) ni la
-        // futura (49).
         expect(d.spend, 50);
         expect(d.quantity, 15);
         expect(d.purchaseCount, 2);
@@ -275,9 +251,8 @@ void main() {
       }
     });
 
-    test('respeta el tipo de operación y el periodo', () async {
+    test('respeta el tipo de operación y el período', () async {
       final s = await DrillSeed.create(h);
-      // Solo gastos generales: ningún material.
       expect(
         material(
           s.hilo,
@@ -285,7 +260,6 @@ void main() {
         ).isEmpty,
         isTrue,
       );
-      // Solo los últimos 5 días: del Hilo, la compra del día -3.
       final recent = material(
         s.hilo,
         ReportFilters(startDate: day(-5), endDate: day(0)),

@@ -42,10 +42,6 @@ class HomeEntrance extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Encabezado
-// ---------------------------------------------------------------------------
-
 class HomeHeader extends StatelessWidget {
   final String userName;
   final HomePeriod period;
@@ -98,7 +94,7 @@ class _PeriodPicker extends StatelessWidget {
       color: AppColors.textPrimary,
     );
     return PopupMenuButton<HomePeriod>(
-      tooltip: 'Cambiar periodo',
+      tooltip: 'Cambiar período',
       color: AppColors.surface,
       initialValue: period,
       onSelected: onChanged,
@@ -125,7 +121,7 @@ class _PeriodPicker extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(50),
+              borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -144,10 +140,6 @@ class _PeriodPicker extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Tarjeta principal
-// ---------------------------------------------------------------------------
 
 class HomeHeroCard extends StatefulWidget {
   final HomePeriod period;
@@ -245,7 +237,7 @@ class _HomeHeroCardState extends State<HomeHeroCard> {
           Text(
             'Ventas ${formatMoney(sales)} · Gastos ${formatMoney(expenses)}',
             key: const ValueKey('home-hero-detail'),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: textTheme.labelMedium?.copyWith(
               color: AppColors.textSecondary,
@@ -334,8 +326,8 @@ class HomeChangePill extends StatelessWidget {
 
     return Semantics(
       label: change.trend == HomeTrend.none
-          ? 'Sin datos del periodo anterior para comparar'
-          : 'Cambio frente al periodo anterior: ${change.label}',
+          ? 'Sin datos del período anterior para comparar'
+          : 'Cambio frente al período anterior: ${change.label}',
       excludeSemantics: true,
       child: Container(
         key: const ValueKey('home-change-pill'),
@@ -345,7 +337,7 @@ class HomeChangePill extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: background,
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -367,14 +359,6 @@ class HomeChangePill extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Indicadores
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Accesos rápidos
-// ---------------------------------------------------------------------------
 
 class HomeShortcutItem {
   final HomeShortcut shortcut;
@@ -457,10 +441,6 @@ class _ShortcutButton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Secciones y gráficos
-// ---------------------------------------------------------------------------
-
 class HomeChartCard extends StatelessWidget {
   final String id;
   final String title;
@@ -502,9 +482,6 @@ class HomeChartCard extends StatelessWidget {
   }
 }
 
-// Evolución de un periodo con un solo intervalo (p. ej. el lunes en "Esta
-// semana"): una línea necesita dos puntos, así que se muestran las cifras del
-// intervalo con los colores del gráfico.
 class HomeSinglePointSummary extends StatelessWidget {
   final String dateLabel;
   final String incomeText;
@@ -625,10 +602,6 @@ class HomeErrorCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Actividad reciente
-// ---------------------------------------------------------------------------
-
 class HomeActivityCard extends StatelessWidget {
   final List<HomeActivity> activities;
 
@@ -698,7 +671,7 @@ class _CanceledPill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppColors.errorSoft,
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
       ),
       child: Text(
         'Cancelada',

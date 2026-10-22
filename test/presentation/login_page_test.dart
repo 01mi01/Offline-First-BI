@@ -14,8 +14,6 @@ import 'package:offline_first_bi/models/user_model.dart';
 import 'package:offline_first_bi/presentation/pages/login_page.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 
-// Repositorio cuyo login() no termina hasta que el test lo decide: permite
-// observar el estado "cargando" del botón.
 class _SlowAuthRepository extends AuthRepository {
   _SlowAuthRepository(super.database);
 
@@ -32,7 +30,7 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    await db.select(db.modules).get(); // fuerza el seed inicial
+    await db.select(db.modules).get();
     await db.into(db.users).insert(
       UsersCompanion.insert(
         username: 'usuario_prueba',
@@ -70,11 +68,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // Los campos se identifican por su sugerencia; las etiquetas "Usuario" y
-  // "Contraseña" están fuera y encima de ellos.
   Finder field(String label) => find.widgetWithText(
     TextFormField,
-    label == 'Usuario' ? 'Nombre de usuario' : 'Tu contraseña',
+    label == 'Usuario' ? 'Nombre de usuario' : 'Contraseña',
   );
   Finder loginButton() => find.byType(ElevatedButton);
 
@@ -143,14 +139,12 @@ void main() {
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      // El botón ya no muestra el texto (solo queda el título).
       expect(
         find.descendant(of: loginButton(), matching: find.text('Iniciar sesión')),
         findsNothing,
       );
       expect(tester.widget<ElevatedButton>(loginButton()).onPressed, isNull);
 
-      // Al terminar (credenciales no válidas) el botón vuelve a estar activo.
       slow.gate.complete(null);
       await tester.pumpAndSettle();
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -170,6 +164,20 @@ void main() {
       expect(message, findsOneWidget);
     });
 
-  });
+    for (final label in ['Usuario', 'Contraseña']) {
+      testWidgets('the wrong credentials message goes away when $label is edited', (
+        tester,
+      ) async {
+        await pumpLogin(tester);
+        await fillAndSubmit(tester, password: 'incorrecta');
+        await tester.pumpAndSettle();
+        expect(find.text('Usuario o contraseña incorrectos'), findsOneWidget);
 
+        await tester.enterText(field(label), 'x');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Usuario o contraseña incorrectos'), findsNothing);
+      });
+    }
+  });
 }

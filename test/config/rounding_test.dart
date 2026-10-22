@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offline_first_bi/config/quantity_format.dart';
 import 'package:offline_first_bi/config/rounding.dart';
 
-// Redondeo de la app: dos decimales "half up" en importes, cantidades decimales
-// y cualquier número calculado; las fracciones solo pierden el ruido.
 void main() {
   group('round2', () {
     test('rounds half up, also when the binary value sits just below the half', () {
@@ -31,7 +30,7 @@ void main() {
       for (var i = 0; i < 100; i++) {
         total += 0.1;
       }
-      expect(total == 10.0, isFalse); // la suma cruda arrastra ruido
+      expect(total == 10.0, isFalse);
       expect(round2(total), 10.0);
     });
 
@@ -67,29 +66,29 @@ void main() {
       expect(fixed2(0.1 + 0.2), '0.30');
     });
 
-    test('decimal units show two decimals', () {
-      expect(
-        formatMaterialQuantity(72.6 - 15, unitType: 'medida', unitName: 'metro'),
-        '57.60',
-      );
-      expect(formatMaterialQuantity(2, unitType: 'otros'), '2.00');
+    test('whole numbers have no decimals', () {
+      expect(formatQuantity(12), '12');
+      expect(formatQuantity(2), '2');
+      expect(formatQuantity(18.00), '18');
     });
 
-    test('whole-number units stay whole', () {
-      expect(
-        formatMaterialQuantity(12, unitType: 'otros', unitName: 'unidad'),
-        '12',
-      );
+    test('other values show up to two decimals without trailing zeros', () {
+      expect(formatQuantity(72.6 - 15), '57.6');
+      expect(formatQuantity(0.25), '0.25');
+      expect(formatQuantity(2.5), '2.5');
+      expect(formatQuantity(33.333), '33.33');
+      expect(formatQuantity(0.1 + 0.2), '0.3');
     });
 
-    test('fraction units keep the fraction, trimmed and without noise', () {
-      expect(formatMaterialQuantity(0.25, unitType: 'contenedor'), '0.25');
-      expect(formatMaterialQuantity(2.5, unitType: 'contenedor'), '2.5');
-      expect(formatMaterialQuantity(3, unitType: 'contenedor'), '3');
-      expect(
-        formatMaterialQuantity(0.1 + 0.2, unitType: 'contenedor'),
-        '0.3',
-      );
+    test('quantity with unit agrees in number', () {
+      expect(quantityWithUnit(1, 'metro'), '1 metro');
+      expect(quantityWithUnit(95, 'metro'), '95 metros');
+      expect(quantityWithUnit(16, 'contenedor'), '16 contenedores');
+      expect(quantityWithUnit(0.5, 'paquete'), '0.5 paquetes');
+      expect(quantityWithUnit(2.5, 'kg'), '2.5 kg');
+      expect(quantityWithUnit(3, null), '3');
+      expect(unitsText(1), '1 unidad');
+      expect(unitsText(21), '21 unidades');
     });
   });
 }

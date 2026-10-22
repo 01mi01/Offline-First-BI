@@ -149,11 +149,9 @@ void main() {
       await _type(tester, 'Costo de producción', '30');
       expect(find.text(error), findsNothing);
 
-      // Bajar el Precio B por debajo del costo marca el error al instante...
       await _type(tester, 'Precio B', '20');
       expect(find.text(error), findsOneWidget);
 
-      // ...y subirlo de nuevo lo quita, sin pulsar "Crear" en ningún momento.
       await _type(tester, 'Precio B', '35');
       expect(find.text(error), findsNothing);
     },
@@ -182,7 +180,7 @@ void main() {
       await _type(tester, 'Nombre', 'Estuches');
       await _type(tester, 'Precio A', '55');
       await _type(tester, 'Precio B', '40');
-      await _type(tester, 'Costo de producción', '45'); // < A pero >= B
+      await _type(tester, 'Costo de producción', '45');
       await _type(tester, 'Stock', '10');
 
       await tester.ensureVisible(find.text('Crear'));
@@ -219,7 +217,6 @@ void main() {
       expect(field('Precio B').controller!.text, '35.50');
       expect(field('Costo de producción').controller!.text, '20.00');
 
-      // Solo cambia B: A se conserva.
       await _type(tester, 'Precio B', '30');
       await tester.ensureVisible(find.text('Guardar'));
       await tester.tap(find.text('Guardar'));
@@ -248,13 +245,12 @@ void main() {
       await tester.ensureVisible(stock);
       await tester.enterText(stock, '2');
       await tester.pump();
-      await tester.enterText(stock, '2.'); // el usuario intenta "2.5"
+      await tester.enterText(stock, '2.');
       await tester.pump();
 
       expect(tester.widget<TextFormField>(stock).controller!.text, '2');
       expect(find.text(wholeNumberOnlyMessage), findsOneWidget);
 
-      // Aunque se guarde ahora, el valor es el entero visible, no 0.
       await tester.ensureVisible(find.text('Crear'));
       await tester.tap(find.text('Crear'));
       await tester.pumpAndSettle();
@@ -281,7 +277,6 @@ void main() {
       await tester.tap(find.text('Crear'));
       await tester.pumpAndSettle();
 
-      // No se guardó nada (ni un producto con stock 0): hay un error de validación.
       expect(find.byType(ProductDialog), findsOneWidget);
       expect(await ProductRepository(db).getAllIncludingInactive(), isEmpty);
     });

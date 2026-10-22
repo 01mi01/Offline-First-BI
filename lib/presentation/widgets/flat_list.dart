@@ -4,15 +4,12 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'record_list.dart' show imagePlaceholderColor;
 
-// Piezas del catálogo (baldosas sin sombra) y el botón flotante de "agregar".
-
-// Baldosa del catálogo: imagen redondeada y, debajo, el nombre y las líneas de
-// precio. Sin tarjeta, sin sombra y sin borde.
 class FlatTile extends StatelessWidget {
   final String? imagePath;
   final IconData icon;
   final String title;
   final List<String> lines;
+  final Widget? pill;
   final VoidCallback onTap;
 
   const FlatTile({
@@ -22,6 +19,7 @@ class FlatTile extends StatelessWidget {
     required this.onTap,
     this.imagePath,
     this.lines = const [],
+    this.pill,
   });
 
   Widget _placeholder() => Container(
@@ -43,15 +41,26 @@ class FlatTile extends StatelessWidget {
           Expanded(
             child: SizedBox(
               width: double.infinity,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppFlat.tileRadius),
-                child: imagePath != null
-                    ? Image.file(
-                        File(imagePath!),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholder(),
-                      )
-                    : _placeholder(),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppFlat.tileRadius),
+                    child: imagePath != null
+                        ? Image.file(
+                            File(imagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _placeholder(),
+                          )
+                        : _placeholder(),
+                  ),
+                  if (pill != null)
+                    Positioned(
+                      top: AppSpacing.s8,
+                      left: AppSpacing.s8,
+                      child: pill!,
+                    ),
+                ],
               ),
             ),
           ),
@@ -225,8 +234,6 @@ class _CatalogPopup extends StatelessWidget {
   }
 }
 
-// Botón flotante de "agregar": cian con el icono navy (nunca blanco sobre cian)
-// y sin sombra.
 class FlatFab extends StatelessWidget {
   final String heroTag;
   final VoidCallback onPressed;

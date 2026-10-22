@@ -19,7 +19,6 @@ import '../widgets/app_controls.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/empty_state.dart';
 
-// Categorías: lista y catálogo de baldosas. Tocar una categoría abre su detalle.
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
 
@@ -43,8 +42,6 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FlatFab(
-        // Tag único: evita colisiones de Hero cuando varias pestañas con FAB
-        // conviven montadas a la vez bajo el shell de navegación inferior.
         heroTag: 'categories_page_fab',
         onPressed: () => _showForm(context, null),
       ),
@@ -93,11 +90,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                     child: AppEmptyState.noMatch(),
                   )
                 : _isGrid
-                ? _GridView(
-                    categories: visible,
-                    showInactive:
-                        filter.status == CategoryStatusFilter.inactive,
-                  )
+                ? _GridView(categories: visible)
                 : _ListViewWidget(categories: visible),
           ),
         ],
@@ -107,7 +100,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 }
 
 void _showForm(BuildContext context, CategoryModel? category) {
-  showAppSheet<void>(
+  showFormSheet<void>(
     context,
     builder: (_) => CategoryDialog(category: category),
   );
@@ -119,7 +112,6 @@ void _showDetail(BuildContext context, CategoryModel category) {
     context,
     builder: (_) => RecordDetailSheet(
       title: 'Detalle de la categoría',
-      // La categoría predeterminada no se edita: solo "Cerrar".
       onEdit: category.isDefault ? null : () => _showForm(context, category),
       children: [
         RecordHeadline(
@@ -178,18 +170,11 @@ class _ListViewWidget extends StatelessWidget {
 
 class _GridView extends StatelessWidget {
   final List<CategoryModel> categories;
-  // El catálogo muestra solo categorías activas, salvo que el filtro de estado
-  // de la lista pida las inactivas: entonces las refleja.
-  final bool showInactive;
 
-  const _GridView({required this.categories, this.showInactive = false});
+  const _GridView({required this.categories});
 
   @override
   Widget build(BuildContext context) {
-    final active = showInactive
-        ? categories
-        : categories.where((c) => c.isActive).toList();
-
     return GridView.builder(
       padding: AppFlat.gridWithFab,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -198,13 +183,14 @@ class _GridView extends StatelessWidget {
         mainAxisSpacing: AppSpacing.s16,
         childAspectRatio: 0.9,
       ),
-      itemCount: active.length,
+      itemCount: categories.length,
       itemBuilder: (context, index) {
-        final cat = active[index];
+        final cat = categories[index];
         return FlatTile(
           imagePath: cat.image,
           icon: Icons.category_rounded,
           title: cat.name,
+          pill: cat.isActive ? null : _pill(cat),
           onTap: () => showCatalogPopup(
             context,
             title: cat.name,
@@ -239,7 +225,6 @@ class _CategoryRow extends StatelessWidget {
           RecordLine(description, maxLines: 2),
       ],
       pill: _pill(category),
-      // La categoría predeterminada no se edita: lleva un candado.
       trailing: category.isDefault
           ? const ProtectedRecordIcon(
               message: DefaultRecords.protectedCategoryMessage,

@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'app_style.dart';
 
-// Sección agrupada: encabezado gris arriba, filas dentro de un bloque blanco
-// redondeado con separadores finos con sangría, y nota al pie.
 class AppSection extends StatelessWidget {
   final String? header;
-  final Widget? headerTrailing;
-  final String? footer;
   final List<Widget> children;
   final double dividerIndent;
   final EdgeInsetsGeometry padding;
@@ -16,8 +12,6 @@ class AppSection extends StatelessWidget {
     super.key,
     required this.children,
     this.header,
-    this.headerTrailing,
-    this.footer,
     this.dividerIndent = AppMetrics.dividerIndent,
     this.padding = const EdgeInsets.fromLTRB(
       AppSpacing.s16,
@@ -34,7 +28,7 @@ class AppSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (header != null || headerTrailing != null)
+          if (header != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.s16,
@@ -42,14 +36,7 @@ class AppSection extends StatelessWidget {
                 0,
                 AppSpacing.s6,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(header ?? '', style: AppText.formLabel(context)),
-                  ),
-                  ?headerTrailing,
-                ],
-              ),
+              child: Text(header!, style: AppText.formLabel(context)),
             ),
           Container(
             width: double.infinity,
@@ -73,23 +60,12 @@ class AppSection extends StatelessWidget {
               ],
             ),
           ),
-          if (footer != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                AppSpacing.s6,
-                AppSpacing.s16,
-                0,
-              ),
-              child: Text(footer!, style: AppText.footnote(context)),
-            ),
         ],
       ),
     );
   }
 }
 
-// Icono pequeño en un cuadrado redondeado de color.
 class AppTile extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -116,7 +92,6 @@ class AppTile extends StatelessWidget {
   }
 }
 
-// Fila de lista: icono, título, línea gris debajo, valor a la derecha y flecha.
 class AppRow extends StatelessWidget {
   final Widget? leading;
   final String title;
@@ -124,9 +99,7 @@ class AppRow extends StatelessWidget {
   final Widget? subtitle;
   final Widget? trailing;
   final int? trailingFlex;
-  final bool chevron;
   final VoidCallback? onTap;
-  final VoidCallback? onLongPress;
 
   const AppRow({
     super.key,
@@ -136,16 +109,13 @@ class AppRow extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.trailingFlex,
-    this.chevron = false,
     this.onTap,
-    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      onLongPress: onLongPress,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: AppMetrics.rowMinHeight),
         child: Padding(
@@ -185,10 +155,6 @@ class AppRow extends StatelessWidget {
                 else
                   trailing!,
               ],
-              if (chevron) ...[
-                const SizedBox(width: AppSpacing.s4),
-                const AppChevron(),
-              ],
             ],
           ),
         ),
@@ -197,16 +163,12 @@ class AppRow extends StatelessWidget {
   }
 }
 
-// Fila de solo lectura: etiqueta a la izquierda y valor gris a la derecha.
 class AppValueRow extends StatelessWidget {
   final String label;
   final String value;
-  // Widget en lugar del texto del valor (p. ej. una pastilla), a la derecha.
   final Widget? valueWidget;
   final bool bold;
   final Color? valueColor;
-  // Acción pequeña a la derecha del valor (p. ej. copiar).
-  final Widget? trailing;
 
   const AppValueRow({
     super.key,
@@ -215,19 +177,14 @@ class AppValueRow extends StatelessWidget {
     this.valueWidget,
     this.bold = false,
     this.valueColor,
-    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    // La fila mide al menos [AppMetrics.rowMinHeight] y su contenido queda
-    // centrado en vertical dentro de ese alto (con márgenes iguales a los lados).
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: AppMetrics.rowMinHeight),
       child: Center(
         child: Padding(
-        // Medio punto más de margen arriba que abajo: sin ese ajuste el texto
-        // (sin letras que bajen de la línea) se ve algo más alto que el centro.
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.s16,
           AppSpacing.s12 + 1,
@@ -256,7 +213,6 @@ class AppValueRow extends StatelessWidget {
                       ).copyWith(fontWeight: bold ? FontWeight.w700 : null),
                     ),
             ),
-            ?trailing,
           ],
         ),
       ),
@@ -265,8 +221,6 @@ class AppValueRow extends StatelessWidget {
   }
 }
 
-// Una fila de una lista agrupada: fondo del bloque, esquinas redondeadas en la
-// primera y la última, y una línea fina (con sangría) entre filas.
 Widget _groupItem(
   Widget row, {
   required bool first,
@@ -297,18 +251,14 @@ Widget _groupItem(
   );
 }
 
-// Lista larga dentro de un bloque agrupado: las filas se construyen al
-// desplazarse; la primera y la última redondean las esquinas del bloque.
 class AppSliverGroup extends StatelessWidget {
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
-  final double dividerIndent;
 
   const AppSliverGroup({
     super.key,
     required this.itemCount,
     required this.itemBuilder,
-    this.dividerIndent = AppMetrics.dividerIndent,
   });
 
   @override
@@ -321,7 +271,7 @@ class AppSliverGroup extends StatelessWidget {
             itemBuilder(context, index),
             first: index == 0,
             last: index == itemCount - 1,
-            dividerIndent: dividerIndent,
+            dividerIndent: AppMetrics.dividerIndent,
           ),
           childCount: itemCount,
         ),
@@ -330,8 +280,6 @@ class AppSliverGroup extends StatelessWidget {
   }
 }
 
-// Lo mismo que [AppSliverGroup] para una pantalla que no usa slivers: una lista
-// con el bloque agrupado y espacio abajo para el botón flotante.
 class AppGroupListView extends StatelessWidget {
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
@@ -364,12 +312,10 @@ class AppGroupListView extends StatelessWidget {
   }
 }
 
-// Total grande arriba de un detalle.
 class AppBigTotal extends StatelessWidget {
   final String label;
   final String value;
   final String? note;
-  // Pastilla de estado bajo el total (p. ej. "Cancelada").
   final Widget? pill;
 
   const AppBigTotal({

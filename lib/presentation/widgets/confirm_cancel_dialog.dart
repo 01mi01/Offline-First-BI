@@ -3,18 +3,22 @@ import '../../theme/app_theme.dart';
 import 'app_buttons.dart';
 import 'focus_utils.dart';
 
-// Confirmación antes de cancelar o desactivar un registro. Devuelve true solo
-// si la persona confirma; el botón de salida se llama "Volver" por omisión.
 Future<bool> confirmCancellation(
   BuildContext context, {
   required String title,
   String? message,
   required String confirmLabel,
-  String dismissLabel = 'Volver',
+  String cancelLabel = 'Volver',
   AppButtonKind confirmKind = AppButtonKind.destructive,
 }) async {
-  // Sin esto el teclado reaparece al cerrar el diálogo (ver focus_utils.dart).
   dismissKeyboard();
+  var answered = false;
+  void answer(BuildContext ctx, bool value) {
+    if (answered) return;
+    answered = true;
+    Navigator.pop(ctx, value);
+  }
+
   final confirm = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -43,13 +47,13 @@ Future<bool> confirmCancellation(
             AppActionButton(
               label: confirmLabel,
               kind: confirmKind,
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: () => answer(ctx, true),
             ),
             const SizedBox(height: AppButtons.stackGap),
             AppActionButton(
-              label: dismissLabel,
+              label: cancelLabel,
               kind: AppButtonKind.neutral,
-              onPressed: () => Navigator.pop(ctx, false),
+              onPressed: () => answer(ctx, false),
             ),
           ],
         ),
@@ -57,4 +61,14 @@ Future<bool> confirmCancellation(
     ),
   );
   return confirm == true;
+}
+
+Future<bool> confirmDiscardChanges(BuildContext context) {
+  return confirmCancellation(
+    context,
+    title: '¿Descartar los cambios?',
+    message: 'Los datos escritos se perderán.',
+    confirmLabel: 'Descartar',
+    cancelLabel: 'Seguir editando',
+  );
 }

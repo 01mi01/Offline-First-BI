@@ -1,8 +1,3 @@
-// Punto de entrada que carga datos de ejemplo y abre la aplicación. Escribe
-// siempre por la capa de repositorios (los notifiers de Riverpod) y no hace
-// nada si la base ya tiene productos.
-//
-// Uso: flutter run -t lib/seed_main.dart --dart-define-from-file=config/dev.json
 // ignore_for_file: avoid_print
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,7 +16,6 @@ import 'config/rounding.dart';
 import 'main.dart' show MyApp;
 import 'config/app_clock.dart';
 
-// (nombre, información de contacto)
 const seedClients = <(String, String)>[
   ('John Smith', 'john.smith@example.com | +591 7000 0001 | @johnsmith'),
   ('Emily Johnson', 'emily.johnson@example.com | +591 7000 0002'),
@@ -60,21 +54,19 @@ const seedSuppliers = <(String, String)>[
   ),
 ];
 
-// (ciudad, zona, país). La zona va a la descripción de la ubicación; la ciudad
-// queda sola, así el filtro "Ciudad" lista cada ciudad una vez.
 const seedLocations = <(String, String, String)>[
-  ('La Paz', 'Calacoto', 'Bolivia'), // 0
-  ('La Paz', 'San Miguel', 'Bolivia'), // 1
-  ('La Paz', 'Achumani', 'Bolivia'), // 2
-  ('La Paz', 'Los Pinos', 'Bolivia'), // 3
-  ('La Paz', 'Irpavi', 'Bolivia'), // 4
-  ('La Paz', 'Bolognia', 'Bolivia'), // 5
-  ('Santa Cruz', 'Equipetrol', 'Bolivia'), // 6
-  ('Santa Cruz', 'Las Palmas', 'Bolivia'), // 7
-  ('Santa Cruz', 'Urubó', 'Bolivia'), // 8
-  ('Santa Cruz', 'Sirari', 'Bolivia'), // 9
-  ('Cochabamba', 'Campo Ferial FEXCO', 'Bolivia'), // 10
-  ('Lima', 'Miraflores', 'Perú'), // 11
+  ('La Paz', 'Calacoto', 'Bolivia'),
+  ('La Paz', 'San Miguel', 'Bolivia'),
+  ('La Paz', 'Achumani', 'Bolivia'),
+  ('La Paz', 'Los Pinos', 'Bolivia'),
+  ('La Paz', 'Irpavi', 'Bolivia'),
+  ('La Paz', 'Bolognia', 'Bolivia'),
+  ('Santa Cruz', 'Equipetrol', 'Bolivia'),
+  ('Santa Cruz', 'Las Palmas', 'Bolivia'),
+  ('Santa Cruz', 'Urubó', 'Bolivia'),
+  ('Santa Cruz', 'Sirari', 'Bolivia'),
+  ('Cochabamba', 'Campo Ferial FEXCO', 'Bolivia'),
+  ('Lima', 'Miraflores', 'Perú'),
 ];
 
 class SeedCategory {
@@ -98,24 +90,24 @@ class SeedMaterial {
 }
 
 const seedMaterials = <SeedMaterial>[
-  SeedMaterial('Tela negra', 'metro'), // 0
-  SeedMaterial('Tela beige', 'metro'), // 1
-  SeedMaterial('Resina parte A', 'contenedor'), // 2
-  SeedMaterial('Resina parte B', 'contenedor'), // 3
-  SeedMaterial('Base metálica grande para pines', 'unidad'), // 4
-  SeedMaterial('Base metálica pequeña para pines', 'unidad'), // 5
-  SeedMaterial('Papel para stickers', 'paquete'), // 6
-  SeedMaterial('Papel holográfico para stickers', 'paquete'), // 7
-  SeedMaterial('Tela para estuches', 'metro'), // 8
+  SeedMaterial('Tela negra', 'metro'),
+  SeedMaterial('Tela beige', 'metro'),
+  SeedMaterial('Resina parte A', 'contenedor'),
+  SeedMaterial('Resina parte B', 'contenedor'),
+  SeedMaterial('Base metálica grande para pines', 'unidad'),
+  SeedMaterial('Base metálica pequeña para pines', 'unidad'),
+  SeedMaterial('Papel para stickers', 'paquete'),
+  SeedMaterial('Papel holográfico para stickers', 'paquete'),
+  SeedMaterial('Tela para estuches', 'metro'),
 ];
 
 class SeedProduct {
   final String name;
-  final String? category; // null = Sin categoría
+  final String? category;
   final double priceA;
   final double priceB;
   final double cost;
-  final int remaining; // stock que queda después de las ventas
+  final int remaining;
   const SeedProduct(
     this.name,
     this.category,
@@ -127,18 +119,17 @@ class SeedProduct {
 }
 
 const seedProducts = <SeedProduct>[
-  SeedProduct('Tote bag negra', 'Bolsas', 85, 75, 38, 14), // 0
-  SeedProduct('Tote bag beige', 'Bolsas', 85, 75, 36, 12), // 1
-  SeedProduct('Miniaturas', 'Miniaturas', 70, 60, 28, 6), // 2
-  SeedProduct('Pines grandes', 'Pines', 25, 20, 7, 3), // 3
-  SeedProduct('Set de pines pequeños', 'Pines', 40, 34, 14, 3), // 4
-  SeedProduct('Stickers', 'Papelería', 12, 10, 3, 40), // 5
-  SeedProduct('Stickers holográficos', 'Papelería', 18, 15, 5, 35), // 6
-  SeedProduct('Estuches', null, 55, 48, 22, 9), // 7
-  SeedProduct('Libro', 'Libros', 95, 85, 40, 2), // 8
+  SeedProduct('Tote bag negra', 'Bolsas', 85, 75, 38, 14),
+  SeedProduct('Tote bag beige', 'Bolsas', 85, 75, 36, 12),
+  SeedProduct('Miniaturas', 'Miniaturas', 70, 60, 28, 6),
+  SeedProduct('Pines grandes', 'Pines', 25, 20, 7, 3),
+  SeedProduct('Set de pines pequeños', 'Pines', 40, 34, 14, 3),
+  SeedProduct('Stickers', 'Papelería', 12, 10, 3, 40),
+  SeedProduct('Stickers holográficos', 'Papelería', 18, 15, 5, 35),
+  SeedProduct('Estuches', null, 55, 48, 22, 9),
+  SeedProduct('Libro', 'Libros', 95, 85, 40, 2),
 ];
 
-// (índice de producto, índice de material, cantidad usada)
 typedef SeedUsage = (int, int, double);
 
 const seedUsage = <SeedUsage>[
@@ -153,12 +144,10 @@ const seedUsage = <SeedUsage>[
   (7, 8, 14.5),
 ];
 
-// (índice de producto, índice de material) del uso que se deja cancelado.
 const seedCanceledUsage = (7, 8);
 
 const seedInactiveClient = 'Robert Clark';
 const seedInactiveSupplier = 'Northgate Trading';
-// (ciudad, zona) de la ubicación que se deja desactivada.
 const seedInactiveLocation = ('Santa Cruz', 'Sirari');
 const seedInactiveMaterial = 'Base metálica pequeña para pines';
 const seedInactiveCategory = 'Libros';
@@ -166,8 +155,8 @@ const seedInactiveProduct = 'Stickers holográficos';
 
 class SeedEvent {
   final String name;
-  final int location; // índice en seedLocations
-  final int start; // días relativos a hoy
+  final int location;
+  final int start;
   final int end;
   final bool active;
   const SeedEvent(
@@ -179,7 +168,6 @@ class SeedEvent {
   });
 }
 
-// Índices de los eventos que usan las ventas y los gastos.
 const eventLibroLaPaz = 0;
 const eventLibroCochabamba = 1;
 const eventLibroSantaCruz = 2;
@@ -192,8 +180,6 @@ const eventFeriaActiva = 8;
 const eventFeriaDeOctubre = 9;
 const eventFeriaDeNavidad = 10;
 
-// Once eventos: casi todos en el pasado, uno en el mes actual, uno en
-// diciembre de este año y uno desactivado.
 List<SeedEvent> buildSeedEvents(DateTime today) {
   final todayDate = DateTime(today.year, today.month, today.day);
   int offset(DateTime d) => d.difference(todayDate).inDays;
@@ -214,16 +200,15 @@ List<SeedEvent> buildSeedEvents(DateTime today) {
   ];
 }
 
-// (índice de producto, cantidad, tipo de precio)
 typedef SeedLine = (int, int, String);
 
 class SeedSale {
-  final int day; // 0 = hoy, -3 = hace 3 días, 5 = futura
+  final int day;
   final List<SeedLine> lines;
   final double discount;
-  final int? event; // índice en buildSeedEvents
-  final int? client; // índice en seedClients
-  final int? location; // índice en seedLocations
+  final int? event;
+  final int? client;
+  final int? location;
   final bool cancel;
   const SeedSale(
     this.day,
@@ -236,15 +221,14 @@ class SeedSale {
   });
 }
 
-// (índice de material, cantidad, precio unitario)
 typedef SeedMaterialItem = (int, double, double);
 
 class SeedPurchase {
   final int day;
-  final List<SeedMaterialItem> items; // vacío = gasto general
+  final List<SeedMaterialItem> items;
   final double expense;
   final String? description;
-  final int? supplier; // índice en seedSuppliers
+  final int? supplier;
   final int? location;
   final int? event;
   const SeedPurchase(
@@ -266,8 +250,6 @@ const expenseFlight = 'Pasaje de avión';
 const expenseBus = 'Pasaje de bus';
 const expenseFairFee = 'Participación en feria';
 
-// Compras de material (con proveedor) y gastos generales (sin proveedor: se
-// guardan con "Sin proveedor") ligados a los eventos.
 List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
   SeedPurchase expense(
     String description,
@@ -289,7 +271,6 @@ List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
   int end(int e) => events[e].end;
 
   return [
-    // Stock inicial de cada material.
     const SeedPurchase(-118, [(0, 60, 28)], supplier: 0, location: 0),
     const SeedPurchase(-118, [(1, 60, 26)], supplier: 1, location: 0),
     const SeedPurchase(-118, [(2, 12, 85)], supplier: 2, location: 1),
@@ -299,7 +280,6 @@ List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
     const SeedPurchase(-118, [(6, 20, 18)], supplier: 4, location: 6),
     const SeedPurchase(-118, [(7, 15, 30)], supplier: 4, location: 6),
     const SeedPurchase(-118, [(8, 40, 22)], supplier: 5, location: 7),
-    // Reposiciones.
     const SeedPurchase(-84, [(0, 20, 30)], supplier: 6),
     const SeedPurchase(
       -63,
@@ -313,7 +293,6 @@ List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
     const SeedPurchase(-9, [(2, 4, 88), (3, 4, 82)], supplier: 2),
     const SeedPurchase(-3, [(7, 6, 31)], supplier: 4, location: 6),
     const SeedPurchase(-2, [(0, 15, 33)], supplier: 0, location: 0),
-    // Participación en feria: una por evento.
     expense(
       expenseFairFee,
       150,
@@ -374,7 +353,6 @@ List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
       eventFeriaDeNavidad,
       day: start(eventFeriaDeNavidad) - 10,
     ),
-    // Hotel.
     expense(
       expenseHotel,
       600,
@@ -389,7 +367,6 @@ List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
     ),
     expense(expenseHotel, 1800, eventFeriaDeLima, day: start(eventFeriaDeLima)),
     expense(expenseHotel, 520, eventFeriaDeLima, day: end(eventFeriaDeLima)),
-    // Pasaje de avión.
     expense(
       expenseFlight,
       1450,
@@ -408,7 +385,6 @@ List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
       eventLibroSantaCruz,
       day: start(eventLibroSantaCruz) - 2,
     ),
-    // Pasaje de bus.
     expense(
       expenseBus,
       120,
@@ -428,14 +404,10 @@ List<SeedPurchase> buildSeedPurchases(List<SeedEvent> events) {
       day: end(eventLibroSantaCruz) + 1,
     ),
     expense(expenseBus, 45, eventFeriaActiva, day: start(eventFeriaActiva)),
-    // Futura: no cuenta en los totales.
     const SeedPurchase(6, [(1, 30, 27)], supplier: 6),
   ];
 }
 
-// Ventas de 16 semanas completas con tendencia al alza (sin evento), ventas
-// ligadas a cada evento (con la fecha propia de la venta), ventas de hoy, una
-// cancelada y dos futuras.
 List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
   final sales = <SeedSale>[];
   final mondayOffset = -(today.weekday - DateTime.monday);
@@ -445,8 +417,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
     return seed % max;
   }
 
-  // "Libro" no se vende nunca, "Estuches" solo hace más de 60 días y
-  // "Stickers holográficos" solo hace más de 30 días.
   bool allowed(int product, int day) =>
       product != 8 &&
       !(product == 7 && day >= -60) &&
@@ -459,7 +429,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
     return product;
   }
 
-  // Más peso para los productos de mayor rotación.
   const sellable = [0, 1, 2, 3, 3, 4, 4, 5, 5, 5, 6, 6, 7, 7, 0, 1, 5];
   const weekdays = [1, 2, 3, 4, 5, 6, 3];
   for (var k = 16; k >= 1; k--) {
@@ -485,7 +454,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
     }
   }
 
-  // Ventas de cada evento, en los días del evento (hasta hoy).
   const perEvent = {
     eventLibroLaPaz: 6,
     eventLibroCochabamba: 6,
@@ -531,16 +499,10 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
     }
   });
 
-  // Ligada a la Feria de Arte, pero con fecha propia fuera de ella.
   sales.add(
     const SeedSale(-70, [(1, 2, 'A')], event: eventFeriaDeArte, location: 1),
   );
 
-  // Ventas con varios productos, para "Productos comprados juntos", repartidas
-  // por TODOS los días de la semana (las ventas semanales de arriba no caen en
-  // lunes) y varias con descuento. Son explícitas (no consumen números
-  // aleatorios). Sin "Libro", "Estuches" ni "Stickers holográficos", que
-  // tienen su propio escenario de inventario.
   int weekdayAgo(int weeksAgo, int weekday) =>
       mondayOffset - 7 * weeksAgo + (weekday - DateTime.monday);
   const monday = DateTime.monday;
@@ -550,7 +512,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
   const friday = DateTime.friday;
   const saturday = DateTime.saturday;
   const sunday = DateTime.sunday;
-  // Tote bag negra + Pines grandes: el par que más se repite.
   sales.add(
     SeedSale(
       weekdayAgo(2, monday),
@@ -582,7 +543,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
       client: 6,
     ),
   );
-  // Stickers + Set de pines pequeños: justo el mínimo de 3 ventas.
   sales.add(
     SeedSale(
       weekdayAgo(2, tuesday),
@@ -606,7 +566,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
       location: 3,
     ),
   );
-  // Tote bag beige + Miniaturas: solo 2 ventas, por debajo del mínimo.
   sales.add(
     SeedSale(
       weekdayAgo(1, thursday),
@@ -621,8 +580,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
       discount: 10,
     ),
   );
-  // Un evento con ventas de varios productos que sí deja ganancia (sus gastos
-  // son solo la participación en la feria).
   sales.add(
     SeedSale(
       events[eventLargaNoche].start,
@@ -640,8 +597,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
     ),
   );
 
-  // Ventas antiguas de "Estuches" (la última hace más de 60 días) y de
-  // "Stickers holográficos" (producto desactivado).
   sales.add(const SeedSale(-95, [(7, 2, 'A')], client: 1));
   sales.add(const SeedSale(-80, [(7, 1, 'B')]));
   sales.add(const SeedSale(-62, [(7, 1, 'A')], client: 5, location: 6));
@@ -649,7 +604,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
   sales.add(const SeedSale(-45, [(6, 2, 'B')]));
   sales.add(const SeedSale(-33, [(6, 4, 'A')], location: 3));
 
-  // Hoy y ayer.
   sales.add(
     const SeedSale(
       0,
@@ -662,13 +616,10 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
   sales.add(const SeedSale(0, [(2, 1, 'A')], client: 7));
   sales.add(const SeedSale(-1, [(1, 1, 'A')], client: 2, location: 1));
 
-  // Una cancelada y dos futuras (la segunda, de un evento aún sin ventas
-  // pasadas, no cuenta hasta que ocurra).
   sales.add(const SeedSale(-3, [(2, 1, 'A')], cancel: true, client: 4));
   sales.add(const SeedSale(4, [(0, 1, 'A')], event: eventFeriaActiva));
   sales.add(const SeedSale(9, [(4, 1, 'B')]));
 
-  // La cancelada se crea primero (se cancela justo después de crearla).
   sales.sort((a, b) {
     if (a.cancel != b.cancel) return a.cancel ? -1 : 1;
     return a.day.compareTo(b.day);
@@ -679,8 +630,6 @@ List<SeedSale> buildSeedSales(DateTime today, List<SeedEvent> events) {
 DateTime _at(DateTime today, int dayOffset) =>
     DateTime(today.year, today.month, today.day + dayOffset, 12);
 
-// Carga los datos de ejemplo. Devuelve false (sin tocar nada) si ya hay
-// productos; lanza si algo falla.
 Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
   final today = now ?? appNow();
   DateTime at(int d) => _at(today, d);
@@ -692,7 +641,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
   final sales = buildSeedSales(today, events);
   final purchases = buildSeedPurchases(events);
 
-  // Categorías (la predeterminada "Sin categoría" ya existe).
   for (final cat in seedCategories) {
     await c
         .read(categoryProvider.notifier)
@@ -702,7 +650,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
     for (final cat in c.read(categoryProvider).categories) cat.name: cat.id,
   };
 
-  // Clientes, proveedores y ubicaciones.
   for (final (name, contact) in seedClients) {
     final error = await c
         .read(clientProvider.notifier)
@@ -737,7 +684,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
           .id,
   ];
 
-  // Productos: el stock inicial deja justo "remaining" tras las ventas.
   for (var i = 0; i < seedProducts.length; i++) {
     final p = seedProducts[i];
     int qty(bool Function(SeedSale) where) => sales
@@ -766,7 +712,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
       c.read(productProvider).products.firstWhere((x) => x.name == p.name).id,
   ];
 
-  // Eventos (uno de ellos desactivado).
   for (final e in events) {
     await c
         .read(eventProvider.notifier)
@@ -783,7 +728,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
       c.read(eventProvider).events.firstWhere((x) => x.name == e.name).id,
   ];
 
-  // Materiales (con stock 0: el stock llega con las compras).
   await c.read(unitProvider.notifier).load();
   final units = c.read(unitProvider).units;
   int unitId(String name) => units.firstWhere((u) => u.name == name).id;
@@ -797,7 +741,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
       c.read(materialProvider).materials.firstWhere((x) => x.name == m.name).id,
   ];
 
-  // Compras, de la más antigua a la más reciente.
   final orderedPurchases = [...purchases]
     ..sort((a, b) => a.day.compareTo(b.day));
   for (final p in orderedPurchases) {
@@ -823,7 +766,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
     if (error != null) throw StateError('compra: $error');
   }
 
-  // Ventas.
   for (final s in sales) {
     double priceOf(SeedLine l) =>
         l.$3 == 'A' ? seedProducts[l.$1].priceA : seedProducts[l.$1].priceB;
@@ -861,7 +803,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
     }
   }
 
-  // Registros de uso de material.
   for (final u in seedUsage) {
     final error = await c
         .read(materialProvider.notifier)
@@ -873,7 +814,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
     if (error != null) throw StateError('uso: $error');
   }
 
-  // Un registro de uso cancelado.
   final usageRecords = await c
       .read(materialProvider.notifier)
       .getMaterialsForProduct(productId[seedCanceledUsage.$1]);
@@ -885,7 +825,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
       .cancelUsage(canceledUsage.id);
   if (cancelUsageError != null) throw StateError('uso: $cancelUsageError');
 
-  // Registros inactivos (con las ventas y compras ya creadas).
   await c.read(productProvider.notifier).load();
   await c.read(materialProvider.notifier).load();
   final client = c

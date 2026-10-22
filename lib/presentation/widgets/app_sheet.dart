@@ -3,20 +3,47 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'app_style.dart';
+import 'form_sheet_route.dart';
 import 'form_style.dart';
 
-// Hoja inferior de la app (formularios y detalles): esquinas redondeadas
-// arriba con el radio estándar, sin asa y siempre con un margen libre bajo la
-// barra de estado del teléfono. Con [heightFactor] ocupa esa fracción de la
-// pantalla; sin él, lo que mida su contenido. Los campos de texto de su
-// interior toman el aspecto común de los formularios.
+WidgetBuilder _sheetBuilder(
+  MediaQueryData media,
+  double maxHeight,
+  WidgetBuilder builder,
+  double? heightFactor,
+) {
+  return (ctx) {
+    final inset = MediaQuery.of(ctx).viewInsets.bottom;
+    final child = AppFormTheme(child: builder(ctx));
+    if (heightFactor == null) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: inset),
+        child: child,
+      );
+    }
+    final height = math.min(
+      media.size.height * heightFactor,
+      maxHeight - inset,
+    );
+    return Padding(
+      padding: EdgeInsets.only(bottom: inset),
+      child: SizedBox(height: height, child: child),
+    );
+  };
+}
+
+const _sheetShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.vertical(
+    top: Radius.circular(AppMetrics.sheetRadius),
+  ),
+);
+
 Future<T?> showAppSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   double? heightFactor,
 }) {
   final media = MediaQuery.of(context);
-  // Alto máximo: la pantalla menos la barra de estado y el margen de arriba.
   final maxHeight = media.size.height - media.padding.top - AppMetrics.sheetTopGap;
   return showModalBottomSheet<T>(
     context: context,
@@ -26,35 +53,37 @@ Future<T?> showAppSheet<T>(
     backgroundColor: AppColors.background,
     clipBehavior: Clip.antiAlias,
     constraints: BoxConstraints(maxHeight: maxHeight),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(AppMetrics.sheetRadius),
-      ),
-    ),
-    builder: (ctx) {
-      final inset = MediaQuery.of(ctx).viewInsets.bottom;
-      final child = AppFormTheme(child: builder(ctx));
-      if (heightFactor == null) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: inset),
-          child: child,
-        );
-      }
-      final height = math.min(
-        media.size.height * heightFactor,
-        maxHeight - inset,
-      );
-      return Padding(
-        padding: EdgeInsets.only(bottom: inset),
-        child: SizedBox(height: height, child: child),
-      );
-    },
+    shape: _sheetShape,
+    builder: _sheetBuilder(media, maxHeight, builder, heightFactor),
   );
 }
 
-// Estructura de una hoja: título arriba, el contenido que se desplaza y, fijos
-// abajo, los botones de [actions]. Los botones nunca flotan sobre el contenido:
-// este termina donde empiezan ellos y respetan la barra inferior del teléfono.
+Future<T?> showFormSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  double? heightFactor,
+}) {
+  final media = MediaQuery.of(context);
+  final maxHeight = media.size.height - media.padding.top - AppMetrics.sheetTopGap;
+  final navigator = Navigator.of(context);
+  final localizations = MaterialLocalizations.of(context);
+  return navigator.push(
+    FormSheetRoute<T>(
+      builder: _sheetBuilder(media, maxHeight, builder, heightFactor),
+      capturedThemes: InheritedTheme.capture(from: context, to: navigator.context),
+      barrierLabel: localizations.scrimLabel,
+      barrierOnTapHint: localizations.scrimOnTapHint(localizations.bottomSheetLabel),
+      backgroundColor: AppColors.background,
+      clipBehavior: Clip.antiAlias,
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      shape: _sheetShape,
+      modalBarrierColor: Theme.of(context).bottomSheetTheme.modalBarrierColor,
+      isScrollControlled: true,
+      useSafeArea: true,
+    ),
+  );
+}
+
 class AppSheetScaffold extends StatelessWidget {
   final String title;
   final Key? titleKey;
@@ -104,8 +133,6 @@ class AppSheetScaffold extends StatelessWidget {
   }
 }
 
-// Franja fija de botones al pie de una hoja: línea fina arriba y espacio para
-// la barra inferior del teléfono.
 class SheetActionBar extends StatelessWidget {
   final Widget child;
 
@@ -131,10 +158,6 @@ class SheetActionBar extends StatelessWidget {
   }
 }
 
-// Hoja de un formulario sencillo (crear o editar un registro): título arriba y,
-// debajo, los campos y, como último elemento del mismo contenido, los botones de
-// [actions]: se llega a ellos desplazándose. [children] van dentro de un [Form]
-// con [formKey].
 class FormSheet extends StatelessWidget {
   final String title;
   final GlobalKey<FormState>? formKey;
@@ -170,8 +193,6 @@ class FormSheet extends StatelessWidget {
   }
 }
 
-// Contenido que se desplaza de un formulario: los botones del final llevan
-// espacio de sobra debajo, por encima de la barra del sistema.
 class FormScroll extends StatelessWidget {
   final List<Widget> children;
 

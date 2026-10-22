@@ -17,7 +17,6 @@ import 'package:path/path.dart' as p;
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'form_finders.dart';
 
-// Selector de imágenes simulado: entrega un archivo de la caché, como el real.
 class _FakeImagePicker extends Fake
     with MockPlatformInterfaceMixin
     implements ImagePickerPlatform {
@@ -32,18 +31,38 @@ class _FakeImagePicker extends Fake
   }) async => XFile(path);
 }
 
+class _TrackedStorage extends ImageStorage {
+  final inflight = <Future<Object?>>[];
+
+  _TrackedStorage({super.baseDirectory});
+
+  @override
+  Future<String> save(String sourcePath) {
+    final result = super.save(sourcePath);
+    inflight.add(result);
+    return result;
+  }
+
+  @override
+  Future<void> deleteIfManaged(String? path) {
+    final result = super.deleteIfManaged(path);
+    inflight.add(result);
+    return result;
+  }
+}
+
 void main() {
   late Directory root;
   late Directory cache;
   late Directory documents;
   late AppDatabase db;
-  late ImageStorage storage;
+  late _TrackedStorage storage;
 
   setUp(() async {
     root = Directory.systemTemp.createTempSync('image_pick_test');
     cache = Directory(p.join(root.path, 'cache'))..createSync();
     documents = Directory(p.join(root.path, 'documents'))..createSync();
-    storage = ImageStorage(baseDirectory: () async => documents);
+    storage = _TrackedStorage(baseDirectory: () async => documents);
     db = AppDatabase.forTesting(NativeDatabase.memory());
   });
 
@@ -53,7 +72,6 @@ void main() {
   });
 
   File cachedImage() {
-    // Un PNG válido de 1x1 para que Image.file pueda decodificarlo.
     const png = <int>[
       0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
       0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
@@ -102,7 +120,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // Ruta del archivo que el diálogo está mostrando.
   String? shownImagePath(WidgetTester tester) {
     final images = tester.widgetList<Image>(find.byType(Image));
     for (final image in images) {
@@ -112,12 +129,47 @@ void main() {
     return null;
   }
 
-  // La copia de archivos usa E/S real, fuera del reloj falso de la prueba: cada
-  // paso asíncrono necesita dejar correr el reloj real y luego avanzar el falso.
-  Future<void> settleIO(WidgetTester tester) async {
-    for (var i = 0; i < 15; i++) {
-      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 30)));
+  Future<void> until(WidgetTester tester, bool Function() done) async {
+    while (!done()) {
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
       await tester.pump();
+    }
+  }
+
+  Future<void> settleIO(WidgetTester tester) async {
+    var quiet = 0;
+    while (quiet < 3) {
+      await tester.pump();
+      final pending = List.of(storage.inflight);
+      storage.inflight.clear();
+      var completed = 0;
+      for (final future in pending) {
+        future.then<void>((_) => completed++, onError: (Object _) => completed++);
+      }
+      await until(tester, () => completed == pending.length);
+      await tester.runAsync(() => db.customSelect('SELECT 1').get());
+      var loaded = 0;
+      final images = [
+        for (final image in tester.widgetList<Image>(find.byType(Image)))
+          if (image.image is FileImage) image.image,
+      ];
+      for (final provider in images) {
+        final stream = provider.resolve(ImageConfiguration.empty);
+        late ImageStreamListener listener;
+        listener = ImageStreamListener(
+          (_, _) {
+            loaded++;
+            stream.removeListener(listener);
+          },
+          onError: (_, _) {
+            loaded++;
+            stream.removeListener(listener);
+          },
+        );
+        stream.addListener(listener);
+      }
+      await until(tester, () => loaded == images.length);
+      quiet = pending.isEmpty ? quiet + 1 : 0;
     }
     await tester.pumpAndSettle();
   }
@@ -151,12 +203,9 @@ void main() {
       final shown = shownImagePath(tester)!;
       expect(File(shown).existsSync(), isTrue);
 
-      // Los botones van al final del contenido que se desplaza.
-      await tester.ensureVisible(find.text('Cancelar'));
-      await tester.tap(find.text('Cancelar'));
-      // Primero se cierra la hoja (animación) y se destruye el diálogo...
+      await tester.ensureVisible(find.text('Volver'));
+      await tester.tap(find.text('Volver'));
       await tester.pumpAndSettle();
-      // ...y luego termina el borrado de la copia (E/S real).
       await settleIO(tester);
 
       expect(File(shown).existsSync(), isFalse);
@@ -199,7 +248,6 @@ void main() {
             createdAt: DateTime(2024),
           ),
         ),
-        // Ancho extra: la fuente de prueba es más ancha que la real.
         width: 700,
       );
       await settleIO(tester);

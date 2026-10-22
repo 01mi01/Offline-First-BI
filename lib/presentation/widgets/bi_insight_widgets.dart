@@ -1,8 +1,10 @@
+import 'chart_metrics.dart';
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../config/date_formatters.dart';
+import '../../config/quantity_format.dart';
 import '../../config/rounding.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
@@ -14,10 +16,6 @@ import 'app_style.dart';
 import 'app_sheet.dart';
 import 'bi_charts.dart';
 import 'bi_interaction.dart';
-
-// Vistas de los indicadores de Business Intelligence que no son un ranking
-// simple: resumen, comparaciones, proyección, listas de inventario y radar.
-// Todos los colores de gráfico salen de chartColorAt.
 
 TextStyle? _label(BuildContext context, {Color? color, bool bold = false}) =>
     Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -33,16 +31,15 @@ String _dateRange(DateTime start, DateTime end) => start == end
     ? formatDate(start)
     : '${formatDate(start)} – ${formatDate(end)}';
 
-// ---------------------------------------------------------------------------
-// Resumen
-// ---------------------------------------------------------------------------
-
-// Ingresos, gastos y balance del periodo, con el estilo del resumen de
-// Reportes.
 class BiSummaryCards extends StatelessWidget {
   final BiSummary summary;
+  final bool showExpenses;
 
-  const BiSummaryCards({super.key, required this.summary});
+  const BiSummaryCards({
+    super.key,
+    required this.summary,
+    this.showExpenses = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,15 +61,19 @@ class BiSummaryCards extends StatelessWidget {
           Expanded(
             child: _SummaryTile(
               label: 'Gastos',
-              value: formatMoney(summary.gastos),
-              valueColor: AppColors.error,
+              value: showExpenses ? formatMoney(summary.gastos) : 'No aplica',
+              valueColor: showExpenses
+                  ? AppColors.error
+                  : AppColors.textSecondary,
             ),
           ),
           Expanded(
             child: _SummaryTile(
               label: 'Balance',
-              value: formatMoney(summary.balance),
-              valueColor: balanceColor,
+              value: showExpenses ? formatMoney(summary.balance) : 'No aplica',
+              valueColor: showExpenses
+                  ? balanceColor
+                  : AppColors.textSecondary,
             ),
           ),
         ],
@@ -97,18 +98,14 @@ class _SummaryTile extends StatelessWidget {
       BiStat(label: label, value: value, valueColor: valueColor);
 }
 
-// Barras agrupadas genéricas: [groups] en el eje X y una serie por barra de
-// cada grupo (la serie i toma chartColorAt(i)). Admite valores negativos. Las
-// barras crecen al aparecer, tocar un grupo muestra el valor de cada serie y la
-// leyenda oculta o muestra cada serie (siempre queda una visible).
 class BiGroupedBars extends StatefulWidget {
   final List<String> groups;
   final List<String> seriesNames;
-  // values[serie][grupo]
   final List<List<double>> values;
   final String Function(double) format;
 
   const BiGroupedBars({
+    super.key,
     required this.groups,
     required this.seriesNames,
     required this.values,
@@ -137,7 +134,6 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
     });
   }
 
-  // Quita la marca del grupo tocado (el globo ya no está).
   void _clearMarker() {
     if (_touchedGroup != null) setState(() => _touchedGroup = null);
   }
@@ -207,7 +203,7 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 28,
+                          reservedSize: scaledAxisSize(context, 28),
                           getTitlesWidget: (value, meta) {
                             final i = value.toInt();
                             if (i < 0 || i >= groups.length) {
@@ -276,20 +272,18 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Comparación entre periodos
-// ---------------------------------------------------------------------------
-
 class BiPeriodComparisonSection extends StatelessWidget {
   final BiPeriodComparison comparison;
   final BiChartType chartType;
   final ValueChanged<BiChartType> onChartTypeChanged;
+  final bool showExpenses;
 
   const BiPeriodComparisonSection({
     super.key,
     required this.comparison,
     required this.chartType,
     required this.onChartTypeChanged,
+    this.showExpenses = true,
   });
 
   @override
@@ -310,21 +304,28 @@ class BiPeriodComparisonSection extends StatelessWidget {
             )
           : null,
       child: !comparison.isAvailable
-          ? BiEmptyState(message: comparison.unavailableReason!)
+          ? BiEmptyState(message: comparison.unavailableReason)
           : chartType == BiChartType.bar
           ? BiGroupedBars(
-              groups: const ['Ingresos', 'Gastos', 'Balance'],
+              groups: [
+                'Ingresos',
+                if (showExpenses) ...['Gastos', 'Balance'],
+              ],
               seriesNames: const ['Actual', 'Anterior'],
               values: [
                 [
                   comparison.current.ingresos,
-                  comparison.current.gastos,
-                  comparison.current.balance,
+                  if (showExpenses) ...[
+                    comparison.current.gastos,
+                    comparison.current.balance,
+                  ],
                 ],
                 [
                   comparison.previous.ingresos,
-                  comparison.previous.gastos,
-                  comparison.previous.balance,
+                  if (showExpenses) ...[
+                    comparison.previous.gastos,
+                    comparison.previous.balance,
+                  ],
                 ],
               ],
               format: formatMoney,
@@ -338,22 +339,30 @@ class BiPeriodComparisonSection extends StatelessWidget {
                   current: comparison.current.ingresos,
                   higherIsBetter: true,
                 ),
-                const Divider(height: AppSpacing.s24, color: AppColors.border),
-                _ComparisonRow(
-                  keyName: 'gastos',
-                  label: 'Gastos',
-                  previous: comparison.previous.gastos,
-                  current: comparison.current.gastos,
-                  higherIsBetter: false,
-                ),
-                const Divider(height: AppSpacing.s24, color: AppColors.border),
-                _ComparisonRow(
-                  keyName: 'balance',
-                  label: 'Balance',
-                  previous: comparison.previous.balance,
-                  current: comparison.current.balance,
-                  higherIsBetter: true,
-                ),
+                if (showExpenses) ...[
+                  const Divider(
+                    height: AppSpacing.s24,
+                    color: AppColors.border,
+                  ),
+                  _ComparisonRow(
+                    keyName: 'gastos',
+                    label: 'Gastos',
+                    previous: comparison.previous.gastos,
+                    current: comparison.current.gastos,
+                    higherIsBetter: false,
+                  ),
+                  const Divider(
+                    height: AppSpacing.s24,
+                    color: AppColors.border,
+                  ),
+                  _ComparisonRow(
+                    keyName: 'balance',
+                    label: 'Balance',
+                    previous: comparison.previous.balance,
+                    current: comparison.current.balance,
+                    higherIsBetter: true,
+                  ),
+                ],
               ],
             ),
     );
@@ -436,16 +445,10 @@ class _ComparisonRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Margen de ganancia por producto
-// ---------------------------------------------------------------------------
-
 class BiMarginSection extends StatelessWidget {
   final BiMarginReport report;
   final BiChartType chartType;
   final ValueChanged<BiChartType> onChartTypeChanged;
-  // 0 = margen %, 1 = ganancia en monto. La guarda quien usa el widget
-  // (BiConfig.metrics) para que sobreviva a que se reconstruya.
   final int metric;
   final ValueChanged<int> onMetricChanged;
 
@@ -475,7 +478,6 @@ class BiMarginSection extends StatelessWidget {
       body = _MarginList(entries: _sorted(report.entries, byMargin));
     } else {
       body = BiRankingChart(
-        // En barras, "cantidad" es el margen % y "monto" la ganancia.
         entries: [
           for (final e in report.entries)
             BiEntry(label: e.name, amount: e.profit, quantity: e.marginPct),
@@ -531,7 +533,6 @@ class BiMarginSection extends StatelessWidget {
   }
 }
 
-// Lista ordenada con todos los datos del margen de cada producto.
 class _MarginList extends StatelessWidget {
   final List<BiMarginEntry> entries;
 
@@ -568,7 +569,7 @@ class _MarginList extends StatelessWidget {
                       Text(
                         'Ingresos ${formatMoney(entries[i].revenue)} · '
                         'Costo ${formatMoney(entries[i].cost)} · '
-                        '${entries[i].units} uds.',
+                        '${unitsText(entries[i].units)}',
                         style: _small(context),
                       ),
                     ],
@@ -599,10 +600,6 @@ class _MarginList extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Proyección de ventas
-// ---------------------------------------------------------------------------
-
 class BiProjectionSection extends StatefulWidget {
   final BiProjection projection;
   final BiTimeSeries series;
@@ -613,7 +610,6 @@ class BiProjectionSection extends StatefulWidget {
     required this.series,
   });
 
-  // Series de la leyenda (y del gráfico): lo real y la tendencia/proyección.
   static const int realSeries = 0;
   static const int trendSeries = 1;
 
@@ -623,7 +619,6 @@ class BiProjectionSection extends StatefulWidget {
 
 class _BiProjectionSectionState extends State<BiProjectionSection> {
   Set<int> _hidden = {};
-  // Punto tocado de cada serie: serie -> índice de su punto.
   Map<int, int> _touched = {};
   final _tip = GlobalKey<BiTooltipLayerState>();
 
@@ -672,7 +667,7 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
       subtitle: indicator.description,
       info: indicator.info,
       child: !projection.isAvailable
-          ? BiEmptyState(message: projection.unavailableReason!)
+          ? BiEmptyState(message: projection.unavailableReason)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -737,8 +732,6 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
 
     int indexOf(DateTime start) => buckets.indexWhere((b) => b.start == start);
 
-    // Línea de tendencia: los intervalos ajustados y, tras el de hoy, los
-    // proyectados (índices n, n+1...).
     final trendSpots = <FlSpot>[
       for (final p in projection.fitted)
         if (indexOf(p.start) >= 0) FlSpot(indexOf(p.start).toDouble(), p.value),
@@ -789,7 +782,6 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
             bottomTitles: const AxisTitles(),
             leftTitles: AxisTitles(sideTitles: moneyAxisTitles()),
           ),
-          // Marca dónde termina lo real y empieza la estimación.
           extraLinesData: ExtraLinesData(
             verticalLines: [
               VerticalLine(
@@ -800,10 +792,7 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
                 label: VerticalLineLabel(
                   show: true,
                   alignment: Alignment.topLeft,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: chartAxisStyle,
                   labelResolver: (_) => 'Hoy',
                 ),
               ),
@@ -879,8 +868,6 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
                   showingIndicators: [
                     ?_touched[BiProjectionSection.trendSeries],
                   ],
-                  // Solo los puntos estimados llevan marca, huecos, para
-                  // distinguirlos de lo real.
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) => spot.x >= n,
                     getDotPainter: (s, p, b, i) => FlDotCirclePainter(
@@ -897,10 +884,6 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Evento vs. días regulares
-// ---------------------------------------------------------------------------
 
 class BiEventComparisonSection extends StatelessWidget {
   final BiEventComparison comparison;
@@ -923,12 +906,12 @@ class BiEventComparisonSection extends StatelessWidget {
     Widget body;
     if (c.eventDays == 0) {
       body = const BiEmptyState(
-        message: 'No hubo días de evento en el periodo elegido.',
+        message: 'No hubo días de evento en el período elegido.',
       );
     } else if (c.regularDays == 0) {
       body = const BiEmptyState(
         message:
-            'Todo el periodo fue de evento: no hay días regulares con los '
+            'Todo el período fue de evento: no hay días regulares con los '
             'que comparar.',
       );
     } else if (chartType == BiChartType.bar) {
@@ -1072,10 +1055,6 @@ class _ComparisonColumn extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Costo de materiales vs. ingresos
-// ---------------------------------------------------------------------------
-
 class BiMaterialCostSection extends StatelessWidget {
   final BiMaterialCost cost;
   final BiChartType chartType;
@@ -1159,10 +1138,10 @@ class BiMaterialCostSection extends StatelessWidget {
             Text(
               key: const ValueKey('bi-material-ratio'),
               ratio == null
-                  ? 'Sin ingresos en el periodo: no se puede calcular la '
+                  ? 'Sin ingresos en el período: no se puede calcular la '
                         'proporción.'
-                  : 'Por cada Bs. 1 vendido se gastaron '
-                        'Bs. ${fixed2(ratio / 100)} en materiales.',
+                  : 'Por cada Bs. 1 vendido se gastaron '
+                        'Bs. ${fixed2(ratio / 100)} en materiales.',
               style: _label(context, bold: true),
             ),
             const SizedBox(height: AppSpacing.s2),
@@ -1177,12 +1156,6 @@ class BiMaterialCostSection extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Inventario: stock bajo y sin movimiento
-// ---------------------------------------------------------------------------
-
-// Productos activos con stock bajo: estado actual del inventario, no
-// depende de las fechas ni de los filtros.
 class BiLowStockSection extends StatelessWidget {
   final List<LowStockEntry> entries;
 
@@ -1193,7 +1166,7 @@ class BiLowStockSection extends StatelessWidget {
     const indicator = BiIndicator.lowStock;
     return BiSectionCard(
       title: indicator.title,
-      subtitle: 'Stock de $lowStockThreshold o menos · estado actual, sin filtros',
+      subtitle: '${indicator.description} · estado actual, sin filtros',
       info: indicator.info,
       child: entries.isEmpty
           ? const BiEmptyState(message: 'Ningún producto con stock bajo')
@@ -1271,28 +1244,26 @@ class _InventoryRow extends StatelessWidget {
   }
 }
 
-// Productos activos sin ventas en los últimos N días (N configurable).
 class BiNoMovementSection extends StatelessWidget {
   final List<NoMovementEntry> entries;
   final int windowDays;
   final ValueChanged<int> onWindowChanged;
-  final int maxItems;
 
   const BiNoMovementSection({
     super.key,
     required this.entries,
     required this.windowDays,
     required this.onWindowChanged,
-    this.maxItems = 15,
   });
 
   @override
   Widget build(BuildContext context) {
     const indicator = BiIndicator.noMovement;
+    const maxItems = 15;
     final shown = entries.take(maxItems).toList();
     return BiSectionCard(
       title: indicator.title,
-      subtitle: 'Sin ventas en los últimos $windowDays días · estado actual, sin filtros',
+      subtitle: '${indicator.description} · estado actual, sin filtros',
       info: indicator.info,
       controls: BiMetricToggle(
         labels: [for (final d in noMovementWindowOptions) '$d d'],
@@ -1333,10 +1304,6 @@ class BiNoMovementSection extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Radar de productos
-// ---------------------------------------------------------------------------
-
 const List<String> radarAxes = ['Ingresos', 'Margen', 'Unidades', 'Rotación'];
 
 class BiRadarSection extends StatefulWidget {
@@ -1356,7 +1323,6 @@ class BiRadarSection extends StatefulWidget {
 }
 
 class _BiRadarSectionState extends State<BiRadarSection> {
-  // Productos ocultos con la leyenda (posiciones en radar.products).
   Set<int> _hidden = {};
   final _tip = GlobalKey<BiTooltipLayerState>();
 
@@ -1381,16 +1347,8 @@ class _BiRadarSectionState extends State<BiRadarSection> {
     });
   }
 
-  // Radio, en dp, alrededor de un vértice dentro del cual un toque lo elige.
   static const double _radarTouchRadius = 24;
 
-  // El vértice de producto más cercano al toque. fl_chart no sirve aquí: el
-  // conjunto invisible que fija la escala tiene un vértice en la punta de cada
-  // eje y gana cualquier toque cerca de ella, justo donde está el mejor
-  // producto de Ingresos y de Unidades. Se calcula con la misma geometría de
-  // la librería: centro del área, radio = 80 % de la mitad del lado menor y el
-  // eje 0 hacia arriba, en el sentido de las agujas del reloj. Si dos vértices
-  // coinciden, gana el que se dibuja encima (el último).
   void _touch(Offset? position, List<int> visible) {
     final box = _tip.currentContext?.findRenderObject();
     if (position == null || box is! RenderBox) {
@@ -1437,7 +1395,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
   String _axisValue(BiRadarProduct p, int axis) => switch (axis) {
     0 => formatMoney(p.revenue),
     1 => p.marginPct == null ? 'sin costo' : formatPercent(p.marginPct!),
-    2 => '${p.units} uds.',
+    2 => unitsText(p.units),
     _ => formatPercent(p.rotationNorm * 100),
   };
 
@@ -1464,7 +1422,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
       child: radar.products.length < radarMinProducts
           ? const BiEmptyState(
               message:
-                  'Se necesitan al menos 2 productos con ventas en el periodo '
+                  'Se necesitan al menos 2 productos con ventas en el período '
                   'para comparar.',
             )
           : Column(
@@ -1507,8 +1465,6 @@ class _BiRadarSectionState extends State<BiRadarSection> {
                             },
                           ),
                           dataSets: [
-                            // Fija la escala del radar de 0 a 100 %: sin esto
-                            // la librería escalaría al mayor valor mostrado.
                             RadarDataSet(
                               fillColor: Colors.transparent,
                               borderColor: Colors.transparent,
@@ -1564,7 +1520,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
                   ),
                 Text(
                   'Todos los ejes de 0 a 100 %. Ingresos y Unidades se miden '
-                  'contra el producto que más vendió en el periodo.',
+                  'contra el producto que más vendió en el período.',
                   style: _small(context),
                 ),
               ],
@@ -1584,7 +1540,6 @@ class _BiRadarSectionState extends State<BiRadarSection> {
   }
 }
 
-// Una fila de la leyenda del radar: tocarla oculta o muestra ese producto.
 class _RadarLegendRow extends StatelessWidget {
   final int index;
   final BiRadarProduct product;
@@ -1616,7 +1571,7 @@ class _RadarLegendRow extends StatelessWidget {
           children: [
             Container(
               key: ValueKey('bi-radar-swatch-$index'),
-              margin: const EdgeInsets.only(top: 2),
+              margin: const EdgeInsets.only(top: AppSpacing.s2),
               width: 12,
               height: 12,
               decoration: BoxDecoration(
@@ -1640,7 +1595,7 @@ class _RadarLegendRow extends StatelessWidget {
                   Text(
                     'Ingresos ${formatMoney(product.revenue)} · '
                     'Margen ${product.marginPct == null ? 'sin costo' : formatPercent(product.marginPct!)} · '
-                    '${product.units} uds. · '
+                    '${unitsText(product.units)} · '
                     'Rotación ${formatPercent(product.rotationNorm * 100)}',
                     style: _small(context, color: visible ? null : muted),
                   ),

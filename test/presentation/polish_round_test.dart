@@ -14,9 +14,6 @@ import 'package:offline_first_bi/theme/app_theme.dart';
 import 'search_helpers.dart';
 import 'form_finders.dart';
 
-// Pulido tras la revisión en el dispositivo: orden de las unidades, unidad en
-// las líneas de Compras, botón flotante, botón de registrar, espacio con el
-// teclado abierto, etiquetas de precio y un único rojo.
 void main() {
   late AppDatabase db;
 
@@ -60,7 +57,6 @@ void main() {
     });
 
     test('a migrated install (old ids, new unit appended last) is still shown in seed order', () async {
-      // Ids como los que deja la migración: el orden antiguo y "contenedor" al final.
       await db.customStatement('DELETE FROM units');
       const migrated = [
         'paquete',
@@ -116,8 +112,6 @@ void main() {
       await material('Base metálica grande para pines', 'unidad');
     }
 
-    // Con [inAppSheet] la hoja se abre como en la app (showAppSheet), que deja
-    // sitio al teclado; si no, una hoja simple.
     Future<void> openPurchase(
       WidgetTester tester, {
       Size size = const Size(412, 915),
@@ -160,7 +154,6 @@ void main() {
       await pickFromSearch(tester, find.byType(SearchablePickerField<int>).last, material, material);
       await tester.enterText(find.widgetWithText(TextFormField, '0').first, quantity);
       await tester.pumpAndSettle();
-      // Los botones van al final del contenido que se desplaza.
       await tester.ensureVisible(find.text('Agregar').last);
       await tester.tap(find.text('Agregar').last);
       await tester.pumpAndSettle();
@@ -172,20 +165,15 @@ void main() {
       await seedMaterials();
       await openPurchase(tester);
 
-      // La línea lleva la cantidad con su unidad y, a su lado, el importe.
       await addLine(tester, 'Tela negra', '2');
-      expect(find.textContaining('2.00 metros'), findsOneWidget);
+      expect(find.textContaining('2 metros'), findsOneWidget);
 
       await addLine(tester, 'Base metálica grande para pines', '1');
       expect(find.textContaining('1 unidad  ·'), findsOneWidget);
 
-      // El botón "+" de la segunda línea sube la cantidad y la unidad concuerda
-      // con el nuevo número.
       await tester.tap(find.byTooltip('Agregar uno').last);
       await tester.pumpAndSettle();
       expect(find.textContaining('2 unidades'), findsOneWidget);
     });
-
   });
-
 }

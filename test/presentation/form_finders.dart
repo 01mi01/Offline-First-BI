@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:offline_first_bi/presentation/widgets/form_widgets.dart';
 
-// Buscadores para los formularios: la etiqueta de un campo es un texto que va
-// ENCIMA de él (no forma parte del campo), así que el campo se busca por la
-// etiqueta que lo precede.
-
-// El [TextFormField] que sigue a la etiqueta [label] dentro del mismo bloque.
 Finder fieldLabeled(String label) => _FieldLabeledFinder(label);
 
 class _FieldLabeledFinder extends MatchFinder {
@@ -33,7 +28,7 @@ class _FieldLabeledFinder extends MatchFinder {
       final labelIndex = descendants.indexWhere(
         (e) => e.widget is Text && (e.widget as Text).data == label,
       );
-      if (labelIndex < 0) return true; // sube un nivel
+      if (labelIndex < 0) return true;
       decided = true;
       final next = descendants.indexWhere(
         (e) => e.widget is TextFormField,
@@ -46,8 +41,6 @@ class _FieldLabeledFinder extends MatchFinder {
   }
 }
 
-// El botón "+ Agregar" de la sección "Materiales" del formulario de compras
-// (el de "Proveedor" también se llama "Agregar").
 Finder materialsAddButton() => find.descendant(
   of: find.byWidgetPredicate(
     (w) => w is FormSectionLabel && w.text == 'Materiales',
@@ -55,11 +48,9 @@ Finder materialsAddButton() => find.descendant(
   matching: find.byType(FormAddButton),
 );
 
-// Elige [option] en el desplegable de etiqueta [label].
 Future<void> chooseOption(WidgetTester tester, String label, String option) async {
   await tester.tap(find.byTooltip(label));
   await tester.pumpAndSettle();
-  // La lista abierta tiene un alto máximo y se desplaza.
   await tester.ensureVisible(find.text(option).last);
   await tester.tap(find.text(option).last);
   await tester.pumpAndSettle();

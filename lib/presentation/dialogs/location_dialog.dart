@@ -5,6 +5,9 @@ import '../../models/location_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../../application/form_validation.dart';
 import '../widgets/app_sheet.dart';
 import '../widgets/form_style.dart';
@@ -20,13 +23,15 @@ class LocationDialog extends ConsumerStatefulWidget {
   ConsumerState<LocationDialog> createState() => _LocationDialogState();
 }
 
-class _LocationDialogState extends ConsumerState<LocationDialog> {
+class _LocationDialogState extends ConsumerState<LocationDialog>
+    with SingleFlight<LocationDialog>, LiveValidation<LocationDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _cityController;
   late final TextEditingController _countryController;
   late final TextEditingController _descController;
   late bool _isActive;
   String? _saveError;
+  late final String _initialSignature;
 
   @override
   void initState() {
@@ -41,10 +46,25 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
     _cityController.addListener(_clearSaveError);
     _countryController.addListener(_clearSaveError);
     _descController.addListener(_clearSaveError);
+    _initialSignature = _signature();
   }
 
-  // Un error de guardado (p. ej. nombre repetido) deja de mostrarse en
-  // cuanto se corrige el nombre.
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_saveError = null;}
+
+  String _signature() => [
+    _cityController.text,
+    _countryController.text,
+    _descController.text,
+    _isActive,
+  ].join('\u0000');
+
   void _clearSaveError() {
     if (_saveError != null) setState(() => _saveError = null);
   }
@@ -57,8 +77,6 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
     super.dispose();
   }
 
-  // Una ciudad puede repetirse (hay varias zonas en la misma ciudad), pero no la
-  // misma ciudad, país y descripción juntos.
   bool _isDuplicate() {
     final city = comparableName(_cityController.text);
     final country = comparableName(_countryController.text);
@@ -76,7 +94,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!validateForm()) return;
     if (_isDuplicate()) {
       setState(
         () => _saveError =
@@ -86,7 +104,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
     }
     setState(() => _saveError = null);
 
-    await ref.read(locationProvider.notifier).save(
+    final savedId = await ref.read(locationProvider.notifier).save(
           id: widget.location?.id,
           city: _cityController.text.trim(),
           country: _countryController.text.trim(),
@@ -98,13 +116,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
     if (!mounted) return;
 
-    if (widget.onSaved != null) {
-      final locations = ref.read(locationProvider).locations;
-      final saved = locations
-          .where((l) => l.city == _cityController.text.trim())
-          .firstOrNull;
-      if (saved != null) widget.onSaved!(saved.id);
-    }
+    widget.onSaved?.call(savedId);
     Navigator.pop(context);
   }
 
@@ -117,7 +129,6 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
           : 'La ubicación no estará disponible para nuevos registros.',
       confirmLabel: value ? 'Activar' : 'Desactivar',
       confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
-      dismissLabel: 'Cancelar',
     );
     if (!confirm) return;
     setState(() => _isActive = value);
@@ -125,6 +136,19 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _cityController,
+        _countryController,
+        _descController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.location != null;
 
     return FormSheet(
@@ -133,10 +157,10 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
-        onPrimary: _save,
+        onPrimary: () => runOnce(_save),
+        busy: inFlight,
       ),
       children: [
-        // Ciudad
         LabeledField(
           label: 'Ciudad',
           builder: (_) => TextFormField(
@@ -148,7 +172,6 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // País
         LabeledField(
           label: 'País',
           builder: (_) => TextFormField(
@@ -160,7 +183,6 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Descripción (la zona)
         LabeledField(
           label: 'Descripción',
           builder: (_) => TextFormField(
@@ -172,7 +194,6 @@ class _LocationDialogState extends ConsumerState<LocationDialog> {
           ),
         ),
 
-        // Estado: solo al editar
         if (isEditing) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(

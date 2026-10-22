@@ -141,7 +141,7 @@ class SalesListBody extends ConsumerWidget {
 }
 
 void showSaleForm(BuildContext context, [SaleModel? sale]) {
-  showAppSheet<void>(
+  showFormSheet<void>(
     context,
     heightFactor: 0.94,
     builder: (_) => SaleDialog(sale: sale),
@@ -248,7 +248,7 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
       children: [
           AppBigTotal(
             label: 'Total',
-            value: 'Bs. ${fixed2(sale.finalAmount)}',
+            value: 'Bs. ${fixed2(sale.finalAmount)}',
             pill: sale.isCanceled ? const StatusBadge.canceled() : null,
             note: sale.isCanceled
                 ? 'Su stock fue devuelto al inventario.'
@@ -279,11 +279,11 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
                   AppRow(
                     title: item.productName,
                     subtitle: Text(
-                      '${item.quantity} × Bs. ${fixed2(item.unitPrice)} (Precio ${item.priceType})',
+                      '${item.quantity} × Bs. ${fixed2(item.unitPrice)} (Precio ${item.priceType})',
                       style: AppText.rowSubtitle(context),
                     ),
                     trailing: Text(
-                      'Bs. ${fixed2(item.subtotal)}',
+                      'Bs. ${fixed2(item.subtotal)}',
                       style: AppText.rowTitle(context).copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -295,18 +295,18 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
             children: [
               AppValueRow(
                 label: 'Subtotal',
-                value: 'Bs. ${fixed2(sale.totalAmount)}',
+                value: 'Bs. ${fixed2(sale.totalAmount)}',
               ),
               AppValueRow(
                 label: 'Descuento',
                 value: sale.discount > 0
-                    ? '- Bs. ${fixed2(sale.discount)}'
-                    : 'Bs. 0.00',
+                    ? '- Bs. ${fixed2(sale.discount)}'
+                    : 'Bs. 0.00',
                 valueColor: sale.discount > 0 ? AppColors.error : null,
               ),
               AppValueRow(
                 label: 'Total',
-                value: 'Bs. ${fixed2(sale.finalAmount)}',
+                value: 'Bs. ${fixed2(sale.finalAmount)}',
                 bold: true,
                 valueColor: AppColors.textPrimary,
               ),

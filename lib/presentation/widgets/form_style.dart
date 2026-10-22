@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-// Aspecto común de los campos de texto: el mismo del inicio de sesión (esquinas
-// de [AppMetrics.groupRadius], borde fino, aro cian al enfocar). Un error se ve
-// solo como texto rojo pequeño bajo el campo, sin cambiar el borde.
 OutlineInputBorder appInputBorder(Color color, [double width = 1]) =>
     OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
@@ -17,11 +14,15 @@ InputDecorationTheme appInputDecorationTheme(BuildContext context) {
   return InputDecorationTheme(
     filled: true,
     fillColor: AppColors.surface,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.s16,
+      vertical: AppSpacing.s14,
+    ),
     border: enabled,
     enabledBorder: enabled,
     disabledBorder: enabled,
     errorBorder: enabled,
+    hintStyle: const TextStyle(color: AppColors.textMuted),
     focusedBorder: focused,
     focusedErrorBorder: focused,
     errorStyle: textTheme.bodySmall?.copyWith(color: AppColors.error),
@@ -31,15 +32,11 @@ InputDecorationTheme appInputDecorationTheme(BuildContext context) {
   );
 }
 
-// Aplica el aspecto común a todos los campos de su subárbol.
 class AppFormTheme extends StatelessWidget {
   final Widget child;
 
   const AppFormTheme({super.key, required this.child});
 
-  // ¿Está este contexto dentro de un formulario con el aspecto común? Los
-  // selectores compartidos con otras pantallas (p. ej. los filtros de Reportes)
-  // conservan su aspecto fuera de los formularios.
   static bool isActive(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_FormScope>() != null;
 
@@ -69,9 +66,6 @@ class _FormScope extends InheritedWidget {
   bool updateShouldNotify(_FormScope oldWidget) => false;
 }
 
-// Error de un formulario que no pertenece a un solo campo (p. ej. "Agrega al
-// menos un producto"): el mismo texto rojo pequeño que el error de un campo,
-// alineado con el texto de los campos.
 class FormErrorText extends StatelessWidget {
   final String message;
 

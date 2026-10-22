@@ -3,16 +3,19 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offline_first_bi/application/category_provider.dart';
+import 'package:offline_first_bi/application/client_provider.dart';
 import 'package:offline_first_bi/application/database_provider.dart';
+import 'package:offline_first_bi/application/event_provider.dart';
+import 'package:offline_first_bi/application/location_provider.dart';
+import 'package:offline_first_bi/application/product_provider.dart';
+import 'package:offline_first_bi/application/supplier_provider.dart';
 import 'package:offline_first_bi/data/db/app_database.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 import 'package:offline_first_bi/presentation/widgets/report_filters_widget.dart';
 import 'package:offline_first_bi/theme/app_theme.dart';
 import 'form_finders.dart';
 
-// Los filtros de Reportes y de Business Intelligence (mismo panel): categoría,
-// país y ciudad con desplegable; producto, cliente, evento y ubicación con
-// buscador.
 class _Harness extends StatefulWidget {
   final bool combined;
   final ValueChanged<ReportFilters> onChanged;
@@ -59,7 +62,6 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    // "Sin categoría" ya existe como predeterminada.
     for (final name in categoryNames.where((n) => n != 'Sin categoría')) {
       categoryIds[name] = await db
           .into(db.categories)
@@ -130,14 +132,27 @@ void main() {
     required bool combined,
     required ValueChanged<ReportFilters> onChanged,
   }) async {
-    // Teléfono pequeño: 360 x 640.
     tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(container.dispose);
+    await tester.runAsync(
+      () => Future.wait([
+        container.read(categoryProvider.notifier).load(),
+        container.read(productProvider.notifier).load(),
+        container.read(eventProvider.notifier).load(),
+        container.read(locationProvider.notifier).load(),
+        container.read(clientProvider.notifier).load(),
+        container.read(supplierProvider.notifier).load(),
+      ]),
+    );
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
+      UncontrolledProviderScope(
+        container: container,
         child: MaterialApp(
           theme: lightTheme,
           home: Scaffold(
@@ -145,9 +160,6 @@ void main() {
           ),
         ),
       ),
-    );
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
     await tester.pumpAndSettle();
   }

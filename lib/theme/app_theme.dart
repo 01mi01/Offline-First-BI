@@ -1,57 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ---------------------------------------------------------------------------
-// Colores
-// ---------------------------------------------------------------------------
-
 class AppColors {
-  // Marca
   static const cyan = Color(0xFF06B1B9);
   static const cyanDark = Color(0xFF05959C);
   static const cyanSoft = Color(0xFFE1F6F7);
   static const navy = Color(0xFF112444);
-  static const lime = Color(0xFFBEE355);
   static const blue = Color(0xFF2C6E9B);
 
-  // Fondos
   static const background = Color(0xFFF3F2F7);
   static const surface = Color(0xFFFAFAFA);
   static const neutralButton = Color(0xFFE6E9EF);
   static const track = Color(0xFFE6E9EF);
 
-  // Texto
   static const textPrimary = navy;
   static const textSecondary = Color(0xFF5B6B82);
   static const textSecondaryDark = Color(0xFF10314F);
   static const textMuted = Color(0xFF9AA6B8);
 
-  // Texto e íconos sobre un relleno de color
   static const onCyan = navy;
-  static const onLime = navy;
   static const onDark = Color(0xFFFFFFFF);
 
-  // Líneas y detalles
   static const border = Color(0xFFE2EBEE);
   static const separator = Color(0xFFDCE1E8);
   static const chevron = Color(0xFF9AA5B4);
   static const cyanDeep = Color(0xFF04787E);
 
-  // Efectos
   static const pressedOverlay = Color(0x1F112444);
   static const shadow = Color(0x14112444);
   static const shadowNeutral = Color(0x1F000000);
 
-  // Estados
   static const error = Color(0xFFC2305F);
   static const errorSoft = Color(0xFFFDE8EF);
   static const success = Color(0xFF8FBF2A);
   static const successDark = Color(0xFF4F720C);
   static const successSoft = Color(0xFFEEF6D6);
-  // Fondo suave del azul acero (tipo "Gasto" de una compra).
   static const blueSoft = Color(0xFFE6EEF3);
 
-  // Paleta de los gráficos de Business Intelligence.
   static const chartColor1 = Color(0xFF05959C);
   static const chartColor2 = Color(0xFF15305F);
   static const chartColor3 = Color(0xFF98C232);
@@ -59,9 +44,6 @@ class AppColors {
   static const chartColor5 = Color(0xFF2C6E9B);
 }
 
-// Color de la serie [index] de un gráfico: recorre los cinco colores de la
-// paleta en orden y vuelve al primero a partir de la sexta serie. Es la única
-// vía para colorear gráficos.
 Color chartColorAt(int index) => const [
   AppColors.chartColor1,
   AppColors.chartColor2,
@@ -70,24 +52,22 @@ Color chartColorAt(int index) => const [
   AppColors.chartColor5,
 ][index % 5];
 
-// Color del texto o ícono que va sobre un relleno de color.
 Color onColorOf(Color fill) {
   if (fill == AppColors.cyan) return AppColors.onCyan;
-  if (fill == AppColors.lime) return AppColors.onLime;
   return AppColors.onDark;
 }
 
-// Barra de estado: del color de la página y con íconos oscuros.
+const TextStyle chartAxisStyle = TextStyle(
+  fontSize: 10,
+  color: AppColors.textSecondary,
+);
+
 const SystemUiOverlayStyle appSystemOverlayStyle = SystemUiOverlayStyle(
   statusBarColor: AppColors.background,
   statusBarIconBrightness: Brightness.dark,
   statusBarBrightness: Brightness.light,
   systemStatusBarContrastEnforced: false,
 );
-
-// ---------------------------------------------------------------------------
-// Medidas
-// ---------------------------------------------------------------------------
 
 class AppSpacing {
   static const double s2 = 2;
@@ -103,8 +83,6 @@ class AppSpacing {
   static const double s28 = 28;
   static const double s32 = 32;
   static const double s48 = 48;
-
-  // Relleno de listas con botón flotante: 56 de alto más 16 de margen.
 }
 
 class AppShadows {
@@ -125,7 +103,6 @@ class AppCards {
   );
 }
 
-// Cabecera común de todas las pantallas.
 class AppHeader {
   static const double rowHeight = 48;
   static const double sidePadding = AppSpacing.s16;
@@ -151,12 +128,9 @@ class AppButtons {
   );
 }
 
-// Listas agrupadas, hojas, controles y títulos.
 class AppMetrics {
   static const double groupRadius = 14;
-  // Radio estándar de las hojas inferiores.
   static const double sheetRadius = 28;
-  // Espacio libre entre la barra de estado y lo más alto que llega una hoja.
   static const double sheetTopGap = 24;
   static const double controlRadius = groupRadius;
   static const double thumbRadius = controlRadius - AppSpacing.s2;
@@ -167,7 +141,6 @@ class AppMetrics {
   static const double dividerIndent = AppSpacing.s16;
   static const double dividerIndentWithTile =
       AppSpacing.s16 + tileSize + AppSpacing.s12;
-  // Con una imagen a la izquierda, la línea de abajo empieza donde el texto.
   static const double dividerIndentWithThumb =
       AppSpacing.s16 + AppFlat.thumbSize + AppSpacing.s12;
   static const double largeTitleSize = 34;
@@ -175,8 +148,6 @@ class AppMetrics {
   static const double rowTitleSize = 17;
   static const double rowSubtitleSize = 15;
   static const double headerSize = 13;
-  // Un solo tamaño para las etiquetas y el texto de los formularios (y de los
-  // detalles, que usan rowTitleSize).
   static const double formLabelSize = 14;
   static const double formTextSize = 17;
   static const double bigNumberSize = 40;
@@ -189,7 +160,6 @@ class AppMetrics {
   static const double presetHeight = 36;
 }
 
-// Inventario: filas sin tarjeta, campos y filtros totalmente redondeados.
 class AppFlat {
   static const double fieldRadius = 50;
   static const double thumbSize = 56;
@@ -207,10 +177,6 @@ class AppFlat {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Texto y formato
-// ---------------------------------------------------------------------------
-
 const String appFontFamily = 'Roboto';
 
 String formatNumber(double value) {
@@ -219,10 +185,6 @@ String formatNumber(double value) {
   }
   return value.toString();
 }
-
-// ---------------------------------------------------------------------------
-// Temas
-// ---------------------------------------------------------------------------
 
 final ButtonStyle destructiveButtonStyle = ElevatedButton.styleFrom(
   backgroundColor: AppColors.error,
@@ -249,7 +211,6 @@ final lightTheme = ThemeData(
   canvasColor: AppColors.surface,
   cardColor: AppColors.surface,
 
-  // headlineSmall es el título de pantalla (saludo de Inicio, Iniciar sesión).
   textTheme: const TextTheme(
     headlineSmall: TextStyle(fontSize: 28, fontWeight: FontWeight.normal),
     displayLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
@@ -270,21 +231,24 @@ final lightTheme = ThemeData(
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
     fillColor: AppColors.surface,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.s16,
+      vertical: AppSpacing.s14,
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
       borderSide: const BorderSide(color: AppColors.border),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
       borderSide: const BorderSide(color: AppColors.border),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
       borderSide: const BorderSide(color: AppColors.cyanDark, width: 2),
     ),
     errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
       borderSide: const BorderSide(color: AppColors.error),
     ),
   ),

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../application/image_storage_provider.dart';
 import '../../data/services/image_storage.dart';
 import '../../application/product_provider.dart';
+import '../../data/repositories/product_repository.dart' show duplicateProductMessage;
 import '../../application/category_provider.dart';
 import '../../models/product_model.dart';
 import '../../theme/app_theme.dart';
@@ -11,8 +12,12 @@ import '../../config/rounding.dart';
 import '../widgets/unit_quantity_input.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../../application/form_validation.dart';
 import '../widgets/app_sheet.dart';
+import '../widgets/form_style.dart';
 import '../widgets/form_widgets.dart';
 import '../../models/default_records.dart';
 
@@ -25,7 +30,8 @@ class ProductDialog extends ConsumerStatefulWidget {
   ConsumerState<ProductDialog> createState() => _ProductDialogState();
 }
 
-class _ProductDialogState extends ConsumerState<ProductDialog> {
+class _ProductDialogState extends ConsumerState<ProductDialog>
+    with SingleFlight<ProductDialog>, LiveValidation<ProductDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
@@ -33,18 +39,16 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   late final TextEditingController _priceBController;
   late final TextEditingController _costController;
   late final TextEditingController _stockController;
-  // Llaves de los campos de precio y costo: al escribir en un precio se vuelve a
-  // validar lo que depende de él, sin esperar a "Guardar".
   final _priceAKey = GlobalKey<FormFieldState<String>>();
   final _priceBKey = GlobalKey<FormFieldState<String>>();
   final _costKey = GlobalKey<FormFieldState<String>>();
   String? _imagePath;
-  // Copia permanente de la imagen elegida en esta sesión (aún sin guardar).
   String? _pickedImagePath;
-  // Se guarda al iniciar: `ref` ya no se puede usar dentro de dispose().
   late final ImageStorage _imageStorage;
   int? _selectedCategoryId;
   late bool _isActive;
+  String? _saveError;
+  late final String _initialSignature;
 
   @override
   void initState() {
@@ -72,9 +76,35 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     _imagePath = widget.product?.image;
     _selectedCategoryId = widget.product?.categoryId;
     _isActive = widget.product?.isActive ?? true;
+    _nameController.addListener(_clearSaveError);
+    _initialSignature = _signature();
   }
 
-  // Los importes se muestran siempre con dos decimales ("50.00").
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {_saveError = null;}
+
+  String _signature() => [
+    _nameController.text,
+    _descController.text,
+    _priceAController.text,
+    _priceBController.text,
+    _costController.text,
+    _stockController.text,
+    _imagePath ?? '',
+    _selectedCategoryId,
+    _isActive,
+  ].join('\u0000');
+
+  void _clearSaveError() {
+    if (_saveError != null) setState(() => _saveError = null);
+  }
+
   static String _formatPrice(double? value) =>
       value == null ? '' : fixed2(value);
 
@@ -86,7 +116,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     _priceBController.dispose();
     _costController.dispose();
     _stockController.dispose();
-    // Si se cierra sin guardar, la copia elegida no se usa.
     _discardPickedImage();
     super.dispose();
   }
@@ -95,21 +124,16 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
-    // La foto elegida vive en la caché, que Android puede vaciar: se copia a
-    // la carpeta permanente y se guarda esa ruta.
     final permanentPath = await _imageStorage.save(picked.path);
     if (!mounted) {
       await _imageStorage.deleteIfManaged(permanentPath);
       return;
     }
-    // Una imagen elegida antes en esta misma sesión y reemplazada ya no se usa.
     _discardPickedImage();
     _pickedImagePath = permanentPath;
     setState(() => _imagePath = permanentPath);
   }
 
-  // Borra la imagen elegida en esta sesión (si la hay) para no dejar copias
-  // huérfanas. La imagen que ya tenía el registro nunca se borra aquí.
   void _discardPickedImage() {
     final path = _pickedImagePath;
     _pickedImagePath = null;
@@ -117,16 +141,14 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    // Si solo se llenó uno de los dos precios, el repositorio iguala el otro.
+    if (!validateForm()) return;
     final priceA = double.tryParse(_priceAController.text.trim());
     final priceB = double.tryParse(_priceBController.text.trim());
-    await ref
+    setState(() => _saveError = null);
+    final error = await ref
         .read(productProvider.notifier)
         .save(
           id: widget.product?.id,
-          // Si no se eligió categoría, el repositorio asigna "Sin categoría":
-          // este campo nunca debe bloquear el guardado.
           categoryId: _selectedCategoryId,
           name: _nameController.text.trim(),
           description: _descController.text.trim(),
@@ -137,8 +159,11 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
           stock: int.parse(_stockController.text.trim()),
           isActive: _isActive,
         );
-    // La imagen elegida quedó guardada: ya no se descarta al cerrar. Si
-    // reemplazó a otra que tenía el producto, la anterior se borra.
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _saveError = error);
+      return;
+    }
     _pickedImagePath = null;
     final previous = widget.product?.image;
     if (previous != null && previous != _imagePath) {
@@ -147,9 +172,21 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     if (mounted) Navigator.pop(context);
   }
 
-  // Solo uno de los dos precios es obligatorio: si este está vacío, basta con
-  // que el otro (de [other]) tenga valor. Lo escrito debe ser un importe válido
-  // (mayor a 0, hasta dos decimales).
+  String? _validateName(String? value) {
+    final error = validateName(value);
+    if (error != null) return error;
+    final others = ref
+        .read(productProvider)
+        .products
+        .where((p) => p.id != widget.product?.id)
+        .map((p) => p.name);
+    return validateUniqueName(
+      value,
+      others,
+      message: duplicateProductMessage,
+    );
+  }
+
   String? _validatePrice(String? v, TextEditingController other) {
     final text = (v ?? '').trim();
     if (text.isEmpty) {
@@ -158,8 +195,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     return validateAmountField(text);
   }
 
-  // Al escribir en un precio se revalida el otro (ya no hace falta si este se
-  // llenó) y el costo, que depende de ambos.
   void _onPriceChanged(GlobalKey<FormFieldState<String>> otherPriceKey) {
     otherPriceKey.currentState?.validate();
     _costKey.currentState?.validate();
@@ -170,8 +205,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
     final invalid = validateAmountField(v, allowZero: true);
     if (invalid != null) return invalid;
     final cost = double.parse(v.trim());
-    // El costo debe ser menor que ambos precios de venta. Si solo hay uno
-    // escrito, ese es también el valor del otro.
     final typedA = double.tryParse(_priceAController.text.trim());
     final typedB = double.tryParse(_priceBController.text.trim());
     final priceA = typedA ?? typedB;
@@ -192,7 +225,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
           : 'El producto no estará disponible para nuevas ventas.',
       confirmLabel: value ? 'Activar' : 'Desactivar',
       confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
-      dismissLabel: 'Cancelar',
     );
     if (!confirm) return;
     setState(() => _isActive = value);
@@ -200,18 +232,29 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _nameController,
+        _descController,
+        _priceAController,
+        _priceBController,
+        _costController,
+        _stockController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.product != null;
-    // Solo categorías activas en el dropdown (más la que ya tenía el producto
-    // que se edita). La categoría predeterminada se ofrece como la opción
-    // "Sin categoría" (valor nulo), no como una categoría más.
     final allCategories = ref.watch(categoryProvider).categories;
     final categories = allCategories
         .where(
           (c) => !c.isDefault && (c.isActive || c.id == _selectedCategoryId),
         )
         .toList();
-    // El valor del selector solo puede ser una opción que exista en la lista:
-    // la categoría predeterminada es la opción nula.
     final categoryValue = categories.any((c) => c.id == _selectedCategoryId)
         ? _selectedCategoryId
         : null;
@@ -222,26 +265,24 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
-        onPrimary: _save,
+        onPrimary: () => runOnce(_save),
+        busy: inFlight,
       ),
       children: [
-        // Selector de imagen
         AppPhotoSlot(imagePath: _imagePath, onTap: _pickImage),
         const SizedBox(height: AppSpacing.s16),
 
-        // Nombre
         LabeledField(
           label: 'Nombre',
           builder: (_) => TextFormField(
             autovalidateMode: AutovalidateMode.onUserInteraction,
             controller: _nameController,
             decoration: const InputDecoration(hintText: 'Nombre del producto'),
-            validator: validateName,
+            validator: _validateName,
           ),
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Categoría
         AppDropdownField<int>(
           label: 'Categoría',
           value: categoryValue,
@@ -253,7 +294,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Descripción
         LabeledField(
           label: 'Descripción',
           builder: (_) => TextFormField(
@@ -266,7 +306,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Precios de venta (A y B, independientes) y costo de producción
         LabeledField(
           label: 'Precio A',
           builder: (_) => TextFormField(
@@ -306,8 +345,6 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Stock: siempre un número entero (un "." se rechaza con aviso en
-        // vez de descartarse o guardarse como 0).
         WholeNumberQuantityField(
           controller: _stockController,
           labelText: 'Stock',
@@ -316,14 +353,15 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
               qty > maxQuantity ? 'El valor es demasiado grande' : null,
         ),
 
-        // Estado: solo al editar
+        if (_saveError != null) FormErrorText(_saveError!),
+
         if (isEditing) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Producto activo',
             subtitle: _isActive
-                ? 'Disponible para ventas'
-                : 'No disponible para ventas',
+                ? 'Disponible en el sistema'
+                : 'No disponible en el sistema',
             value: _isActive,
             onChanged: _onToggleActive,
           ),

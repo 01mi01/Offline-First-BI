@@ -9,21 +9,16 @@ class AppSegment<T> {
   const AppSegment(this.value, this.label);
 }
 
-// Control segmentado: pista a todo el ancho con una pastilla que se desliza a
-// la opción elegida. Con [allowDeselect], tocar la opción activa la quita
-// (onChanged recibe null).
 class AppSegmented<T> extends StatelessWidget {
   final List<AppSegment<T>> segments;
   final T? selected;
-  final ValueChanged<T?> onChanged;
-  final bool allowDeselect;
+  final ValueChanged<T> onChanged;
 
   const AppSegmented({
     super.key,
     required this.segments,
     required this.selected,
     required this.onChanged,
-    this.allowDeselect = false,
   });
 
   @override
@@ -75,11 +70,9 @@ class AppSegmented<T> extends StatelessWidget {
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () {
-                          if (segment.value == selected) {
-                            if (allowDeselect) onChanged(null);
-                            return;
+                          if (segment.value != selected) {
+                            onChanged(segment.value);
                           }
-                          onChanged(segment.value);
                         },
                         child: Center(
                           child: Padding(
@@ -118,8 +111,6 @@ class AppSegmented<T> extends StatelessWidget {
   }
 }
 
-// Selector de pestañas: el control segmentado conectado al TabController del
-// DefaultTabController más cercano, con el mismo lugar y relleno en cada pantalla.
 class AppTabSwitcher extends StatelessWidget {
   final List<String> labels;
 
@@ -137,17 +128,13 @@ class AppTabSwitcher extends StatelessWidget {
             for (var i = 0; i < labels.length; i++) AppSegment(i, labels[i]),
           ],
           selected: controller.index,
-          onChanged: (i) {
-            if (i != null) controller.animateTo(i);
-          },
+          onChanged: controller.animateTo,
         ),
       ),
     );
   }
 }
 
-// Texto de los controles de filtro (chips, atajos, interruptor, fechas y
-// botones): un solo tamaño. El nombre va regular y gris; el valor, en negrita.
 TextStyle filterNameStyle(BuildContext context) => AppText.rowSubtitle(
   context,
   color: AppColors.textSecondary,
@@ -167,21 +154,17 @@ TextStyle filterValueStyle(BuildContext context, {bool active = false}) =>
       fontWeight: FontWeight.bold,
     );
 
-// Texto del buscador.
 TextStyle appControlTextStyle(BuildContext context, Color color) =>
     AppText.rowSubtitle(context, color: color).copyWith(
       fontSize: AppMetrics.controlTextSize,
       fontWeight: FontWeight.w500,
     );
 
-// Aspecto de todos los campos de búsqueda: relleno gris, esquinas como las de
-// los botones y lupa.
 InputDecoration appSearchDecoration(
   BuildContext context, {
   required String hintText,
   String? labelText,
   Widget? suffixIcon,
-  EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
 }) {
   OutlineInputBorder border() => OutlineInputBorder(
     borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
@@ -194,7 +177,7 @@ InputDecoration appSearchDecoration(
     filled: true,
     fillColor: AppColors.track,
     isDense: true,
-    contentPadding: contentPadding,
+    contentPadding: EdgeInsets.zero,
     border: border(),
     enabledBorder: border(),
     focusedBorder: border(),
@@ -207,19 +190,15 @@ InputDecoration appSearchDecoration(
   );
 }
 
-// Barra de búsqueda: campo gris con lupa y botón para borrar.
 class AppSearchBar extends StatefulWidget {
   final String initialText;
   final String hintText;
   final ValueChanged<String> onChanged;
-  final bool autofocus;
-
   const AppSearchBar({
     super.key,
     required this.hintText,
     required this.onChanged,
     this.initialText = '',
-    this.autofocus = false,
   });
 
   @override
@@ -247,7 +226,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
       height: AppMetrics.controlHeight,
       child: TextField(
         controller: _controller,
-        autofocus: widget.autofocus,
         textInputAction: TextInputAction.search,
         scrollPadding: EdgeInsets.zero,
         style: appControlTextStyle(context, AppColors.textPrimary),
@@ -279,7 +257,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
   }
 }
 
-// Control de cantidad con menos y más.
 class AppStepper extends StatelessWidget {
   final VoidCallback? onMinus;
   final VoidCallback? onPlus;
@@ -427,9 +404,9 @@ class AppMiniToggle<T> extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                height: 28,
-                constraints: const BoxConstraints(minWidth: 60),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
+                height: 44,
+                constraints: const BoxConstraints(minWidth: 88),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: segment.value == selected

@@ -21,7 +21,6 @@ final reportExportRepositoryProvider = Provider<ReportExportRepository>(
   (ref) => ReportExportRepository(),
 );
 
-// Ítems de todas las ventas, agrupados por venta, para filtrar por producto/categoría
 final saleItemsMapProvider =
     FutureProvider.autoDispose<Map<int, List<SaleItemModel>>>((ref) async {
   final sales = ref.watch(saleProvider).sales;
@@ -33,8 +32,6 @@ final saleItemsMapProvider =
   return map;
 });
 
-// Ítems de material de todas las compras, agrupados por compra, para los
-// reportes de compras.
 final purchaseItemsMapProvider =
     FutureProvider.autoDispose<Map<int, List<PurchaseItemModel>>>((ref) async {
   final purchases = ref.watch(purchaseProvider).purchases;
@@ -64,9 +61,6 @@ final purchasesSummaryProvider = Provider.autoDispose
   return ref.watch(reportServiceProvider).summarizePurchases(purchases);
 });
 
-// Filas del reporte de ventas: ventas que cumplen los filtros, cada una
-// limitada a las líneas (ítems) que cumplen los filtros de producto,
-// categoría y tipo de precio.
 final saleReportRowsProvider = Provider.autoDispose
     .family<List<SaleReportRow>, ReportFilters>((ref, filters) {
   final sales = ref.watch(saleProvider).sales;
@@ -98,13 +92,6 @@ final saleReportRowsProvider = Provider.autoDispose
       filters: filters,
     ),
   );
-});
-
-final salesSummaryProvider = Provider.autoDispose
-    .family<SalesSummary, ReportFilters>((ref, filters) {
-  return ref
-      .watch(reportServiceProvider)
-      .summarizeSaleRows(ref.watch(saleReportRowsProvider(filters)));
 });
 
 final purchaseReportRowsProvider = Provider.autoDispose

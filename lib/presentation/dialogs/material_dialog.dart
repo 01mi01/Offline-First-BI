@@ -1,3 +1,4 @@
+import '../../config/quantity_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,9 @@ import '../../models/unit_model.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/confirm_cancel_dialog.dart';
+import '../widgets/discard_guard.dart';
+import '../widgets/live_validation.dart';
+import '../widgets/single_flight.dart';
 import '../../application/form_validation.dart';
 import '../widgets/app_sheet.dart';
 import '../widgets/form_widgets.dart';
@@ -31,20 +35,18 @@ class MaterialDialog extends ConsumerStatefulWidget {
   ConsumerState<MaterialDialog> createState() => _MaterialDialogState();
 }
 
-class _MaterialDialogState extends ConsumerState<MaterialDialog> {
+class _MaterialDialogState extends ConsumerState<MaterialDialog>
+    with SingleFlight<MaterialDialog>, LiveValidation<MaterialDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
   late final TextEditingController _stockController;
   late final TextEditingController _priceController;
-  // Precio por unidad y total pagado enlazados, para cualquier tipo de unidad.
-  // Comparte el campo de precio de arriba.
   late final LinkedPriceController _container;
-  // Al EDITAR un contenedor: cantidad a la que corresponde el total pagado
-  // (empieza en 1, con el precio actual).
   final _quantityController = TextEditingController(text: '1');
   int? _selectedUnitId;
   late bool _isActive;
+  late final String _initialSignature;
 
   @override
   void initState() {
@@ -65,13 +67,32 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     );
     _container = LinkedPriceController(price: _priceController);
     if (widget.material != null) {
-      // Cantidad 1 al precio actual: guardar sin tocar nada no cambia el precio.
       _container.setQuantity(1);
       _container.setPrice(widget.material!.pricePerUnit);
     }
     _selectedUnitId = widget.material?.unitId;
     _isActive = widget.material?.isActive ?? true;
+    _initialSignature = _signature();
   }
+
+  @override
+  GlobalKey<FormState> get validationKey => _formKey;
+
+  @override
+  String valuesSnapshot() => _signature();
+
+  @override
+  void clearMessages() {}
+
+  String _signature() => [
+    _nameController.text,
+    _descController.text,
+    _stockController.text,
+    _priceController.text,
+    _quantityController.text,
+    _selectedUnitId,
+    _isActive,
+  ].join('\u0000');
 
   @override
   void dispose() {
@@ -84,26 +105,11 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     super.dispose();
   }
 
-  // Stock tal como se muestra: dos decimales en medidas, fracciones exactas
-  // en unidades por fracciones, enteros en piezas.
-  String _stockText(MaterialModel material) {
-    final unit = ref
-        .read(unitProvider)
-        .units
-        .where((u) => u.id == material.unitId)
-        .firstOrNull;
-    return formatMaterialQuantity(
-      material.stock,
-      unitType: unit?.type ?? 'medida',
-      unitName: unit?.name ?? '',
-    );
-  }
+  String _stockText(MaterialModel material) => formatQuantity(material.stock);
 
   UnitModel? _unitById(List<UnitModel> units) =>
       units.where((u) => u.id == _selectedUnitId).firstOrNull;
 
-  // Stock según la unidad elegida: piezas enteras ("unidad"), cuartos para las
-  // unidades por fracciones y hasta dos decimales en medidas. Puede ser 0.
   String? _validateStock(String? value, UnitModel? unit) {
     if (unit != null && wholeNumberUnitNames.contains(unit.name.trim().toLowerCase())) {
       final error = validateDecimal(
@@ -131,11 +137,10 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!validateForm()) return;
     final stock = double.tryParse(_stockController.text.trim()) ?? 0;
-    // Manda el último campo escrito (precio por unidad o total pagado).
     final pricePerUnit = _container.resolvedPrice ?? 0;
-    await ref
+    final savedId = await ref
         .read(materialProvider.notifier)
         .save(
           id: widget.material?.id,
@@ -149,9 +154,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
     if (mounted) Navigator.pop(context);
     if (widget.onSaved != null) {
       final materials = ref.read(materialProvider).materials;
-      final saved = materials
-          .where((m) => m.name == _nameController.text.trim())
-          .firstOrNull;
+      final saved = materials.where((m) => m.id == savedId).firstOrNull;
       if (saved != null) {
         widget.onSaved!(saved.id, saved.name, saved.pricePerUnit, saved.stock);
       }
@@ -167,7 +170,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
           : 'El material no estará disponible para nuevas compras y productos.',
       confirmLabel: value ? 'Activar' : 'Desactivar',
       confirmKind: value ? AppButtonKind.primary : AppButtonKind.destructive,
-      dismissLabel: 'Cancelar',
     );
     if (!confirm) return;
     setState(() => _isActive = value);
@@ -175,9 +177,23 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return DiscardChangesGuard(
+      hasChanges: () => _signature() != _initialSignature,
+      onValuesChanged: syncValues,
+      changes: Listenable.merge([
+        _nameController,
+        _descController,
+        _stockController,
+        _priceController,
+        _quantityController,
+      ]),
+      child: _buildForm(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
     final isEditing = widget.material != null;
     final allUnits = ref.watch(unitProvider).units;
-    // Al editar solo se ofrecen unidades del mismo tipo que la actual.
     final currentUnit = isEditing
         ? allUnits.where((u) => u.id == widget.material!.unitId).firstOrNull
         : null;
@@ -192,10 +208,10 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
-        onPrimary: _save,
+        onPrimary: () => runOnce(_save),
+        busy: inFlight,
       ),
       children: [
-        // Nombre
         LabeledField(
           label: 'Nombre',
           builder: (_) => TextFormField(
@@ -207,7 +223,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Descripción
         LabeledField(
           label: 'Descripción',
           builder: (_) => TextFormField(
@@ -220,9 +235,9 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Unidad de medida
         AppDropdownField<int>(
           label: 'Unidad',
+          hint: 'Seleccionar unidad',
           value: _selectedUnitId,
           helperText: currentUnit != null ? 'Solo unidades del mismo tipo' : null,
           options: [for (final u in units) DropdownOption<int>(u.id, u.name)],
@@ -231,7 +246,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
         ),
         const SizedBox(height: AppSpacing.s16),
 
-        // Stock y precio por unidad
         LabeledField(
           label: 'Stock',
           builder: (_) => TextFormField(
@@ -242,7 +256,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
             ],
             decoration: const InputDecoration(hintText: '0'),
-            // Al crear, el stock es la cantidad a la que corresponde el total.
             onChanged: (v) => setState(() {
               if (!isEditing) {
                 _container.setQuantity(double.tryParse(v.trim()) ?? 0);
@@ -252,13 +265,11 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
           ),
         ),
         const SizedBox(height: AppSpacing.s16),
-        // Precio por unidad y total pagado, enlazados (todas las unidades).
         LinkedPriceFields(
           controller: _container,
           onChanged: () => setState(() {}),
           extraInfo: isMedida ? measureUnitInfoMessage : null,
         ),
-        // Editar: la cantidad a la que corresponde el total.
         if (isEditing) ...[
           const SizedBox(height: AppSpacing.s16),
           LabeledField(
@@ -270,7 +281,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
               ],
-              decoration: const InputDecoration(hintText: '1'),
+              decoration: const InputDecoration(hintText: '0'),
               onChanged: (v) => setState(
                 () => _container.setQuantity(double.tryParse(v.trim()) ?? 0),
               ),
@@ -280,7 +291,6 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog> {
           ),
         ],
 
-        // Estado: solo al editar
         if (isEditing) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(

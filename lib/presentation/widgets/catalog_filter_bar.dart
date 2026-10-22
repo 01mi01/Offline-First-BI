@@ -6,13 +6,6 @@ import 'app_controls.dart';
 import 'focus_utils.dart';
 import '../../application/date_range_filter.dart' show RecordTimeFilter;
 
-// Piezas reutilizables para filtrar las listas y el catálogo.
-
-// Envuelve un buscador con resultados debajo (p. ej. el de productos dentro del
-// formulario de venta): al enfocarlo, lleva el buscador al borde de arriba del
-// área que se desplaza, para que lo escrito quede por encima del teclado y los
-// resultados se vean debajo. Solo actúa al enfocar y cuando el teclado termina
-// de abrirse; escribir no vuelve a mover la pantalla.
 class RevealOnFocus extends StatefulWidget {
   final Widget child;
 
@@ -43,8 +36,6 @@ class _RevealOnFocusState extends State<RevealOnFocus>
   @override
   void didChangeMetrics() => _reveal();
 
-  // Se espera un instante para que el propio campo de texto (que también se
-  // desplaza para mostrar el cursor) termine primero y no se pisen.
   void _reveal() {
     if (!_focused) return;
     _timer?.cancel();
@@ -68,8 +59,6 @@ class _RevealOnFocusState extends State<RevealOnFocus>
   }
 }
 
-// Selector de "registros actuales / todos" para listas con registros futuros,
-// con el mismo control y lugar que el selector de pestañas.
 class RecordTimeSwitcher extends StatelessWidget {
   final RecordTimeFilter value;
   final String currentLabel;
@@ -92,9 +81,7 @@ class RecordTimeSwitcher extends StatelessWidget {
           const AppSegment(RecordTimeFilter.all, 'Todas'),
         ],
         selected: value,
-        onChanged: (v) {
-          if (v != null) onChanged(v);
-        },
+        onChanged: onChanged,
       ),
     );
   }

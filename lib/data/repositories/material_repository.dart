@@ -1,3 +1,5 @@
+import 'name_rules.dart';
+import '../../config/quantity_format.dart';
 import 'package:drift/drift.dart';
 import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
@@ -13,7 +15,6 @@ class MaterialRepository {
 
   MaterialRepository(this.database);
 
-  // Convierte fila a modelo
   MaterialModel _toModel(Material row) {
     return MaterialModel(
       id: row.id,
@@ -27,7 +28,6 @@ class MaterialRepository {
     );
   }
 
-  // Obtiene todos los materiales incluyendo inactivos
   Future<List<MaterialModel>> getAllIncludingInactive() async {
     final rows = await (database.select(
       database.materials,
@@ -35,24 +35,9 @@ class MaterialRepository {
     return rows.map(_toModel).toList();
   }
 
-  // Obtiene solo materiales activos
-  Future<List<MaterialModel>> getActive() async {
-    final rows =
-        await (database.select(database.materials)
-              ..where((m) => m.isActive.equals(true))
-              ..orderBy([(m) => OrderingTerm.asc(m.name)]))
-            .get();
-    return rows.map(_toModel).toList();
-  }
-
-  // Nota de la compra que se crea sola con el stock inicial de un material.
   static const String initialStockPurchaseNote = 'Stock inicial del material';
 
-  // Guarda o actualiza un material. Al CREAR uno con stock inicial mayor a
-  // cero se registra también la compra (tipo Material) que lo respalda, en la
-  // misma transacción: el material y su compra nunca quedan desfasados. El
-  // stock no se suma dos veces (el material ya nace con él).
-  Future<void> save({
+  Future<int> save({
     int? id,
     required String name,
     String? description,
@@ -61,14 +46,10 @@ class MaterialRepository {
     required double pricePerUnit,
     bool isActive = true,
   }) async {
+    name = requireName(name);
     final now = appNow();
-    // Lo que se guarda va redondeado: precio a centavos y stock según el tipo
-    // de su unidad (dos decimales, o fracciones sin ruido).
     stock = await roundForUnit(database, unitId, stock);
     pricePerUnit = round2(pricePerUnit);
-    // Al editar, la unidad solo puede cambiar a otra del mismo tipo (ver
-    // selectableUnitsFor): la interfaz ya solo ofrece esas, y esto lo garantiza
-    // también al guardar.
     if (id != null) {
       final current = await (database.select(
         database.materials,
@@ -85,7 +66,7 @@ class MaterialRepository {
         }
       }
     }
-    await database.transaction(() async {
+    return database.transaction(() async {
       final savedId = await database
           .into(database.materials)
           .insertOnConflictUpdate(
@@ -97,14 +78,14 @@ class MaterialRepository {
               stock: Value(stock),
               pricePerUnit: Value(pricePerUnit),
               isActive: Value(isActive),
-              createdAt: Value(now),
+              createdAt: id == null ? Value(now) : const Value.absent(),
               updatedAt: Value(now),
             ),
           );
 
       if (id == null && stock > 0) {
         await PurchaseRepository(database).createPurchase(
-          supplierId: null, // "Sin proveedor"
+          supplierId: null,
           isMaterial: true,
           description: null,
           totalAmount: round2(stock * pricePerUnit),
@@ -122,10 +103,10 @@ class MaterialRepository {
           adjustStock: false,
         );
       }
+      return id ?? savedId;
     });
   }
 
-  // Obtiene el log de uso de materiales para un producto
   Future<List<ProductMaterialModel>> getMaterialsForProduct(
     int productId,
   ) async {
@@ -167,7 +148,6 @@ class MaterialRepository {
     return result;
   }
 
-  // Obtiene nombres únicos de materiales usados en un producto
   Future<List<String>> getUniqueMaterialNamesForProduct(int productId) async {
     final rows =
         await (database.select(database.productMaterials)..where(
@@ -187,7 +167,6 @@ class MaterialRepository {
     return names.toList();
   }
 
-  // Obtiene materiales únicos con nombre y precio para un producto
   Future<List<Map<String, dynamic>>> getMaterialsWithPriceForProduct(
     int productId,
   ) async {
@@ -221,186 +200,168 @@ class MaterialRepository {
     return result;
   }
 
-  // Vincula un material a un producto y descuenta del stock. product_materials
-  // es la receta del producto (una fila por par producto+material, con
-  // índice único), no un historial: si el par ya existe, esto suma la nueva
-  // cantidad a esa fila en vez de crear un duplicado, delegando en
-  // editMaterialUsage para reutilizar su ajuste de stock por diferencia.
   Future<String?> registerMaterialUsage({
     required int productId,
     required int materialId,
     required double quantityUsed,
   }) async {
-    final material = await (database.select(
-      database.materials,
-    )..where((m) => m.id.equals(materialId))).getSingleOrNull();
+    return database.transaction(() async {
+      final material = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
-    if (material == null) return 'Material no encontrado';
-    quantityUsed = await roundForUnit(database, material.unitId, quantityUsed);
-    final available = await roundForUnit(
-      database,
-      material.unitId,
-      material.stock,
-    );
+      if (material == null) return 'Material no encontrado';
+      quantityUsed = await roundForUnit(database, material.unitId, quantityUsed);
+      final available = await roundForUnit(
+        database,
+        material.unitId,
+        material.stock,
+      );
 
-    final existing = await (database.select(database.productMaterials)..where(
-          (pm) =>
-              pm.productId.equals(productId) &
-              pm.materialId.equals(materialId),
-        ))
-        .getSingleOrNull();
+      final existing = await (database.select(database.productMaterials)..where(
+            (pm) =>
+                pm.productId.equals(productId) &
+                pm.materialId.equals(materialId),
+          ))
+          .getSingleOrNull();
 
-    if (existing != null && existing.isCanceled) {
-      // El par producto+material es único: volver a registrar el uso de un
-      // registro cancelado reactiva esa misma fila.
+      if (existing != null && existing.isCanceled) {
+        if (quantityUsed > available) {
+          return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
+        }
+        final now = appNow();
+        await database.transaction(() async {
+          await (database.update(
+            database.productMaterials,
+          )..where((pm) => pm.id.equals(existing.id))).write(
+            ProductMaterialsCompanion(
+              quantityUsed: Value(quantityUsed),
+              isCanceled: const Value(false),
+              canceledAt: const Value(null),
+              updatedAt: Value(now),
+            ),
+          );
+          await (database.update(
+            database.materials,
+          )..where((m) => m.id.equals(materialId))).write(
+            MaterialsCompanion(
+              stock: Value(
+                await roundForUnit(
+                  database,
+                  material.unitId,
+                  material.stock - quantityUsed,
+                ),
+              ),
+              updatedAt: Value(now),
+            ),
+          );
+        });
+        return null;
+      }
+
+      if (existing != null) {
+        return editMaterialUsage(
+          recordId: existing.id,
+          newQuantity: existing.quantityUsed + quantityUsed,
+        );
+      }
+
       if (quantityUsed > available) {
         return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
       }
-      final now = appNow();
-      await database.transaction(() async {
-        await (database.update(
-          database.productMaterials,
-        )..where((pm) => pm.id.equals(existing.id))).write(
-          ProductMaterialsCompanion(
-            quantityUsed: Value(quantityUsed),
-            isCanceled: const Value(false),
-            canceledAt: const Value(null),
-            updatedAt: Value(now),
-          ),
-        );
-        await (database.update(
-          database.materials,
-        )..where((m) => m.id.equals(materialId))).write(
-          MaterialsCompanion(
-            stock: Value(
-              await roundForUnit(
-                database,
-                material.unitId,
-                material.stock - quantityUsed,
-              ),
+
+      await database
+          .into(database.productMaterials)
+          .insert(
+            ProductMaterialsCompanion.insert(
+              productId: productId,
+              materialId: materialId,
+              quantityUsed: quantityUsed,
             ),
-            updatedAt: Value(now),
+          );
+
+      await (database.update(
+        database.materials,
+      )..where((m) => m.id.equals(materialId))).write(
+        MaterialsCompanion(
+          stock: Value(
+            await roundForUnit(
+              database,
+              material.unitId,
+              material.stock - quantityUsed,
+            ),
           ),
-        );
-      });
-      return null;
-    }
-
-    if (existing != null) {
-      // Registrar de nuevo un par ya vinculado SUMA a lo ya registrado (0.25 +
-      // 0.75 = 1.0). El stock baja solo por lo nuevo: editMaterialUsage
-      // descuenta la diferencia entre la cantidad nueva y la anterior, que
-      // aquí es justamente [quantityUsed]. Para corregir una cantidad (reemplazo
-      // directo) está el flujo de edición, que llama a editMaterialUsage con la
-      // cantidad final.
-      return editMaterialUsage(
-        recordId: existing.id,
-        newQuantity: existing.quantityUsed + quantityUsed,
-      );
-    }
-
-    if (quantityUsed > available) {
-      return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
-    }
-
-    await database
-        .into(database.productMaterials)
-        .insert(
-          ProductMaterialsCompanion.insert(
-            productId: productId,
-            materialId: materialId,
-            quantityUsed: quantityUsed,
-          ),
-        );
-
-    // Descuenta stock
-    await (database.update(
-      database.materials,
-    )..where((m) => m.id.equals(materialId))).write(
-      MaterialsCompanion(
-        stock: Value(
-          await roundForUnit(
-            database,
-            material.unitId,
-            material.stock - quantityUsed,
-          ),
+          updatedAt: Value(appNow()),
         ),
-        updatedAt: Value(appNow()),
-      ),
-    );
+      );
 
-    return null;
+      return null;
+    });
   }
 
-  // Edita un registro de uso y ajusta el stock según la diferencia
   Future<String?> editMaterialUsage({
     required int recordId,
     required double newQuantity,
   }) async {
-    final record = await (database.select(
-      database.productMaterials,
-    )..where((pm) => pm.id.equals(recordId))).getSingleOrNull();
+    return database.transaction(() async {
+      final record = await (database.select(
+        database.productMaterials,
+      )..where((pm) => pm.id.equals(recordId))).getSingleOrNull();
 
-    if (record == null) return 'Registro no encontrado';
-    if (record.isCanceled) {
-      return 'El registro está cancelado y no se puede editar';
-    }
+      if (record == null) return 'Registro no encontrado';
+      if (record.isCanceled) {
+        return 'El registro está cancelado y no se puede editar';
+      }
 
-    final material = await (database.select(
-      database.materials,
-    )..where((m) => m.id.equals(record.materialId))).getSingleOrNull();
+      final material = await (database.select(
+        database.materials,
+      )..where((m) => m.id.equals(record.materialId))).getSingleOrNull();
 
-    if (material == null) return 'Material no encontrado';
+      if (material == null) return 'Material no encontrado';
 
-    newQuantity = await roundForUnit(database, material.unitId, newQuantity);
-    final oldQuantity = record.quantityUsed;
-    final difference = await roundForUnit(
-      database,
-      material.unitId,
-      newQuantity - oldQuantity,
-    );
-    final available = await roundForUnit(
-      database,
-      material.unitId,
-      material.stock,
-    );
+      newQuantity = await roundForUnit(database, material.unitId, newQuantity);
+      final oldQuantity = record.quantityUsed;
+      final difference = await roundForUnit(
+        database,
+        material.unitId,
+        newQuantity - oldQuantity,
+      );
+      final available = await roundForUnit(
+        database,
+        material.unitId,
+        material.stock,
+      );
 
-    // Si aumenta la cantidad, verificar que haya stock suficiente
-    if (difference > 0 && difference > available) {
-      return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
-    }
+      if (difference > 0 && difference > available) {
+        return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
+      }
 
-    // Actualiza el registro
-    await (database.update(database.productMaterials)
-          ..where((pm) => pm.id.equals(recordId)))
-        .write(ProductMaterialsCompanion(
-      quantityUsed: Value(newQuantity),
-      updatedAt: Value(appNow()),
-    ));
-
-    // Ajusta el stock según la diferencia
-    await (database.update(
-      database.materials,
-    )..where((m) => m.id.equals(record.materialId))).write(
-      MaterialsCompanion(
-        stock: Value(
-          await roundForUnit(
-            database,
-            material.unitId,
-            material.stock - difference,
-          ),
-        ),
+      await (database.update(database.productMaterials)
+            ..where((pm) => pm.id.equals(recordId)))
+          .write(ProductMaterialsCompanion(
+        quantityUsed: Value(newQuantity),
         updatedAt: Value(appNow()),
-      ),
-    );
+      ));
 
-    return null;
+      await (database.update(
+        database.materials,
+      )..where((m) => m.id.equals(record.materialId))).write(
+        MaterialsCompanion(
+          stock: Value(
+            await roundForUnit(
+              database,
+              material.unitId,
+              material.stock - difference,
+            ),
+          ),
+          updatedAt: Value(appNow()),
+        ),
+      );
+
+      return null;
+    });
   }
 
-  // Cancela un registro de uso en vez de borrarlo: devuelve al material la
-  // cantidad que había descontado y marca el registro como cancelado,
-  // conservándolo como historial. Devuelve un mensaje de error, o null si
-  // salió bien.
   Future<String?> cancelMaterialUsage(int recordId) async {
     return database.transaction(() async {
       final record = await (database.select(
@@ -444,16 +405,10 @@ class MaterialRepository {
     });
   }
 
-  // Stock de un material tal como se muestra en los mensajes: según su unidad
-  // (dos decimales para medidas; fracciones sin ruido).
   Future<String> _fmt(Material material) async {
     final unit = await (database.select(
       database.units,
     )..where((u) => u.id.equals(material.unitId))).getSingleOrNull();
-    return formatMaterialQuantity(
-      material.stock,
-      unitType: unit?.type ?? 'medida',
-      unitName: unit?.name ?? '',
-    );
+    return quantityWithUnit(material.stock, unit?.name);
   }
 }

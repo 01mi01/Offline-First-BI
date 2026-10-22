@@ -1,3 +1,5 @@
+import 'chart_metrics.dart';
+import '../../config/quantity_format.dart';
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -7,12 +9,6 @@ import '../../models/bi_models.dart';
 import '../../theme/app_theme.dart';
 import 'bi_charts.dart';
 import 'bi_interaction.dart';
-
-// Vistas de los indicadores de ventas adicionales de Business Intelligence:
-// productos comprados juntos, ventas por día de la semana, ticket promedio,
-// rentabilidad por evento, impacto de los descuentos y retorno sobre el costo
-// de producción. Todos los colores de gráfico salen de chartColorAt; el rojo
-// (AppColors.error) se reserva para las pérdidas.
 
 TextStyle? _label(BuildContext context, {Color? color, bool bold = false}) =>
     Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -49,7 +45,6 @@ class _StatTile extends StatelessWidget {
   );
 }
 
-// Eje izquierdo de conteos: solo números enteros.
 SideTitles _countAxisTitles(double maxY) {
   final interval = math.max(1, (maxY / 5).ceil()).toDouble();
   return SideTitles(
@@ -62,7 +57,7 @@ SideTitles _countAxisTitles(double maxY) {
       }
       return Text(
         value.round().toString(),
-        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+        style: chartAxisStyle,
       );
     },
   );
@@ -74,27 +69,22 @@ FlGridData _grid() => FlGridData(
       const FlLine(color: AppColors.border, strokeWidth: 1),
 );
 
-// ---------------------------------------------------------------------------
-// Productos comprados juntos
-// ---------------------------------------------------------------------------
-
 class BiCoPurchaseSection extends StatelessWidget {
   final BiCoPurchaseReport report;
   final BiChartType chartType;
   final ValueChanged<BiChartType> onChartTypeChanged;
-  final int maxItems;
 
   const BiCoPurchaseSection({
     super.key,
     required this.report,
     required this.chartType,
     required this.onChartTypeChanged,
-    this.maxItems = 10,
   });
 
   @override
   Widget build(BuildContext context) {
     const indicator = BiIndicator.coPurchase;
+    const maxItems = 10;
     final pairs = report.pairs;
     final shown = pairs.take(maxItems).toList();
 
@@ -104,9 +94,9 @@ class BiCoPurchaseSection extends StatelessWidget {
     } else if (pairs.isEmpty) {
       body = BiEmptyState(
         message: report.multiProductSales == 0
-            ? 'Ninguna venta del periodo incluye 2 o más productos distintos.'
+            ? 'Ninguna venta del período incluye 2 o más productos distintos.'
             : 'Ningún par de productos coincide en al menos '
-                  '$coPurchaseMinSales ventas del periodo.',
+                  '$coPurchaseMinSales ventas del período.',
       );
     } else if (chartType == BiChartType.bar) {
       body = BiSignedBars(
@@ -116,7 +106,7 @@ class BiCoPurchaseSection extends StatelessWidget {
               label: p.label,
               value: p.sales.toDouble(),
               valueLabel: _salesText(p.sales),
-              details: ['${formatPercent(p.pct)} de las ventas del periodo'],
+              details: ['${formatPercent(p.pct)} de las ventas del período'],
             ),
         ],
       );
@@ -182,7 +172,7 @@ class BiCoPurchaseSection extends StatelessWidget {
             key: const ValueKey('bi-pair-footnote'),
             [
               'Solo pares vistos en al menos $coPurchaseMinSales ventas.',
-              '${_salesText(report.totalSales)} en el periodo, '
+              '${_salesText(report.totalSales)} en el período, '
                   '${report.multiProductSales} con 2 o más productos distintos.',
               if (pairs.length > maxItems)
                 'Mostrando los $maxItems primeros de ${pairs.length} pares.',
@@ -195,16 +185,10 @@ class BiCoPurchaseSection extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Ventas por día de la semana
-// ---------------------------------------------------------------------------
-
 class BiWeekdaySection extends StatefulWidget {
   final List<BiWeekdayEntry> entries;
   final BiChartType chartType;
   final ValueChanged<BiChartType> onChartTypeChanged;
-  // 0 = ingresos, 1 = número de ventas. La guarda quien usa el widget
-  // (BiConfig.metrics) para que sobreviva a que se reconstruya.
   final int metric;
   final ValueChanged<int> onMetricChanged;
 
@@ -230,8 +214,6 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
   @override
   void didUpdateWidget(BiWeekdaySection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Otro tipo de gráfico u otra métrica: el punto tocado y su globo ya no
-    // corresponden.
     if (oldWidget.chartType != widget.chartType ||
         oldWidget.metric != widget.metric) {
       _touched = null;
@@ -286,8 +268,6 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
                       onHidden: () {
                         if (_touched != null) setState(() => _touched = null);
                       },
-                      // Una clave por tipo de gráfico: al cambiarlo la
-                      // animación de entrada vuelve a correr.
                       child: BiEntrance(
                         key: ValueKey(widget.chartType),
                         builder: (context, t) => widget.chartType == BiChartType.line
@@ -352,7 +332,7 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          reservedSize: 24,
+          reservedSize: scaledAxisSize(context, 24),
           interval: 1,
           getTitlesWidget: (value, meta) {
             final i = value.round();
@@ -363,10 +343,7 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
               padding: const EdgeInsets.only(top: AppSpacing.s6),
               child: Text(
                 entries[i].shortName,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textSecondary,
-                ),
+                style: chartAxisStyle,
               ),
             );
           },
@@ -410,7 +387,12 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
         titlesData: _titles(entries, maxY),
         barTouchData: BarTouchData(
           handleBuiltInTouches: false,
-          touchExtraThreshold: const EdgeInsets.fromLTRB(6, 14, 6, 6),
+          touchExtraThreshold: const EdgeInsets.fromLTRB(
+            AppSpacing.s6,
+            AppSpacing.s14,
+            AppSpacing.s6,
+            AppSpacing.s6,
+          ),
           touchCallback: (event, response) {
             if (!_isSelect(event)) return;
             _touch(event, response?.spot?.touchedBarGroupIndex, entries);
@@ -488,10 +470,6 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Ticket promedio
-// ---------------------------------------------------------------------------
 
 class BiTicketSection extends StatelessWidget {
   final BiTicketReport report;
@@ -575,13 +553,13 @@ class BiTicketSection extends StatelessWidget {
             const SizedBox(height: AppSpacing.s12),
             Text(
               key: const ValueKey('bi-ticket-summary'),
-              'Promedio del periodo: ${formatMoney(average)} '
+              'Promedio del período: ${formatMoney(average)} '
               '(${_salesText(report.salesCount)}).',
               style: _label(context, bold: true),
             ),
             const SizedBox(height: AppSpacing.s2),
             Text(
-              'La línea punteada es el promedio del periodo; los intervalos '
+              'La línea punteada es el promedio del período; los intervalos '
               'sin ventas no tienen punto.',
               style: _small(context),
             ),
@@ -592,11 +570,6 @@ class BiTicketSection extends StatelessWidget {
   }
 }
 
-// Línea de un valor por intervalo (los mismos intervalos que Evolución en el
-// tiempo). Los intervalos sin valor (null) no llevan punto; una línea punteada
-// marca [average] si se indica. Se dibuja sola al aparecer, tocar un punto
-// muestra su detalle y admite acercar con dos dedos y arrastre para moverse en
-// el tiempo.
 class _TrendLine extends StatefulWidget {
   final BiTimeSeries series;
   final double? average;
@@ -617,7 +590,6 @@ class _TrendLine extends StatefulWidget {
 }
 
 class _TrendLineState extends State<_TrendLine> {
-  // Índice (en la lista de puntos) del punto tocado.
   int? _touched;
   final _tip = GlobalKey<BiTooltipLayerState>();
 
@@ -745,10 +717,6 @@ class _TrendLineState extends State<_TrendLine> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Impacto de los descuentos
-// ---------------------------------------------------------------------------
-
 class BiDiscountSection extends StatelessWidget {
   final BiDiscountReport report;
   final BiTimeSeries series;
@@ -832,7 +800,7 @@ class BiDiscountSection extends StatelessWidget {
             Text(
               key: const ValueKey('bi-discount-summary'),
               report.discountedSales == 0
-                  ? 'Ninguna venta del periodo tuvo descuento.'
+                  ? 'Ninguna venta del período tuvo descuento.'
                   : '${report.discountedSales} de '
                         '${_salesText(report.salesCount)} tuvieron descuento.',
               style: _label(context, bold: true),
@@ -848,10 +816,6 @@ class BiDiscountSection extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Rentabilidad por evento
-// ---------------------------------------------------------------------------
 
 class BiEventProfitSection extends StatelessWidget {
   final List<BiEventProfitEntry> entries;
@@ -878,7 +842,7 @@ class BiEventProfitSection extends StatelessWidget {
       body = const BiEmptyState(
         message:
             'Ningún evento tuvo ventas ni compras vinculadas en el '
-            'periodo.',
+            'período.',
       );
     } else if (chartType == BiChartType.list) {
       body = Column(
@@ -970,10 +934,6 @@ class BiEventProfitSection extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Retorno sobre el costo de producción
-// ---------------------------------------------------------------------------
-
 class BiCostReturnSection extends StatelessWidget {
   final BiReturnReport report;
   final BiChartType chartType;
@@ -986,15 +946,13 @@ class BiCostReturnSection extends StatelessWidget {
     required this.onChartTypeChanged,
   });
 
-  // Non-breaking spaces after "Bs." so a narrow phone never wraps the amount
-  // away from its currency ("...fue Bs." / "2.84").
   String _phrase(BiReturnEntry e) =>
       'Por cada Bs.\u00A01 de costo, la ganancia fue '
-      '${formatMoney(e.ratio).replaceFirst('Bs. ', 'Bs.\u00A0')}';
+      '${formatMoney(e.ratio)}';
 
   String _detail(BiReturnEntry e) =>
       'Ingresos ${formatMoney(e.revenue)} · Costo ${formatMoney(e.cost)} · '
-      '${e.units} uds.';
+      '${unitsText(e.units)}';
 
   @override
   Widget build(BuildContext context) {

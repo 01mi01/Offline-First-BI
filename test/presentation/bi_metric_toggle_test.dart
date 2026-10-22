@@ -8,11 +8,6 @@ import 'package:offline_first_bi/theme/app_theme.dart';
 import '../support/bi_drill_seed.dart';
 import '../support/bi_harness.dart';
 
-// El interruptor de métrica de los indicadores (Ingresos / Unidades en los
-// rankings, Margen % / Ganancia, Ingresos / Número de ventas por día) guarda su
-// opción en la configuración de Business Intelligence y no en el gráfico: así
-// sobrevive a que el gráfico salga de pantalla y se reconstruya, y se descarta
-// al empezar un panel nuevo.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -25,15 +20,12 @@ void main() {
       find.descendant(of: section(i), matching: f);
   Finder chip(BiIndicator i, String label) => inSection(i, find.text(label));
 
-  // La opción de un interruptor se ve resaltada en el color primario.
   bool selected(WidgetTester tester, BiIndicator i, String label) =>
       tester.widget<Text>(chip(i, label)).style?.color == AppColors.cyanDark;
 
   BiConfig config() => h.container.read(biConfigProvider);
 
   Future<void> pumpDashboard(WidgetTester tester, BiConfig config) async {
-    // Una pantalla chica para que el panel sea largo y los gráficos lejanos
-    // salgan de la lista perezosa al desplazarse.
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -49,7 +41,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // El botón va al final del contenido que se desplaza.
     await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
     await tester.pumpAndSettle();
@@ -57,10 +48,7 @@ void main() {
 
   Finder list() => find.byType(Scrollable).first;
 
-  // Lleva un indicador a la vista y elige su tipo de gráfico.
   Future<void> tapType(WidgetTester tester, BiIndicator i, String type) async {
-    // Siempre desde arriba: con la lista ya desplazada el indicador puede
-    // estar construido pero fuera de la vista.
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('bi-period')),
       -500,
@@ -80,12 +68,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // Lleva un indicador a la vista (el panel empieza arriba).
   Future<void> reveal(WidgetTester tester, BiIndicator i) => tester
       .scrollUntilVisible(section(i), 500, scrollable: list(), maxScrolls: 200);
 
-  // Elige una opción del interruptor de un indicador, llevándola a la vista
-  // primero (el panel es largo).
   Future<void> pick(WidgetTester tester, BiIndicator i, String label) async {
     await tester.scrollUntilVisible(
       section(i),
@@ -99,8 +84,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // Desplaza el panel hasta que [target] esté en pantalla; [down] según esté
-  // más abajo o más arriba.
   Future<void> scrollTo(
     WidgetTester tester,
     Finder target, {
@@ -112,13 +95,11 @@ void main() {
     maxScrolls: 200,
   );
 
-  // Con todos los indicadores y datos en cada uno.
   Future<BiConfig> fullConfig() async {
     final s = await DrillSeed.create(h);
     return BiConfig(filters: s.filters, indicators: {...BiIndicator.values});
   }
 
-  // Los indicadores con interruptor y la opción que no es la primera.
   const toggles = <(BiIndicator, String, String)>[
     (BiIndicator.salesByProduct, 'Ingresos', 'Unidades'),
     (BiIndicator.productMargin, 'Margen %', 'Ganancia'),
@@ -154,8 +135,6 @@ void main() {
             );
             expect(config().metricFor(indicator), 1, reason: indicator.name);
 
-            // Lejos del gráfico: el último indicador del panel. La lista perezosa
-            // descarta el widget (y con él, cualquier estado propio).
             await scrollTo(tester, section(BiIndicator.noMovement), down: true);
             expect(
               section(indicator),
@@ -163,7 +142,6 @@ void main() {
               reason: '${indicator.name} fuera',
             );
 
-            // De vuelta: sigue en la segunda opción.
             await scrollTo(tester, section(indicator), down: false);
             expect(section(indicator), findsOneWidget);
             expect(
@@ -207,10 +185,8 @@ void main() {
         await pick(tester, i, 'Unidades');
         await tapType(tester, i, 'pie');
         expect(selected(tester, i, 'Unidades'), isTrue);
-        // En pastel, por unidades: la leyenda da las unidades y su porcentaje
-        // (Anillo 4 de 8 = 50.0 %).
         expect(
-          inSection(i, find.textContaining('4 uds.  (50.00%)')),
+          inSection(i, find.textContaining('4 unidades  (50.00%)')),
           findsOneWidget,
         );
         await tapType(tester, i, 'bar');
@@ -223,19 +199,16 @@ void main() {
         await pumpDashboard(tester, await fullConfig());
         const i = BiIndicator.salesByCategory;
         await scrollTo(tester, section(i), down: true);
-        // Por ingresos: Joyas 265 (5 uds.) y Arte 120 (3 uds.).
-        expect(inSection(i, find.text('Bs. 265.00')), findsWidgets);
+        expect(inSection(i, find.text('Bs. 265.00')), findsWidgets);
         await pick(tester, i, 'Unidades');
         await scrollTo(tester, section(BiIndicator.noMovement), down: true);
         await scrollTo(tester, section(i), down: false);
-        // Por unidades, la barra de Joyas muestra "5 uds." como valor y el
-        // dinero queda debajo.
         expect(selected(tester, i, 'Unidades'), isTrue);
         final value = tester.getTopLeft(
-          inSection(i, find.text('5 uds.')).first,
+          inSection(i, find.text('5 unidades')).first,
         );
         final detail = tester.getTopLeft(
-          inSection(i, find.text('Bs. 265.00')).first,
+          inSection(i, find.text('Bs. 265.00')).first,
         );
         expect(value.dy, lessThan(detail.dy));
       });
@@ -250,7 +223,6 @@ void main() {
         await pick(tester, BiIndicator.salesByProduct, 'Unidades');
         expect(config().metrics, isNotEmpty);
 
-        // Volver a la configuración conserva lo elegido hasta que se confirma...
         await tester.scrollUntilVisible(
           find.byKey(const ValueKey('bi-period')),
           -500,
@@ -261,8 +233,6 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('bi-config-confirm')), findsOneWidget);
 
-        // ...y al empezar un panel nuevo, todo vuelve a la opción por omisión.
-        // El botón va al final del contenido que se desplaza.
         await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.pumpAndSettle();
@@ -291,12 +261,10 @@ void main() {
         );
         await tester.tap(find.text('Atrás'));
         await tester.pumpAndSettle();
-        // El botón va al final del contenido que se desplaza.
         await tester.ensureVisible(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.tap(find.byKey(const ValueKey('bi-config-confirm')));
         await tester.pumpAndSettle();
 
-        // El tipo de gráfico se recuerda (como siempre); la métrica, no.
         expect(
           config().chartTypeFor(BiIndicator.salesByProduct),
           BiChartType.pie,
@@ -349,8 +317,6 @@ void main() {
     test(
       'la métrica solo cambia lo que se ve: no recalcula los indicadores',
       () {
-        // La clave de los cálculos no incluye las métricas, así que elegir
-        // "Unidades" no vuelve a calcular el reporte.
         expect(
           BiConfig(metrics: {BiIndicator.salesByProduct: 1}).query,
           BiConfig().query,

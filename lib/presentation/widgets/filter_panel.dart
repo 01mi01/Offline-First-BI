@@ -4,7 +4,7 @@ import '../../application/status_filter.dart';
 import '../../config/date_formatters.dart';
 import '../../theme/app_theme.dart';
 import 'app_controls.dart';
-import 'date_range_filter_bar.dart' show pickFilterDate, showDateRangeError;
+import 'date_pickers.dart' show pickFilterDate, showDateRangeError;
 import 'focus_utils.dart';
 import 'searchable_picker.dart';
 
@@ -27,13 +27,11 @@ String statusFilterLabel(StatusFilter f, {bool feminine = false}) => switch (f) 
   StatusFilter.inactive => feminine ? 'Inactivas' : 'Inactivos',
 };
 
-// Un filtro del panel. Los cambios se aplican al momento.
 abstract class FilterField {
   Object? get current;
   Object? get defaultValue;
   bool get fullWidth => false;
 
-  // Texto del valor aplicado cuando difiere del valor por defecto.
   String? get summary;
 
   Widget build(BuildContext context);
@@ -227,6 +225,7 @@ class FilterDates extends FilterField {
       showDateRangeError(context, error);
       return;
     }
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     onApply(next);
   }
 
@@ -245,11 +244,14 @@ class FilterDates extends FilterField {
                 _PresetPill(
                   label: preset.label,
                   selected: current.preset == preset,
-                  onTap: () => onApply(
-                    current.preset == preset
-                        ? const DateRangeFilter()
-                        : DateRangeFilter.forPreset(preset),
-                  ),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    onApply(
+                      current.preset == preset
+                          ? const DateRangeFilter()
+                          : DateRangeFilter.forPreset(preset),
+                    );
+                  },
                 ),
             ],
           ),
@@ -262,7 +264,10 @@ class FilterDates extends FilterField {
                 label: 'Desde',
                 date: current.from,
                 onPicked: (d) => _set(context, from: d),
-                onClear: () => onApply(current.withFrom(null)),
+                onClear: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  onApply(current.withFrom(null));
+                },
               ),
             ),
             const SizedBox(width: AppSpacing.s8),
@@ -271,7 +276,10 @@ class FilterDates extends FilterField {
                 label: 'Hasta',
                 date: current.to,
                 onPicked: (d) => _set(context, to: d),
-                onClear: () => onApply(current.withTo(null)),
+                onClear: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  onApply(current.withTo(null));
+                },
               ),
             ),
           ],
@@ -417,8 +425,6 @@ class _DateBox extends StatelessWidget {
   }
 }
 
-// Botón cuadrado de filtros, con una insignia con la cantidad de filtros
-// distintos de su valor por defecto.
 class FilterButton extends StatelessWidget {
   final int count;
   final bool open;
@@ -512,7 +518,6 @@ class FilterButton extends StatelessWidget {
   }
 }
 
-// Resumen de los filtros activos con un enlace para limpiarlos.
 class FilterSummary extends StatelessWidget {
   final String text;
   final VoidCallback onClear;
@@ -554,7 +559,6 @@ class FilterSummary extends StatelessWidget {
   }
 }
 
-// Panel desplegable con todos los filtros de la pantalla.
 class FilterPanel extends StatelessWidget {
   final List<FilterField> fields;
   final bool open;
@@ -620,8 +624,6 @@ class FilterPanel extends StatelessWidget {
   }
 }
 
-// Zona de búsqueda y filtros de una lista: el buscador, el botón de filtros
-// siempre al extremo derecho, el resumen de lo activo y el panel desplegable.
 class FilterArea extends StatefulWidget {
   final Widget? search;
   final List<FilterField> fields;

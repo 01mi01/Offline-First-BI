@@ -1,3 +1,4 @@
+import '../../config/quantity_format.dart';
 import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
@@ -10,23 +11,13 @@ import '../../config/date_formatters.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
 
-// Genera y comparte reportes de ventas y compras en PDF y Excel
 class ReportExportRepository {
   String _fmt(DateTime date) => formatDateTime(date);
 
   String _fmtShort(DateTime date) => formatDate(date);
 
-  // Importes siempre con dos decimales ("Bs. 70.00"), redondeados half up.
   String _bs(double amount) => 'Bs. ${fixed2(amount)}';
 
-  // Cantidad de un material según su unidad: dos decimales en medidas,
-  // fracciones exactas en envases y enteros en piezas.
-  String _qty(double value, String unitType, String unitName) =>
-      formatMaterialQuantity(value, unitType: unitType, unitName: unitName);
-
-  // Celdas numéricas de Excel: el valor guardado va redondeado a dos decimales
-  // y la celda se muestra con dos decimales ("70.00"). Las de [plainColumns]
-  // (cantidades por fracciones) llevan el formato general.
   void _appendRow(
     xl.Sheet sheet,
     List<xl.CellValue?> cells, {
@@ -36,8 +27,6 @@ class ReportExportRepository {
     final row = sheet.maxRows - 1;
     for (var col = 0; col < cells.length; col++) {
       if (cells[col] is! xl.DoubleCellValue) continue;
-      // El paquete excel da "0.00" a todo decimal sin estilo; las cantidades
-      // por fracciones piden el formato general de forma explícita.
       sheet
               .cell(
                 xl.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row),
@@ -51,9 +40,6 @@ class ReportExportRepository {
     }
   }
 
-  // Fuente empaquetada para todo el texto de los PDF. La fuente por defecto
-  // del paquete pdf (Helvetica) no soporta Unicode, así que las tildes y la ñ
-  // salían rotas; Roboto (los mismos assets de la UI) sí las soporta.
   Future<pw.ThemeData> _pdfTheme() async {
     final regular = await rootBundle.load(
       'assets/fonts/roboto/roboto-regular.ttf',
@@ -146,9 +132,6 @@ class ReportExportRepository {
                 6: const pw.FlexColumnWidth(1.2),
               },
               children: [
-                // El descuento es de la venta completa y ya figura en la
-                // tabla de arriba; cada línea muestra su importe bruto
-                // (precio x cantidad), sin repartirle el descuento.
                 _pdfHeaderRow([
                   'Fecha',
                   'Producto',
@@ -267,7 +250,7 @@ class ReportExportRepository {
                       _fmtShort(r.purchase.date),
                       r.supplierName,
                       item.materialName,
-                      _qty(item.quantity, item.unitType, item.unitName),
+                      quantityWithUnit(item.quantity, item.unitName),
                       _bs(item.unitPrice),
                       _bs(item.subtotal),
                     ]),
@@ -314,11 +297,6 @@ class ReportExportRepository {
       ]);
     }
 
-    // Hoja de detalle: una fila por línea de venta incluida en el reporte,
-    // para analizar la demanda por producto y categoría. El descuento es de
-    // la venta completa y solo figura en la hoja "Reporte" (una vez por
-    // venta); aquí cada línea lleva su subtotal bruto, así que sumar la hoja
-    // no cuenta el descuento varias veces.
     if (rows.any((r) => r.lines != null)) {
       final detail = excel['Detalle'];
       detail.appendRow([
@@ -385,7 +363,6 @@ class ReportExportRepository {
       ]);
     }
 
-    // Hoja de detalle: una fila por línea de material de cada compra.
     if (rows.any((r) => r.items.isNotEmpty)) {
       final detail = excel['Detalle'];
       detail.appendRow([
@@ -410,7 +387,6 @@ class ReportExportRepository {
               xl.DoubleCellValue(round2(item.unitPrice)),
               xl.DoubleCellValue(round2(item.subtotal)),
             ],
-            // Cantidades por fracciones (envases): sin forzar dos decimales.
             plainColumns: item.unitType == fractionUnitType ? {3} : const {},
           );
         }

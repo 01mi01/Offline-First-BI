@@ -2,16 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'app_style.dart';
 
-// Estado vacío de toda la app (listas, búsquedas, gráficos y comparaciones),
-// con el mismo espacio, estilo de texto y colores en todas partes. Tres tipos de
-// texto:
-//  - [AppEmptyState.list]: no hay registros ("No hay productos registrados.").
-//  - [AppEmptyState.noMatch]: la búsqueda o los filtros no encontraron nada.
-//  - [AppEmptyState.noData]: un periodo, gráfico o comparación sin datos ("No se
-//    registraron ventas esta semana.").
-// [AppEmptyState.hint] es para un aviso que no es un vacío de datos (p. ej.
-// "Selecciona un producto"). Con [compact] ocupa menos alto, para cuadros
-// pequeños dentro de un formulario.
 class AppEmptyState extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -64,11 +54,10 @@ class AppEmptyState extends StatelessWidget {
     Key? key,
     required String what,
     required String period,
-    IconData icon = Icons.bar_chart_rounded,
     bool compact = false,
   }) => AppEmptyState._(
     key: key,
-    icon: icon,
+    icon: Icons.bar_chart_rounded,
     text: 'No se registraron $what $period.',
     compact: compact,
   );
@@ -76,8 +65,6 @@ class AppEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = compact ? AppSpacing.s12 : AppSpacing.s32;
-    // Con poco alto disponible (teclado abierto, pantalla chica) el contenido se
-    // desplaza en vez de desbordar.
     return Center(
       child: SingleChildScrollView(
         child: Padding(

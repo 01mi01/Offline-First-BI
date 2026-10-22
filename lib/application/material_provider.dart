@@ -10,7 +10,6 @@ final materialRepositoryProvider = Provider<MaterialRepository>((ref) {
   return MaterialRepository(db);
 });
 
-// Estado de materiales
 class MaterialState {
   final List<MaterialModel> materials;
   final bool isLoading;
@@ -43,7 +42,6 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
     load();
   }
 
-  // Carga todos los materiales
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -54,8 +52,7 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
     }
   }
 
-  // Guarda o edita un material
-  Future<void> save({
+  Future<int> save({
     int? id,
     required String name,
     String? description,
@@ -64,7 +61,7 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
     required double pricePerUnit,
     bool isActive = true,
   }) async {
-    await repository.save(
+    final savedId = await repository.save(
       id: id,
       name: name,
       description: description,
@@ -74,33 +71,24 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
       isActive: isActive,
     );
     await load();
-    // Un material nuevo con stock inicial crea su compra: se refresca la lista
-    // de Compras para que aparezca sin tener que reabrir la pantalla.
     if (id == null && stock > 0) {
       await ref.read(purchaseProvider.notifier).load();
     }
+    return savedId;
   }
 
-  // Obtiene log de uso para un producto
   Future<List<ProductMaterialModel>> getMaterialsForProduct(
     int productId,
   ) async {
     return await repository.getMaterialsForProduct(productId);
   }
 
-  // Obtiene nombres únicos de materiales usados en un producto
-  Future<List<String>> getUniqueMaterialNamesForProduct(int productId) async {
-    return await repository.getUniqueMaterialNamesForProduct(productId);
-  }
-
-  // Obtiene materiales únicos con precio para mostrar en productos
   Future<List<Map<String, dynamic>>> getMaterialsWithPriceForProduct(
     int productId,
   ) async {
     return await repository.getMaterialsWithPriceForProduct(productId);
   }
 
-  // Registra uso de material y descuenta stock
   Future<String?> registerUsage({
     required int productId,
     required int materialId,
@@ -115,7 +103,6 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
     return error;
   }
 
-  // Edita un registro de uso y ajusta stock
   Future<String?> editUsage({
     required int recordId,
     required double newQuantity,
@@ -128,7 +115,6 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
     return error;
   }
 
-  // Cancela un registro de uso y devuelve el stock al material
   Future<String?> cancelUsage(int recordId) async {
     final error = await repository.cancelMaterialUsage(recordId);
     await load();

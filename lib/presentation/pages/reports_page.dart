@@ -145,7 +145,7 @@ class _SalesTab extends ConsumerWidget {
               AppKpi(
                 key: 'report-income',
                 label: 'Ingresos',
-                value: 'Bs. ${fixed2(summary.totalAmount)}',
+                value: 'Bs. ${fixed2(summary.totalAmount)}',
                 icon: Icons.trending_up_rounded,
                 color: AppColors.cyanDark,
               ),
@@ -215,7 +215,7 @@ class _PurchasesTab extends ConsumerWidget {
               AppKpi(
                 key: 'report-expense',
                 label: 'Gasto total',
-                value: 'Bs. ${fixed2(summary.totalAmount)}',
+                value: 'Bs. ${fixed2(summary.totalAmount)}',
                 icon: Icons.trending_down_rounded,
                 color: AppColors.error,
                 background: AppColors.errorSoft,

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offline_first_bi/config/quantity_format.dart';
 import 'package:offline_first_bi/presentation/widgets/unit_quantity_input.dart';
 
-// Campos de cantidad de unidades "por pieza" (unidad, contenedor...): un "." no
-// debe descartarse en silencio (antes "2.5" se convertía en "25"), sino
-// rechazarse con feedback visible.
 void main() {
   group('WholeNumberInputFormatter', () {
     TextEditingValue value(String text) => TextEditingValue(
@@ -114,7 +112,6 @@ void main() {
       expect(controller.text, '2');
       expect(find.text(wholeNumberOnlyMessage), findsNothing);
 
-      // El usuario intenta escribir el punto de "2.5".
       await tester.enterText(field, '2.');
       await tester.pump();
 
@@ -125,7 +122,6 @@ void main() {
         reason: 'el usuario debe ver por qué no se registró la tecla',
       );
 
-      // Nunca se convierte en 25 por su cuenta.
       expect(controller.text, isNot('25'));
     });
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
 import '../../config/date_formatters.dart';
+import '../../config/quantity_format.dart';
 import '../../config/rounding.dart';
 import '../../models/purchase_item_model.dart';
 import '../../models/report_models.dart';
@@ -83,7 +84,7 @@ class _ReportSaleDetailState extends ConsumerState<_ReportSaleDetail> {
   }
 
   String _saleDetail(SaleItemModel item) =>
-      '${item.quantity} × Bs. ${fixed2(item.unitPrice)} (Precio ${item.priceType})';
+      '${item.quantity} × Bs. ${fixed2(item.unitPrice)} (Precio ${item.priceType})';
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +93,7 @@ class _ReportSaleDetailState extends ConsumerState<_ReportSaleDetail> {
     return RecordDetailSheet(
       title: 'Detalle de venta',
       children: [
-        AppBigTotal(label: 'Total', value: 'Bs. ${fixed2(row.netAmount)}'),
+        AppBigTotal(label: 'Total', value: 'Bs. ${fixed2(row.netAmount)}'),
         AppSection(
           children: [
             AppValueRow(label: 'Cliente', value: row.clientName),
@@ -119,18 +120,18 @@ class _ReportSaleDetailState extends ConsumerState<_ReportSaleDetail> {
           children: [
             AppValueRow(
               label: 'Subtotal',
-              value: 'Bs. ${fixed2(row.subtotalAmount)}',
+              value: 'Bs. ${fixed2(row.subtotalAmount)}',
             ),
             AppValueRow(
               label: 'Descuento',
               value: row.discountAmount > 0
-                  ? '- Bs. ${fixed2(row.discountAmount)}'
-                  : 'Bs. 0.00',
+                  ? '- Bs. ${fixed2(row.discountAmount)}'
+                  : 'Bs. 0.00',
               valueColor: row.discountAmount > 0 ? AppColors.error : null,
             ),
             AppValueRow(
               label: 'Total',
-              value: 'Bs. ${fixed2(row.netAmount)}',
+              value: 'Bs. ${fixed2(row.netAmount)}',
               bold: true,
               valueColor: AppColors.textPrimary,
             ),
@@ -153,7 +154,7 @@ Widget _lineRow(BuildContext context, _Line line) => AppRow(
   title: line.title,
   subtitle: Text(line.detail, style: AppText.rowSubtitle(context)),
   trailing: Text(
-    'Bs. ${fixed2(line.amount)}',
+    'Bs. ${fixed2(line.amount)}',
     style: AppText.rowTitle(context).copyWith(fontWeight: FontWeight.w600),
   ),
 );
@@ -191,7 +192,7 @@ class _ReportPurchaseDetail extends StatelessWidget {
   const _ReportPurchaseDetail({required this.row});
 
   String _detail(PurchaseItemModel item) =>
-      '${formatMaterialQuantity(item.quantity, unitType: item.unitType, unitName: item.unitName)} × Bs. ${fixed2(item.unitPrice)}';
+      '${quantityWithUnit(item.quantity, item.unitName)} × Bs. ${fixed2(item.unitPrice)}';
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +202,7 @@ class _ReportPurchaseDetail extends StatelessWidget {
       children: [
         AppBigTotal(
           label: 'Total',
-          value: 'Bs. ${fixed2(purchase.totalAmount)}',
+          value: 'Bs. ${fixed2(purchase.totalAmount)}',
         ),
         AppSection(
           children: [
@@ -234,7 +235,7 @@ class _ReportPurchaseDetail extends StatelessWidget {
           children: [
             AppValueRow(
               label: 'Total',
-              value: 'Bs. ${fixed2(purchase.totalAmount)}',
+              value: 'Bs. ${fixed2(purchase.totalAmount)}',
               bold: true,
               valueColor: AppColors.textPrimary,
             ),

@@ -4,14 +4,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'app_style.dart';
 
-// Fila común de todas las listas de registros (ventas, compras, productos,
-// categorías, materiales, clientes, proveedores, eventos, ubicaciones y el
-// registro de uso). Va dentro de [AppSliverGroup] o [AppGroupListView], que
-// ponen el fondo y la línea fina entre filas.
-//
-// De izquierda a derecha: [thumb] (solo productos y categorías), el texto
-// (título, [details] y la [pill] de estado), el dato clave [trailing] y la
-// flecha. [below] va debajo de la fila, alineado con el texto.
 class RecordRow extends StatelessWidget {
   final String title;
   final String? titleSuffix;
@@ -40,17 +32,11 @@ class RecordRow extends StatelessWidget {
     final style = AppText.rowTitle(context, color: titleColor);
     final suffix = titleSuffix;
     if (suffix == null) return Text(title, style: style);
-    return Row(
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpacing.s6,
       children: [
-        Flexible(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: style,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s6),
+        Text(title, style: style),
         Text(
           suffix,
           maxLines: 1,
@@ -127,13 +113,8 @@ class RecordRow extends StatelessWidget {
   }
 }
 
-// Fondo del marcador de imagen (productos y categorías): el mismo tono cian
-// oscuro suave de los iconos del menú de Inventario.
 final Color imagePlaceholderColor = AppColors.cyanDark.withValues(alpha: 0.14);
 
-// Imagen cuadrada con esquinas redondeadas. Sin imagen (o si el archivo ya no
-// existe) muestra un cuadro neutro con [icon]. Solo la usan productos y
-// categorías.
 class RecordThumb extends StatelessWidget {
   final String? imagePath;
   final IconData icon;
@@ -170,7 +151,6 @@ class RecordThumb extends StatelessWidget {
   }
 }
 
-// Línea de texto tenue de una fila (fecha, categoría, descripción, stock...).
 class RecordLine extends StatelessWidget {
   final String text;
   final int? maxLines;
@@ -189,7 +169,6 @@ class RecordLine extends StatelessWidget {
   }
 }
 
-// Precio de una fila de producto: pequeño, en negrita suave.
 class RecordPrice extends StatelessWidget {
   final String text;
 
@@ -208,8 +187,6 @@ class RecordPrice extends StatelessWidget {
   }
 }
 
-// Dato clave a la derecha de una fila (importe, stock, precio). Tachado y
-// atenuado cuando el registro está cancelado.
 class RecordValue extends StatelessWidget {
   final String text;
   final bool canceled;
@@ -222,6 +199,7 @@ class RecordValue extends StatelessWidget {
       text,
       softWrap: false,
       textAlign: TextAlign.end,
+      textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
       style:
           AppText.rowTitle(
             context,

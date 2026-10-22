@@ -84,8 +84,6 @@ void main() {
   );
 
   group('default records show a lock and cannot be edited from their detail', () {
-    // El detalle de un registro editable ofrece "Editar"; el de uno
-    // predeterminado, no.
     Future<void> expectDetail(WidgetTester tester, String name, {required bool editable}) async {
       await tester.tap(find.text(name));
       await tester.pumpAndSettle();
@@ -135,22 +133,21 @@ void main() {
         await seedProduct();
         await openSheet(tester, const SaleDialog());
 
-        // El selector muestra la opción predeterminada, no queda en blanco.
         final clientField = find.byType(SearchablePickerField<int>).first;
         expect(
           find.descendant(of: clientField, matching: find.text('Sin nombre')),
           findsOneWidget,
         );
 
-        await searchProducts(tester, 'Tote bag negra'); // la lista aparece al escribir
-        await tester.tap(find.byIcon(Icons.add_circle_rounded)); // agrega el producto
+        await searchProducts(tester, 'Tote bag negra');
+        await tester.tap(find.byIcon(Icons.add_circle_rounded));
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Registrar venta'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Registrar venta'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SaleDialog), findsNothing); // sin bloquear la venta
+        expect(find.byType(SaleDialog), findsNothing);
         final defaultId = (await (db.select(db.clients)
               ..where((c) => c.name.equals(DefaultRecords.client))).getSingle())
             .id;
@@ -169,9 +166,6 @@ void main() {
         await tester.tap(find.byType(SearchablePickerField<int>).first);
         await tester.pumpAndSettle();
 
-        // Al enfocar el campo (que se vacía para buscar) los resultados ofrecen
-        // "Sin nombre" una sola vez; los clientes reales no se listan hasta
-        // escribir.
         expect(find.text('Sin nombre'), findsOneWidget);
         expect(find.text('Michael Brown'), findsNothing);
         expect(find.text('Escribe para buscar.'), findsOneWidget);
@@ -201,7 +195,6 @@ void main() {
           findsOneWidget,
         );
 
-        // Materiales -> Gasto general
         await tester.tap(find.text('Gasto general'));
         await tester.pumpAndSettle();
         await tester.enterText(
@@ -247,17 +240,16 @@ void main() {
         expect(find.text('Desactivar el evento'), findsOneWidget);
         await tester.tap(find.text('Desactivar'));
         await tester.pumpAndSettle();
-        expect(find.text('Oculto en el sistema'), findsOneWidget);
+        expect(find.text('No disponible en el sistema'), findsOneWidget);
 
         await tester.tap(find.text('Guardar'));
         await tester.pumpAndSettle();
 
         final events = await EventRepository(db).getAll();
-        expect(events, hasLength(2)); // no se borra
+        expect(events, hasLength(2));
         expect(events.firstWhere((e) => e.name == 'Exposición de Arte').isActive, isFalse);
         expect(events.firstWhere((e) => e.name == 'Feria de Arte').isActive, isTrue);
 
-        // La lista sigue mostrando ambos, con su estado.
         await pumpApp(tester, const EventsPage());
         expect(find.text('Exposición de Arte'), findsOneWidget);
         expect(find.text('Feria de Arte'), findsOneWidget);
@@ -275,10 +267,10 @@ void main() {
 
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancelar').last);
+      await tester.tap(find.text('Volver').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Visible en el sistema'), findsOneWidget);
+      expect(find.text('Disponible en el sistema'), findsOneWidget);
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
     });
 
@@ -301,7 +293,6 @@ void main() {
         isActive: false,
       );
 
-      // Ventas: buscador de evento (tercero: tras cliente y ubicación).
       await openSheet(tester, const SaleDialog());
       final field = find.byType(SearchablePickerField<int>).at(2);
       await tester.ensureVisible(field);
@@ -309,7 +300,6 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'feria');
       await tester.pumpAndSettle();
-      // Solo el evento activo se ofrece.
       expect(find.descendant(of: field, matching: find.text('Feria de Arte')), findsOneWidget);
       await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'exposicion');
       await tester.pumpAndSettle();
@@ -331,14 +321,12 @@ void main() {
       );
 
       await openSheet(tester, const PurchaseDialog());
-      // Proveedor, ubicación, evento (todos con búsqueda en línea)
       final field = find.byType(SearchablePickerField<int>).at(2);
       await tester.ensureVisible(field);
       await tester.tap(find.descendant(of: field, matching: find.byType(TextField)));
       await tester.pumpAndSettle();
       await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'feria');
       await tester.pumpAndSettle();
-      // Solo el evento activo se ofrece.
       expect(find.descendant(of: field, matching: find.text('Feria de Arte')), findsOneWidget);
       await tester.enterText(find.descendant(of: field, matching: find.byType(TextField)), 'exposicion');
       await tester.pumpAndSettle();

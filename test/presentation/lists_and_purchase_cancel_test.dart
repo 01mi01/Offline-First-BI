@@ -16,9 +16,6 @@ import 'package:offline_first_bi/config/app_clock.dart';
 import 'package:offline_first_bi/presentation/widgets/record_list.dart';
 import 'filter_helpers.dart';
 
-// Cancelar una compra desde su formulario de edición, y los buscadores y
-// filtros de Clientes, Proveedores, Eventos, Ubicaciones y Productos, más el
-// orden de los filtros de Ventas y Compras.
 void main() {
   late AppDatabase db;
 
@@ -117,7 +114,6 @@ void main() {
       expect(await stock(), 10);
       expect(find.text('Cancelada'), findsOneWidget);
       expect((await PurchaseRepository(db).getAll()).single.isCanceled, isTrue);
-      // Su detalle ya no ofrece editarla.
       await tester.tap(find.byType(RecordRow).first);
       await tester.pumpAndSettle();
       expect(find.text('Editar'), findsNothing);
@@ -130,7 +126,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancelar la compra'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Volver'));
+      await tester.tap(find.text('Volver').last);
       await tester.pumpAndSettle();
 
       expect(await stock(), 15);
@@ -141,7 +137,6 @@ void main() {
       tester,
     ) async {
       await buyMaterial();
-      // El material ya se usó: solo quedan 3 de los 5 comprados.
       await (db.update(db.materials)..where((m) => m.id.equals(materialId)))
           .write(const MaterialsCompanion(stock: Value(3)));
       await openEdit(tester);
@@ -203,8 +198,6 @@ void main() {
       final id = (await PurchaseRepository(db).getAll()).single.id;
       await PurchaseRepository(db).cancelPurchase(id);
       await pump(tester, const PurchasesListBody());
-      // Cancelada y con fecha futura: "Compras actuales" la oculta, igual que
-      // a una venta cancelada con fecha futura.
       expect(find.text('Gasto futuro'), findsNothing);
       await tester.tap(find.text('Todas'));
       await tester.pumpAndSettle();
@@ -353,7 +346,6 @@ void main() {
       expect(find.text('Lima, Perú'), findsOneWidget);
       expect(find.text('La Paz, Bolivia'), findsNothing);
 
-      // Las ciudades ofrecidas son solo las de Perú.
       await tester.tap(find.byTooltip('Ciudad'));
       await tester.pumpAndSettle();
       expect(find.text('Lima'), findsWidgets);
@@ -363,7 +355,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Lima, Perú'), findsOneWidget);
 
-      // Cambiar a Bolivia quita la ciudad elegida (ya no pertenece al país).
       await pickFilter(tester, 'País', 'Bolivia');
       expect(find.text('Todas las ciudades'), findsOneWidget);
       expect(find.text('La Paz, Bolivia'), findsOneWidget);
@@ -400,6 +391,5 @@ void main() {
       expect(find.text('Estuches'), findsOneWidget);
       expect(find.text('Libro viejo'), findsNothing);
     });
-
   });
 }
