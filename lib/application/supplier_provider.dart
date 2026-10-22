@@ -8,7 +8,6 @@ final supplierRepositoryProvider = Provider<SupplierRepository>((ref) {
   return SupplierRepository(db);
 });
 
-// Estado de proveedores
 class SupplierState {
   final List<SupplierModel> suppliers;
   final bool isLoading;
@@ -40,7 +39,6 @@ class SupplierNotifier extends StateNotifier<SupplierState> {
     load();
   }
 
-  // Carga todos los proveedores
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -51,26 +49,37 @@ class SupplierNotifier extends StateNotifier<SupplierState> {
     }
   }
 
-  // Guarda o edita un proveedor y recarga
-  Future<String?> save({
+  Future<({int? id, String? error})> saveWithId({
     int? id,
     required String name,
     String? contactInfo,
     bool isActive = true,
   }) async {
     try {
-      await repository.save(
+      final savedId = await repository.save(
         id: id,
         name: name,
         contactInfo: contactInfo,
         isActive: isActive,
       );
       await load();
-      return null;
+      return (id: id ?? savedId, error: null);
     } catch (e) {
-      return e.toString().replaceAll('Exception: ', '');
+      return (id: null, error: e.toString().replaceAll('Exception: ', ''));
     }
   }
+
+  Future<String?> save({
+    int? id,
+    required String name,
+    String? contactInfo,
+    bool isActive = true,
+  }) async => (await saveWithId(
+    id: id,
+    name: name,
+    contactInfo: contactInfo,
+    isActive: isActive,
+  )).error;
 }
 
 final supplierProvider = StateNotifierProvider<SupplierNotifier, SupplierState>(

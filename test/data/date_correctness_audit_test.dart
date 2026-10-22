@@ -27,10 +27,6 @@ import 'package:share_plus_platform_interface/share_plus_platform_interface.dart
 import '../support/pdf_text.dart';
 import 'package:offline_first_bi/config/app_clock.dart';
 
-// Auditoría de fechas: cada venta, compra o monto ligado a un evento se cuenta
-// en el periodo de SU PROPIA fecha (la de la venta/compra), en Inicio,
-// Reportes y exportaciones, sobre una base Drift real en memoria y los
-// providers reales.
 class _FakePathProvider extends PathProviderPlatform {
   _FakePathProvider(this.tempPath);
   final String tempPath;
@@ -60,7 +56,6 @@ void main() {
   DateTime at(DateTime day, [int hour = 12]) =>
       DateTime(day.year, day.month, day.day, hour);
   final today = at(now);
-  // Un día de un mes anterior: nunca cae en "este mes".
   final lastMonth = DateTime(now.year, now.month - 1, 15, 12);
   final earlierLastMonth = DateTime(now.year, now.month - 1, 3, 12);
   final tomorrow = DateTime(now.year, now.month, now.day + 1, 9);
@@ -90,8 +85,6 @@ void main() {
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
-        // Inicio solo muestra los bloques de los módulos legibles: aquí la
-        // persona es dueña y lee todos.
         readableModulesProvider.overrideWith(
           (ref) async => ['ventas', 'compras'],
         ),
@@ -105,7 +98,6 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  // Carga el estado real de los providers y mantiene vivos los autoDispose.
   Future<void> refresh() async {
     await container.read(saleProvider.notifier).load();
     await container.read(purchaseProvider.notifier).load();
@@ -159,8 +151,8 @@ void main() {
     return container.read(eventProvider).events.firstWhere((e) => e.name == name).id;
   }
 
-  double income(ReportFilters f) => container.read(salesSummaryProvider(f)).totalAmount;
-  int salesCount(ReportFilters f) => container.read(salesSummaryProvider(f)).count;
+  double income(ReportFilters f) => container.read(reportServiceProvider).summarizeSaleRows(container.read(saleReportRowsProvider(f))).totalAmount;
+  int salesCount(ReportFilters f) => container.read(reportServiceProvider).summarizeSaleRows(container.read(saleReportRowsProvider(f))).count;
   double expenses(ReportFilters f) {
     final list = container.read(filteredPurchasesProvider(f));
     return container.read(purchasesSummaryProvider(list)).totalAmount;
@@ -195,13 +187,10 @@ void main() {
       await spend(lastMonth, amount: 60);
       await refresh();
 
-      // Rango "mes pasado"
       expect(income(range(lastMonthStart, lastMonthEnd)), 250);
       expect(expenses(range(lastMonthStart, lastMonthEnd)), 60);
-      // Rango "este mes" (1.º a hoy)
       expect(income(range(thisMonthStart, today)), 100);
       expect(expenses(range(thisMonthStart, today)), 40);
-      // Sin filtro: todo lo ya ocurrido
       expect(income(const ReportFilters()), 350);
       expect(expenses(const ReportFilters()), 100);
     });
@@ -215,15 +204,13 @@ void main() {
         (d(-1, 0, 0), 40),
         (lastMonth, 80),
         (DateTime(now.year - 1, 6, 1, 12), 160),
-        (d(3), 999), // futura: nunca cuenta
+        (d(3), 999),
       ];
       for (final (date, amount) in data) {
         await sell(date, amount: amount);
       }
       await refresh();
 
-      // Esperado calculado aparte: suma de lo ya ocurrido cuyo DÍA cae en
-      // [from, to].
       double expected(DateTime from, DateTime to) {
         final a = DateTime(from.year, from.month, from.day);
         final b = DateTime(to.year, to.month, to.day);
@@ -253,7 +240,6 @@ void main() {
       cases.forEach((name, c) {
         expect(income(range(c.$1, c.$2)), expected(c.$1, c.$3), reason: name);
       });
-      // Sin ningún filtro: todo lo ya ocurrido (sin la futura de 999).
       expect(income(const ReportFilters()), 10 + 20 + 40 + 80 + 160);
     });
   });
@@ -274,7 +260,6 @@ void main() {
     }
 
     String metric(WidgetTester tester, String label) {
-      // La tarjeta es una Column: etiqueta y luego valor.
       final card = find.ancestor(
         of: find.text(label),
         matching: find.byType(Column),
@@ -298,10 +283,9 @@ void main() {
       });
       await pumpHome(tester);
 
-      expect(metric(tester, 'Ventas del mes'), 'Bs. 100.00');
-      expect(metric(tester, 'Gastos del mes'), 'Bs. 40.00');
-      // "Actividad reciente" tampoco muestra la venta futura (999).
-      expect(find.text('Bs. 999.00'), findsNothing);
+      expect(metric(tester, 'Ventas del mes'), 'Bs. 100.00');
+      expect(metric(tester, 'Gastos del mes'), 'Bs. 40.00');
+      expect(find.text('Bs. 999.00'), findsNothing);
     });
 
     testWidgets('a past sale edited into this month moves into the monthly figure', (tester) async {
@@ -310,7 +294,7 @@ void main() {
         await refresh();
       });
       await pumpHome(tester);
-      expect(metric(tester, 'Ventas del mes'), 'Bs. 0.00');
+      expect(metric(tester, 'Ventas del mes'), 'Bs. 0.00');
 
       await tester.runAsync(() async {
         final sale = container.read(saleProvider).sales.single;
@@ -330,7 +314,7 @@ void main() {
         expect(err, isNull);
       });
       await tester.pumpAndSettle();
-      expect(metric(tester, 'Ventas del mes'), 'Bs. 250.00');
+      expect(metric(tester, 'Ventas del mes'), 'Bs. 250.00');
     });
   });
 
@@ -371,14 +355,11 @@ void main() {
       expect(income(range(thisMonthStart, today)), 0);
       expect(income(const ReportFilters()), 250);
 
-      // Hacia el futuro: sale de todos los periodos actuales (no queda huérfana
-      // en el viejo) y vuelve a contar cuando la fecha llega.
       await moveTo(nextWeek);
       expect(income(range(lastMonthStart, lastMonthEnd)), 0);
       expect(income(const ReportFilters()), 0);
       expect(container.read(saleProvider).sales, hasLength(1));
 
-      // El stock no se toca por cambiar solo la fecha.
       final product = await db.select(db.products).getSingle();
       expect(product.stock, 99);
     });
@@ -418,14 +399,11 @@ void main() {
 
       expect(income(range(lastMonthStart, lastMonthEnd)), 0);
       expect(salesCount(range(lastMonthStart, lastMonthEnd)), 0);
-      // El periodo de hoy no cambia.
       expect(income(range(thisMonthStart, today)), 100);
       expect(income(const ReportFilters()), 100);
-      // La venta conserva su fecha original (no se reescribe a la de hoy).
       final stored = container.read(saleProvider).sales.firstWhere((s) => s.id == past.id);
       expect(stored.isCanceled, isTrue);
       expect(stored.date, lastMonth);
-      // Stock devuelto: 100 - 2 vendidas + 1 devuelta.
       expect((await db.select(db.products).getSingle()).stock, 99);
     });
 
@@ -447,7 +425,6 @@ void main() {
 
       expect(await repo.cancelMaterialUsage(record.id), isNull);
       expect((await db.select(db.materials).getSingle()).stock, 10);
-      // Ningún total por periodo cambia: el uso de material no es un monto.
       expect(expenses(range(lastMonthStart, lastMonthEnd)), 60);
       expect(expenses(range(thisMonthStart, today)), 0);
     });
@@ -455,7 +432,6 @@ void main() {
 
   group('Eventos (item 7)', () {
     test('linked amounts use the sale/purchase date, not the event date', () async {
-      // Evento de 3 días, hace ~3 semanas.
       final evStart = DateTime(now.year, now.month, now.day - 21);
       final evEnd = DateTime(now.year, now.month, now.day - 19);
       final eventId = await newEvent('Feria de Arte', evStart, evEnd);
@@ -463,9 +439,7 @@ void main() {
 
       await sell(DateTime(evStart.year, evStart.month, evStart.day, 10), amount: 10, eventId: eventId);
       await sell(evMid, amount: 20, eventId: eventId);
-      // Venta ligada al evento pero registrada DESPUÉS de que terminó.
       await sell(today, amount: 40, eventId: eventId);
-      // Venta sin evento el día medio del evento.
       await sell(evMid, amount: 80);
       await spend(evMid, amount: 5, eventId: eventId);
       await spend(today, amount: 7, eventId: eventId);
@@ -477,20 +451,14 @@ void main() {
         endDate: to,
       );
 
-      // Solo evento: todas las ligadas (ya ocurridas).
       expect(income(ev()), 70);
       expect(expenses(ev()), 12);
-      // Evento + el día medio: solo la venta de ESE día.
       final midDay = DateTime(evMid.year, evMid.month, evMid.day);
       expect(income(ev(midDay)), 20);
       expect(expenses(ev(midDay)), 5);
-      // Evento + todo el rango del evento: 10 + 20 (la de hoy queda fuera aunque
-      // esté ligada al evento).
       expect(income(ev(evStart, evEnd)), 30);
-      // Evento + hoy: solo la venta de hoy.
       expect(income(ev(DateTime(today.year, today.month, today.day))), 40);
       expect(expenses(ev(DateTime(today.year, today.month, today.day))), 7);
-      // Rango del evento SIN filtrar por evento: incluye la venta sin evento.
       expect(income(range(evStart, evEnd)), 110);
     });
 
@@ -527,14 +495,14 @@ void main() {
           pricePerUnit: 1,
         ),
       );
-      await buyMaterial(matId, today, 10); // vigente
-      await buyMaterial(matId, lastMonth, 3); // anotada tarde, más antigua
+      await buyMaterial(matId, today, 10);
+      await buyMaterial(matId, lastMonth, 3);
       var mat = await db.select(db.materials).getSingle();
       expect(mat.pricePerUnit, 10);
-      expect(mat.stock, 4); // el stock sí se suma
+      expect(mat.stock, 4);
       await buyMaterial(matId, today.add(const Duration(minutes: 1)), 12);
       mat = await db.select(db.materials).getSingle();
-      expect(mat.pricePerUnit, 12); // una compra más reciente sí actualiza
+      expect(mat.pricePerUnit, 12);
     });
   });
 
@@ -550,7 +518,7 @@ void main() {
 
       Future<void> check(ReportFilters f, double wantIncome, double wantExpense) async {
         final saleRows = container.read(saleReportRowsProvider(f));
-        final summary = container.read(salesSummaryProvider(f));
+        final summary = container.read(reportServiceProvider).summarizeSaleRows(container.read(saleReportRowsProvider(f)));
         final purchases = container.read(filteredPurchasesProvider(f));
         final purchaseRows = container.read(purchaseReportRowsProvider(purchases));
         final pSummary = container.read(purchasesSummaryProvider(purchases));
@@ -560,7 +528,6 @@ void main() {
         final repo = container.read(reportExportRepositoryProvider);
         fakeShare.calls.clear();
 
-        // Excel de ventas: la suma de la columna Total == Ingresos en pantalla.
         await repo.exportSalesExcel(title: 'Ventas', rows: saleRows);
         var bytes = await File(fakeShare.calls.last.single.path).readAsBytes();
         var sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
@@ -575,13 +542,11 @@ void main() {
         );
         expect(sheet.rows.length - 1, summary.count);
 
-        // PDF de ventas: el resumen impreso es el mismo.
         await repo.exportSalesPdf(title: 'Ventas', rows: saleRows, summary: summary);
         var pdf = PdfText.extract(await File(fakeShare.calls.last.single.path).readAsBytes());
         expect(pdf.text, contains('Ingresos: Bs. ${wantIncome.toStringAsFixed(2)}'));
         expect(pdf.text, contains('Total ventas: ${summary.count}'));
 
-        // Compras: Excel y PDF.
         await repo.exportPurchasesExcel(title: 'Compras', rows: purchaseRows);
         bytes = await File(fakeShare.calls.last.single.path).readAsBytes();
         sheet = xl.Excel.decodeBytes(bytes).tables['Reporte']!;
@@ -594,10 +559,10 @@ void main() {
         expect(pdf.text, contains('Gasto: Bs. ${wantExpense.toStringAsFixed(2)}'));
       }
 
-      await check(const ReportFilters(), 350, 100); // futuros fuera
+      await check(const ReportFilters(), 350, 100);
       await check(range(lastMonthStart, lastMonthEnd), 250, 60);
       await check(range(thisMonthStart, today), 100, 40);
-      await check(range(today), 100, 40); // solo "Desde": un día
+      await check(range(today), 100, 40);
     });
   });
 }

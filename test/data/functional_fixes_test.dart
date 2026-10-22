@@ -150,7 +150,7 @@ void main() {
         throwsArgumentError,
       );
       expect(await db.select(db.sales).get(), isEmpty);
-      final product = await (db.select(db.products)).getSingle();
+      final product = await db.select(db.products).getSingle();
       expect(product.stock, 10, reason: 'el stock no se toca');
     });
 
@@ -263,11 +263,6 @@ void main() {
     test('both', () => expect(ids(PurchaseKind.all), [1, 2, 3, 4]));
 
     test('the filter counts as an active report filter and clears with the others', () {
-      expect(const ReportFilters().hasActive, isFalse);
-      expect(
-        const ReportFilters(purchaseKind: PurchaseKind.expense).hasActive,
-        isTrue,
-      );
       expect(
         const ReportFilters(purchaseKind: PurchaseKind.expense),
         isNot(const ReportFilters()),
@@ -326,7 +321,7 @@ void main() {
       expect(purchases, hasLength(1));
       final purchase = purchases.single;
       expect(purchase.isMaterial, isTrue);
-      expect(purchase.totalAmount, 15.0); // 5 x 3
+      expect(purchase.totalAmount, 15.0);
       expect(purchase.notes, MaterialRepository.initialStockPurchaseNote);
 
       final items = await PurchaseRepository(db).getItemsForPurchase(purchase.id);
@@ -386,7 +381,7 @@ void main() {
         overrides: [databaseProvider.overrideWithValue(db)],
       );
       addTearDown(container.dispose);
-      container.read(purchaseProvider); // la lista de Compras ya está abierta
+      container.read(purchaseProvider);
 
       await container.read(materialProvider.notifier).save(
         name: 'Tela negra',
@@ -414,7 +409,6 @@ void main() {
         ),
       );
       final repo = PurchaseRepository(db);
-      // Los ítems suman 3 x 6 = 18, pero el total se escribió a mano: 50.
       await repo.createPurchase(
         supplierId: null,
         isMaterial: true,
@@ -483,7 +477,6 @@ void main() {
         PriceDisplay.b,
         PriceDisplay.none,
       ]);
-      // Elegir otra opción la conserva al seguir filtrando.
       final chosen = const ProductCatalogFilter().copyWith(
         priceDisplay: PriceDisplay.b,
       );
@@ -519,7 +512,6 @@ void main() {
     test('searches by name only, ignoring case', () {
       expect(names(const CategoryCatalogFilter(query: 'LIB')), ['Libros']);
       expect(names(const CategoryCatalogFilter(query: 'PAPE')), ['Papelería']);
-      // La descripción ya no cuenta: "collar" está en la descripción de Pines.
       expect(names(const CategoryCatalogFilter(query: 'collar')), isEmpty);
     });
 

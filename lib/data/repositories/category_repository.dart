@@ -3,13 +3,13 @@ import '../../models/category_model.dart';
 import '../../models/default_records.dart';
 import 'package:drift/drift.dart';
 import '../../config/app_clock.dart';
+import 'name_rules.dart';
 
 class CategoryRepository {
   final AppDatabase database;
 
   CategoryRepository(this.database);
 
-  // Convierte fila de la base de datos a modelo
   CategoryModel _toModel(Category row) {
     return CategoryModel(
       id: row.id,
@@ -21,17 +21,6 @@ class CategoryRepository {
     );
   }
 
-  // Obtiene todas las categorías activas
-  Future<List<CategoryModel>> getAll() async {
-    final rows =
-        await (database.select(database.categories)
-              ..where((c) => c.isActive.equals(true))
-              ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-            .get();
-    return rows.map(_toModel).toList();
-  }
-
-  // Obtiene todas incluyendo inactivas
   Future<List<CategoryModel>> getAllIncludingInactive() async {
     final rows = await (database.select(
       database.categories,
@@ -39,8 +28,6 @@ class CategoryRepository {
     return rows.map(_toModel).toList();
   }
 
-  // "Sin categoría" es un registro predeterminado: no se puede editar ni
-  // desactivar, y ninguna otra categoría puede usar su nombre.
   Future<void> _ensureNotProtected({int? id, String? newName}) async {
     if (id != null) {
       final current = await (database.select(
@@ -55,7 +42,6 @@ class CategoryRepository {
     }
   }
 
-  // Guarda o actualiza una categoría
   Future<void> save({
     int? id,
     required String name,
@@ -63,6 +49,7 @@ class CategoryRepository {
     String? image,
     bool isActive = true,
   }) async {
+    name = requireName(name);
     await _ensureNotProtected(id: id, newName: name);
     final now = appNow();
     await database
@@ -74,13 +61,12 @@ class CategoryRepository {
             description: Value(description),
             image: Value(image),
             isActive: Value(isActive),
-            createdAt: Value(now),
+            createdAt: id == null ? Value(now) : const Value.absent(),
             updatedAt: Value(now),
           ),
         );
   }
 
-  // Verifica si la categoría tiene productos activos
   Future<bool> hasActiveProducts(int categoryId) async {
     final rows =
         await (database.select(database.products)..where(
@@ -90,7 +76,6 @@ class CategoryRepository {
     return rows.isNotEmpty;
   }
 
-  // Desactiva una categoría
   Future<void> deactivate(int id) async {
     await _ensureNotProtected(id: id);
     await (database.update(

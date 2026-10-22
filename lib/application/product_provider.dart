@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/repositories/name_rules.dart';
 import '../data/repositories/product_repository.dart';
 import '../models/product_model.dart';
 import 'database_provider.dart';
@@ -8,7 +9,6 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
   return ProductRepository(db);
 });
 
-// Estado de productos
 class ProductState {
   final List<ProductModel> products;
   final bool isLoading;
@@ -40,7 +40,6 @@ class ProductNotifier extends StateNotifier<ProductState> {
     load();
   }
 
-  // Carga todos los productos
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -51,8 +50,7 @@ class ProductNotifier extends StateNotifier<ProductState> {
     }
   }
 
-  // Guarda o edita un producto y recarga
-  Future<void> save({
+  Future<String?> save({
     int? id,
     int? categoryId,
     required String name,
@@ -64,25 +62,26 @@ class ProductNotifier extends StateNotifier<ProductState> {
     required int stock,
     bool isActive = true,
   }) async {
-    await repository.save(
-      id: id,
-      categoryId: categoryId,
-      name: name,
-      description: description,
-      image: image,
-      priceA: priceA,
-      priceB: priceB,
-      productionCost: productionCost,
-      stock: stock,
-      isActive: isActive,
-    );
+    try {
+      await repository.save(
+        id: id,
+        categoryId: categoryId,
+        name: name,
+        description: description,
+        image: image,
+        priceA: priceA,
+        priceB: priceB,
+        productionCost: productionCost,
+        stock: stock,
+        isActive: isActive,
+      );
+    } on InvalidNameException catch (e) {
+      return e.message;
+    } on Exception catch (e) {
+      return e.toString().replaceAll('Exception: ', '');
+    }
     await load();
-  }
-
-  // Actualiza el stock manualmente
-  Future<void> updateStock(int id, int newStock) async {
-    await repository.updateStock(id, newStock);
-    await load();
+    return null;
   }
 }
 

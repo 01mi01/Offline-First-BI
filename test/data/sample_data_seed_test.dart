@@ -18,9 +18,12 @@ import 'package:offline_first_bi/models/sale_model.dart';
 import 'package:offline_first_bi/seed_main.dart';
 import '../support/bi_harness.dart';
 
-// Los datos de ejemplo de lib/seed_main.dart: se cargan solo por los
-// notifiers (repositorios), con los nombres aprobados, y ejercitan Reportes y
-// Business Intelligence.
+bool _isFuture(DateTime date, DateTime now) => DateTime(
+  date.year,
+  date.month,
+  date.day,
+).isAfter(DateTime(now.year, now.month, now.day));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -96,7 +99,6 @@ void main() {
 
   DateTime day(int offset) => h.day(offset, 0);
 
-  // "Ciudad - Zona": the plain city plus the zone kept in the description.
   String zoneLabel(LocationModel l) => '${l.city} - ${l.description}';
 
   test(
@@ -116,8 +118,6 @@ void main() {
         c.read(locationProvider).locations.map(zoneLabel).toList()..sort(),
         [...locations]..sort(),
       );
-      // The Ciudad filter lists each plain city once; the zone lives in the
-      // description.
       expect(
         c.read(locationProvider).locations.map((x) => x.city).toSet(),
         {'La Paz', 'Santa Cruz', 'Cochabamba', 'Lima'},
@@ -155,8 +155,8 @@ void main() {
       final list = h.container.read(productProvider).products;
       for (final p in list) {
         expect(p.productionCost, isNotNull, reason: p.name);
-        expect(p.productionCost!, lessThan(p.priceA), reason: p.name);
-        expect(p.productionCost!, lessThan(p.priceB), reason: p.name);
+        expect(p.productionCost, lessThan(p.priceA), reason: p.name);
+        expect(p.productionCost, lessThan(p.priceB), reason: p.name);
       }
       final categories = {
         for (final c in h.container.read(categoryProvider).categories) c.id: c,
@@ -205,7 +205,6 @@ void main() {
       expect(usage.where((u) => u.productId == libro.id), isEmpty);
       final miniaturas = productList.firstWhere((p) => p.name == 'Miniaturas');
       expect(usage.where((u) => u.productId == miniaturas.id).length, 2);
-      // Ningún material queda con stock negativo.
       expect(
         h.container.read(materialProvider).materials.every((m) => m.stock >= 0),
         isTrue,
@@ -218,7 +217,7 @@ void main() {
     () async {
       await seed();
       final sales = h.container.read(saleProvider).sales;
-      final valid = sales.where((s) => !s.isCanceled && !s.date.isAfter(h.now));
+      final valid = sales.where((s) => !s.isCanceled && !_isFuture(s.date, h.now));
       final first = valid
           .map((s) => s.date)
           .reduce((a, b) => a.isBefore(b) ? a : b);
@@ -229,7 +228,6 @@ void main() {
       expect(sales.any((s) => s.locationId != null), isTrue);
       final items = await h.db.select(h.db.saleItems).get();
       expect({for (final i in items) i.priceType}, {'A', 'B'});
-      // Cada semana completa del historial tiene ventas.
       final monday = day(-(h.now.weekday - 1));
       final weeks = {
         for (final s in valid) (s.date.difference(monday).inDays / 7).floor(),
@@ -242,20 +240,19 @@ void main() {
     await seed();
     final sales = h.container.read(saleProvider).sales;
     expect(sales.where((s) => s.isCanceled).length, 1);
-    final futureSales = sales.where((s) => s.date.isAfter(h.now));
+    final futureSales = sales.where((s) => _isFuture(s.date, h.now));
     expect(futureSales.length, greaterThanOrEqualTo(1));
     final purchases = h.container.read(purchaseProvider).purchases;
     expect(
-      purchases.where((p) => p.date.isAfter(h.now)).length,
+      purchases.where((p) => _isFuture(p.date, h.now)).length,
       greaterThanOrEqualTo(1),
     );
-    // Ni la cancelada ni las futuras entran en los totales.
     final counted = sales
-        .where((s) => !s.isCanceled && !s.date.isAfter(h.now))
+        .where((s) => !s.isCanceled && !_isFuture(s.date, h.now))
         .fold(0.0, (t, s) => t + s.finalAmount);
     expect(h.report().summary.ingresos, closeTo(counted, 1e-6));
     final spent = purchases
-        .where((p) => !p.date.isAfter(h.now))
+        .where((p) => !_isFuture(p.date, h.now))
         .fold(0.0, (t, p) => t + p.totalAmount);
     expect(h.report().summary.gastos, closeTo(spent, 1e-6));
   });
@@ -322,12 +319,11 @@ void main() {
       expect(linked('Feria de Lima'), greaterThanOrEqualTo(5));
       expect(linked('Feria de Navidad'), 0);
       expect(sales.where((s) => s.eventId == null).length, greaterThan(20));
-      // Cada venta ligada conserva su propia fecha.
       for (final e in events.values.where(
         (e) => e.name != 'Feria de Navidad',
       )) {
         final inEvent = sales.where(
-          (s) => s.eventId == e.id && !s.isCanceled && !s.date.isAfter(h.now),
+          (s) => s.eventId == e.id && !s.isCanceled && !_isFuture(s.date, h.now),
         );
         expect(inEvent, isNotEmpty, reason: e.name);
       }
@@ -448,7 +444,6 @@ void main() {
         c.read(materialProvider).materials.every((x) => x.description == null),
         isTrue,
       );
-      // Locations keep their zone in the description (seed cleanup).
       expect(
         c.read(locationProvider).locations.every(
           (x) => x.description != null && x.description!.isNotEmpty,
@@ -648,7 +643,7 @@ void main() {
         for (final i in items) (purchases[i.purchaseId]!.date, i.unitPrice),
       ]..sort((a, b) => a.$1.compareTo(b.$1));
       expect(dated.map((x) => x.$1).toSet().length, 3);
-      expect(dated.every((x) => !x.$1.isAfter(h.now)), isTrue);
+      expect(dated.every((x) => !_isFuture(x.$1, h.now)), isTrue);
       expect(tela.pricePerUnit, dated.last.$2);
     },
   );
@@ -670,9 +665,6 @@ void main() {
   });
 
   group('data for the six sales indicators', () {
-    // Valid sales: not canceled and not future-dated, exactly what every
-    // indicator counts. Everything below is computed straight from the tables,
-    // independently of BiService.
     Future<
       ({
         List<SaleModel> sales,
@@ -684,7 +676,7 @@ void main() {
       final c = h.container;
       final sales = [
         for (final s in c.read(saleProvider).sales)
-          if (!s.isCanceled && !s.date.isAfter(h.now)) s,
+          if (!s.isCanceled && !_isFuture(s.date, h.now)) s,
       ];
       final ids = {for (final s in sales) s.id};
       final itemsBySale = <int, List<SaleItem>>{};
@@ -695,7 +687,7 @@ void main() {
       }
       final purchases = [
         for (final p in c.read(purchaseProvider).purchases)
-          if (!p.date.isAfter(h.now)) p,
+          if (!_isFuture(p.date, h.now)) p,
       ];
       return (sales: sales, itemsBySale: itemsBySale, purchases: purchases);
     }
@@ -706,7 +698,6 @@ void main() {
       final names = {
         for (final p in h.container.read(productProvider).products) p.id: p.name,
       };
-      // Independent count of distinct product pairs per sale.
       final counts = <String, int>{};
       var multi = 0;
       d.itemsBySale.forEach((_, items) {
@@ -733,13 +724,10 @@ void main() {
       for (final p in r.pairs) {
         expect(p.pct, closeTo(p.sales / d.sales.length * 100, 1e-9));
       }
-      // Several pairs are shown, the top one is Tote bag negra + Pines
-      // grandes, and at least one pair is left out for having only 1-2 sales.
       expect(r.pairs.length, greaterThanOrEqualTo(2));
       expect(r.pairs.first.label, 'Pines grandes + Tote bag negra');
       expect(counts.values.any((n) => n < 3), isTrue);
       expect(counts['Miniaturas + Tote bag beige'], 2);
-      // Only approved product names appear.
       for (final p in r.pairs) {
         expect(products.contains(p.productA), isTrue);
         expect(products.contains(p.productB), isTrue);
@@ -811,16 +799,13 @@ void main() {
         expect(e.income, closeTo(income[id] ?? 0, 1e-6), reason: e.name);
         expect(e.expenses, closeTo(spent[id] ?? 0, 1e-6), reason: e.name);
       }
-      // Feria de Lima: flights and hotel far exceed its sales, a clear loss.
       final lima = r.firstWhere((e) => e.name == 'Feria de Lima');
       expect(lima.salesCount, greaterThanOrEqualTo(5));
       expect(lima.purchaseCount, greaterThanOrEqualTo(4));
       expect(lima.expenses, greaterThan(lima.income));
       expect(lima.profit, lessThan(0));
-      // At least one event comes out ahead and several lose money.
       expect(r.any((e) => e.profit > 0), isTrue);
       expect(r.where((e) => e.profit < 0).length, greaterThanOrEqualTo(2));
-      // Sorted from the best result to the worst.
       for (var i = 1; i < r.length; i++) {
         expect(r[i - 1].profit, greaterThanOrEqualTo(r[i].profit));
       }
@@ -835,8 +820,6 @@ void main() {
       final units = <int, int>{};
       final revenue = <int, double>{};
       for (final s in d.sales) {
-        // Each line carries a share of the sale's global discount, in
-        // proportion to its subtotal.
         for (final i in d.itemsBySale[s.id] ?? const <SaleItem>[]) {
           final share = s.totalAmount > 0
               ? s.discount * i.subtotal / s.totalAmount
@@ -857,7 +840,6 @@ void main() {
         expect(e.cost, closeTo(round2(cost), 1e-9), reason: e.name);
         expect(e.ratio, closeTo((revenue[id]! - cost) / cost, 0.011), reason: e.name);
       }
-      // Sorted from the best return to the worst.
       for (var i = 1; i < r.entries.length; i++) {
         expect(r.entries[i - 1].ratio, greaterThanOrEqualTo(r.entries[i].ratio));
       }

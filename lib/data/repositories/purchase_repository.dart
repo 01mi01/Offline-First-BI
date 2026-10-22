@@ -11,9 +11,7 @@ class PurchaseRepository {
 
   PurchaseRepository(this.database);
 
-  // Calcula el total de una compra de materiales a partir de sus ítems
   double calculateMaterialsTotal(List<Map<String, dynamic>> items) {
-    // Cada línea y la suma van a dos decimales (centavos).
     double total = 0;
     for (final item in items) {
       total += round2(
@@ -23,10 +21,6 @@ class PurchaseRepository {
     return round2(total);
   }
 
-  // Obtiene el id del proveedor "Sin proveedor", creándolo si hace falta
-  // (mismo patrón que la categoría por defecto de ProductRepository): las
-  // compras sin proveedor elegido nunca deben quedar bloqueadas ni sin
-  // proveedor.
   Future<int> _defaultSupplierId() async {
     final existing =
         await (database.select(database.suppliers)
@@ -45,8 +39,6 @@ class PurchaseRepository {
         );
   }
 
-  // ¿Hay otra compra de este material con fecha posterior a [date]? Si la hay,
-  // el precio vigente del material ya viene de esa compra más reciente.
   Future<bool> _hasLaterPurchaseOf(
     int materialId, {
     required int excludingPurchaseId,
@@ -68,7 +60,6 @@ class PurchaseRepository {
     return (await query.get()).isNotEmpty;
   }
 
-  // Convierte fila a modelo
   PurchaseModel _toModel(Purchase row) {
     return PurchaseModel(
       id: row.id,
@@ -86,7 +77,6 @@ class PurchaseRepository {
     );
   }
 
-  // Obtiene todas las compras ordenadas por fecha descendente
   Future<List<PurchaseModel>> getAll() async {
     final rows = await (database.select(
       database.purchases,
@@ -94,7 +84,6 @@ class PurchaseRepository {
     return rows.map(_toModel).toList();
   }
 
-  // Obtiene los ítems de una compra con nombre del material
   Future<List<PurchaseItemModel>> getItemsForPurchase(int purchaseId) async {
     final rows = await (database.select(
       database.purchaseItems,
@@ -127,7 +116,6 @@ class PurchaseRepository {
     return result;
   }
 
-  // Registra una nueva compra y actualiza stock y precio del material
   Future<void> createPurchase({
     required int? supplierId,
     required bool isMaterial,
@@ -138,9 +126,6 @@ class PurchaseRepository {
     required int? eventId,
     String? notes,
     required List<Map<String, dynamic>> items,
-    // false cuando el stock de los materiales ya se registró por otro camino
-    // (p. ej. la compra automática del stock inicial de un material nuevo): la
-    // compra y sus ítems se guardan, pero no se vuelve a sumar el stock.
     bool adjustStock = true,
   }) async {
     await database.transaction(() async {
@@ -163,7 +148,6 @@ class PurchaseRepository {
       if (isMaterial) {
         for (final item in items) {
           final materialId = item['materialId'] as int;
-          // Cantidad según el tipo de unidad del material; precio a centavos.
           final quantity = await roundForMaterial(
             database,
             materialId,
@@ -185,7 +169,6 @@ class PurchaseRepository {
 
           if (!adjustStock) continue;
 
-          // Suma stock y actualiza precio del material
           final later = await _hasLaterPurchaseOf(
             materialId,
             excludingPurchaseId: purchaseId,
@@ -207,8 +190,6 @@ class PurchaseRepository {
                     material.stock + quantity,
                   ),
                 ),
-                // Una compra con fecha pasada no pisa el precio que ya fijó
-                // una compra posterior del mismo material.
                 pricePerUnit: later
                     ? const Value.absent()
                     : Value(unitPrice),
@@ -225,12 +206,10 @@ class PurchaseRepository {
       'No se puede cancelar la compra porque el stock actual de uno de los '
       'materiales es menor a la cantidad comprada.';
 
-  // Cancela una compra en vez de borrarla: resta del stock de cada material lo
-  // que se compró (un gasto general no toca el stock) y la marca como
-  // cancelada, conservándola como historial. Todo en una transacción. Si algún
-  // material quedaría con stock negativo (porque ya se usó), no cambia nada y
-  // devuelve [cancelBlockedMessage]. Devuelve un mensaje de error, o null si
-  // salió bien.
+  static const editBlockedMessage =
+      'No se puede guardar la edición porque el stock actual de uno de los '
+      'materiales es menor a la cantidad que se quitaría de la compra.';
+
   Future<String?> cancelPurchase(int purchaseId) async {
     return database.transaction(() async {
       final purchase = await (database.select(
@@ -245,22 +224,18 @@ class PurchaseRepository {
             )..where((pi) => pi.purchaseId.equals(purchaseId))).get()
           : const <PurchaseItem>[];
 
-      // Cantidad comprada por material (un material puede repetirse).
       final byMaterial = <int, double>{};
       for (final item in items) {
         byMaterial[item.materialId] =
             (byMaterial[item.materialId] ?? 0) + item.quantity;
       }
 
-      // Primero se valida todo: nada cambia si alguno quedaría en negativo.
       final stocks = <int, double>{};
       for (final entry in byMaterial.entries) {
         final material = await (database.select(
           database.materials,
         )..where((m) => m.id.equals(entry.key))).getSingleOrNull();
         if (material == null) continue;
-        // Se compara el valor ya redondeado: el ruido de coma flotante
-        // (72.6 - 15) no provoca un bloqueo falso ni deja pasar uno real.
         final remaining = await roundForUnit(
           database,
           material.unitId,
@@ -295,8 +270,6 @@ class PurchaseRepository {
     });
   }
 
-  // Edita una compra existente y ajusta stock. Devuelve un mensaje de error
-  // (p. ej. si la compra está cancelada), o null si salió bien.
   Future<String?> editPurchase({
     required int purchaseId,
     required int? supplierId,
@@ -320,10 +293,39 @@ class PurchaseRepository {
 
       final resolvedSupplierId = supplierId ?? await _defaultSupplierId();
 
-      // Devuelve el stock de los ítems anteriores
       final oldItems = await (database.select(
         database.purchaseItems,
       )..where((pi) => pi.purchaseId.equals(purchaseId))).get();
+
+      final stockChange = <int, double>{};
+      for (final oldItem in oldItems) {
+        stockChange[oldItem.materialId] =
+            (stockChange[oldItem.materialId] ?? 0) - oldItem.quantity;
+      }
+      if (isMaterial) {
+        for (final item in newItems) {
+          final materialId = item['materialId'] as int;
+          final quantity = await roundForMaterial(
+            database,
+            materialId,
+            item['quantity'] as double,
+          );
+          stockChange[materialId] = (stockChange[materialId] ?? 0) + quantity;
+        }
+      }
+      for (final entry in stockChange.entries) {
+        if (entry.value >= 0) continue;
+        final material = await (database.select(
+          database.materials,
+        )..where((m) => m.id.equals(entry.key))).getSingleOrNull();
+        if (material == null) continue;
+        final remaining = await roundForUnit(
+          database,
+          material.unitId,
+          material.stock + entry.value,
+        );
+        if (remaining < 0) return editBlockedMessage;
+      }
 
       for (final oldItem in oldItems) {
         final material = await (database.select(
@@ -347,12 +349,10 @@ class PurchaseRepository {
         }
       }
 
-      // Elimina ítems anteriores
       await (database.delete(
         database.purchaseItems,
       )..where((pi) => pi.purchaseId.equals(purchaseId))).go();
 
-      // Actualiza la compra
       await (database.update(
         database.purchases,
       )..where((p) => p.id.equals(purchaseId))).write(
@@ -369,7 +369,6 @@ class PurchaseRepository {
         ),
       );
 
-      // Inserta nuevos ítems y suma stock con precio actualizado
       if (isMaterial) {
         for (final item in newItems) {
           final materialId = item['materialId'] as int;

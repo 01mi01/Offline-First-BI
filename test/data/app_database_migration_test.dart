@@ -15,16 +15,9 @@ import '../generated_migrations/schema_v14.dart' as v14;
 import '../generated_migrations/schema_v15.dart' as v15;
 import '../generated_migrations/schema_v16.dart' as v16;
 import '../generated_migrations/schema_v17.dart' as v17;
+import '../generated_migrations/schema_v18.dart' as v18;
+import '../generated_migrations/schema_v19.dart' as v19;
 
-// Verifica la migración real (onUpgrade) contra snapshots de esquema
-// generados por Drift (drift_schemas/drift_schema_v{8,...,17}.json vía
-// `dart run drift_dev schema generate`). A diferencia del resto de la suite
-// (que solo abre bases de datos en blanco vía onCreate), esto ejecuta el SQL
-// de migración de verdad sobre datos con la forma exacta de cada versión.
-//
-// migrateAndValidate siempre migra hasta el schemaVersion actual de
-// AppDatabase (ahora 17), sin importar en qué versión "lógica" se centre
-// cada test — por eso los tests con datos de v8 también apuntan a 10.
 void main() {
   late SchemaVerifier verifier;
 
@@ -33,14 +26,14 @@ void main() {
   });
 
   test(
-    'migrating a v8 database all the way to the live schema (v17) produces '
+    'migrating a v8 database all the way to the live schema (v19) produces '
     'exactly the expected schema',
     () async {
       final connection = await verifier.startAt(8);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 17);
+      await verifier.migrateAndValidate(db, 19);
     },
   );
 
@@ -71,10 +64,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final productWithCategory = await (checkDb.select(
@@ -106,7 +99,6 @@ void main() {
       addTearDown(schema.close);
 
       final oldDb = v8.DatabaseAtV8(schema.newConnection());
-      // Mismo par (1,1): dos filas, la más nueva por created_at debe sobrevivir.
       await oldDb.into(oldDb.productMaterials).insert(
         v8.ProductMaterialsCompanion.insert(
           productId: 1,
@@ -123,7 +115,6 @@ void main() {
           createdAt: const Value(2000),
         ),
       );
-      // Par distinto (1,2): no debe verse afectado por la deduplicación.
       final unrelatedPairRowId = await oldDb.into(oldDb.productMaterials).insert(
         v8.ProductMaterialsCompanion.insert(
           productId: 1,
@@ -135,10 +126,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final allRows = await checkDb.select(checkDb.productMaterials).get();
@@ -156,11 +147,9 @@ void main() {
       expect(untouchedPair.id, unrelatedPairRowId);
       expect(untouchedPair.quantityUsed, 9);
 
-      // El índice único ya está activo: otra fila para el mismo par (1,1)
-      // debe ser rechazada por la base de datos.
       await expectLater(
         checkDb.into(checkDb.productMaterials).insert(
-          v17.ProductMaterialsCompanion.insert(
+          v19.ProductMaterialsCompanion.insert(
             productId: 1,
             materialId: 1,
             quantityUsed: 1,
@@ -188,10 +177,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final session = await (checkDb.select(
@@ -210,7 +199,7 @@ void main() {
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 17);
+      await verifier.migrateAndValidate(db, 19);
     },
   );
 
@@ -220,12 +209,11 @@ void main() {
       final connection = await verifier.startAt(9);
       final db = AppDatabase.forTesting(connection);
       addTearDown(db.close);
-      await verifier.migrateAndValidate(db, 17);
+      await verifier.migrateAndValidate(db, 19);
 
       final rows = await db.select(db.units).get();
       final byName = {for (final u in rows) u.name: u.type};
 
-      // La lista simplificada: exactamente estas 12, sin las retiradas.
       expect(rows, hasLength(12));
       expect(byName, {
         'contenedor': 'contenedor',
@@ -254,7 +242,6 @@ void main() {
       addTearDown(schema.close);
 
       final oldDb = v9.DatabaseAtV9(schema.newConnection());
-      // Mayúsculas distintas a propósito: el mapeo debe ser insensible.
       final matchedRowId = await oldDb.into(oldDb.materials).insert(
         v9.MaterialsCompanion.insert(
           name: 'Stickers holográficos',
@@ -272,10 +259,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final botellaUnit = await (checkDb.select(
@@ -297,8 +284,6 @@ void main() {
     },
   );
 
-  // --- v10 -> v11: el proveedor por defecto pasa de "Sin nombre" a
-  // "Sin proveedor" ---
   test(
     'Suppliers: the default "Sin nombre" supplier is renamed in place to '
     '"Sin proveedor" (same id, so existing purchases keep pointing at it)',
@@ -323,10 +308,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final suppliers = await checkDb.select(checkDb.suppliers).get();
@@ -350,10 +335,10 @@ void main() {
       addTearDown(schema.close);
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -380,10 +365,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.suppliers).get())
@@ -393,7 +378,6 @@ void main() {
     },
   );
 
-  // --- v11 -> v12: el rol sembrado "usuario" pasa a llamarse "empleado" ---
   test(
     'Roles: the seeded "usuario" role is renamed in place to "empleado" '
     '(same id, so user_roles keep pointing at it)',
@@ -421,10 +405,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final roles = await checkDb.select(checkDb.roles).get();
@@ -455,10 +439,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final names = (await checkDb.select(checkDb.roles).get())
@@ -468,8 +452,6 @@ void main() {
     },
   );
 
-  // --- v12 -> v13: cancelación de ventas y de registros de uso (columnas
-  // is_canceled / canceled_at) ---
   test(
     'Cancelation columns: existing sales and usage records come through the '
     'migration as not canceled, with no canceled_at',
@@ -496,23 +478,23 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final sale = await (checkDb.select(
         checkDb.sales,
       )..where((s) => s.id.equals(saleId))).getSingle();
-      expect(sale.isCanceled, 0); // booleano: 0 = false
+      expect(sale.isCanceled, 0);
       expect(sale.canceledAt, isNull);
-      expect(sale.finalAmount, 23); // el resto de la fila no cambia
+      expect(sale.finalAmount, 23);
 
       final usage = await (checkDb.select(
         checkDb.productMaterials,
       )..where((pm) => pm.id.equals(usageId))).getSingle();
-      expect(usage.isCanceled, 0); // booleano: 0 = false
+      expect(usage.isCanceled, 0);
       expect(usage.canceledAt, isNull);
       expect(usage.quantityUsed, 0.5);
     },
@@ -536,20 +518,18 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final usage = await checkDb.select(checkDb.productMaterials).getSingle();
       expect(usage.quantityUsed, 3);
-      expect(usage.isCanceled, 0); // booleano: 0 = false
+      expect(usage.isCanceled, 0);
     },
   );
 
-  // --- v13 -> v14: eventos con estado (events.is_active) y registros
-  // predeterminados que no pueden quedar desactivados ---
   test(
     'Events: existing events come through the migration active (they had no '
     'status before)',
@@ -564,16 +544,16 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final event = await (checkDb.select(
         checkDb.events,
       )..where((e) => e.id.equals(eventId))).getSingle();
-      expect(event.isActive, 1); // booleano: 1 = true
+      expect(event.isActive, 1);
       expect(event.name, 'Feria de Arte');
     },
   );
@@ -614,10 +594,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final categories = {
@@ -625,7 +605,7 @@ void main() {
           c.name: c.isActive,
       };
       expect(categories['Sin categoría'], 1);
-      expect(categories['Pines'], 0); // una inactiva cualquiera no se toca
+      expect(categories['Pines'], 0);
       expect(otherCategoryId, isNonZero);
 
       final client = await checkDb.select(checkDb.clients).getSingle();
@@ -635,7 +615,6 @@ void main() {
     },
   );
 
-  // --- v14 -> v16: la lista de unidades se simplifica ---
   test(
     'Units: an existing v14 install ends with exactly the 12 current units, '
     'keeps its existing ones (same ids), and nothing is duplicated',
@@ -647,29 +626,24 @@ void main() {
       final metroId = await oldDb.into(oldDb.units).insert(
         v14.UnitsCompanion.insert(name: 'metro', type: 'medida'),
       );
-      // Una unidad que la instalación ya tenía con otra capitalización:
-      // se respeta y no se vuelve a sembrar como "tira".
       final tiraId = await oldDb.into(oldDb.units).insert(
         v14.UnitsCompanion.insert(name: 'Tira', type: 'contenedor'),
       );
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final rows = await checkDb.select(checkDb.units).get();
       final byName = {for (final u in rows) u.name: u};
 
-      // Las existentes conservan su id.
       expect(byName['metro']!.id, metroId);
       expect(byName['Tira']!.id, tiraId);
-      // "tira" no se duplicó con otra capitalización.
       expect(rows.where((u) => u.name.toLowerCase() == 'tira'), hasLength(1));
-      // Quedan exactamente las 12 vigentes, cada nombre una sola vez.
       expect(rows, hasLength(12));
       expect(rows.map((u) => u.name.toLowerCase()).toSet(), {
         'contenedor',
@@ -688,7 +662,6 @@ void main() {
     },
   );
 
-  // --- v15 -> v16: unidades retiradas ---
   const retiredToReplacement = {
     'botella': 'contenedor',
     'frasco': 'contenedor',
@@ -707,7 +680,6 @@ void main() {
       final schema = await verifier.schemaAt(15);
       addTearDown(schema.close);
 
-      // Una instalación v15 tal como estaba: las 18 unidades anteriores.
       final oldDb = v15.DatabaseAtV15(schema.newConnection());
       const legacy = [
         ('botella', 'contenedor'),
@@ -735,7 +707,6 @@ void main() {
           v15.UnitsCompanion.insert(name: name, type: type),
         );
       }
-      // Un material por cada unidad retirada, más uno en una unidad vigente.
       final materialIds = <String, int>{};
       for (final name in [...retiredToReplacement.keys, 'paquete']) {
         materialIds[name] = await oldDb.into(oldDb.materials).insert(
@@ -750,10 +721,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final units = await checkDb.select(checkDb.units).get();
@@ -772,12 +743,10 @@ void main() {
           entry.value,
           reason: '${entry.key} -> ${entry.value}',
         );
-        // Solo cambió la unidad.
         expect(material.name, 'Material en ${entry.key}');
         expect(material.pricePerUnit, 7.5);
         expect(material.stock, 3.0);
       }
-      // Un material en una unidad vigente no se toca (mismo id de unidad).
       final kept = await (checkDb.select(
         checkDb.materials,
       )..where((m) => m.id.equals(materialIds['paquete']!))).getSingle();
@@ -821,10 +790,10 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
 
       final usage = await (checkDb.select(
@@ -843,7 +812,6 @@ void main() {
     },
   );
 
-  // --- v16 -> v17: cancelación de compras ---
   test(
     'Purchases: v16 -> v17 adds is_canceled (false) and canceled_at (null) '
     'without losing data',
@@ -859,15 +827,15 @@ void main() {
       await oldDb.close();
 
       final dbForMigration = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(dbForMigration, 17);
+      await verifier.migrateAndValidate(dbForMigration, 19);
       await dbForMigration.close();
 
-      final checkDb = v17.DatabaseAtV17(schema.newConnection());
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
       addTearDown(checkDb.close);
       final row = await checkDb.select(checkDb.purchases).getSingle();
       expect(row.description, 'Pasaje');
       expect(row.totalAmount, 20.0);
-      expect(row.isCanceled, 0); // booleano: 0 = false
+      expect(row.isCanceled, 0);
       expect(row.canceledAt, isNull);
     },
   );
@@ -903,4 +871,115 @@ void main() {
     final names = (await db.select(db.roles).get()).map((r) => r.name).toList();
     expect(names, unorderedEquals(['admin', 'propietario', 'empleado']));
   });
+
+  test(
+    'Products: names equal after trim, case and accents are made unique '
+    'in the v18 migration and the unique index then rejects new duplicates',
+    () async {
+      final schema = await verifier.schemaAt(17);
+      addTearDown(schema.close);
+
+      final oldDb = v17.DatabaseAtV17(schema.newConnection());
+      await oldDb.into(oldDb.categories).insert(
+        v17.CategoriesCompanion.insert(name: 'Sin categoría'),
+      );
+      for (final name in ['Café', 'cafe', '  CAFÉ  ', 'Té', '   ', '   ']) {
+        await oldDb.into(oldDb.products).insert(
+          v17.ProductsCompanion.insert(
+            categoryId: 1,
+            name: name,
+            priceA: 1,
+            priceB: 1,
+          ),
+        );
+      }
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 19);
+      await dbForMigration.close();
+
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final rows = await (checkDb.select(
+        checkDb.products,
+      )..orderBy([(p) => OrderingTerm.asc(p.id)])).get();
+      expect(rows.map((r) => r.name).toList(), [
+        'Café',
+        'cafe (2)',
+        'CAFÉ (3)',
+        'Té',
+        'Producto (2)',
+        'Producto (3)',
+      ]);
+
+      await expectLater(
+        checkDb.into(checkDb.products).insert(
+          v19.ProductsCompanion.insert(
+            categoryId: 1,
+            name: 'Té',
+            priceA: 1,
+            priceB: 1,
+          ),
+        ),
+        throwsA(anything),
+      );
+    },
+  );
+
+  test(
+    'Saved reports: the v18 -> v19 migration drops saved_reports and keeps the rows of every other table',
+    () async {
+      final schema = await verifier.schemaAt(18);
+      addTearDown(schema.close);
+
+      final oldDb = v18.DatabaseAtV18(schema.newConnection());
+      final userId = await oldDb.into(oldDb.users).insert(
+        v18.UsersCompanion.insert(
+          username: 'ana',
+          email: 'ana@example.com',
+          passwordHash: 'hash',
+        ),
+      );
+      await oldDb.into(oldDb.categories).insert(
+        v18.CategoriesCompanion.insert(name: 'Sin categoría'),
+      );
+      await oldDb.into(oldDb.products).insert(
+        v18.ProductsCompanion.insert(
+          categoryId: 1,
+          name: 'Libro',
+          priceA: 10,
+          priceB: 8,
+        ),
+      );
+      await oldDb.into(oldDb.auditLogs).insert(
+        v18.AuditLogsCompanion.insert(
+          userId: userId,
+          moduleName: 'ventas',
+          action: 'create',
+        ),
+      );
+      await oldDb.customStatement(
+        "INSERT INTO saved_reports (user_id, name, filters) VALUES ($userId, 'Mi vista', '{}')",
+      );
+      await oldDb.close();
+
+      final dbForMigration = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(dbForMigration, 19);
+      await dbForMigration.close();
+
+      final checkDb = v19.DatabaseAtV19(schema.newConnection());
+      addTearDown(checkDb.close);
+
+      final tables = await checkDb
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+          .get();
+      expect(tables.map((r) => r.read<String>('name')), isNot(contains('saved_reports')));
+      expect(tables.map((r) => r.read<String>('name')), contains('audit_logs'));
+      expect(await checkDb.select(checkDb.users).get(), hasLength(1));
+      expect(await checkDb.select(checkDb.products).get(), hasLength(1));
+      expect(await checkDb.select(checkDb.auditLogs).get(), hasLength(1));
+    },
+  );
 }

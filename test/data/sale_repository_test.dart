@@ -30,9 +30,6 @@ void main() {
     late SaleRepository repository;
 
     setUpAll(() {
-      // calculateSubtotal/calculateTotal/validateDiscount never touch the
-      // database, but the repository still requires an instance to build.
-      // A single shared instance is fine since these tests mutate nothing.
       db = AppDatabase.forTesting(NativeDatabase.memory());
       repository = SaleRepository(db);
     });
@@ -43,14 +40,14 @@ void main() {
 
     test('calculateSubtotal sums price * quantity for each cart item', () {
       final products = [_product(id: 1, price: 10), _product(id: 2, price: 5)];
-      final cart = {1: 3, 2: 2}; // 3*10 + 2*5 = 40
+      final cart = {1: 3, 2: 2};
 
       expect(repository.calculateSubtotal(products, cart), 40);
     });
 
     test('calculateSubtotal ignores cart entries with no matching product', () {
       final products = [_product(id: 1, price: 10)];
-      final cart = {1: 2, 99: 5}; // product 99 does not exist
+      final cart = {1: 2, 99: 5};
 
       expect(repository.calculateSubtotal(products, cart), 20);
     });
@@ -98,7 +95,6 @@ void main() {
     setUp(() async {
       db = AppDatabase.forTesting(NativeDatabase.memory());
       repository = SaleRepository(db);
-      // Dos productos con stock inicial conocido
       await db.into(db.products).insert(
         ProductsCompanion.insert(
           categoryId: 1,
@@ -141,8 +137,8 @@ void main() {
       final p1 = await (db.select(db.products)..where((p) => p.id.equals(1))).getSingle();
       final p2 = await (db.select(db.products)..where((p) => p.id.equals(2))).getSingle();
 
-      expect(p1.stock, 7); // 10 - 3
-      expect(p2.stock, 3); // 5 - 2
+      expect(p1.stock, 7);
+      expect(p2.stock, 3);
 
       final sales = await repository.getAll();
       expect(sales, hasLength(1));
@@ -153,7 +149,6 @@ void main() {
     });
 
     test('createSale clamps stock at 0 instead of going negative', () async {
-      // Producto 2 solo tiene 5 unidades; vendemos 8
       await repository.createSale(
         clientId: null,
         locationId: null,
@@ -185,7 +180,6 @@ void main() {
         ],
       );
       final sale = (await repository.getAll()).first;
-      // Producto 1: 10 - 3 = 7 tras la creación
 
       await repository.editSale(
         saleId: sale.id,
@@ -202,7 +196,6 @@ void main() {
       );
 
       final p1 = await (db.select(db.products)..where((p) => p.id.equals(1))).getSingle();
-      // 7 (post-create) + 3 (restored) - 5 (new quantity) = 5, i.e. 10 - 5
       expect(p1.stock, 5);
 
       final items = await repository.getItemsForSale(sale.id);
@@ -227,7 +220,6 @@ void main() {
           ],
         );
         final sale = (await repository.getAll()).first;
-        // Producto 2: 5 - 2 = 3 tras la creación
 
         await repository.editSale(
           saleId: sale.id,
@@ -239,13 +231,11 @@ void main() {
           finalAmount: 20 * 5,
           date: sale.date,
           newItems: [
-            // Muy por encima del stock disponible (3 + 2 restaurado = 5)
             {'productId': 2, 'quantity': 20, 'unitPrice': 5.0},
           ],
         );
 
         final p2 = await (db.select(db.products)..where((p) => p.id.equals(2))).getSingle();
-        // 3 (post-create) + 2 (restored) - 20 (new quantity) = -15, clamped to 0
         expect(p2.stock, 0);
       },
     );
@@ -288,14 +278,14 @@ void main() {
         {1: 2, 2: 3},
         priceTypes: {1: 'A', 2: 'B'},
       );
-      expect(subtotal, 2 * 55 + 3 * 6.5); // 129.5
+      expect(subtotal, 2 * 55 + 3 * 6.5);
     });
 
     test('calculateSubtotal: bands are independent per product', () {
       final subtotal = repository.calculateSubtotal(
         [estuches, pinesGrandes],
         {1: 1, 2: 1},
-        priceTypes: {1: 'B'}, // pinesGrandes sin banda -> A
+        priceTypes: {1: 'B'},
       );
       expect(subtotal, 40 + 8);
     });
@@ -375,7 +365,6 @@ void main() {
     setUp(() async {
       db = AppDatabase.forTesting(NativeDatabase.memory());
       repository = SaleRepository(db);
-      // Producto 1 con 5 en stock; producto 2 con 4.
       for (final entry in {'Producto 1': 5, 'Producto 2': 4}.entries) {
         await db.into(db.products).insert(
           ProductsCompanion.insert(
@@ -397,7 +386,7 @@ void main() {
       'while editing, the stock offered is the current stock PLUS what the '
       'sale itself already holds (3 in stock + 2 in the sale = 5, not 3)',
       () async {
-        final sale = await createSaleOf(1, 2); // stock 5 -> 3
+        final sale = await createSaleOf(1, 2);
         expect(await stockOf(1), 3);
 
         final reserved = await repository.getReservedQuantities(sale.id);
@@ -410,9 +399,7 @@ void main() {
           ),
           5,
         );
-        // Una venta nueva no tiene nada apartado: solo el stock actual.
         expect(repository.availableStock(currentStock: 3), 3);
-        // Un producto que la venta no incluye tampoco suma nada.
         expect(
           repository.availableStock(
             currentStock: 4,
@@ -427,7 +414,7 @@ void main() {
       'editing up to that offered maximum works: the net difference leaves '
       'the stock at exactly 0, never negative',
       () async {
-        final sale = await createSaleOf(1, 2); // stock 3
+        final sale = await createSaleOf(1, 2);
         final available = repository.availableStock(
           currentStock: await stockOf(1),
           reservedByThisSale:
@@ -450,14 +437,14 @@ void main() {
         );
 
         expect(error, isNull);
-        expect(await stockOf(1), 0); // 3 + 2 devueltos - 5 nuevos
+        expect(await stockOf(1), 0);
         final items = await repository.getItemsForSale(sale.id);
         expect(items.single.quantity, 5);
       },
     );
 
     test('editing down returns the difference to the stock', () async {
-      final sale = await createSaleOf(1, 4); // stock 1
+      final sale = await createSaleOf(1, 4);
       await repository.editSale(
         saleId: sale.id,
         clientId: null,
@@ -471,7 +458,7 @@ void main() {
           {'productId': 1, 'quantity': 1, 'unitPrice': 10.0},
         ],
       );
-      expect(await stockOf(1), 4); // 5 - 1
+      expect(await stockOf(1), 4);
     });
 
     test(
@@ -494,8 +481,8 @@ void main() {
         final sale = (await repository.getAll()).single;
         expect(sale.isCanceled, isFalse);
         expect(sale.canceledAt, isNull);
-        expect(await stockOf(1), 2); // 5 - 3
-        expect(await stockOf(2), 2); // 4 - 2
+        expect(await stockOf(1), 2);
+        expect(await stockOf(2), 2);
 
         final error = await repository.cancelSale(sale.id);
 
@@ -503,14 +490,12 @@ void main() {
         expect(await stockOf(1), 5);
         expect(await stockOf(2), 4);
 
-        // La venta sigue en la lista, marcada como cancelada y con sus montos.
         final all = await repository.getAll();
         expect(all, hasLength(1));
         expect(all.single.isCanceled, isTrue);
         expect(all.single.canceledAt, isNotNull);
         expect(all.single.finalAmount, 45);
         expect(all.single.discount, 5);
-        // Y conserva sus ítems para la auditoría.
         expect(await repository.getItemsForSale(sale.id), hasLength(2));
       },
     );
@@ -523,7 +508,7 @@ void main() {
       final second = await repository.cancelSale(sale.id);
 
       expect(second, 'La venta ya está cancelada');
-      expect(await stockOf(1), 5); // no 7
+      expect(await stockOf(1), 5);
     });
 
     test('a canceled sale can no longer be edited, and the stock is untouched', () async {
@@ -548,7 +533,7 @@ void main() {
       expect(error, 'La venta está cancelada y no se puede editar');
       expect(await stockOf(1), 5);
       final items = await repository.getItemsForSale(sale.id);
-      expect(items.single.quantity, 2); // los ítems originales siguen igual
+      expect(items.single.quantity, 2);
     });
 
     test('canceling a sale that does not exist reports it', () async {

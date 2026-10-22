@@ -25,7 +25,7 @@ void main() {
         {'quantity': 2.0, 'unitPrice': 5.0},
       ];
 
-      expect(repository.calculateMaterialsTotal(items), 40); // 30 + 10
+      expect(repository.calculateMaterialsTotal(items), 40);
     });
 
     test('calculateMaterialsTotal returns 0 for an empty item list', () {
@@ -89,8 +89,8 @@ void main() {
         db.materials,
       )..where((m) => m.id.equals(1))).getSingle();
 
-      expect(material.stock, 15); // 10 + 5
-      expect(material.pricePerUnit, 3.0); // updated from the purchase
+      expect(material.stock, 15);
+      expect(material.pricePerUnit, 3.0);
 
       final purchases = await repository.getAll();
       expect(purchases, hasLength(1));
@@ -117,7 +117,7 @@ void main() {
         db.materials,
       )..where((m) => m.id.equals(1))).getSingle();
 
-      expect(material.stock, 10); // unchanged
+      expect(material.stock, 10);
 
       final purchases = await repository.getAll();
       expect(purchases, hasLength(1));
@@ -142,7 +142,6 @@ void main() {
         ],
       );
       final purchase = (await repository.getAll()).first;
-      // stock tras la creación: 10 + 5 = 15
 
       await repository.editPurchase(
         purchaseId: purchase.id,
@@ -161,7 +160,6 @@ void main() {
       final material = await (db.select(
         db.materials,
       )..where((m) => m.id.equals(1))).getSingle();
-      // 15 (post-create) - 5 (revert old) + 2 (new quantity) = 12
       expect(material.stock, 12);
       expect(material.pricePerUnit, 4.0);
 

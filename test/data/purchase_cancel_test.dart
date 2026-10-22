@@ -10,10 +10,6 @@ import 'package:offline_first_bi/models/location_model.dart';
 import 'package:offline_first_bi/models/purchase_kind.dart';
 import 'package:offline_first_bi/models/report_filters.dart';
 
-// Cancelación de compras (igual que la de ventas): resta del stock lo comprado,
-// se bloquea si algún material ya se usó, deja la compra como historial, no se
-// puede editar ni cancelar otra vez y no cuenta en los reportes. También los
-// filtros País y Ciudad de los reportes.
 void main() {
   late AppDatabase db;
   late PurchaseRepository repository;
@@ -117,7 +113,6 @@ void main() {
           {'materialId': 1, 'quantity': 5.0, 'unitPrice': 3.0},
           {'materialId': 2, 'quantity': 2.0, 'unitPrice': 4.0},
         ]);
-        // Material 2 se usó casi todo: queda 1 (< 2 comprados).
         await (db.update(db.materials)..where((m) => m.id.equals(2)))
             .write(const MaterialsCompanion(stock: Value(1)));
 
@@ -128,7 +123,6 @@ void main() {
           'No se puede cancelar la compra porque el stock actual de uno de '
           'los materiales es menor a la cantidad comprada.',
         );
-        // Nada cambió: ni el material que sí alcanzaba, ni la compra.
         expect(await stockOf(1), 15);
         expect(await stockOf(2), 1);
         expect((await repository.getAll()).single.isCanceled, isFalse);
@@ -148,7 +142,6 @@ void main() {
         {'materialId': 1, 'quantity': 5.0, 'unitPrice': 3.0},
       ]);
       expect(await stockOf(1), 15);
-      // Se usan 12 de 15: quedan 3 (< 5 comprados).
       expect(
         await MaterialRepository(db).registerMaterialUsage(
           productId: productId,
@@ -221,7 +214,7 @@ void main() {
       );
 
       expect(error, 'La compra está cancelada y no se puede editar');
-      expect(await stockOf(1), 10); // sin cambios
+      expect(await stockOf(1), 10);
       expect((await repository.getItemsForPurchase(id)).single.quantity, 5);
     });
 
@@ -243,7 +236,7 @@ void main() {
         ],
       );
       expect(error, isNull);
-      expect(await stockOf(1), 18); // 10 + 8
+      expect(await stockOf(1), 18);
     });
   });
 
@@ -264,7 +257,6 @@ void main() {
       );
       expect(result.map((p) => p.id), [keep]);
       expect(service.summarizePurchases(result).totalAmount, 10);
-      // Tampoco con el filtro de tipo.
       expect(
         service
             .filterPurchases(
@@ -345,7 +337,6 @@ void main() {
       expect(ids(const ReportFilters(country: 'Perú')), [inLima]);
       expect(ids(const ReportFilters(city: 'La Paz')), [inLpz]);
       expect(ids(const ReportFilters(country: 'Bolivia', city: 'Lima')), isEmpty);
-      // Se combinan con el filtro de Ubicación existente.
       expect(ids(const ReportFilters(country: 'Bolivia', locationId: 2)), [inScz]);
       expect(ids(const ReportFilters(country: 'Perú', locationId: 2)), isEmpty);
     });

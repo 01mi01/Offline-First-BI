@@ -9,8 +9,6 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-// path_provider simulado con las carpetas separadas, como en Android: la caché
-// (que el sistema puede vaciar) y los documentos (permanentes).
 class _FakePathProvider extends Fake
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {
@@ -54,7 +52,6 @@ void main() {
     await root.delete(recursive: true);
   });
 
-  // Imagen como la deja el selector: en la caché.
   Future<File> cachedImage(String name, [String content = 'pixels']) async {
     final dir = await Directory(p.join(cache.path, 'picker-uuid')).create();
     return File(p.join(dir.path, name)).writeAsString(content).then((f) => f);
@@ -64,7 +61,6 @@ void main() {
     test('the saved image lives in the permanent documents directory, not in the cache', () async {
       final picked = await cachedImage('foto.png');
 
-      // ImageStorage() sin argumentos = la configuración real de la app.
       final savedPath = await ImageStorage().save(picked.path);
 
       expect(p.isWithin(documents.path, savedPath), isTrue);
@@ -78,7 +74,6 @@ void main() {
       final picked = await cachedImage('foto.jpg');
       final savedPath = await ImageStorage().save(picked.path);
 
-      // Android vacía la caché por su cuenta.
       await cache.delete(recursive: true);
 
       expect(await File(picked.path).exists(), isFalse);
@@ -119,13 +114,13 @@ void main() {
       final picked = await cachedImage('a.png');
       final savedPath = await storage.save(picked.path);
 
-      await storage.deleteIfManaged(picked.path); // en la caché: no se toca
+      await storage.deleteIfManaged(picked.path);
       expect(await picked.exists(), isTrue);
 
       await storage.deleteIfManaged(savedPath);
       expect(await File(savedPath).exists(), isFalse);
 
-      await storage.deleteIfManaged(null); // sin imagen: no falla
+      await storage.deleteIfManaged(null);
     });
   });
 
@@ -163,7 +158,6 @@ void main() {
       expect(await File(product.image!).readAsString(), 'p');
       expect(await File(category.image!).readAsString(), 'c');
 
-      // Aunque la caché se vacíe, las imágenes siguen ahí.
       await cache.delete(recursive: true);
       expect(await File(product.image!).exists(), isTrue);
     });
@@ -186,7 +180,7 @@ void main() {
       final product = await (db.select(db.products)
             ..where((t) => t.id.equals(productId)))
           .getSingle();
-      expect(product.image, gone); // la interfaz muestra un marcador
+      expect(product.image, gone);
     });
 
     test('images already in the permanent folder and records without image are untouched, and running twice moves nothing new', () async {

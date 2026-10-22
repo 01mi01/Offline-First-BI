@@ -8,7 +8,6 @@ final locationRepositoryProvider = Provider<LocationRepository>((ref) {
   return LocationRepository(db);
 });
 
-// Estado de ubicaciones
 class LocationState {
   final List<LocationModel> locations;
   final bool isLoading;
@@ -40,7 +39,6 @@ class LocationNotifier extends StateNotifier<LocationState> {
     load();
   }
 
-  // Carga todas las ubicaciones
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -51,15 +49,14 @@ class LocationNotifier extends StateNotifier<LocationState> {
     }
   }
 
-  // Guarda o edita una ubicación
-  Future<void> save({
+  Future<int> save({
     int? id,
     required String city,
     required String country,
     String? description,
     bool isActive = true,
   }) async {
-    await repository.save(
+    final savedId = await repository.save(
       id: id,
       city: city,
       country: country,
@@ -67,6 +64,7 @@ class LocationNotifier extends StateNotifier<LocationState> {
       isActive: isActive,
     );
     await load();
+    return savedId;
   }
 }
 

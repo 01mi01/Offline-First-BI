@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import 'package:drift/drift.dart' show Value;
+import '../../application/form_validation.dart';
 import '../../config/app_config.dart';
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
@@ -95,7 +95,7 @@ class Categories extends Table {
 class Products extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get categoryId => integer().references(Categories, #id)();
-  TextColumn get name => text()();
+  TextColumn get name => text().unique()();
   TextColumn get description => text().nullable()();
   TextColumn get image => text().nullable()();
   RealColumn get priceA => real()();
@@ -273,17 +273,6 @@ class PurchaseItems extends Table {
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
-class SavedReports extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get userId => integer().references(Users, #id)();
-  TextColumn get name => text()();
-  TextColumn get filters => text()();
-  BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
-  TextColumn get supabaseId => text().nullable()();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().nullable()();
-}
-
 class AuditLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get userId => integer().references(Users, #id)();
@@ -330,7 +319,6 @@ class SesionLocal extends Table {
     SaleItems,
     Purchases,
     PurchaseItems,
-    SavedReports,
     AuditLogs,
     SesionLocal,
   ],
@@ -342,7 +330,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 19;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
@@ -528,8 +516,6 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(purchases, purchases.supabaseId);
         await m.addColumn(purchaseItems, purchaseItems.sincronizado);
         await m.addColumn(purchaseItems, purchaseItems.supabaseId);
-        await m.addColumn(savedReports, savedReports.sincronizado);
-        await m.addColumn(savedReports, savedReports.supabaseId);
         await m.addColumn(auditLogs, auditLogs.sincronizado);
         await m.addColumn(auditLogs, auditLogs.supabaseId);
         // product_materials y module_permissions ya nacieron con estas
@@ -557,7 +543,6 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(saleItems, saleItems.updatedAt);
         await m.addColumn(purchaseItems, purchaseItems.createdAt);
         await m.addColumn(purchaseItems, purchaseItems.updatedAt);
-        await m.addColumn(savedReports, savedReports.updatedAt);
         await m.addColumn(auditLogs, auditLogs.updatedAt);
         if (from >= 8) {
           await m.addColumn(modulePermissions, modulePermissions.createdAt);
@@ -597,6 +582,10 @@ class AppDatabase extends _$AppDatabase {
           [sinCategoriaId],
         );
 
+        await customStatement(
+          "UPDATE products SET name = name || ' (' || id || ')' "
+          'WHERE id NOT IN (SELECT MIN(id) FROM products GROUP BY name)',
+        );
         await m.alterTable(
           TableMigration(
             products,
@@ -812,8 +801,40 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(purchases, purchases.isCanceled);
         await m.addColumn(purchases, purchases.canceledAt);
       }
+      if (from < 18) {
+        await _renameDuplicateProductNames();
+        await m.alterTable(TableMigration(products));
+      }
+      if (from < 19) {
+        await customStatement('DROP TABLE IF EXISTS saved_reports');
+      }
     },
   );
+
+  Future<void> _renameDuplicateProductNames() async {
+    final rows = await (select(
+      products,
+    )..orderBy([(p) => OrderingTerm.asc(p.id)])).get();
+    final taken = <String>{};
+    final pending = <Product>[];
+    for (final row in rows) {
+      final key = comparableName(row.name);
+      if (key.isEmpty || !taken.add(key)) pending.add(row);
+    }
+    for (final row in pending) {
+      final collapsed = row.name.trim().replaceAll(RegExp(r'\s+'), ' ');
+      final base = collapsed.isEmpty ? 'Producto' : collapsed;
+      var suffix = 2;
+      var candidate = '$base ($suffix)';
+      while (!taken.add(comparableName(candidate))) {
+        suffix++;
+        candidate = '$base ($suffix)';
+      }
+      await (update(products)..where((p) => p.id.equals(row.id))).write(
+        ProductsCompanion(name: Value(candidate), updatedAt: Value(appNow())),
+      );
+    }
+  }
 
   Future<void> _insertDatosIniciales() async {
     // Roles del sistema

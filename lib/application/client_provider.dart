@@ -8,7 +8,6 @@ final clientRepositoryProvider = Provider<ClientRepository>((ref) {
   return ClientRepository(db);
 });
 
-// Estado de clientes
 class ClientState {
   final List<ClientModel> clients;
   final bool isLoading;
@@ -36,7 +35,6 @@ class ClientNotifier extends StateNotifier<ClientState> {
     load();
   }
 
-  // Carga todos los clientes
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -47,26 +45,37 @@ class ClientNotifier extends StateNotifier<ClientState> {
     }
   }
 
-  // Guarda o edita un cliente y recarga
-  Future<String?> save({
+  Future<({int? id, String? error})> saveWithId({
     int? id,
     required String name,
     String? contactInfo,
     bool isActive = true,
   }) async {
     try {
-      await repository.save(
+      final savedId = await repository.save(
         id: id,
         name: name,
         contactInfo: contactInfo,
         isActive: isActive,
       );
       await load();
-      return null;
+      return (id: id ?? savedId, error: null);
     } catch (e) {
-      return e.toString().replaceAll('Exception: ', '');
+      return (id: null, error: e.toString().replaceAll('Exception: ', ''));
     }
   }
+
+  Future<String?> save({
+    int? id,
+    required String name,
+    String? contactInfo,
+    bool isActive = true,
+  }) async => (await saveWithId(
+    id: id,
+    name: name,
+    contactInfo: contactInfo,
+    isActive: isActive,
+  )).error;
 }
 
 final clientProvider = StateNotifierProvider<ClientNotifier, ClientState>((

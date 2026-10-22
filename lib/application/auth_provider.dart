@@ -8,7 +8,6 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(db);
 });
 
-// Estado de autenticación
 class AuthState {
   final UserModel? user;
   final bool isLoading;
@@ -32,7 +31,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkSession();
   }
 
-  // Verifica si hay una sesión activa al iniciar la app
   Future<void> _checkSession() async {
     try {
       final user = await repository.getSesionActual();
@@ -53,6 +51,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         error: 'Usuario o contraseña incorrectos',
       );
     }
+  }
+
+  void clearError() {
+    if (state.error != null) state = state.copyWith();
   }
 
   Future<void> logout() async {

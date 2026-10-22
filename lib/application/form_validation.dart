@@ -1,23 +1,16 @@
 import 'search_filter.dart';
 
-// Reglas de validación de los formularios. Cada función devuelve el mensaje que
-// se muestra bajo el campo, o null si el valor es válido.
-
 const String requiredMessage = 'Campo requerido';
 const int maxNameLength = 100;
 const int maxTextLength = 500;
-// Tope de un importe (Bs.): evita números absurdos que desbordarían reportes.
 const double maxAmount = 99999999.99;
-// Tope de una cantidad de stock o de un material.
 const double maxQuantity = 9999999;
 
-// Texto obligatorio: vacío o solo espacios no vale.
 String? validateRequired(String? value, {String message = requiredMessage}) =>
     value == null || value.trim().isEmpty ? message : null;
 
-// Nombre obligatorio y de largo razonable.
-String? validateName(String? value, {String message = requiredMessage}) {
-  final error = validateRequired(value, message: message);
+String? validateName(String? value) {
+  final error = validateRequired(value);
   if (error != null) return error;
   if (value!.trim().length > maxNameLength) {
     return 'Máximo $maxNameLength caracteres';
@@ -25,7 +18,6 @@ String? validateName(String? value, {String message = requiredMessage}) {
   return null;
 }
 
-// Texto opcional (descripción, notas...) con largo máximo.
 String? validateOptionalText(String? value) {
   if (value != null && value.trim().length > maxTextLength) {
     return 'Máximo $maxTextLength caracteres';
@@ -33,14 +25,9 @@ String? validateOptionalText(String? value) {
   return null;
 }
 
-// Forma común de comparar nombres: sin distinguir mayúsculas, tildes ni
-// espacios de más.
 String comparableName(String name) =>
     normalizeForSearch(name).replaceAll(RegExp(r'\s+'), ' ');
 
-// ¿Hay otro registro con el mismo nombre (sin distinguir mayúsculas ni
-// tildes)? [others] son los nombres de los demás registros (sin el que se está
-// editando).
 String? validateUniqueName(
   String? value,
   Iterable<String> others, {
@@ -56,8 +43,6 @@ String? validateUniqueName(
 
 final RegExp _numberPattern = RegExp(r'^\d*\.?\d+$|^\d+\.$');
 
-// Número escrito por una persona: solo dígitos con un punto decimal opcional.
-// Devuelve null si no es un número válido.
 double? parseNumber(String? value) {
   final text = (value ?? '').trim();
   if (text.isEmpty || !_numberPattern.hasMatch(text)) return null;
@@ -69,9 +54,6 @@ int _decimalsOf(String text) {
   return dot < 0 ? 0 : text.length - dot - 1;
 }
 
-// Importe o cantidad decimal: obligatorio (o no, según [required]), sin
-// negativos, sin letras ni símbolos, con [maxDecimals] decimales como máximo y
-// mayor a cero salvo que [allowZero].
 String? validateDecimal(
   String? value, {
   bool required = true,
@@ -94,7 +76,6 @@ String? validateDecimal(
   return null;
 }
 
-// Importe en bolivianos: dos decimales como máximo.
 String? validateAmountField(
   String? value, {
   bool required = true,

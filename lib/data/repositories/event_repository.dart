@@ -2,13 +2,13 @@ import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
 import '../../models/event_model.dart';
 import '../../config/app_clock.dart';
+import 'name_rules.dart';
 
 class EventRepository {
   final AppDatabase database;
 
   EventRepository(this.database);
 
-  // Convierte fila a modelo
   EventModel _toModel(Event row) {
     return EventModel(
       id: row.id,
@@ -22,9 +22,6 @@ class EventRepository {
     );
   }
 
-  // Obtiene todos los eventos (incluyendo inactivos) ordenados por fecha
-  // descendente: la lista y los reportes los necesitan todos; los selectores
-  // de ventas y compras filtran por isActive.
   Future<List<EventModel>> getAll() async {
     final rows = await (database.select(database.events)
           ..orderBy([(e) => OrderingTerm.desc(e.startDate)]))
@@ -32,7 +29,6 @@ class EventRepository {
     return rows.map(_toModel).toList();
   }
 
-  // Guarda o actualiza un evento
   Future<void> save({
     int? id,
     required String name,
@@ -42,6 +38,7 @@ class EventRepository {
     String? notes,
     bool isActive = true,
   }) async {
+    name = requireName(name);
     final now = appNow();
     await database.into(database.events).insertOnConflictUpdate(
           EventsCompanion(
@@ -52,7 +49,7 @@ class EventRepository {
             endDate: Value(endDate),
             notes: Value(notes),
             isActive: Value(isActive),
-            createdAt: Value(now),
+            createdAt: id == null ? Value(now) : const Value.absent(),
             updatedAt: Value(now),
           ),
         );

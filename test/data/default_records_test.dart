@@ -17,9 +17,6 @@ import 'package:offline_first_bi/data/repositories/sale_repository.dart';
 import 'package:offline_first_bi/data/repositories/supplier_repository.dart';
 import 'package:offline_first_bi/models/default_records.dart';
 
-// Registros predeterminados ("Sin categoría", "Sin nombre", "Sin proveedor"):
-// protegidos contra renombrar / editar / desactivar, y destino automático de
-// lo que se guarda sin elegir categoría, cliente o proveedor.
 void main() {
   late AppDatabase db;
 
@@ -93,7 +90,6 @@ void main() {
           reason: '"$name" debe estar reservado',
         );
       }
-      // Renombrar otra categoría a ese nombre tampoco vale.
       await repository.save(name: 'Pines');
       final pines = await categoryNamed('Pines');
       await expectLater(
@@ -295,7 +291,6 @@ void main() {
       final sale = (await repository.getAll()).single;
       expect(sale.clientId, other);
 
-      // La persona quita el cliente en el formulario (opción "Sin nombre").
       await repository.editSale(
         saleId: sale.id,
         clientId: null,
@@ -403,7 +398,7 @@ void main() {
       await saveEvent('Feria de Arte', id: event.id, isActive: false);
 
       final all = await repository.getAll();
-      expect(all, hasLength(1)); // sigue existiendo
+      expect(all, hasLength(1));
       expect(all.single.id, event.id);
       expect(all.single.isActive, isFalse);
       expect(all.single.name, 'Feria de Arte');
