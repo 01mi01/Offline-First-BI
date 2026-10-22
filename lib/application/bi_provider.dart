@@ -16,17 +16,10 @@ import '../config/app_clock.dart';
 
 final biServiceProvider = Provider<BiService>((ref) => BiService());
 
-// Configuración vigente de Business Intelligence (periodo, filtros,
-// indicadores elegidos y tipos de gráfico). Vive mientras la app está abierta:
-// al volver al módulo, la configuración se abre con lo último elegido.
-final biConfigProvider = StateProvider<BiConfig>((ref) => BiConfig());
+final biConfigProvider = StateProvider.autoDispose<BiConfig>(
+  (ref) => BiConfig(),
+);
 
-// Todos los indicadores de Business Intelligence para unos parámetros.
-// Parte de las mismas ventas y compras filtradas que Reportes (por lo que
-// respeta la fecha propia de cada registro y excluye ventas canceladas y
-// registros con fecha futura), y de ahí agrega cada indicador. El stock bajo y
-// los productos sin movimiento son el estado ACTUAL del negocio y no dependen
-// del periodo ni de los filtros.
 final biReportProvider = Provider.autoDispose.family<BiReport, BiQuery>((
   ref,
   query,
@@ -45,9 +38,6 @@ final biReportProvider = Provider.autoDispose.family<BiReport, BiQuery>((
 
   final rows = ref.watch(saleReportRowsProvider(filters));
   final purchases = ref.watch(filteredPurchasesProvider(filters));
-  // La rentabilidad por evento suma TODAS las compras vinculadas (gastos
-  // generales y de materiales): ni el tipo de operación ni el proveedor
-  // elegidos las recortan.
   final eventPurchases = ref.watch(
     filteredPurchasesProvider(
       filters.copyWith(purchaseKind: PurchaseKind.all, clearSupplier: true),
@@ -117,8 +107,6 @@ final biReportProvider = Provider.autoDispose.family<BiReport, BiQuery>((
   );
 });
 
-// Compara el periodo elegido con el anterior equivalente: mismos filtros
-// (menos las fechas) aplicados al periodo anterior.
 BiPeriodComparison _periodComparison(
   Ref ref,
   BiService bi,
@@ -129,12 +117,10 @@ BiPeriodComparison _periodComparison(
   final end = filters.endDate;
   if (start == null) {
     return const BiPeriodComparison.unavailable(
-      'Elige un periodo con fecha de inicio (por ejemplo "Este mes") para '
+      'Elige un período con fecha de inicio (por ejemplo "Este mes") para '
       'compararlo con el anterior.',
     );
   }
-  // Con solo "Desde" se filtra ese único día; un periodo en curso se mide
-  // hasta hoy como mucho.
   final today = dateOnly(appNow());
   var last = dateOnly(end ?? start);
   if (last.isAfter(today)) last = today;
@@ -161,15 +147,6 @@ BiPeriodComparison _periodComparison(
     previous: prevSummary,
   );
 }
-
-// ---------------------------------------------------------------------------
-// Detalle de una barra
-// ---------------------------------------------------------------------------
-//
-// Cada detalle parte de los mismos datos filtrados que el panel (mismos
-// filtros, cada registro por su propia fecha, sin ventas canceladas ni
-// registros con fecha futura) y usa los mismos intervalos que Evolución en el
-// tiempo.
 
 typedef BiIdKey = ({BiQuery query, int id});
 typedef BiCategoryKey = ({BiQuery query, String name});
@@ -202,8 +179,6 @@ final biCategoryDetailProvider = Provider.autoDispose
 final biEventDetailProvider = Provider.autoDispose
     .family<BiEventDetail, BiIdKey>((ref, key) {
       final filters = key.query.filters;
-      // Igual que Rentabilidad por evento: todas las compras vinculadas, sin
-      // recortarlas por tipo de operación ni por proveedor.
       final eventPurchases = ref.watch(
         filteredPurchasesProvider(
           filters.copyWith(purchaseKind: PurchaseKind.all, clearSupplier: true),
