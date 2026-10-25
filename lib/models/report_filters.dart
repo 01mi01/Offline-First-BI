@@ -1,3 +1,4 @@
+import 'date_preset.dart';
 import 'purchase_kind.dart';
 
 class ReportFilters {
@@ -13,6 +14,7 @@ class ReportFilters {
   final String? country;
   final String? city;
   final PurchaseKind purchaseKind;
+  final DatePreset? datePreset;
 
   const ReportFilters({
     this.startDate,
@@ -27,6 +29,7 @@ class ReportFilters {
     this.country,
     this.city,
     this.purchaseKind = PurchaseKind.all,
+    this.datePreset,
   });
 
   DateTime? get effectiveEndDate => endDate ?? startDate;
@@ -44,6 +47,8 @@ class ReportFilters {
     String? country,
     String? city,
     PurchaseKind? purchaseKind,
+    DatePreset? datePreset,
+    bool clearDatePreset = false,
     bool clearStartDate = false,
     bool clearEndDate = false,
     bool clearCategory = false,
@@ -69,7 +74,15 @@ class ReportFilters {
       country: clearCountry ? null : country ?? this.country,
       city: clearCity ? null : city ?? this.city,
       purchaseKind: purchaseKind ?? this.purchaseKind,
+      datePreset: clearDatePreset ? null : datePreset ?? this.datePreset,
     );
+  }
+
+  ReportFilters refreshedFor(DateTime today) {
+    final preset = datePreset;
+    if (preset == null) return this;
+    final day = DateTime(today.year, today.month, today.day);
+    return copyWith(startDate: preset.start(day), endDate: day);
   }
 
   @override
@@ -88,7 +101,8 @@ class ReportFilters {
           priceType == other.priceType &&
           country == other.country &&
           city == other.city &&
-          purchaseKind == other.purchaseKind;
+          purchaseKind == other.purchaseKind &&
+          datePreset == other.datePreset;
 
   @override
   int get hashCode => Object.hash(
@@ -104,5 +118,6 @@ class ReportFilters {
     country,
     city,
     purchaseKind,
+    datePreset,
   );
 }

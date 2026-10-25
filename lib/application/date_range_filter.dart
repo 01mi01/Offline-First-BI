@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_clock.dart';
+import '../models/date_preset.dart';
+
+export '../models/date_preset.dart';
 
 const futureDateMessage = 'La fecha no puede ser posterior a hoy';
 const rangeOrderMessage = 'La fecha "Hasta" no puede ser anterior a "Desde"';
@@ -21,16 +24,6 @@ String? validateDateRange({DateTime? from, DateTime? to, DateTime? now}) {
   return null;
 }
 
-enum DatePreset {
-  today('Hoy'),
-  week('Esta semana'),
-  month('Este mes'),
-  year('Este año');
-
-  final String label;
-  const DatePreset(this.label);
-}
-
 class DateRangeFilter {
   final DateTime? from;
   final DateTime? to;
@@ -40,17 +33,11 @@ class DateRangeFilter {
 
   factory DateRangeFilter.forPreset(DatePreset preset, {DateTime? now}) {
     final today = dateOnly(now ?? appNow());
-    final from = switch (preset) {
-      DatePreset.today => today,
-      DatePreset.week => DateTime(
-        today.year,
-        today.month,
-        today.day - (today.weekday - DateTime.monday),
-      ),
-      DatePreset.month => DateTime(today.year, today.month),
-      DatePreset.year => DateTime(today.year),
-    };
-    return DateRangeFilter(from: from, to: today, preset: preset);
+    return DateRangeFilter(
+      from: preset.start(today),
+      to: today,
+      preset: preset,
+    );
   }
 
   bool get isActive => from != null || to != null;

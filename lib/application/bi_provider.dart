@@ -11,8 +11,8 @@ import 'material_provider.dart';
 import 'product_provider.dart';
 import 'report_provider.dart';
 import 'sale_provider.dart';
+import 'today_provider.dart';
 import 'unit_provider.dart';
-import '../config/app_clock.dart';
 
 final biServiceProvider = Provider<BiService>((ref) => BiService());
 
@@ -27,6 +27,7 @@ final biReportProvider = Provider.autoDispose.family<BiReport, BiQuery>((
   final filters = query.filters;
   final reports = ref.watch(reportServiceProvider);
   final bi = ref.watch(biServiceProvider);
+  ref.watch(todayProvider);
   final products = ref.watch(productProvider).products;
   final categories = ref.watch(categoryProvider).categories;
   final materials = ref.watch(materialProvider).materials;
@@ -121,13 +122,17 @@ BiPeriodComparison _periodComparison(
       'compararlo con el anterior.',
     );
   }
-  final today = dateOnly(appNow());
+  final today = ref.watch(todayProvider);
   var last = dateOnly(end ?? start);
   if (last.isAfter(today)) last = today;
-  final previous = bi.previousPeriod(start, last);
+  final preset = filters.datePreset;
+  final previous = preset != null
+      ? preset.previous(today)
+      : bi.previousEqualLengthPeriod(start, last);
   final previousFilters = filters.copyWith(
     startDate: previous.start,
     endDate: previous.end,
+    clearDatePreset: true,
   );
   final reports = ref.watch(reportServiceProvider);
   final prevSummary = bi.summarize(

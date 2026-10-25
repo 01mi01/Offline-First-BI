@@ -18,7 +18,7 @@ import '../support/bi_drill_seed.dart';
 import '../support/bi_harness.dart';
 
 DateTime _previousPeriodDay(DateTime start, DateTime end) {
-  final previous = BiService().previousPeriod(start, end).end;
+  final previous = BiService().previousEqualLengthPeriod(start, end).end;
   return DateTime(previous.year, previous.month, previous.day, 12);
 }
 

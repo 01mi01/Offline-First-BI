@@ -39,6 +39,13 @@ class PurchaseRepository {
         );
   }
 
+  DateTime get _startOfTomorrow {
+    final now = appNow();
+    return DateTime(now.year, now.month, now.day + 1);
+  }
+
+  bool _isFutureDated(DateTime date) => !date.isBefore(_startOfTomorrow);
+
   Future<bool> _hasLaterPurchaseOf(
     int materialId, {
     required int excludingPurchaseId,
@@ -54,7 +61,8 @@ class PurchaseRepository {
         database.purchaseItems.materialId.equals(materialId) &
             database.purchaseItems.purchaseId.equals(excludingPurchaseId).not() &
             database.purchases.isCanceled.equals(false) &
-            database.purchases.date.isBiggerThanValue(date),
+            database.purchases.date.isBiggerThanValue(date) &
+            database.purchases.date.isSmallerThanValue(_startOfTomorrow),
       )
       ..limit(1);
     return (await query.get()).isNotEmpty;
@@ -190,7 +198,7 @@ class PurchaseRepository {
                     material.stock + quantity,
                   ),
                 ),
-                pricePerUnit: later
+                pricePerUnit: later || _isFutureDated(date)
                     ? const Value.absent()
                     : Value(unitPrice),
                 updatedAt: Value(appNow()),
@@ -412,7 +420,7 @@ class PurchaseRepository {
                     material.stock + quantity,
                   ),
                 ),
-                pricePerUnit: later
+                pricePerUnit: later || _isFutureDated(date)
                     ? const Value.absent()
                     : Value(unitPrice),
                 updatedAt: Value(appNow()),

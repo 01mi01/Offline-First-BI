@@ -63,48 +63,11 @@ enum HomePeriod {
   final String duringLabel;
   const HomePeriod(this.label, this.ofLabel, this.duringLabel);
 
-  DateTime start(DateTime today) {
-    final day = dateOnly(today);
-    return switch (this) {
-      HomePeriod.today => day,
-      HomePeriod.week => DateTime(
-        day.year,
-        day.month,
-        day.day - (day.weekday - DateTime.monday),
-      ),
-      HomePeriod.month => DateTime(day.year, day.month),
-      HomePeriod.year => DateTime(day.year),
-    };
-  }
+  DateTime start(DateTime today) =>
+      DatePreset.values.byName(name).start(today);
 
-  ({DateTime start, DateTime end}) previous(DateTime today) {
-    final day = dateOnly(today);
-    final from = start(day);
-    int lastDay(int year, int month) => DateTime(year, month + 1, 0).day;
-    switch (this) {
-      case HomePeriod.today:
-        final yesterday = DateTime(day.year, day.month, day.day - 1);
-        return (start: yesterday, end: yesterday);
-      case HomePeriod.week:
-        return (
-          start: DateTime(from.year, from.month, from.day - 7),
-          end: DateTime(day.year, day.month, day.day - 7),
-        );
-      case HomePeriod.month:
-        final first = DateTime(day.year, day.month - 1);
-        final last = lastDay(first.year, first.month);
-        return (
-          start: first,
-          end: DateTime(first.year, first.month, day.day < last ? day.day : last),
-        );
-      case HomePeriod.year:
-        final last = lastDay(day.year - 1, day.month);
-        return (
-          start: DateTime(day.year - 1),
-          end: DateTime(day.year - 1, day.month, day.day < last ? day.day : last),
-        );
-    }
-  }
+  ({DateTime start, DateTime end}) previous(DateTime today) =>
+      DatePreset.values.byName(name).previous(today);
 
   String get previousDuringLabel => switch (this) {
     HomePeriod.today => 'ayer',

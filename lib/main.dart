@@ -7,6 +7,7 @@ import 'application/database_provider.dart';
 import 'application/image_storage_provider.dart';
 import 'theme/app_theme.dart';
 import 'presentation/pages/login_page.dart';
+import 'presentation/widgets/day_change_watcher.dart';
 import 'presentation/navigation/main_navigation_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -36,7 +37,7 @@ class MyApp extends ConsumerWidget {
       theme: lightTheme,
       builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
         value: appSystemOverlayStyle,
-        child: child ?? const SizedBox.shrink(),
+        child: DayChangeWatcher(child: child ?? const SizedBox.shrink()),
       ),
       locale: appLocale,
       supportedLocales: appSupportedLocales,

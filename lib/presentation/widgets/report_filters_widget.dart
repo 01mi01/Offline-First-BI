@@ -32,24 +32,19 @@ class ReportFiltersWidget extends ConsumerWidget {
   bool get _showSales => combined || activeTab == 0;
   bool get _showPurchases => combined || activeTab == 1;
 
-  DateRangeFilter get _dates {
-    for (final preset in DatePreset.values) {
-      final range = DateRangeFilter.forPreset(preset);
-      if (filters.startDate != null &&
-          filters.endDate != null &&
-          dateOnly(filters.startDate!) == range.from &&
-          dateOnly(filters.endDate!) == range.to) {
-        return range;
-      }
-    }
-    return DateRangeFilter(from: filters.startDate, to: filters.endDate);
-  }
+  DateRangeFilter get _dates => DateRangeFilter(
+    from: filters.startDate,
+    to: filters.endDate,
+    preset: filters.datePreset,
+  );
 
   ReportFilters _withDates(DateRangeFilter dates) => filters.copyWith(
     startDate: dates.from,
     endDate: dates.to,
+    datePreset: dates.preset,
     clearStartDate: dates.from == null,
     clearEndDate: dates.to == null,
+    clearDatePreset: dates.preset == null,
   );
 
   @override

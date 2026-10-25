@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
 import '../../application/sale_provider.dart';
+import '../../application/today_provider.dart';
 import '../../config/rounding.dart';
 import '../../models/purchase_model.dart';
 import '../../models/report_filters.dart';
@@ -31,6 +32,12 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<DateTime>(todayProvider, (previous, next) {
+      setState(() {
+        _salesFilters = _salesFilters.refreshedFor(next);
+        _purchaseFilters = _purchaseFilters.refreshedFor(next);
+      });
+    });
     final saleState = ref.watch(saleProvider);
     final purchaseState = ref.watch(purchaseProvider);
     final loading =

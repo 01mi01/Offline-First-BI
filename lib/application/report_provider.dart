@@ -14,6 +14,7 @@ import 'purchase_provider.dart';
 import 'report_service.dart';
 import 'sale_provider.dart';
 import 'supplier_provider.dart';
+import 'today_provider.dart';
 
 final reportServiceProvider = Provider<ReportService>((ref) => ReportService());
 
@@ -46,6 +47,7 @@ final purchaseItemsMapProvider =
 
 final filteredPurchasesProvider = Provider.autoDispose
     .family<List<PurchaseModel>, ReportFilters>((ref, filters) {
+  ref.watch(todayProvider);
   final purchases = ref.watch(purchaseProvider).purchases;
   final locations = ref.watch(locationProvider).locations;
   final service = ref.watch(reportServiceProvider);
@@ -63,6 +65,7 @@ final purchasesSummaryProvider = Provider.autoDispose
 
 final saleReportRowsProvider = Provider.autoDispose
     .family<List<SaleReportRow>, ReportFilters>((ref, filters) {
+  ref.watch(todayProvider);
   final sales = ref.watch(saleProvider).sales;
   final products = ref.watch(productProvider).products;
   final categories = ref.watch(categoryProvider).categories;

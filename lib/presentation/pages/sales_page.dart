@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
+import '../../application/today_provider.dart';
 import '../../application/location_options.dart';
 import '../../application/sale_provider.dart';
 import '../../application/client_provider.dart';
@@ -42,6 +43,7 @@ class SalesListBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(todayProvider);
     final state = ref.watch(saleProvider);
     final clients = ref.watch(clientProvider).clients;
     final dates = ref.watch(saleDateFilterProvider);

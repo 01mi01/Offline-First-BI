@@ -678,39 +678,13 @@ class BiService {
     return entries;
   }
 
-  ({DateTime start, DateTime end}) previousPeriod(DateTime start, DateTime end) {
+  ({DateTime start, DateTime end}) previousEqualLengthPeriod(
+    DateTime start,
+    DateTime end,
+  ) {
     final s = dateOnly(start);
     final e = dateOnly(end);
     final days = e.difference(s).inDays + 1;
-
-    int lastDayOfMonth(int year, int month) => DateTime(year, month + 1, 0).day;
-
-    if (s.day == 1 && e.year == s.year && e.month == s.month) {
-      final prevStart = DateTime(s.year, s.month - 1, 1);
-      final prevLast = lastDayOfMonth(prevStart.year, prevStart.month);
-      final isWholeMonth = e.day == lastDayOfMonth(e.year, e.month);
-      final endDay = isWholeMonth ? prevLast : (e.day < prevLast ? e.day : prevLast);
-      return (
-        start: prevStart,
-        end: DateTime(prevStart.year, prevStart.month, endDay),
-      );
-    }
-    if (s.month == 1 && s.day == 1 && e.year == s.year && days > 31) {
-      final endMonth = e.month;
-      final prevLast = lastDayOfMonth(s.year - 1, endMonth);
-      final isWholeYear = e.month == 12 && e.day == 31;
-      final endDay = isWholeYear ? 31 : (e.day < prevLast ? e.day : prevLast);
-      return (
-        start: DateTime(s.year - 1, 1, 1),
-        end: DateTime(s.year - 1, endMonth, endDay),
-      );
-    }
-    if (s.weekday == DateTime.monday && days >= 2 && days <= 7) {
-      return (
-        start: DateTime(s.year, s.month, s.day - 7),
-        end: DateTime(e.year, e.month, e.day - 7),
-      );
-    }
     final prevEnd = DateTime(s.year, s.month, s.day - 1);
     return (
       start: DateTime(prevEnd.year, prevEnd.month, prevEnd.day - (days - 1)),

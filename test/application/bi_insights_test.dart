@@ -330,64 +330,32 @@ void main() {
     });
   });
 
-  group('período anterior equivalente', () {
+  group('período anterior de un rango personalizado', () {
     final service = BiService();
     DateTime d(int y, int m, int day) => DateTime(y, m, day);
 
-    test('a month-to-date range compares with the same stretch of the previous month', () {
-      final p = service.previousPeriod(d(2026, 10, 1), d(2026, 10, 2));
-      expect(p.start, d(2026, 9, 1));
-      expect(p.end, d(2026, 9, 2));
-    });
-
-    test('a whole month compares with the whole previous month', () {
-      var p = service.previousPeriod(d(2026, 10, 1), d(2026, 10, 31));
-      expect((p.start, p.end), (d(2026, 9, 1), d(2026, 9, 30)));
-      p = service.previousPeriod(d(2026, 3, 1), d(2026, 3, 31));
-      expect((p.start, p.end), (d(2026, 2, 1), d(2026, 2, 28)));
-      p = service.previousPeriod(d(2024, 3, 1), d(2024, 3, 31));
-      expect((p.start, p.end), (d(2024, 2, 1), d(2024, 2, 29)));
-    });
-
-    test('a partial month clamps to the length of a shorter previous month', () {
-      final p = service.previousPeriod(d(2026, 3, 1), d(2026, 3, 30));
-      expect((p.start, p.end), (d(2026, 2, 1), d(2026, 2, 28)));
-    });
-
-    test('January compares with December of the previous year', () {
-      final p = service.previousPeriod(d(2026, 1, 1), d(2026, 1, 15));
-      expect((p.start, p.end), (d(2025, 12, 1), d(2025, 12, 15)));
-    });
-
-    test('a week (Monday to some day) compares with the previous week', () {
-      final p = service.previousPeriod(d(2026, 9, 28), d(2026, 10, 2));
-      expect((p.start, p.end), (d(2026, 9, 21), d(2026, 9, 25)));
-      final full = service.previousPeriod(d(2026, 9, 21), d(2026, 9, 27));
-      expect((full.start, full.end), (d(2026, 9, 14), d(2026, 9, 20)));
-    });
-
-    test('a year-to-date range compares with the same stretch of the previous year', () {
-      final p = service.previousPeriod(d(2026, 1, 1), d(2026, 10, 2));
-      expect((p.start, p.end), (d(2025, 1, 1), d(2025, 10, 2)));
-      final whole = service.previousPeriod(d(2025, 1, 1), d(2025, 12, 31));
-      expect((whole.start, whole.end), (d(2024, 1, 1), d(2024, 12, 31)));
-    });
-
-    test('any other range compares with the same number of days right before it', () {
-      final p = service.previousPeriod(d(2026, 9, 10), d(2026, 9, 19));
+    test('compares with the same number of days right before it', () {
+      final p = service.previousEqualLengthPeriod(d(2026, 9, 10), d(2026, 9, 19));
       expect((p.start, p.end), (d(2026, 8, 31), d(2026, 9, 9)));
-      final single = service.previousPeriod(d(2026, 10, 2), d(2026, 10, 2));
+      final single = service.previousEqualLengthPeriod(d(2026, 10, 2), d(2026, 10, 2));
       expect((single.start, single.end), (d(2026, 10, 1), d(2026, 10, 1)));
     });
 
-    test('the previous period never overlaps the current one and has the same size or a calendar-aligned one', () {
+    test('a range shaped like a month keeps the equal-length rule', () {
+      final p = service.previousEqualLengthPeriod(d(2026, 10, 1), d(2026, 10, 31));
+      expect((p.start, p.end), (d(2026, 8, 31), d(2026, 9, 30)));
+      final partial = service.previousEqualLengthPeriod(d(2026, 3, 1), d(2026, 3, 30));
+      expect((partial.start, partial.end), (d(2026, 1, 30), d(2026, 2, 28)));
+    });
+
+    test('the previous period never overlaps the current one and has the same size', () {
       for (final range in [
         (d(2026, 9, 10), d(2026, 9, 19)),
         (d(2026, 9, 28), d(2026, 10, 2)),
         (d(2026, 10, 1), d(2026, 10, 2)),
         (d(2026, 6, 15), d(2026, 6, 15)),
       ]) {
-        final p = service.previousPeriod(range.$1, range.$2);
+        final p = service.previousEqualLengthPeriod(range.$1, range.$2);
         expect(p.end.isBefore(range.$1), isTrue, reason: '$range');
         expect(
           p.end.difference(p.start).inDays,

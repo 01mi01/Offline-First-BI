@@ -12,6 +12,7 @@ import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
 import '../../application/sale_provider.dart';
 import '../../application/supplier_provider.dart';
+import '../../application/today_provider.dart';
 import '../../config/app_clock.dart';
 import '../../models/bi_config.dart';
 import '../../models/bi_models.dart';
@@ -48,9 +49,13 @@ class HomePage extends ConsumerWidget {
     final loading = saleState.isLoading || purchaseState.isLoading;
     final failed = saleState.error != null || purchaseState.error != null;
 
+    final today = ref.watch(todayProvider);
     final now = appNow();
-    final today = dateOnly(now);
-    final filters = ReportFilters(startDate: period.start(today), endDate: today);
+    final filters = ReportFilters(
+      startDate: period.start(today),
+      endDate: today,
+      datePreset: DatePreset.values.byName(period.name),
+    );
     final query = BiQuery(filters: filters);
     final report = access.needsReport && !loading && !failed
         ? ref.watch(biReportProvider(query))

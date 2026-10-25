@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
+import '../../application/today_provider.dart';
 import '../../application/location_options.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
@@ -44,6 +45,7 @@ class PurchasesListBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(todayProvider);
     final state = ref.watch(purchaseProvider);
     final suppliers = ref.watch(supplierProvider).suppliers;
     final kind = ref.watch(purchaseKindFilterProvider);
