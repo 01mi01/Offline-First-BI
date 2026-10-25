@@ -131,7 +131,7 @@ class _IndicatorRow extends StatelessWidget {
         icon: const Icon(
           Icons.info_outline_rounded,
           size: 20,
-          color: AppColors.textSecondary,
+          color: AppColors.textMuted,
         ),
         onPressed: () => showBiInfo(context, indicator.title, indicator.info),
       ),

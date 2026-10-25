@@ -55,6 +55,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
   final Map<int, int> _cartItems = {};
   final Map<int, String> _cartPriceTypes = {};
   final Map<int, ({double price, String type})> _savedLines = {};
+  final Set<int> _priceEditorOpen = {};
   final Map<int, int> _reservedByThisSale = {};
   late String _initialSignature;
   int? _selectedLocationId;
@@ -128,8 +129,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
           _savedLines[item.productId] = (
             price: item.unitPrice,
             type: item.priceType,
-          );
-        }
+          );        }
       });
       if (pristine) _initialSignature = _signature();
     }
@@ -650,12 +650,38 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                         child: StatusBadge.forState(isActive: false),
                       ),
                     ],
-                    Text(
-                      'Bs. ${fixed2(linePrice * entry.value)}',
-                      style: AppText.rowSubtitle(
-                        context,
-                        color: AppColors.cyanDark,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Bs. ${fixed2(linePrice * entry.value)}',
+                            style: AppText.rowTitle(
+                              context,
+                              color: AppColors.cyanDark,
+                            ),
+                          ),
+                        ),
+                        Tooltip(
+                          message: 'Cambiar precio',
+                          child: InkResponse(
+                            onTap: () => setState(() {
+                              if (!_priceEditorOpen.remove(entry.key)) {
+                                _priceEditorOpen.add(entry.key);
+                              }
+                            }),
+                            radius: 20,
+                            child: const Padding(
+                              padding: EdgeInsets.all(AppSpacing.s8),
+                              child: Icon(
+                                Icons.edit_rounded,
+                                size: 18,
+                                color: AppColors.cyanDark,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     if (entry.value >= available)
                       Text(
@@ -667,9 +693,10 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
               ),
               Text(
                 '${entry.value}',
-                style: AppText.rowTitle(context).copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppText.rowSubtitle(
+                  context,
+                  color: AppColors.textPrimary,
+                ).copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: AppSpacing.s8),
               AppStepper(
@@ -679,6 +706,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                     _cartItems.remove(entry.key);
                     _cartPriceTypes.remove(entry.key);
                     _savedLines.remove(entry.key);
+                    _priceEditorOpen.remove(entry.key);
                   } else {
                     _cartItems[entry.key] = entry.value - 1;
                   }
@@ -692,18 +720,19 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.s8),
-          AppMiniToggle<String>(
-            segments: const [
-              AppSegment('A', 'Precio A'),
-              AppSegment('B', 'Precio B'),
-            ],
-            selected: priceType,
-            onChanged: (type) => setState(() {
-              _cartChanged();
-              _cartPriceTypes[entry.key] = type;
-            }),
-          ),
+          if (_priceEditorOpen.contains(entry.key)) ...[
+            AppMiniToggle<String>(
+              segments: const [
+                AppSegment('A', 'Precio A'),
+                AppSegment('B', 'Precio B'),
+              ],
+              selected: priceType,
+              onChanged: (type) => setState(() {
+                _cartChanged();
+                _cartPriceTypes[entry.key] = type;
+              }),
+            ),
+          ],
         ],
       ),
     );

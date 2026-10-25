@@ -13,100 +13,23 @@ class AppSegmented<T> extends StatelessWidget {
   final List<AppSegment<T>> segments;
   final T? selected;
   final ValueChanged<T> onChanged;
+  final bool expand;
 
   const AppSegmented({
     super.key,
     required this.segments,
     required this.selected,
     required this.onChanged,
+    this.expand = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final count = segments.length;
-    final index = segments.indexWhere((s) => s.value == selected);
-    final alignX = count <= 1 || index < 0 ? -1.0 : -1 + 2 * index / (count - 1);
-
-    return SizedBox(
-      height: AppMetrics.minTap,
-      child: Stack(
-        children: [
-          Center(
-            child: Container(
-              height: AppMetrics.segmentedHeight,
-              padding: const EdgeInsets.all(AppSpacing.s2),
-              decoration: BoxDecoration(
-                color: AppColors.track,
-                borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
-              ),
-              child: AnimatedAlign(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                alignment: Alignment(alignX, 0),
-                child: FractionallySizedBox(
-                  widthFactor: 1 / count,
-                  heightFactor: 1,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 120),
-                    opacity: index < 0 ? 0 : 1,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppMetrics.thumbRadius),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2),
-              child: Row(
-                children: [
-                  for (final segment in segments)
-                    Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          if (segment.value != selected) {
-                            onChanged(segment.value);
-                          }
-                        },
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.s4,
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                segment.label,
-                                maxLines: 1,
-                                style: AppText.rowSubtitle(
-                                  context,
-                                  color: segment.value == selected
-                                      ? AppColors.textPrimary
-                                      : AppColors.textSecondary,
-                                ).copyWith(
-                                  fontSize: AppMetrics.headerSize + 1,
-                                  fontWeight: segment.value == selected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return AppMiniToggle<T>(
+      segments: segments,
+      selected: selected,
+      onChanged: onChanged,
+      expand: expand,
     );
   }
 }
@@ -260,8 +183,16 @@ class _AppSearchBarState extends State<AppSearchBar> {
 class AppStepper extends StatelessWidget {
   final VoidCallback? onMinus;
   final VoidCallback? onPlus;
+  final Key? minusKey;
+  final Key? plusKey;
 
-  const AppStepper({super.key, required this.onMinus, required this.onPlus});
+  const AppStepper({
+    super.key,
+    required this.onMinus,
+    required this.onPlus,
+    this.minusKey,
+    this.plusKey,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -277,12 +208,14 @@ class AppStepper extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _StepperButton(
+                key: minusKey,
                 icon: Icons.remove_rounded,
                 tooltip: 'Quitar uno',
                 onTap: onMinus,
               ),
-              Container(width: 1, height: 18, color: AppColors.separator),
+              Container(width: 1, height: 16, color: AppColors.separator),
               _StepperButton(
+                key: plusKey,
                 icon: Icons.add_rounded,
                 tooltip: 'Agregar uno',
                 onTap: onPlus,
@@ -301,6 +234,7 @@ class _StepperButton extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _StepperButton({
+    super.key,
     required this.icon,
     required this.tooltip,
     required this.onTap,
@@ -314,11 +248,11 @@ class _StepperButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
         child: SizedBox(
-          width: AppMetrics.minTap,
-          height: AppMetrics.segmentedHeight,
+          width: 40,
+          height: 36,
           child: Icon(
             icon,
-            size: 20,
+            size: 18,
             color: onTap == null ? AppColors.chevron : AppColors.textPrimary,
           ),
         ),
@@ -375,65 +309,107 @@ class AppRoundCheck extends StatelessWidget {
 
 class AppMiniToggle<T> extends StatelessWidget {
   final List<AppSegment<T>> segments;
-  final T selected;
+  final T? selected;
   final ValueChanged<T> onChanged;
+  final bool expand;
 
   const AppMiniToggle({
     super.key,
     required this.segments,
     required this.selected,
     required this.onChanged,
+    this.expand = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s2),
-      decoration: BoxDecoration(
-        color: AppColors.track,
-        borderRadius: BorderRadius.circular(AppMetrics.thumbRadius),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final segment in segments)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                if (segment.value != selected) onChanged(segment.value);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                height: 44,
-                constraints: const BoxConstraints(minWidth: 88),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: segment.value == selected
-                      ? AppColors.surface
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(
-                    AppMetrics.thumbRadius - AppSpacing.s2,
+    final count = segments.length;
+    final index = segments.indexWhere((s) => s.value == selected);
+    final alignX = count <= 1 || index < 0 ? -1.0 : -1 + 2 * index / (count - 1);
+
+    return SizedBox(
+      height: AppMetrics.minTap,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          width: expand ? double.infinity : null,
+          height: 36,
+          padding: const EdgeInsets.all(AppSpacing.s2),
+          decoration: BoxDecoration(
+            color: AppColors.track,
+            borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
+          ),
+          child: IntrinsicWidth(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    alignment: Alignment(alignX, 0),
+                    child: FractionallySizedBox(
+                      widthFactor: 1 / count,
+                      heightFactor: 1,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 120),
+                        opacity: index < 0 ? 0 : 1,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(
+                              AppMetrics.thumbRadius,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(
-                  segment.label,
-                  maxLines: 1,
-                  style: AppText.rowSubtitle(
-                    context,
-                    color: segment.value == selected
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ).copyWith(
-                    fontSize: AppMetrics.filterTextSize,
-                    fontWeight: segment.value == selected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final segment in segments)
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (segment.value != selected) {
+                              onChanged(segment.value);
+                            }
+                          },
+                          child: Container(
+                            constraints: const BoxConstraints(minWidth: 80),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s12,
+                            ),
+                            alignment: Alignment.center,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                segment.label,
+                                maxLines: 1,
+                                style: AppText.rowSubtitle(
+                                  context,
+                                  color: segment.value == selected
+                                      ? AppColors.textPrimary
+                                      : AppColors.textSecondary,
+                                ).copyWith(
+                                  fontSize: 15,
+                                  fontWeight: segment.value == selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }

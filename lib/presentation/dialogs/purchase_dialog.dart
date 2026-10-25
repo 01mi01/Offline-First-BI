@@ -361,6 +361,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
               child: AppSegmented<bool>(
+                expand: true,
                 segments: const [
                   AppSegment(true, 'Materiales'),
                   AppSegment(false, 'Gasto general'),

@@ -119,8 +119,18 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                   label: 'Exportar',
                   placeholder: 'Elegir formato',
                   options: const [
-                    FilterOption<String?>('excel', 'Exportar Excel'),
-                    FilterOption<String?>('pdf', 'Exportar PDF'),
+                    FilterOption<String?>(
+                      'excel',
+                      'Exportar Excel',
+                      icon: Icons.table_chart_rounded,
+                      iconColor: AppColors.success,
+                    ),
+                    FilterOption<String?>(
+                      'pdf',
+                      'Exportar PDF',
+                      icon: Icons.picture_as_pdf_rounded,
+                      iconColor: AppColors.error,
+                    ),
                   ],
                   current: null,
                   defaultValue: null,

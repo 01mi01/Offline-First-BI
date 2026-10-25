@@ -181,6 +181,8 @@ void main() {
       expect(find.text('Bs. 55.00'), findsWidgets);
       expect(find.text('Bs. 40.00'), findsNothing);
 
+      await tester.tap(find.byTooltip('Cambiar precio'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Precio B'));
       await tester.pumpAndSettle();
       expect(find.text('Bs. 40.00'), findsWidgets);
@@ -220,6 +222,35 @@ void main() {
   );
 
   testWidgets(
+    'the price editor is hidden by default, the edit icon shows it and '
+    'tapping Precio B changes the line price type',
+    (tester) async {
+      await seedDistinctPriceProducts();
+      await _openSaleDialog(tester, db);
+      await addToCart(tester, 'Estuches');
+
+      expect(find.text('Precio A'), findsNothing);
+      expect(find.text('Precio B'), findsNothing);
+
+      await tester.tap(find.byTooltip('Cambiar precio'));
+      await tester.pumpAndSettle();
+      expect(find.text('Precio A'), findsOneWidget);
+      expect(find.text('Precio B'), findsOneWidget);
+      expect(find.text('Bs.\u00a055.00'), findsWidgets);
+
+      await tester.tap(find.text('Precio B'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bs.\u00a040.00'), findsWidgets);
+      expect(find.text('Bs.\u00a055.00'), findsNothing);
+
+      await tester.tap(find.byTooltip('Cambiar precio'));
+      await tester.pumpAndSettle();
+      expect(find.text('Precio B'), findsNothing);
+      expect(find.text('Bs.\u00a040.00'), findsWidgets);
+    },
+  );
+
+  testWidgets(
     'one sale can mix bands: a product at Precio A and another at Precio B '
     'are each charged their own price and the total adds them up',
     (tester) async {
@@ -231,7 +262,9 @@ void main() {
 
       expect(find.text('Bs. 63.00'), findsWidgets);
 
-      await tester.tap(find.text('Precio B').last);
+      await tester.tap(find.byTooltip('Cambiar precio').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Precio B'));
       await tester.pumpAndSettle();
 
       expect(find.text('Bs. 61.50'), findsWidgets);

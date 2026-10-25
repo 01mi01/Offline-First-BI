@@ -190,7 +190,10 @@ void main() {
 
         await openEdit(tester, sale);
         expect(bs('50.00'), findsWidgets);
+        expect(find.text('Precio A'), findsNothing);
 
+        await tester.tap(find.byTooltip('Cambiar precio'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Precio A'));
         await tester.pumpAndSettle();
         expect(bs('44.00'), findsWidgets);
@@ -248,6 +251,8 @@ void main() {
       await searchProducts(tester, 'Cuadro');
       await tester.tap(find.byIcon(Icons.add_circle_rounded));
       await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Cambiar precio'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Precio B'));
       await tester.pumpAndSettle();
       await save(tester);
@@ -281,7 +286,8 @@ void main() {
       expect(bs('24.00'), findsWidgets);
       expect(bs('49.00'), findsWidgets);
       expect(find.byTooltip('Quitar uno'), findsNWidgets(2));
-      expect(find.text('Precio A'), findsNWidgets(2));
+      expect(find.byTooltip('Cambiar precio'), findsNWidgets(2));
+      expect(find.text('Precio A'), findsNothing);
     });
 
     testWidgets('the inactive line can be removed and its stock returns', (

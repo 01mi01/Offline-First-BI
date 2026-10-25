@@ -11,8 +11,10 @@ import 'searchable_picker.dart';
 class FilterOption<T> {
   final T value;
   final String label;
+  final IconData? icon;
+  final Color? iconColor;
 
-  const FilterOption(this.value, this.label);
+  const FilterOption(this.value, this.label, {this.icon, this.iconColor});
 }
 
 List<FilterOption<StatusFilter>> statusFilterOptions({bool feminine = false}) =>
@@ -94,11 +96,23 @@ class FilterDropdown<T> extends FilterField {
         onSelected: (i) => onApply(options[i].value),
         itemBuilder: (context) => [
           for (var i = 0; i < options.length; i++)
-            CheckedPopupMenuItem<int>(
-              value: i,
-              checked: options[i].value == current,
-              child: Text(options[i].label),
-            ),
+            if (options[i].icon != null)
+              PopupMenuItem<int>(
+                value: i,
+                child: Row(
+                  children: [
+                    Icon(options[i].icon, size: 22, color: options[i].iconColor),
+                    const SizedBox(width: AppSpacing.s12),
+                    Expanded(child: Text(options[i].label)),
+                  ],
+                ),
+              )
+            else
+              CheckedPopupMenuItem<int>(
+                value: i,
+                checked: options[i].value == current,
+                child: Text(options[i].label),
+              ),
         ],
         child: Container(
           height: AppMetrics.controlHeight,
@@ -241,7 +255,7 @@ class FilterDates extends FilterField {
             runSpacing: 0,
             children: [
               for (final preset in DatePreset.values)
-                _PresetPill(
+                PresetPill(
                   label: preset.label,
                   selected: current.preset == preset,
                   onTap: () {
@@ -310,12 +324,13 @@ class _Labeled extends StatelessWidget {
   }
 }
 
-class _PresetPill extends StatelessWidget {
+class PresetPill extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
-  const _PresetPill({
+  const PresetPill({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -323,9 +338,9 @@ class _PresetPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
+      behavior: HitTestBehavior.opaque,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: AppMetrics.minTap),
         child: Center(

@@ -244,7 +244,7 @@ class BiSectionHeader extends StatelessWidget {
               child: Icon(
                 Icons.info_outline_rounded,
                 size: 20,
-                color: AppColors.textSecondary,
+                color: AppColors.textMuted,
                 semanticLabel: 'Información',
               ),
             ),

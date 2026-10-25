@@ -4,6 +4,8 @@ import '../../application/form_validation.dart';
 import '../../config/quantity_format.dart';
 import '../../config/rounding.dart';
 import '../../theme/app_theme.dart';
+import 'app_controls.dart';
+import 'filter_panel.dart' show PresetPill;
 import 'form_widgets.dart';
 import 'app_style.dart';
 
@@ -71,67 +73,46 @@ class FractionQuantityPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FormSectionLabel('$label ($unit)'),
-        const SizedBox(height: AppSpacing.s8),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.s6),
+          child: Text('$label ($unit)', style: filterLabelStyle(context)),
+        ),
         Wrap(
-          spacing: AppSpacing.s8,
-          runSpacing: AppSpacing.s8,
+          spacing: AppSpacing.s6,
           children: _presets.map((preset) {
             final (fraction, presetLabel) = preset;
             final selected = fraction >= 1
                 ? whole >= 1 && fractionPart == 0
                 : fractionPart == fraction;
-            return GestureDetector(
+            return PresetPill(
+              label: presetLabel,
+              selected: selected,
               onTap: () => _selectPreset(fraction, whole),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s14,
-                  vertical: AppSpacing.s10,
-                ),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.cyanSoft : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-                ),
-                child: Text(
-                  presetLabel,
-                  style: AppText.rowSubtitle(
-                    context,
-                    color: selected ? AppColors.cyanDark : AppColors.textPrimary,
-                  ).copyWith(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-              ),
             );
           }).toList(),
         ),
-        const SizedBox(height: AppSpacing.s16),
+        const SizedBox(height: AppSpacing.s8),
         Row(
           children: [
             Expanded(
               child: FormSectionLabel(_wholeUnitsLabel(unit)),
             ),
-            _StepperButton(
-              key: const ValueKey('container-whole-minus'),
-              icon: Icons.remove_rounded,
-              onTap: whole > 0
+            Text(
+              '$whole',
+              key: const ValueKey('container-whole-count'),
+              style: AppText.rowTitle(
+                context,
+              ).copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: AppSpacing.s8),
+            AppStepper(
+              minusKey: const ValueKey('container-whole-minus'),
+              plusKey: const ValueKey('container-whole-plus'),
+              onMinus: whole > 0
                   ? () => onChanged(combineContainerQuantity(whole - 1, fractionPart))
                   : null,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s14),
-              child: Text(
-                '$whole',
-                key: const ValueKey('container-whole-count'),
-                style: AppText.rowTitle(
-                  context,
-                ).copyWith(fontWeight: FontWeight.w700),
-              ),
-            ),
-            _StepperButton(
-              key: const ValueKey('container-whole-plus'),
-              icon: Icons.add_rounded,
-              onTap: () => onChanged(combineContainerQuantity(whole + 1, fractionPart)),
+              onPlus: () =>
+                  onChanged(combineContainerQuantity(whole + 1, fractionPart)),
             ),
           ],
         ),
@@ -144,34 +125,6 @@ class FractionQuantityPicker extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _StepperButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _StepperButton({super.key, required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: AppFlat.minTap,
-        height: AppFlat.minTap,
-        decoration: BoxDecoration(
-          color: enabled ? AppColors.cyanSoft : AppColors.surface,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: enabled ? AppColors.cyanDark : AppColors.textSecondary,
-        ),
-      ),
     );
   }
 }

@@ -143,7 +143,7 @@ class AppMetrics {
       AppSpacing.s16 + tileSize + AppSpacing.s12;
   static const double dividerIndentWithThumb =
       AppSpacing.s16 + AppFlat.thumbSize + AppSpacing.s12;
-  static const double largeTitleSize = 34;
+  static const double largeTitleSize = 32;
   static const double navTitleSize = 17;
   static const double rowTitleSize = 17;
   static const double rowSubtitleSize = 15;
@@ -212,7 +212,7 @@ final lightTheme = ThemeData(
   cardColor: AppColors.surface,
 
   textTheme: const TextTheme(
-    headlineSmall: TextStyle(fontSize: 28, fontWeight: FontWeight.normal),
+    headlineSmall: TextStyle(fontSize: 26, fontWeight: FontWeight.normal),
     displayLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
     displayMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.normal),
     displaySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
