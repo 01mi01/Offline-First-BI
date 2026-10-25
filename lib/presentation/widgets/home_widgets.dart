@@ -11,7 +11,7 @@ import 'app_style.dart';
 
 const Duration _entranceDuration = Duration(milliseconds: 300);
 
-const double homeMaxContentWidth = 720;
+const double homeMaxContentWidth = AppExtent.e720;
 
 double homeSidePadding(BuildContext context) {
   final width = MediaQuery.sizeOf(context).width;
@@ -129,7 +129,7 @@ class _PeriodPicker extends StatelessWidget {
                 Text(period.label, style: labelStyle),
                 const Icon(
                   Icons.arrow_drop_down_rounded,
-                  size: 24,
+                  size: AppIconSize.s24,
                   color: AppColors.cyanDark,
                 ),
               ],
@@ -228,7 +228,7 @@ class _HomeHeroCardState extends State<HomeHeroCard> {
               key: const ValueKey('home-hero-amount'),
               style: textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 32,
+                fontSize: AppMetrics.largeTitleSize,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -343,7 +343,7 @@ class HomeChangePill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: iconColor),
+              Icon(icon, size: AppIconSize.s16, color: iconColor),
               const SizedBox(width: AppSpacing.s2),
             ],
             Text(
@@ -413,14 +413,14 @@ class _ShortcutButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: AppFlat.thumbSize,
+                height: AppFlat.thumbSize,
                 decoration: const BoxDecoration(
                   color: AppColors.surface,
                   shape: BoxShape.circle,
                   boxShadow: AppShadows.card,
                 ),
-                child: Icon(item.icon, size: 26, color: AppColors.cyanDark),
+                child: Icon(item.icon, size: AppHeader.iconSize, color: AppColors.cyanDark),
               ),
               const SizedBox(height: AppSpacing.s8),
               Text(
@@ -555,7 +555,7 @@ class HomeLoadingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       key: const ValueKey('home-loading'),
-      height: 140,
+      height: AppExtent.e140,
       width: double.infinity,
       decoration: AppCards.decoration,
       child: const Center(child: CircularProgressIndicator()),
@@ -577,7 +577,7 @@ class HomeErrorCard extends StatelessWidget {
       decoration: AppCards.decoration,
       child: Column(
         children: [
-          const Icon(Icons.error_rounded, color: AppColors.error, size: 28),
+          const Icon(Icons.error_rounded, color: AppColors.error, size: AppIconSize.s28),
           const SizedBox(height: AppSpacing.s8),
           Text(
             'No se pudo cargar la información',
@@ -591,7 +591,7 @@ class HomeErrorCard extends StatelessWidget {
             onPressed: onRetry,
             style: TextButton.styleFrom(
               foregroundColor: AppColors.cyanDark,
-              minimumSize: const Size(48, 48),
+              minimumSize: const Size(AppMetrics.minTap, AppMetrics.minTap),
               shape: const StadiumBorder(),
             ),
             child: const Text('Reintentar'),

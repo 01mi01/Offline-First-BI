@@ -11,7 +11,7 @@ class ProfileButton extends StatelessWidget {
       icon: const Icon(
         Icons.settings_rounded,
         color: AppColors.cyanDark,
-        size: 26,
+        size: AppHeader.iconSize,
       ),
       tooltip: 'Ajustes',
       onPressed: () => Navigator.push(

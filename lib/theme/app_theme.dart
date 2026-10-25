@@ -78,11 +78,75 @@ class AppSpacing {
   static const double s12 = 12;
   static const double s14 = 14;
   static const double s16 = 16;
+  static const double s18 = 18;
   static const double s20 = 20;
   static const double s24 = 24;
   static const double s28 = 28;
   static const double s32 = 32;
   static const double s48 = 48;
+}
+
+class AppIconSize {
+  static const double s16 = 16;
+  static const double s18 = 18;
+  static const double s20 = 20;
+  static const double s22 = 22;
+  static const double s24 = 24;
+  static const double s28 = 28;
+  static const double s32 = 32;
+  static const double s40 = 40;
+  static const double s52 = 52;
+  static const double s60 = 60;
+  static const double s120 = 120;
+}
+
+class AppStroke {
+  static const double hairline = 1;
+  static const double thin = 1.5;
+  static const double medium = 2;
+  static const double thick = 3;
+  static const double accent = 4;
+}
+
+class AppExtent {
+  static const double e40 = 40;
+  static const double e44 = 44;
+  static const double e50 = 50;
+  static const double e56 = 56;
+  static const double e64 = 64;
+  static const double e80 = 80;
+  static const double e96 = 96;
+  static const double e100 = 100;
+  static const double e140 = 140;
+  static const double e180 = 180;
+  static const double e196 = 196;
+  static const double e200 = 200;
+  static const double e220 = 220;
+  static const double e240 = 240;
+  static const double e260 = 260;
+  static const double e420 = 420;
+  static const double e720 = 720;
+}
+
+class AppSmallRadius {
+  static const double r3 = 3;
+  static const double r5 = 5;
+  static const double r9 = 9;
+}
+
+class AppOpacity {
+  static const double a14 = 0.14;
+  static const double a20 = 0.2;
+  static const double a40 = 0.4;
+  static const double a50 = 0.5;
+  static const double a70 = 0.7;
+  static const double a92 = 0.92;
+}
+
+class AppLineHeight {
+  static const double tight = 1;
+  static const double normal = 1.25;
+  static const double relaxed = 1.5;
 }
 
 class AppShadows {
@@ -156,6 +220,10 @@ class AppMetrics {
   static const double controlTextSize = 15;
   static const double filterTextSize = 13;
   static const double filterLabelSize = 12;
+  static const double navLabelSize = 11;
+  static const double tinyTextSize = 9;
+  static const double buttonTextSize = 16;
+  static const double titleMediumSize = 24;
   static const double menuMaxHeight = 280;
   static const double presetHeight = 36;
 }

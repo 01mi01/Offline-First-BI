@@ -22,7 +22,7 @@ class AppListCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const Divider(height: 1, color: AppColors.border),
+            if (i > 0) const Divider(height: AppStroke.hairline, color: AppColors.border),
             children[i],
           ],
         ],
@@ -60,19 +60,19 @@ class AppListRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSpacing.s16),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 64),
+        constraints: const BoxConstraints(minHeight: AppExtent.e64),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: AppExtent.e44,
+                height: AppExtent.e44,
                 decoration: BoxDecoration(
-                  color: iconBackground ?? iconColor.withValues(alpha: 0.14),
+                  color: iconBackground ?? iconColor.withValues(alpha: AppOpacity.a14),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 22, color: iconColor),
+                child: Icon(icon, size: AppIconSize.s22, color: iconColor),
               ),
               const SizedBox(width: AppSpacing.s12),
               Expanded(

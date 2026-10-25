@@ -440,7 +440,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                       ),
                       const SizedBox(height: AppSpacing.s8),
                       Container(
-                        height: 200,
+                        height: AppExtent.e200,
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
                           color: AppColors.surface,
@@ -460,8 +460,8 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                                 padding: EdgeInsets.zero,
                                 itemCount: visibleProducts.length,
                                 separatorBuilder: (_, _) => const Divider(
-                                  height: 1,
-                                  thickness: 1,
+                                  height: AppStroke.hairline,
+                                  thickness: AppStroke.hairline,
                                   indent: AppMetrics.dividerIndent,
                                   color: AppColors.separator,
                                 ),
@@ -670,12 +670,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                                 _priceEditorOpen.add(entry.key);
                               }
                             }),
-                            radius: 20,
+                            radius: AppSpacing.s20,
                             child: const Padding(
                               padding: EdgeInsets.all(AppSpacing.s8),
                               child: Icon(
                                 Icons.edit_rounded,
-                                size: 18,
+                                size: AppIconSize.s18,
                                 color: AppColors.cyanDark,
                               ),
                             ),

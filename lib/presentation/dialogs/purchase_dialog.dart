@@ -595,7 +595,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
             tooltip: 'Quitar material',
             icon: const Icon(
               Icons.remove_circle_rounded,
-              size: 24,
+              size: AppIconSize.s24,
               color: AppColors.error,
             ),
             onPressed: () => setState(() {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-OutlineInputBorder appInputBorder(Color color, [double width = 1]) =>
+OutlineInputBorder appInputBorder(Color color, [double width = AppStroke.hairline]) =>
     OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
       borderSide: BorderSide(color: color, width: width),
@@ -9,7 +9,7 @@ OutlineInputBorder appInputBorder(Color color, [double width = 1]) =>
 
 InputDecorationTheme appInputDecorationTheme(BuildContext context) {
   final enabled = appInputBorder(AppColors.border);
-  final focused = appInputBorder(AppColors.cyanDark, 2);
+  final focused = appInputBorder(AppColors.cyanDark, AppStroke.medium);
   final textTheme = Theme.of(context).textTheme;
   return InputDecorationTheme(
     filled: true,

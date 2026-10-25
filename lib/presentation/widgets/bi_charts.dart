@@ -62,7 +62,7 @@ class BiChartTypePicker extends StatelessWidget {
               onTap: () => onChanged(type),
               child: Icon(
                 _chartTypeIcon(type),
-                size: 18,
+                size: AppIconSize.s18,
                 semanticLabel: type.label,
                 color: type == selected
                     ? AppColors.cyanDark
@@ -115,7 +115,7 @@ class _BiPill extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 32, minWidth: 40),
+        constraints: const BoxConstraints(minHeight: AppSpacing.s32, minWidth: AppExtent.e40),
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
         decoration: BoxDecoration(
@@ -238,12 +238,12 @@ class BiSectionHeader extends StatelessWidget {
           InkResponse(
             key: ValueKey('bi-info-$title'),
             onTap: () => showBiInfo(context, title, info!),
-            radius: 20,
+            radius: AppSpacing.s20,
             child: const Padding(
               padding: EdgeInsets.all(AppSpacing.s4),
               child: Icon(
                 Icons.info_outline_rounded,
-                size: 20,
+                size: AppIconSize.s20,
                 color: AppColors.textMuted,
                 semanticLabel: 'Información',
               ),
@@ -374,7 +374,7 @@ class _BiRankingChartState extends State<BiRankingChart> {
                 for (var i = 0; i < bars.length; i++)
                   Padding(
                     padding: EdgeInsets.only(
-                      bottom: i == bars.length - 1 ? 0 : 12,
+                      bottom: i == bars.length - 1 ? 0 : AppSpacing.s12,
                     ),
                     child: _RankingRow(
                       index: i,
@@ -459,7 +459,7 @@ class _RankingRow extends StatelessWidget {
               if (onTap != null)
                 const Icon(
                   Icons.chevron_right,
-                  size: 18,
+                  size: AppIconSize.s18,
                   color: AppColors.textSecondary,
                 ),
             ],
@@ -468,9 +468,9 @@ class _RankingRow extends StatelessWidget {
             Text(bar.detail!, style: detailStyle, maxLines: 1),
           const SizedBox(height: AppSpacing.s4),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppSpacing.s4),
             child: Container(
-              height: 10,
+              height: AppSpacing.s10,
               color: AppColors.background,
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
@@ -544,7 +544,7 @@ class _BiSignedBarsState extends State<BiSignedBars> {
             for (var i = 0; i < items.length; i++)
               Padding(
                 padding: EdgeInsets.only(
-                  bottom: i == items.length - 1 ? 0 : 12,
+                  bottom: i == items.length - 1 ? 0 : AppSpacing.s12,
                 ),
                 child: _SignedBarRow(
                   index: i,
@@ -622,16 +622,16 @@ class _SignedBarRow extends StatelessWidget {
           for (final detail in item.details) Text(detail, style: detailStyle),
           const SizedBox(height: AppSpacing.s4),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppSpacing.s4),
             child: SizedBox(
-              height: 10,
+              height: AppSpacing.s10,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
                   final scale = span > 0 ? width / span : 0.0;
                   final zeroX = maxNegative * scale;
                   var barWidth = item.value.abs() * scale;
-                  if (item.value != 0 && barWidth < 3) barWidth = 3;
+                  if (item.value != 0 && barWidth < AppStroke.thick) barWidth = AppStroke.thick;
                   barWidth *= growth;
                   return Stack(
                     children: [
@@ -643,7 +643,7 @@ class _SignedBarRow extends StatelessWidget {
                           left: zeroX,
                           top: 0,
                           bottom: 0,
-                          width: 1,
+                          width: AppStroke.hairline,
                           child: Container(color: AppColors.textSecondary),
                         ),
                       if (item.value != 0)
@@ -895,7 +895,7 @@ class _BiPieChartState extends State<BiPieChart> {
           key: _tip,
           onHidden: _clearMarker,
           child: SizedBox(
-            height: 180,
+            height: AppExtent.e180,
             child: BiEntrance(
               builder: (context, t) => BiSweepClip(
                 t: t,
@@ -939,7 +939,7 @@ class _BiPieChartState extends State<BiPieChart> {
                               ? valueOf(shown[i])
                               : 0.0001,
                           color: chartColorAt(i),
-                          radius: _touched == i ? 56 : 50,
+                          radius: _touched == i ? AppExtent.e56 : AppExtent.e50,
                           showTitle: false,
                         ),
                     ],
@@ -962,11 +962,11 @@ class _BiPieChartState extends State<BiPieChart> {
               children: [
                 Container(
                   key: ValueKey('bi-pie-swatch-$i'),
-                  width: 12,
-                  height: 12,
+                  width: AppSpacing.s12,
+                  height: AppSpacing.s12,
                   decoration: BoxDecoration(
                     color: chartColorAt(i),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(AppSmallRadius.r3),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s8),
@@ -1055,7 +1055,7 @@ SideTitles bucketAxisTitles({
   final every = (count / 5).ceil().clamp(1, math.max(1, count));
   return SideTitles(
     showTitles: true,
-    reservedSize: scaledAxisSize(context, 24),
+    reservedSize: scaledAxisSize(context, AppSpacing.s24),
     interval: 1,
     getTitlesWidget: (value, meta) {
       final i = value.round();
@@ -1077,12 +1077,12 @@ List<TouchedSpotIndicatorData?> biSpotIndicators(
   return [
     for (final _ in indexes)
       TouchedSpotIndicatorData(
-        const FlLine(color: AppColors.border, strokeWidth: 1.5),
+        const FlLine(color: AppColors.border, strokeWidth: AppStroke.thin),
         FlDotData(
           getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-            radius: 5,
+            radius: AppSmallRadius.r5,
             color: bar.color ?? AppColors.cyanDark,
-            strokeWidth: 2,
+            strokeWidth: AppStroke.medium,
             strokeColor: AppColors.surface,
           ),
         ),
@@ -1197,7 +1197,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
       children: [
         if (widget.asBars)
           SizedBox(
-            height: 220,
+            height: AppExtent.e220,
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.s8),
               child: BiTooltipLayer(
@@ -1214,7 +1214,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
           BiZoomableTimeChart(
             maxX: n == 1 ? 1 : (n - 1).toDouble(),
             count: n,
-            height: 196,
+            height: AppExtent.e196,
             tooltipKey: _tip,
             onTooltipHidden: _clearMarker,
             labelOf: (i) =>
@@ -1270,9 +1270,9 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
         dotData: FlDotData(
           show: showDots,
           getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
-            radius: 3,
+            radius: AppSmallRadius.r3,
             color: color,
-            strokeWidth: 1.5,
+            strokeWidth: AppStroke.thin,
             strokeColor: AppColors.surface,
           ),
         ),
@@ -1293,7 +1293,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) =>
-              const FlLine(color: AppColors.border, strokeWidth: 1),
+              const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
         ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(),
@@ -1344,7 +1344,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) =>
-              const FlLine(color: AppColors.border, strokeWidth: 1),
+              const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
         ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(),
@@ -1383,7 +1383,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
                     toY: _valueOf(buckets[i], s) * t,
                     color: _touchedIndex == null || _touchedIndex == i
                         ? chartColorAt(s)
-                        : chartColorAt(s).withValues(alpha: 0.4),
+                        : chartColorAt(s).withValues(alpha: AppOpacity.a40),
                     width: rodWidth,
                     borderRadius: BorderRadius.zero,
                   ),

@@ -71,13 +71,13 @@ class _KpiCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: AppMetrics.presetHeight,
+              height: AppMetrics.presetHeight,
               decoration: BoxDecoration(
-                color: kpi.background ?? kpi.color.withValues(alpha: 0.14),
+                color: kpi.background ?? kpi.color.withValues(alpha: AppOpacity.a14),
                 shape: BoxShape.circle,
               ),
-              child: Icon(kpi.icon, size: 20, color: kpi.color),
+              child: Icon(kpi.icon, size: AppIconSize.s20, color: kpi.color),
             ),
             const SizedBox(height: AppSpacing.s12),
             Text(
@@ -94,7 +94,7 @@ class _KpiCard extends StatelessWidget {
                 kpi.value,
                 style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 24,
+                  fontSize: AppMetrics.titleMediumSize,
                   color: AppColors.textPrimary,
                 ),
               ),

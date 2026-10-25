@@ -119,7 +119,7 @@ void _showDetail(BuildContext context, CategoryModel category) {
           thumb: RecordThumb(
             imagePath: category.image,
             icon: Icons.category_rounded,
-            size: 120,
+            size: AppIconSize.s120,
           ),
           pill: _pill(category),
           note: category.isDefault

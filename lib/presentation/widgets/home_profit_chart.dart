@@ -19,8 +19,8 @@ class HomeProfitChart extends StatelessWidget {
     required this.onSelect,
   });
 
-  static const double height = 180;
-  static const double axisHeight = 24;
+  static const double height = AppExtent.e180;
+  static const double axisHeight = AppSpacing.s24;
 
   static double axisHeightFor(BuildContext context) =>
       scaledAxisSize(context, axisHeight);
@@ -97,7 +97,7 @@ class HomeProfitChart extends StatelessWidget {
             HorizontalLine(
               y: 0,
               color: AppColors.border,
-              strokeWidth: 1,
+              strokeWidth: AppStroke.hairline,
               dashArray: const [4, 4],
             ),
           ],
@@ -136,15 +136,15 @@ class HomeProfitChart extends StatelessWidget {
             for (final _ in indexes)
               TouchedSpotIndicatorData(
                 FlLine(
-                  color: AppColors.textSecondary.withValues(alpha: 0.5),
-                  strokeWidth: 1,
+                  color: AppColors.textSecondary.withValues(alpha: AppOpacity.a50),
+                  strokeWidth: AppStroke.hairline,
                 ),
                 FlDotData(
                   getDotPainter: (spot, percent, barData, index) =>
                       FlDotCirclePainter(
-                        radius: 5,
+                        radius: AppSmallRadius.r5,
                         color: color,
-                        strokeWidth: 2,
+                        strokeWidth: AppStroke.medium,
                         strokeColor: AppColors.surface,
                       ),
                 ),
@@ -167,9 +167,9 @@ class HomeProfitChart extends StatelessWidget {
               show: n == 1,
               getDotPainter: (spot, percent, barData, index) =>
                   FlDotCirclePainter(
-                    radius: 6,
+                    radius: AppSpacing.s6,
                     color: color,
-                    strokeWidth: 3,
+                    strokeWidth: AppStroke.thick,
                     strokeColor: AppColors.cyanSoft,
                   ),
             ),

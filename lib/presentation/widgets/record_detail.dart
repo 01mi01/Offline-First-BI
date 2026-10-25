@@ -83,7 +83,7 @@ class RecordHeadline extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: AppText.largeTitle(context).copyWith(fontSize: 24),
+            style: AppText.largeTitle(context).copyWith(fontSize: AppMetrics.titleMediumSize),
           ),
           if (pill != null) ...[
             const SizedBox(height: AppSpacing.s8),

@@ -30,8 +30,8 @@ final DatePickerThemeData _appDatePickerTheme = DatePickerThemeData(
   cancelButtonStyle: TextButton.styleFrom(
     backgroundColor: AppColors.neutralButton,
     foregroundColor: AppColors.textPrimary,
-    minimumSize: const Size(96, AppButtons.height),
-    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    minimumSize: const Size(AppExtent.e96, AppButtons.height),
+    textStyle: const TextStyle(fontSize: AppMetrics.buttonTextSize, fontWeight: FontWeight.w600),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppButtons.radius),
     ),
@@ -39,8 +39,8 @@ final DatePickerThemeData _appDatePickerTheme = DatePickerThemeData(
   confirmButtonStyle: TextButton.styleFrom(
     backgroundColor: AppColors.cyanDark,
     foregroundColor: AppColors.onDark,
-    minimumSize: const Size(96, AppButtons.height),
-    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    minimumSize: const Size(AppExtent.e96, AppButtons.height),
+    textStyle: const TextStyle(fontSize: AppMetrics.buttonTextSize, fontWeight: FontWeight.w600),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppButtons.radius),
     ),

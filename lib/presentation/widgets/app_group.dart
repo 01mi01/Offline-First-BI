@@ -50,8 +50,8 @@ class AppSection extends StatelessWidget {
                 for (var i = 0; i < children.length; i++) ...[
                   if (i > 0)
                     Divider(
-                      height: 1,
-                      thickness: 1,
+                      height: AppStroke.hairline,
+                      thickness: AppStroke.hairline,
                       indent: dividerIndent,
                       color: AppColors.separator,
                     ),
@@ -87,7 +87,7 @@ class AppTile extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(AppMetrics.tileRadius),
       ),
-      child: Icon(icon, size: 18, color: iconColor ?? onColorOf(color)),
+      child: Icon(icon, size: AppIconSize.s18, color: iconColor ?? onColorOf(color)),
     );
   }
 }
@@ -240,8 +240,8 @@ Widget _groupItem(
           row,
           if (!last)
             Divider(
-              height: 1,
-              thickness: 1,
+              height: AppStroke.hairline,
+              thickness: AppStroke.hairline,
               indent: dividerIndent,
               color: AppColors.separator,
             ),

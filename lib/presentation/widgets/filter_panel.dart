@@ -101,7 +101,7 @@ class FilterDropdown<T> extends FilterField {
                 value: i,
                 child: Row(
                   children: [
-                    Icon(options[i].icon, size: 22, color: options[i].iconColor),
+                    Icon(options[i].icon, size: AppIconSize.s22, color: options[i].iconColor),
                     const SizedBox(width: AppSpacing.s12),
                     Expanded(child: Text(options[i].label)),
                   ],
@@ -133,7 +133,7 @@ class FilterDropdown<T> extends FilterField {
               ),
               Icon(
                 Icons.unfold_more_rounded,
-                size: 18,
+                size: AppIconSize.s18,
                 color: active ? AppColors.cyanDark : AppColors.textSecondary,
               ),
             ],
@@ -401,7 +401,7 @@ class _DateBox extends StatelessWidget {
             children: [
               Icon(
                 Icons.calendar_today_rounded,
-                size: 16,
+                size: AppIconSize.s16,
                 color: active ? AppColors.cyanDark : AppColors.textSecondary,
               ),
               const SizedBox(width: AppSpacing.s8),
@@ -425,7 +425,7 @@ class _DateBox extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(
                     Icons.cancel_rounded,
-                    size: 18,
+                    size: AppIconSize.s18,
                     color: AppColors.chevron,
                   ),
                   onPressed: onClear,
@@ -480,7 +480,7 @@ class FilterButton extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.tune_rounded,
-                      size: 22,
+                      size: AppIconSize.s22,
                       color: highlighted
                           ? AppColors.cyanDark
                           : AppColors.textSecondary,
@@ -495,7 +495,7 @@ class FilterButton extends StatelessWidget {
               else
                 Icon(
                   Icons.tune_rounded,
-                  size: 22,
+                  size: AppIconSize.s22,
                   color: highlighted
                       ? AppColors.cyanDark
                       : AppColors.textSecondary,
@@ -505,22 +505,22 @@ class FilterButton extends StatelessWidget {
                   top: AppSpacing.s4,
                   right: AppSpacing.s4,
                   child: Container(
-                    constraints: const BoxConstraints(minWidth: 18),
-                    height: 18,
+                    constraints: const BoxConstraints(minWidth: AppSpacing.s18),
+                    height: AppSpacing.s18,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.s4,
                     ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: AppColors.cyanDark,
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(AppSmallRadius.r9),
                     ),
                     child: Text(
                       '$count',
                       style: filterValueStyle(context).copyWith(
                         color: AppColors.onDark,
                         fontSize: AppMetrics.filterLabelSize,
-                        height: 1,
+                        height: AppLineHeight.tight,
                       ),
                     ),
                   ),

@@ -147,7 +147,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
             icon: const Icon(
               Icons.close_rounded,
               color: AppColors.textSecondary,
-              size: 18,
+              size: AppIconSize.s18,
             ),
             onPressed: () {
               _controller.clear();
@@ -169,7 +169,7 @@ class _SearchablePickerFieldState<T> extends State<SearchablePickerField<T>>
       prefixIcon: const Icon(
         Icons.search_rounded,
         color: AppColors.textSecondary,
-        size: 20,
+        size: AppIconSize.s20,
       ),
       suffixIcon: clear,
     );

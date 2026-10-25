@@ -130,7 +130,7 @@ class _IndicatorRow extends StatelessWidget {
         tooltip: 'Información',
         icon: const Icon(
           Icons.info_outline_rounded,
-          size: 20,
+          size: AppIconSize.s20,
           color: AppColors.textMuted,
         ),
         onPressed: () => showBiInfo(context, indicator.title, indicator.info),

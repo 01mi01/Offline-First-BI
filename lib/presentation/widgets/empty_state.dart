@@ -72,7 +72,7 @@ class AppEmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: compact ? 32 : 52, color: AppColors.chevron),
+              Icon(icon, size: compact ? AppIconSize.s32 : AppIconSize.s52, color: AppColors.chevron),
               SizedBox(height: compact ? AppSpacing.s8 : AppSpacing.s12),
               Text(
                 text,
@@ -84,7 +84,7 @@ class AppEmptyState extends StatelessWidget {
                 ElevatedButton(
                   onPressed: onAction,
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(200, AppMetrics.minTap),
+                    minimumSize: const Size(AppExtent.e200, AppMetrics.minTap),
                   ),
                   child: Text(actionLabel!),
                 ),

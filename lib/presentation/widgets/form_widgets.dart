@@ -42,7 +42,7 @@ class LabeledField extends StatelessWidget {
   }
 }
 
-const double _actionRowHeight = 36;
+const double _actionRowHeight = AppMetrics.presetHeight;
 
 class FormSectionLabel extends StatelessWidget {
   final String text;
@@ -97,7 +97,7 @@ class FormAddButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton.icon(
       onPressed: onPressed,
-      icon: const Icon(Icons.add_rounded, size: 18),
+      icon: const Icon(Icons.add_rounded, size: AppIconSize.s18),
       label: Text(label),
       style: TextButton.styleFrom(
         foregroundColor: AppColors.cyanDark,
@@ -146,7 +146,7 @@ class AppDateField extends StatelessWidget {
             prefixIcon: const Icon(
               Icons.calendar_today_rounded,
               color: AppColors.cyanDark,
-              size: 20,
+              size: AppIconSize.s20,
             ),
             suffixIcon: text != null && onClear != null
                 ? IconButton(
@@ -154,7 +154,7 @@ class AppDateField extends StatelessWidget {
                     icon: const Icon(
                       Icons.close_rounded,
                       color: AppColors.textSecondary,
-                      size: 18,
+                      size: AppIconSize.s18,
                     ),
                     onPressed: onClear,
                   )
@@ -281,7 +281,7 @@ class FormActions extends StatelessWidget {
                   width: AppSpacing.s20,
                   child: CircularProgressIndicator(
                     color: AppColors.onDark,
-                    strokeWidth: 2,
+                    strokeWidth: AppStroke.medium,
                   ),
                 )
               : Text(primaryLabel, maxLines: 1),
@@ -364,7 +364,7 @@ class AppPhotoSlot extends StatelessWidget {
 
   const AppPhotoSlot({super.key, required this.imagePath, required this.onTap});
 
-  static const double size = 100;
+  static const double size = AppExtent.e100;
 
   Widget _placeholder() => Container(
     width: size,
@@ -373,7 +373,7 @@ class AppPhotoSlot extends StatelessWidget {
     child: const Icon(
       Icons.add_a_photo_rounded,
       color: AppColors.cyanDark,
-      size: 32,
+      size: AppIconSize.s32,
     ),
   );
 

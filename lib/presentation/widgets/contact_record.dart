@@ -118,7 +118,7 @@ class _ContactInfoState extends State<_ContactInfo> {
           icon: Icon(
             _copied ? Icons.check_rounded : Icons.copy_rounded,
             color: AppColors.cyanDark,
-            size: 20,
+            size: AppIconSize.s20,
           ),
           onPressed: () => _copy(text),
         ),

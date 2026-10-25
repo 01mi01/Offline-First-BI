@@ -178,7 +178,7 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 200,
+          height: AppExtent.e200,
           child: Padding(
             padding: const EdgeInsets.only(right: AppSpacing.s8),
             child: BiTooltipLayer(
@@ -194,7 +194,7 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
                     gridData: FlGridData(
                       drawVerticalLine: false,
                       getDrawingHorizontalLine: (_) =>
-                          const FlLine(color: AppColors.border, strokeWidth: 1),
+                          const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
                     ),
                     titlesData: FlTitlesData(
                       topTitles: const AxisTitles(),
@@ -203,7 +203,7 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: scaledAxisSize(context, 28),
+                          reservedSize: scaledAxisSize(context, AppSpacing.s28),
                           getTitlesWidget: (value, meta) {
                             final i = value.toInt();
                             if (i < 0 || i >= groups.length) {
@@ -241,8 +241,8 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
                                 toY: values[s][g] * t,
                                 color: _touchedGroup == null || _touchedGroup == g
                                     ? chartColorAt(s)
-                                    : chartColorAt(s).withValues(alpha: 0.4),
-                                width: 18,
+                                    : chartColorAt(s).withValues(alpha: AppOpacity.a40),
+                                width: AppSpacing.s18,
                                 borderRadius: BorderRadius.zero,
                               ),
                           ],
@@ -427,7 +427,7 @@ class _ComparisonRow extends StatelessWidget {
             if (change != null && change != 0)
               Icon(
                 change > 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 16,
+                size: AppIconSize.s16,
                 color: color,
               ),
             const SizedBox(width: AppSpacing.s2),
@@ -553,7 +553,7 @@ class _MarginList extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(
-                  width: 24,
+                  width: AppSpacing.s24,
                   child: Text('${i + 1}', style: _small(context)),
                 ),
                 Expanded(
@@ -755,7 +755,7 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
     return BiZoomableTimeChart(
       maxX: fullMax,
       count: total,
-      height: 196,
+      height: AppExtent.e196,
       tooltipKey: _tip,
       onTooltipHidden: () {
         if (_touched.isNotEmpty) setState(() => _touched = {});
@@ -774,7 +774,7 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
           gridData: FlGridData(
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: AppColors.border, strokeWidth: 1),
+                const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(),
@@ -787,7 +787,7 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
               VerticalLine(
                 x: (n - 1).toDouble(),
                 color: AppColors.textSecondary,
-                strokeWidth: 1,
+                strokeWidth: AppStroke.hairline,
                 dashArray: const [4, 4],
                 label: VerticalLineLabel(
                   show: true,
@@ -851,9 +851,9 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
                   dotData: FlDotData(
                     show: n <= 31,
                     getDotPainter: (s, p, b, i) => FlDotCirclePainter(
-                      radius: 3,
+                      radius: AppSmallRadius.r3,
                       color: chartColorAt(0),
-                      strokeWidth: 1.5,
+                      strokeWidth: AppStroke.thin,
                       strokeColor: AppColors.surface,
                     ),
                   ),
@@ -871,9 +871,9 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) => spot.x >= n,
                     getDotPainter: (s, p, b, i) => FlDotCirclePainter(
-                      radius: 4,
+                      radius: AppSpacing.s4,
                       color: AppColors.surface,
-                      strokeWidth: 2,
+                      strokeWidth: AppStroke.medium,
                       strokeColor: chartColorAt(1),
                     ),
                   ),
@@ -1015,7 +1015,7 @@ class _ComparisonColumn extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
-        border: Border(left: BorderSide(color: color, width: 4)),
+        border: Border(left: BorderSide(color: color, width: AppStroke.accent)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1214,7 +1214,7 @@ class _InventoryRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, size: 18, color: trailingColor),
+          Icon(Icons.warning_amber_rounded, size: AppIconSize.s18, color: trailingColor),
           const SizedBox(width: AppSpacing.s8),
           Expanded(
             child: Column(
@@ -1347,7 +1347,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
     });
   }
 
-  static const double _radarTouchRadius = 24;
+  static const double _radarTouchRadius = AppSpacing.s24;
 
   void _touch(Offset? position, List<int> visible) {
     final box = _tip.currentContext?.findRenderObject();
@@ -1429,7 +1429,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  height: 260,
+                  height: AppExtent.e260,
                   child: BiTooltipLayer(
                     key: _tip,
                     child: BiEntrance(
@@ -1438,7 +1438,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
                           radarShape: RadarShape.polygon,
                           tickCount: 4,
                           ticksTextStyle: const TextStyle(
-                            fontSize: 9,
+                            fontSize: AppMetrics.tinyTextSize,
                             color: Colors.transparent,
                           ),
                           tickBorderData: const BorderSide(
@@ -1479,7 +1479,7 @@ class _BiRadarSectionState extends State<BiRadarSection> {
                             ),
                             for (final i in visible)
                               RadarDataSet(
-                                fillColor: chartColorAt(i).withValues(alpha: 0.2),
+                                fillColor: chartColorAt(i).withValues(alpha: AppOpacity.a20),
                                 borderColor: chartColorAt(i),
                                 borderWidth: 2,
                                 entryRadius: 3,
@@ -1555,7 +1555,7 @@ class _RadarLegendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = AppColors.textSecondary.withValues(alpha: 0.7);
+    final muted = AppColors.textSecondary.withValues(alpha: AppOpacity.a70);
     return Semantics(
       button: true,
       toggled: visible,
@@ -1565,19 +1565,19 @@ class _RadarLegendRow extends StatelessWidget {
       child: InkWell(
         key: ValueKey('bi-radar-legend-$index'),
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppMetrics.tileRadius),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               key: ValueKey('bi-radar-swatch-$index'),
               margin: const EdgeInsets.only(top: AppSpacing.s2),
-              width: 12,
-              height: 12,
+              width: AppSpacing.s12,
+              height: AppSpacing.s12,
               decoration: BoxDecoration(
                 color: visible ? chartColorAt(index) : Colors.transparent,
-                border: visible ? null : Border.all(color: muted, width: 2),
-                borderRadius: BorderRadius.circular(3),
+                border: visible ? null : Border.all(color: muted, width: AppStroke.medium),
+                borderRadius: BorderRadius.circular(AppSmallRadius.r3),
               ),
             ),
             const SizedBox(width: AppSpacing.s8),

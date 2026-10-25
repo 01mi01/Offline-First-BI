@@ -35,7 +35,7 @@ class AppActionButton extends StatelessWidget {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 18),
+                  Icon(icon, size: AppIconSize.s18),
                   const SizedBox(width: AppSpacing.s8),
                   Flexible(
                     child: Text(

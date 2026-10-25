@@ -66,7 +66,7 @@ SideTitles _countAxisTitles(double maxY) {
 FlGridData _grid() => FlGridData(
   drawVerticalLine: false,
   getDrawingHorizontalLine: (_) =>
-      const FlLine(color: AppColors.border, strokeWidth: 1),
+      const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
 );
 
 class BiCoPurchaseSection extends StatelessWidget {
@@ -125,7 +125,7 @@ class BiCoPurchaseSection extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 24,
+                    width: AppSpacing.s24,
                     child: Text('${i + 1}', style: _small(context)),
                   ),
                   Expanded(
@@ -260,7 +260,7 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  height: 200,
+                  height: AppExtent.e200,
                   child: Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.s8),
                     child: BiTooltipLayer(
@@ -332,7 +332,7 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          reservedSize: scaledAxisSize(context, 24),
+          reservedSize: scaledAxisSize(context, AppSpacing.s24),
           interval: 1,
           getTitlesWidget: (value, meta) {
             final i = value.round();
@@ -407,8 +407,8 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
                   toY: _valueOf(entries[i]) * t,
                   color: _touched == null || _touched == i
                       ? chartColorAt(0)
-                      : chartColorAt(0).withValues(alpha: 0.4),
-                  width: 20,
+                      : chartColorAt(0).withValues(alpha: AppOpacity.a40),
+                  width: AppSpacing.s20,
                   borderRadius: BorderRadius.zero,
                 ),
               ],
@@ -458,9 +458,9 @@ class _BiWeekdaySectionState extends State<BiWeekdaySection> {
             showingIndicators: _touched == null ? const [] : [_touched!],
             dotData: FlDotData(
               getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
-                radius: 3,
+                radius: AppSmallRadius.r3,
                 color: chartColorAt(0),
-                strokeWidth: 1.5,
+                strokeWidth: AppStroke.thin,
                 strokeColor: AppColors.surface,
               ),
             ),
@@ -620,7 +620,7 @@ class _TrendLineState extends State<_TrendLine> {
     return BiZoomableTimeChart(
       maxX: fullMax,
       count: n,
-      height: 196,
+      height: AppExtent.e196,
       tooltipKey: _tip,
       onTooltipHidden: () {
         if (_touched != null) setState(() => _touched = null);
@@ -639,7 +639,7 @@ class _TrendLineState extends State<_TrendLine> {
           gridData: FlGridData(
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: AppColors.border, strokeWidth: 1),
+                const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(),
@@ -654,7 +654,7 @@ class _TrendLineState extends State<_TrendLine> {
                     HorizontalLine(
                       y: average,
                       color: chartColorAt(1),
-                      strokeWidth: 1.5,
+                      strokeWidth: AppStroke.thin,
                       dashArray: const [6, 4],
                     ),
                   ],
@@ -703,9 +703,9 @@ class _TrendLineState extends State<_TrendLine> {
               dotData: FlDotData(
                 show: spots.length <= 31,
                 getDotPainter: (s, p, b, i) => FlDotCirclePainter(
-                  radius: 3,
+                  radius: AppSmallRadius.r3,
                   color: color,
-                  strokeWidth: 1.5,
+                  strokeWidth: AppStroke.thin,
                   strokeColor: AppColors.surface,
                 ),
               ),
@@ -859,7 +859,7 @@ class BiEventProfitSection extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 24,
+                    width: AppSpacing.s24,
                     child: Text('${i + 1}', style: _small(context)),
                   ),
                   Expanded(
@@ -982,7 +982,7 @@ class BiCostReturnSection extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 24,
+                    width: AppSpacing.s24,
                     child: Text('${i + 1}', style: _small(context)),
                   ),
                   Expanded(

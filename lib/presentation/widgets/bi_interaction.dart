@@ -231,7 +231,7 @@ class _Bubble extends StatelessWidget {
       liveRegion: true,
       child: Container(
         key: const ValueKey('bi-tooltip'),
-        constraints: const BoxConstraints(maxWidth: 240),
+        constraints: const BoxConstraints(maxWidth: AppExtent.e240),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.s10,
           vertical: AppSpacing.s8,
@@ -243,7 +243,7 @@ class _Bubble extends StatelessWidget {
           boxShadow: const [
             BoxShadow(
               color: AppColors.shadowNeutral,
-              blurRadius: 8,
+              blurRadius: AppSpacing.s8,
               offset: Offset(0, 2),
             ),
           ],
@@ -257,11 +257,11 @@ class _Bubble extends StatelessWidget {
               children: [
                 if (tip.color != null) ...[
                   Container(
-                    width: 10,
-                    height: 10,
+                    width: AppSpacing.s10,
+                    height: AppSpacing.s10,
                     decoration: BoxDecoration(
                       color: tip.color,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppSpacing.s2),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.s6),
@@ -359,7 +359,7 @@ class _LegendChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = AppColors.textSecondary.withValues(alpha: 0.7);
+    final muted = AppColors.textSecondary.withValues(alpha: AppOpacity.a70);
     return Semantics(
       button: true,
       toggled: visible,
@@ -368,9 +368,9 @@ class _LegendChip extends StatelessWidget {
       onTap: onTap,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppMetrics.tileRadius),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 32),
+          constraints: const BoxConstraints(minHeight: AppSpacing.s32),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s6,
@@ -380,8 +380,8 @@ class _LegendChip extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 12,
-                  height: 12,
+                  width: AppSpacing.s12,
+                  height: AppSpacing.s12,
                   decoration: BoxDecoration(
                     color: visible && !item.dashed
                         ? item.color
@@ -390,9 +390,9 @@ class _LegendChip extends StatelessWidget {
                         ? null
                         : Border.all(
                             color: visible ? item.color : muted,
-                            width: 2,
+                            width: AppStroke.medium,
                           ),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(AppSmallRadius.r3),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s6),
@@ -414,7 +414,7 @@ class _LegendChip extends StatelessWidget {
   }
 }
 
-const double kBiMoneyAxisReserved = 40;
+const double kBiMoneyAxisReserved = AppExtent.e40;
 
 typedef BiZoomChartBuilder =
     Widget Function(BuildContext context, double minX, double maxX);
@@ -604,14 +604,14 @@ class _BiZoomableTimeChartState extends State<BiZoomableTimeChart> {
               math.max(1, width - kBiMoneyAxisReserved - AppSpacing.s8),
         ),
         SizedBox(
-          height: 36,
+          height: AppMetrics.presetHeight,
           child: Align(
             alignment: Alignment.centerLeft,
             child: _zoomed
                 ? TextButton.icon(
                     key: const ValueKey('bi-zoom-reset'),
                     onPressed: reset,
-                    icon: const Icon(Icons.zoom_out_map_rounded, size: 16),
+                    icon: const Icon(Icons.zoom_out_map_rounded, size: AppIconSize.s16),
                     label: const Text('Restablecer vista'),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.cyanDark,
@@ -643,7 +643,7 @@ class _TimeAxisLabels extends StatelessWidget {
     required this.plotWidthOf,
   });
 
-  static const double _labelWidth = 48;
+  static const double _labelWidth = AppSpacing.s48;
 
   @override
   Widget build(BuildContext context) {
@@ -653,7 +653,7 @@ class _TimeAxisLabels extends StatelessWidget {
     final last = math.min((max + 1e-6).floor(), count - 1);
 
     return SizedBox(
-      height: 24,
+      height: AppSpacing.s24,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final plot = plotWidthOf(constraints.maxWidth);

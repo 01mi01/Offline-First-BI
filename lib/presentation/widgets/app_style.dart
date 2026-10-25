@@ -9,14 +9,14 @@ class AppText {
       _base(context).copyWith(
         fontSize: AppMetrics.rowTitleSize,
         color: color ?? AppColors.textPrimary,
-        height: 1.25,
+        height: AppLineHeight.normal,
       );
 
   static TextStyle rowSubtitle(BuildContext context, {Color? color}) =>
       _base(context).copyWith(
         fontSize: AppMetrics.rowSubtitleSize,
         color: color ?? AppColors.textSecondary,
-        height: 1.25,
+        height: AppLineHeight.normal,
       );
 
   static TextStyle header(BuildContext context) => _base(context).copyWith(
@@ -57,7 +57,7 @@ class AppChevron extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Icon(
       Icons.chevron_right_rounded,
-      size: 22,
+      size: AppIconSize.s22,
       color: AppColors.chevron,
     );
   }

@@ -196,7 +196,7 @@ class _DrillSheet extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 24,
+                    width: AppSpacing.s24,
                     child: Text(
                       '${i + 1}',
                       style: small?.copyWith(color: AppColors.textSecondary),
@@ -236,9 +236,9 @@ class _DrillSheet extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.s24),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppSpacing.s4),
                   child: Container(
-                    height: 8,
+                    height: AppSpacing.s8,
                     color: AppColors.background,
                     alignment: Alignment.centerLeft,
                     child: FractionallySizedBox(
@@ -525,7 +525,7 @@ class _OverTimeState extends State<_OverTime> {
         ),
         const SizedBox(height: AppSpacing.s12),
         SizedBox(
-          height: 180,
+          height: AppExtent.e180,
           child: Padding(
             padding: const EdgeInsets.only(right: AppSpacing.s8),
             child: BiTooltipLayer(
@@ -543,7 +543,7 @@ class _OverTimeState extends State<_OverTime> {
                     gridData: FlGridData(
                       drawVerticalLine: false,
                       getDrawingHorizontalLine: (_) =>
-                          const FlLine(color: AppColors.border, strokeWidth: 1),
+                          const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
                     ),
                     titlesData: FlTitlesData(
                       topTitles: const AxisTitles(),
@@ -607,7 +607,7 @@ class _OverTimeState extends State<_OverTime> {
                                   ? chartColorAt(_metric)
                                   : chartColorAt(
                                       _metric,
-                                    ).withValues(alpha: 0.4),
+                                    ).withValues(alpha: AppOpacity.a40),
                               width: rodWidth,
                               borderRadius: BorderRadius.zero,
                             ),

@@ -44,7 +44,7 @@ class RecordRow extends StatelessWidget {
           style: AppText.rowSubtitle(
             context,
             color: AppColors.textMuted,
-          ).copyWith(fontSize: AppMetrics.headerSize + 1),
+          ).copyWith(fontSize: AppMetrics.formLabelSize),
         ),
       ],
     );
@@ -113,7 +113,7 @@ class RecordRow extends StatelessWidget {
   }
 }
 
-final Color imagePlaceholderColor = AppColors.cyanDark.withValues(alpha: 0.14);
+final Color imagePlaceholderColor = AppColors.cyanDark.withValues(alpha: AppOpacity.a14);
 
 class RecordThumb extends StatelessWidget {
   final String? imagePath;
@@ -182,7 +182,7 @@ class RecordPrice extends StatelessWidget {
       style: AppText.rowSubtitle(
         context,
         color: AppColors.textPrimary,
-      ).copyWith(fontSize: AppMetrics.headerSize + 1, fontWeight: FontWeight.w600),
+      ).copyWith(fontSize: AppMetrics.formLabelSize, fontWeight: FontWeight.w600),
     );
   }
 }

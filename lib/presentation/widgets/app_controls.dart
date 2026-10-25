@@ -106,7 +106,7 @@ InputDecoration appSearchDecoration(
     focusedBorder: border(),
     prefixIcon: const Icon(
       Icons.search_rounded,
-      size: 20,
+      size: AppIconSize.s20,
       color: AppColors.textSecondary,
     ),
     suffixIcon: suffixIcon,
@@ -165,7 +165,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                   tooltip: 'Borrar búsqueda',
                   icon: const Icon(
                     Icons.cancel_rounded,
-                    size: 18,
+                    size: AppIconSize.s18,
                     color: AppColors.textSecondary,
                   ),
                   onPressed: () {
@@ -213,7 +213,7 @@ class AppStepper extends StatelessWidget {
                 tooltip: 'Quitar uno',
                 onTap: onMinus,
               ),
-              Container(width: 1, height: 16, color: AppColors.separator),
+              Container(width: AppStroke.hairline, height: AppSpacing.s16, color: AppColors.separator),
               _StepperButton(
                 key: plusKey,
                 icon: Icons.add_rounded,
@@ -248,11 +248,11 @@ class _StepperButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
         child: SizedBox(
-          width: 40,
-          height: 36,
+          width: AppExtent.e40,
+          height: AppMetrics.presetHeight,
           child: Icon(
             icon,
-            size: 18,
+            size: AppIconSize.s18,
             color: onTap == null ? AppColors.chevron : AppColors.textPrimary,
           ),
         ),
@@ -282,21 +282,21 @@ class AppRoundCheck extends StatelessWidget {
           child: Center(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              width: 24,
-              height: 24,
+              width: AppSpacing.s24,
+              height: AppSpacing.s24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: value ? AppColors.cyanDeep : Colors.transparent,
                 border: Border.all(
                   color: value ? AppColors.cyanDeep : AppColors.textMuted,
-                  width: 1.5,
+                  width: AppStroke.thin,
                 ),
               ),
               child: value
                   ? Icon(
                       Icons.check_rounded,
-                      size: 16,
-                      color: AppColors.onDark.withValues(alpha: 0.92),
+                      size: AppIconSize.s16,
+                      color: AppColors.onDark.withValues(alpha: AppOpacity.a92),
                     )
                   : null,
             ),
@@ -333,7 +333,7 @@ class AppMiniToggle<T> extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Container(
           width: expand ? double.infinity : null,
-          height: 36,
+          height: AppMetrics.presetHeight,
           padding: const EdgeInsets.all(AppSpacing.s2),
           decoration: BoxDecoration(
             color: AppColors.track,
@@ -378,7 +378,7 @@ class AppMiniToggle<T> extends StatelessWidget {
                             }
                           },
                           child: Container(
-                            constraints: const BoxConstraints(minWidth: 80),
+                            constraints: const BoxConstraints(minWidth: AppExtent.e80),
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.s12,
                             ),
@@ -394,7 +394,7 @@ class AppMiniToggle<T> extends StatelessWidget {
                                       ? AppColors.textPrimary
                                       : AppColors.textSecondary,
                                 ).copyWith(
-                                  fontSize: 15,
+                                  fontSize: AppMetrics.controlTextSize,
                                   fontWeight: segment.value == selected
                                       ? FontWeight.w700
                                       : FontWeight.w500,

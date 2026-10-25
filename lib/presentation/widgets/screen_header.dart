@@ -40,7 +40,7 @@ class ScreenTopBar extends StatelessWidget {
                 data: IconButtonThemeData(
                   style: IconButton.styleFrom(
                     iconSize: AppHeader.iconSize,
-                    minimumSize: const Size(48, 48),
+                    minimumSize: const Size(AppMetrics.minTap, AppMetrics.minTap),
                   ),
                 ),
                 child: Row(children: actions),

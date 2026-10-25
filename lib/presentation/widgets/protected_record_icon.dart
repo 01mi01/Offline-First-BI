@@ -16,7 +16,7 @@ class ProtectedRecordIcon extends StatelessWidget {
         child: const Icon(
           Icons.lock_rounded,
           color: AppColors.textSecondary,
-          size: 20,
+          size: AppIconSize.s20,
         ),
       ),
     );

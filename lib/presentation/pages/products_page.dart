@@ -334,7 +334,7 @@ class _ProductDetailSheetState extends ConsumerState<_ProductDetailSheet> {
           thumb: RecordThumb(
             imagePath: p.image,
             icon: Icons.inventory_2_rounded,
-            size: 120,
+            size: AppIconSize.s120,
           ),
           pill: StatusBadge.forState(isActive: p.isActive),
         ),

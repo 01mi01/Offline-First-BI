@@ -11,8 +11,8 @@ class AppAvatar extends StatelessWidget {
     const color = AppColors.cyanDark;
     final onColor = onColorOf(color);
     return Container(
-      width: 56,
-      height: 56,
+      width: AppFlat.thumbSize,
+      height: AppFlat.thumbSize,
       decoration: const BoxDecoration(color: color, shape: BoxShape.circle),
       child: Center(
         child: name.isEmpty
@@ -26,7 +26,7 @@ class AppAvatar extends StatelessWidget {
                 ),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
-                  height: 1,
+                  height: AppLineHeight.tight,
                   color: onColor,
                 ),
               ),

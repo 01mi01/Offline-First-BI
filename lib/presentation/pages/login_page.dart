@@ -8,7 +8,7 @@ import '../navigation/main_navigation_page.dart';
 import 'dart:math' as math;
 import '../widgets/form_style.dart';
 
-const double _maxContentWidth = 420;
+const double _maxContentWidth = AppExtent.e420;
 const double _cardRadius = AppSpacing.s28;
 const Duration _motion = Duration(milliseconds: 300);
 
@@ -234,7 +234,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     width: AppSpacing.s20,
                     child: CircularProgressIndicator(
                       color: AppColors.onDark,
-                      strokeWidth: 2,
+                      strokeWidth: AppStroke.medium,
                     ),
                   )
                 : Text(

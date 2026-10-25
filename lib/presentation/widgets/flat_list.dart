@@ -25,7 +25,7 @@ class FlatTile extends StatelessWidget {
   Widget _placeholder() => Container(
     color: imagePlaceholderColor,
     child: Center(
-      child: Icon(icon, color: AppColors.cyanDark, size: 40),
+      child: Icon(icon, color: AppColors.cyanDark, size: AppIconSize.s40),
     ),
   );
 
@@ -108,7 +108,7 @@ Future<void> showCatalogPopup(
 }) {
   return showDialog<void>(
     context: context,
-    barrierColor: AppColors.textPrimary.withValues(alpha: 0.5),
+    barrierColor: AppColors.textPrimary.withValues(alpha: AppOpacity.a50),
     builder: (_) => _CatalogPopup(
       title: title,
       icon: icon,
@@ -136,9 +136,9 @@ class _CatalogPopup extends StatelessWidget {
 
   Widget _placeholder() => Container(
     width: double.infinity,
-    height: 260,
+    height: AppExtent.e260,
     color: imagePlaceholderColor,
-    child: Icon(icon, color: AppColors.cyanDark, size: 60),
+    child: Icon(icon, color: AppColors.cyanDark, size: AppIconSize.s60),
   );
 
   @override
@@ -162,7 +162,7 @@ class _CatalogPopup extends StatelessWidget {
                     Image.file(
                       File(imagePath!),
                       width: double.infinity,
-                      height: 260,
+                      height: AppExtent.e260,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _placeholder(),
                     )
@@ -182,7 +182,7 @@ class _CatalogPopup extends StatelessWidget {
                           child: Icon(
                             Icons.close_rounded,
                             color: AppColors.textPrimary,
-                            size: 18,
+                            size: AppIconSize.s18,
                           ),
                         ),
                       ),
@@ -208,7 +208,7 @@ class _CatalogPopup extends StatelessWidget {
                         text,
                         style: textTheme.bodyLarge?.copyWith(
                           color: AppColors.textSecondary,
-                          height: 1.5,
+                          height: AppLineHeight.relaxed,
                         ),
                       ),
                     ],

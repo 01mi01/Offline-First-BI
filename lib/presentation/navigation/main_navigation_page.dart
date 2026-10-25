@@ -125,7 +125,7 @@ class MainBottomBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 64,
+        height: AppExtent.e64,
         decoration: const BoxDecoration(
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border)),
@@ -207,7 +207,7 @@ class _NavTabButton extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 22),
+          Icon(icon, color: color, size: AppIconSize.s22),
           const SizedBox(height: AppSpacing.s2),
           Text(
             label,
@@ -218,7 +218,7 @@ class _NavTabButton extends StatelessWidget {
             ).clamp(maxScaleFactor: 1.2),
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: AppMetrics.navLabelSize,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
