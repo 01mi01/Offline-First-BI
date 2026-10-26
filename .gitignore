@@ -48,5 +48,5 @@ app.*.map.json
 /config/*.json
 !/config/*.json.example
 
-# Pruebas en dispositivo
-/test_reports/
+# Pruebas de desarrollo
+/test/tests_suite/
