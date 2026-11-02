@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/report_provider.dart';
 import '../../config/rounding.dart';
+import '../../data/services/export_storage.dart';
 import '../../models/purchase_model.dart';
 import '../../models/report_models.dart';
 import '../../theme/app_theme.dart';
@@ -34,10 +35,11 @@ class ReportDetailPage extends ConsumerStatefulWidget {
 class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
   bool _isExporting = false;
 
-  Future<void> _export(Future<void> Function() action) async {
+  Future<void> _export(Future<ExportOutcome?> Function() action) async {
     setState(() => _isExporting = true);
     try {
-      await action();
+      final outcome = await action();
+      if (outcome != null && mounted) _showOutcome(outcome);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -52,13 +54,89 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
     }
   }
 
+  void _showOutcome(ExportOutcome outcome) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    switch (outcome) {
+      case ExportNotSaved(:final permanentlyDenied):
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              permanentlyDenied
+                  ? 'No se guardó el archivo. El permiso de almacenamiento está bloqueado. Actívalo en Ajustes > Aplicaciones > Permisos.'
+                  : 'No se guardó el archivo. Se necesita el permiso de almacenamiento para guardar en Descargas.',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      case ExportSaved():
+        final exports = ref.read(reportExportRepositoryProvider);
+        final buttonStyle = TextButton.styleFrom(
+          foregroundColor: Theme.of(context).colorScheme.inversePrimary,
+        );
+        messenger.showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 15),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Archivo guardado: ${outcome.fileName}'),
+                Text('Carpeta: ${outcome.folder}'),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    children: [
+                      TextButton(
+                        style: buttonStyle,
+                        onPressed: () async {
+                          final opened = await exports.openFolder();
+                          if (opened != null) return;
+                          messenger.hideCurrentSnackBar();
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'No hay una aplicación para abrir la carpeta. Ruta: ${outcome.folder}',
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text('Abrir carpeta'),
+                      ),
+                      TextButton(
+                        style: buttonStyle,
+                        onPressed: () async {
+                          try {
+                            await exports.shareSaved(outcome);
+                          } catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Error al exportar: $e'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('Compartir'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+    }
+  }
+
   Future<void> _exportPdf() => _export(() async {
     final exports = ref.read(reportExportRepositoryProvider);
     if (widget.type == ReportType.sales) {
       final summary = ref
           .read(reportServiceProvider)
           .summarizeSaleRows(widget.saleRows);
-      await exports.exportSalesPdf(
+      return exports.exportSalesPdf(
         title: widget.title,
         rows: widget.saleRows,
         summary: summary,
@@ -66,7 +144,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
     } else {
       final rows = ref.read(purchaseReportRowsProvider(widget.purchases));
       final summary = ref.read(purchasesSummaryProvider(widget.purchases));
-      await exports.exportPurchasesPdf(
+      return exports.exportPurchasesPdf(
         title: widget.title,
         rows: rows,
         summary: summary,
@@ -77,13 +155,13 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
   Future<void> _exportExcel() => _export(() async {
     final exports = ref.read(reportExportRepositoryProvider);
     if (widget.type == ReportType.sales) {
-      await exports.exportSalesExcel(
+      return exports.exportSalesExcel(
         title: widget.title,
         rows: widget.saleRows,
       );
     } else {
       final rows = ref.read(purchaseReportRowsProvider(widget.purchases));
-      await exports.exportPurchasesExcel(title: widget.title, rows: rows);
+      return exports.exportPurchasesExcel(title: widget.title, rows: rows);
     }
   });
 

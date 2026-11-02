@@ -10,8 +10,16 @@ import '../../models/report_models.dart';
 import '../../config/date_formatters.dart';
 import '../../config/app_clock.dart';
 import '../../config/rounding.dart';
+import '../services/export_storage.dart';
+import '../services/export_storage_channel.dart';
 
 class ReportExportRepository {
+  final ExportStorage? _storage;
+
+  ReportExportRepository({ExportStorage? storage})
+    : _storage =
+          storage ?? (Platform.isAndroid ? const ChannelExportStorage() : null);
+
   String _fmt(DateTime date) => formatDateTime(date);
 
   String _fmtShort(DateTime date) => formatDate(date);
@@ -51,7 +59,7 @@ class ReportExportRepository {
     );
   }
 
-  Future<void> exportSalesPdf({
+  Future<ExportOutcome?> exportSalesPdf({
     required String title,
     required List<SaleReportRow> rows,
     required SalesSummary summary,
@@ -159,11 +167,10 @@ class ReportExportRepository {
       ),
     );
 
-    final file = await _writeTempFile(title, 'pdf', await pdf.save());
-    await Share.shareXFiles([XFile(file.path)], text: title);
+    return _deliver(title, 'pdf', pdfMimeType, await pdf.save());
   }
 
-  Future<void> exportPurchasesPdf({
+  Future<ExportOutcome?> exportPurchasesPdf({
     required String title,
     required List<PurchaseReportRow> rows,
     required PurchasesSummary summary,
@@ -261,11 +268,10 @@ class ReportExportRepository {
       ),
     );
 
-    final file = await _writeTempFile(title, 'pdf', await pdf.save());
-    await Share.shareXFiles([XFile(file.path)], text: title);
+    return _deliver(title, 'pdf', pdfMimeType, await pdf.save());
   }
 
-  Future<void> exportSalesExcel({
+  Future<ExportOutcome?> exportSalesExcel({
     required String title,
     required List<SaleReportRow> rows,
   }) async {
@@ -326,12 +332,11 @@ class ReportExportRepository {
     }
 
     final bytes = excel.save();
-    if (bytes == null) return;
-    final file = await _writeTempFile(title, 'xlsx', bytes);
-    await Share.shareXFiles([XFile(file.path)], text: title);
+    if (bytes == null) return null;
+    return _deliver(title, 'xlsx', excelMimeType, bytes);
   }
 
-  Future<void> exportPurchasesExcel({
+  Future<ExportOutcome?> exportPurchasesExcel({
     required String title,
     required List<PurchaseReportRow> rows,
   }) async {
@@ -394,20 +399,41 @@ class ReportExportRepository {
     }
 
     final bytes = excel.save();
-    if (bytes == null) return;
-    final file = await _writeTempFile(title, 'xlsx', bytes);
-    await Share.shareXFiles([XFile(file.path)], text: title);
+    if (bytes == null) return null;
+    return _deliver(title, 'xlsx', excelMimeType, bytes);
   }
 
-  Future<File> _writeTempFile(
+  Future<ExportOutcome?> _deliver(
     String title,
     String extension,
+    String mimeType,
     List<int> bytes,
   ) async {
-    final dir = await getTemporaryDirectory();
-    final file = File(
-      '${dir.path}/${title.replaceAll(' ', '_')}_${formatDateForFileName(appNow())}.$extension',
+    final fileName =
+        '${title.replaceAll(' ', '_')}_${formatDateForFileName(appNow())}.$extension';
+    final storage = _storage;
+    if (storage == null) {
+      final file = await _writeTempFile(fileName, bytes);
+      await Share.shareXFiles([XFile(file.path)], text: title);
+      return null;
+    }
+    return ExportFileSaver(storage).save(
+      title: title,
+      fileName: fileName,
+      mimeType: mimeType,
+      writeSource: (finalName) async =>
+          (await _writeTempFile(finalName, bytes)).path,
     );
+  }
+
+  Future<void> shareSaved(ExportSaved saved) =>
+      Share.shareXFiles([XFile(saved.filePath)], text: saved.title);
+
+  Future<FolderOpenStep?> openFolder() async => _storage?.openFolder();
+
+  Future<File> _writeTempFile(String fileName, List<int> bytes) async {
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/$fileName');
     await file.writeAsBytes(bytes);
     return file;
   }
