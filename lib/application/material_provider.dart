@@ -61,6 +61,9 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
     required double pricePerUnit,
     bool isActive = true,
   }) async {
+    final previous = id == null
+        ? null
+        : state.materials.where((m) => m.id == id).firstOrNull;
     final savedId = await repository.save(
       id: id,
       name: name,
@@ -71,7 +74,8 @@ class MaterialNotifier extends StateNotifier<MaterialState> {
       isActive: isActive,
     );
     await load();
-    if (id == null && stock > 0) {
+    final raised = id == null ? stock > 0 : stock > (previous?.stock ?? stock);
+    if (raised) {
       await ref.read(purchaseProvider.notifier).load();
     }
     return savedId;

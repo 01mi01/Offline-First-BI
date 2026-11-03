@@ -36,6 +36,7 @@ class MaterialRepository {
   }
 
   static const String initialStockPurchaseNote = 'Stock inicial del material';
+  static const String restockPurchaseNote = 'Reposición de stock del material';
 
   Future<int> save({
     int? id,
@@ -50,20 +51,20 @@ class MaterialRepository {
     final now = appNow();
     stock = await roundForUnit(database, unitId, stock);
     pricePerUnit = round2(pricePerUnit);
-    if (id != null) {
-      final current = await (database.select(
-        database.materials,
-      )..where((m) => m.id.equals(id))).getSingleOrNull();
-      if (current != null && current.unitId != unitId) {
-        final from = await (database.select(
-          database.units,
-        )..where((u) => u.id.equals(current.unitId))).getSingleOrNull();
-        final to = await (database.select(
-          database.units,
-        )..where((u) => u.id.equals(unitId))).getSingleOrNull();
-        if (from == null || to == null || from.type != to.type) {
-          throw ArgumentError(unitTypeChangeMessage);
-        }
+    final Material? current = id == null
+        ? null
+        : await (database.select(
+            database.materials,
+          )..where((m) => m.id.equals(id))).getSingleOrNull();
+    if (current != null && current.unitId != unitId) {
+      final from = await (database.select(
+        database.units,
+      )..where((u) => u.id.equals(current.unitId))).getSingleOrNull();
+      final to = await (database.select(
+        database.units,
+      )..where((u) => u.id.equals(unitId))).getSingleOrNull();
+      if (from == null || to == null || from.type != to.type) {
+        throw ArgumentError(unitTypeChangeMessage);
       }
     }
     return database.transaction(() async {
@@ -102,6 +103,33 @@ class MaterialRepository {
           ],
           adjustStock: false,
         );
+      }
+      if (id != null && current != null) {
+        final increase = await roundForUnit(
+          database,
+          unitId,
+          stock - current.stock,
+        );
+        if (increase > 0) {
+          await PurchaseRepository(database).createPurchase(
+            supplierId: null,
+            isMaterial: true,
+            description: null,
+            totalAmount: round2(increase * pricePerUnit),
+            date: now,
+            locationId: null,
+            eventId: null,
+            notes: restockPurchaseNote,
+            items: [
+              {
+                'materialId': id,
+                'quantity': increase,
+                'unitPrice': pricePerUnit,
+              },
+            ],
+            adjustStock: false,
+          );
+        }
       }
       return id ?? savedId;
     });
