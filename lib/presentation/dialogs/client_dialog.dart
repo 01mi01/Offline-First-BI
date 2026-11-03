@@ -77,12 +77,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog>
     if (DefaultRecords.isClient(value)) {
       return DefaultRecords.reservedNameMessage;
     }
-    final others = ref
-        .read(clientProvider)
-        .clients
-        .where((r) => r.id != widget.client?.id)
-        .map((r) => r.name);
-    return validateUniqueName(value, others, message: 'Ya existe un cliente con ese nombre');
+    return null;
   }
 
   Future<void> _save() async {

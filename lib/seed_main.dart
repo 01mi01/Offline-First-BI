@@ -650,11 +650,14 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
     for (final cat in c.read(categoryProvider).categories) cat.name: cat.id,
   };
 
+  final clientId = <int>[];
   for (final (name, contact) in seedClients) {
-    final error = await c
+    final result = await c
         .read(clientProvider.notifier)
-        .save(name: name, contactInfo: contact);
+        .saveWithId(name: name, contactInfo: contact);
+    final error = result.error;
     if (error != null) throw StateError('cliente: $error');
+    clientId.add(result.id!);
   }
   for (final (name, contact) in seedSuppliers) {
     final error = await c
@@ -667,10 +670,6 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
         .read(locationProvider.notifier)
         .save(city: city, country: country, description: zone);
   }
-  final clientId = [
-    for (final (name, _) in seedClients)
-      c.read(clientProvider).clients.firstWhere((x) => x.name == name).id,
-  ];
   final supplierId = [
     for (final (name, _) in seedSuppliers)
       c.read(supplierProvider).suppliers.firstWhere((x) => x.name == name).id,
@@ -827,10 +826,13 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
 
   await c.read(productProvider.notifier).load();
   await c.read(materialProvider.notifier).load();
+  final inactiveIndex = seedClients.indexWhere(
+    (e) => e.$1 == seedInactiveClient,
+  );
   final client = c
       .read(clientProvider)
       .clients
-      .firstWhere((x) => x.name == seedInactiveClient);
+      .firstWhere((x) => x.id == clientId[inactiveIndex]);
   await c
       .read(clientProvider.notifier)
       .save(

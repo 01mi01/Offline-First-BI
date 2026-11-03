@@ -46,12 +46,6 @@ class ClientRepository {
       if (DefaultRecords.isClient(name)) {
         throw const ProtectedRecordException(DefaultRecords.reservedNameMessage);
       }
-      final existing = await (database.select(
-        database.clients,
-      )..where((c) => c.name.equals(name))).getSingleOrNull();
-      if (existing != null && existing.id != id) {
-        throw Exception('Ya existe un cliente con ese nombre');
-      }
       final now = appNow();
       return await database
           .into(database.clients)
