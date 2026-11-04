@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
 import '../../application/today_provider.dart';
+import '../../application/event_options.dart';
 import '../../application/location_options.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/supplier_provider.dart';
@@ -269,15 +270,18 @@ class _PurchaseDetailSheetState extends ConsumerState<_PurchaseDetailSheet> {
               .locations
               .where((l) => l.id == purchase.locationId)
               .firstOrNull;
-    final eventName = purchase.eventId == null
+    final event = purchase.eventId == null
         ? null
         : ref
-                  .watch(eventProvider)
-                  .events
-                  .where((e) => e.id == purchase.eventId)
-                  .firstOrNull
-                  ?.name ??
-              '';
+              .watch(eventProvider)
+              .events
+              .where((e) => e.id == purchase.eventId)
+              .firstOrNull;
+    final eventName = purchase.eventId == null
+        ? null
+        : event == null
+        ? ''
+        : eventLabel(event);
 
     return RecordDetailSheet(
       title: 'Detalle de compra',

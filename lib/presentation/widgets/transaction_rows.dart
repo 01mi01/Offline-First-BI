@@ -23,7 +23,7 @@ RecordRow saleRecordRow({
     titleSuffix: _moreLabel(productNames.length),
     titleColor: canceled ? AppColors.textSecondary : null,
     details: [
-      if (hasProducts) RecordLine(clientName),
+      if (hasProducts) RecordLine(clientName, maxLines: 1),
       RecordLine(formatDateTime(date)),
       for (final line in extraLines) RecordLine(line),
       if (discount > 0)

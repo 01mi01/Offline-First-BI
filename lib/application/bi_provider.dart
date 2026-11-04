@@ -66,7 +66,7 @@ final biReportProvider = Provider.autoDispose.family<BiReport, BiQuery>((
     ),
     salesByPriceType: bi.salesByPriceType(rows: rows),
     timeSeries: timeSeries,
-    salesByEvent: bi.salesByEvent(rows: rows),
+    salesByEvent: bi.salesByEvent(rows: rows, events: events),
     lowStock: bi.lowStock(products: products, categories: categories),
     productMargins: bi.productMargins(rows: rows, products: products),
     projection: bi.projectSales(series: timeSeries, filters: filters),

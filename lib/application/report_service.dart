@@ -12,6 +12,8 @@ import '../models/sale_model.dart';
 import '../models/supplier_model.dart';
 import '../config/rounding.dart';
 import 'date_range_filter.dart';
+import 'client_options.dart';
+import 'event_options.dart';
 import 'location_options.dart';
 import '../config/app_clock.dart';
 
@@ -198,11 +200,13 @@ class ReportService {
       final event = events.where((e) => e.id == s.eventId).firstOrNull;
       return SaleReportRow(
         sale: s,
-        clientName: client?.name ?? 'Sin nombre',
+        clientName: client == null
+            ? 'Sin nombre'
+            : clientNameText(client, clients),
         locationName: location != null
             ? locationLabelWithZone(location)
             : null,
-        eventName: event?.name,
+        eventName: event == null ? null : eventLabel(event),
         lines: linesBySale?[s.id],
       );
     }).toList();
@@ -229,7 +233,7 @@ class ReportService {
         locationName: location != null
             ? locationLabelWithZone(location)
             : null,
-        eventName: event?.name,
+        eventName: event == null ? null : eventLabel(event),
         items: itemsByPurchase?[p.id] ?? const [],
       );
     }).toList();

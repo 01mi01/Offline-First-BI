@@ -4,6 +4,7 @@ import '../models/bi_models.dart';
 import '../models/category_model.dart';
 import '../models/default_records.dart';
 import '../models/event_model.dart';
+import 'event_options.dart';
 import '../models/material_model.dart';
 import '../models/product_model.dart';
 import '../models/purchase_item_model.dart';
@@ -142,7 +143,11 @@ class BiService {
     ];
   }
 
-  List<BiEntry> salesByEvent({required List<SaleReportRow> rows}) {
+  List<BiEntry> salesByEvent({
+    required List<SaleReportRow> rows,
+    List<EventModel> events = const [],
+  }) {
+    final labels = {for (final e in events) e.id: eventLabel(e)};
     final amounts = <int, double>{};
     final counts = <int, double>{};
     final names = <int, String>{};
@@ -156,7 +161,7 @@ class BiService {
     return _ranked([
       for (final id in amounts.keys)
         BiEntry(
-          label: names[id]!,
+          label: labels[id] ?? names[id]!,
           amount: round2(amounts[id]!),
           quantity: counts[id]!,
           refId: id,
@@ -410,7 +415,7 @@ class BiService {
     required List<PurchaseModel> purchases,
     required List<EventModel> events,
   }) {
-    final names = {for (final e in events) e.id: e.name};
+    final names = {for (final e in events) e.id: eventLabel(e)};
     final income = <int, double>{};
     final expenses = <int, double>{};
     final salesCount = <int, int>{};
@@ -589,6 +594,7 @@ class BiService {
 
     final eventDays = <DateTime>{};
     for (final e in events) {
+      if (filters.eventId != null && e.id != filters.eventId) continue;
       var day = dateOnly(e.startDate);
       final endDay = dateOnly(e.endDate ?? e.startDate);
       if (day.isBefore(range.first)) day = range.first;
@@ -866,7 +872,7 @@ class BiService {
       return names.isEmpty ? 'Compra de materiales' : names.join(', ');
     }
 
-    final name = {for (final e in events) e.id: e.name}[eventId];
+    final name = {for (final e in events) e.id: eventLabel(e)}[eventId];
     return BiEventDetail(
       name: name ?? (sales.isEmpty ? null : sales.first.eventName) ?? 'Evento',
       sales: [

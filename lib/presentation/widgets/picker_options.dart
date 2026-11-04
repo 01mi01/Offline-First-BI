@@ -1,3 +1,5 @@
+import '../../application/client_options.dart';
+import '../../application/event_options.dart';
 import '../../application/location_options.dart';
 import '../../models/category_model.dart';
 import '../../models/client_model.dart';
@@ -41,7 +43,8 @@ List<PickerOption<int>> eventPickerOptions(
       if (!onlyActive || e.isActive || e.id == keepId)
         PickerOption<int>(
           e.id,
-          e.name,
+          eventLabel(e),
+          subtitle: eventSubtitle(e, byId[e.locationId]),
           searchText: [
             e.notes,
             if (byId[e.locationId] != null)
@@ -57,7 +60,13 @@ List<PickerOption<int>> clientPickerOptions(
 }) => [
   if (noneLabel != null) PickerOption<int>(null, noneLabel),
   for (final c in clients)
-    PickerOption<int>(c.id, c.name, searchText: c.contactInfo),
+    PickerOption<int>(
+      c.id,
+      c.name,
+      subtitle: clientContactLine(c),
+      selectedLabel: clientSelectedLabel(c),
+      searchText: c.contactInfo,
+    ),
 ];
 
 List<PickerOption<int>> supplierPickerOptions(

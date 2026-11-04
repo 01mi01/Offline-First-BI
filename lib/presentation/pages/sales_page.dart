@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
 import '../../application/today_provider.dart';
+import '../../application/client_options.dart';
+import '../../application/event_options.dart';
 import '../../application/location_options.dart';
 import '../../application/sale_provider.dart';
 import '../../application/client_provider.dart';
@@ -55,9 +57,10 @@ class SalesListBody extends ConsumerWidget {
         .where((s) => dates.matches(s.date) && timeFilter.includes(s.date))
         .toList();
 
-    String clientName(SaleModel sale) =>
-        clients.where((c) => c.id == sale.clientId).firstOrNull?.name ??
-        'Sin nombre';
+    String clientName(SaleModel sale) {
+      final client = clients.where((c) => c.id == sale.clientId).firstOrNull;
+      return client == null ? 'Sin nombre' : clientNameText(client, clients);
+    }
 
     final fields = <FilterField>[
       FilterDates(
@@ -234,15 +237,18 @@ class _SaleReceiptSheetState extends ConsumerState<_SaleReceiptSheet> {
               .locations
               .where((l) => l.id == sale.locationId)
               .firstOrNull;
-    final eventName = sale.eventId == null
+    final event = sale.eventId == null
         ? null
         : ref
-                  .watch(eventProvider)
-                  .events
-                  .where((e) => e.id == sale.eventId)
-                  .firstOrNull
-                  ?.name ??
-              '';
+              .watch(eventProvider)
+              .events
+              .where((e) => e.id == sale.eventId)
+              .firstOrNull;
+    final eventName = sale.eventId == null
+        ? null
+        : event == null
+        ? ''
+        : eventLabel(event);
 
     return RecordDetailSheet(
       title: 'Recibo de venta',

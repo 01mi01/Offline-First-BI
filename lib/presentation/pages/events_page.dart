@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
+import '../../application/event_options.dart';
 import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
 import '../../application/location_options.dart';
@@ -315,7 +316,7 @@ class _EventRow extends StatelessWidget {
         onEdit: onEdit,
         children: [
           RecordHeadline(
-            title: event.name,
+            title: eventLabel(event),
             pill: StatusBadge.forState(isActive: event.isActive),
           ),
           AppSection(
@@ -340,7 +341,7 @@ class _EventRow extends StatelessWidget {
     final loc = location;
     final notes = event.notes;
     return RecordRow(
-      title: event.name,
+      title: eventLabel(event),
       details: [
         RecordLine(_eventDates(event)),
         if (loc != null) RecordLine(locationLabelWithZone(loc)),
