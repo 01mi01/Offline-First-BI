@@ -50,3 +50,6 @@ app.*.map.json
 
 # Pruebas de desarrollo
 /test/tests_suite/
+
+# Reglas para Claude Code
+/CLAUDE.md
