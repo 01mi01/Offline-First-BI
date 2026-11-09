@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/date_range_filter.dart';
 import '../../application/event_provider.dart';
 import '../../application/location_provider.dart';
 import '../../models/event_model.dart';
@@ -93,10 +94,15 @@ class _EventDialogState extends ConsumerState<EventDialog>
 
   Future<void> _pickEndDate() async {
     dismissKeyboard();
+    final start = _startDate;
+    var initial = _endDate ?? start ?? appNow();
+    if (start != null && dateOnly(initial).isBefore(dateOnly(start))) {
+      initial = start;
+    }
     final picked = await showAppDatePicker(
       context,
-      initialDate: _endDate ?? _startDate ?? appNow(),
-      firstDate: _startDate ?? transactionFirstDate,
+      initialDate: initial,
+      firstDate: start ?? transactionFirstDate,
       lastDate: transactionLastDate,
     );
     if (picked != null) {
