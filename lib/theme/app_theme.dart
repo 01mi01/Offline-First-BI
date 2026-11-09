@@ -11,7 +11,7 @@ class AppColors {
   static const background = Color(0xFFF3F2F7);
   static const surface = Color(0xFFFAFAFA);
   static const neutralButton = Color(0xFFE6E9EF);
-  static const track = Color(0xFFE6E9EF);
+  static const track = neutralButton;
 
   static const textPrimary = navy;
   static const textSecondary = Color(0xFF5B6B82);
@@ -37,11 +37,11 @@ class AppColors {
   static const successSoft = Color(0xFFEEF6D6);
   static const blueSoft = Color(0xFFE6EEF3);
 
-  static const chartColor1 = Color(0xFF05959C);
+  static const chartColor1 = cyanDark;
   static const chartColor2 = Color(0xFF15305F);
   static const chartColor3 = Color(0xFF98C232);
-  static const chartColor4 = Color(0xFF04787E);
-  static const chartColor5 = Color(0xFF2C6E9B);
+  static const chartColor4 = cyanDeep;
+  static const chartColor5 = blue;
 }
 
 Color chartColorAt(int index) => const [
