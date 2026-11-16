@@ -878,13 +878,12 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
 
-      // Rol empleado para el usuario de prueba
-      final rolEmpleado = await (select(
+      final rolAdmin = await (select(
         roles,
-      )..where((r) => r.name.equals('empleado'))).getSingle();
+      )..where((r) => r.name.equals('admin'))).getSingle();
 
       await into(userRoles).insert(
-        UserRolesCompanion.insert(userId: testUserId, roleId: rolEmpleado.id),
+        UserRolesCompanion.insert(userId: testUserId, roleId: rolAdmin.id),
       );
 
       // Permisos CRUD completos para el usuario de prueba en todos los módulos

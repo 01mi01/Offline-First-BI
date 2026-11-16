@@ -1,13 +1,19 @@
 import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart' show Value;
 import 'dart:convert';
 import '../../data/db/app_database.dart';
 import '../../models/user_model.dart';
 import '../../config/app_clock.dart';
+import '../../models/app_role.dart';
+import 'failed_login_attempts.dart';
 
 class AuthRepository {
   final AppDatabase database;
+  final FailedLoginAttempts failedAttempts;
+  final Set<String> _justLocked = {};
 
-  AuthRepository(this.database);
+  AuthRepository(this.database, {FailedLoginAttempts? failedAttempts})
+    : failedAttempts = failedAttempts ?? FailedLoginAttempts();
 
   String _hashPassword(String password) {
     final bytes = utf8.encode(password);
@@ -35,6 +41,7 @@ class AuthRepository {
       role: role,
       mfaEnabled: user.mfaEnabled,
       darkMode: user.darkMode,
+      isActive: user.isActive,
     );
   }
 
@@ -42,14 +49,17 @@ class AuthRepository {
     try {
       final hash = _hashPassword(password);
 
-      final user =
-          await (database.select(database.users)
-                ..where((u) => u.username.equals(username))
-                ..where((u) => u.isActive.equals(true)))
-              .getSingleOrNull();
+      final user = await (database.select(
+        database.users,
+      )..where((u) => u.username.equals(username))).getSingleOrNull();
 
-      if (user == null) return null;
-      if (user.passwordHash != hash) return null;
+      if (user == null || !user.isActive) return null;
+      if (user.passwordHash != hash) {
+        await _registerFailure(user);
+        return null;
+      }
+
+      failedAttempts.reset(user.username);
 
       await database.delete(database.sesionLocal).go();
       await database
@@ -66,6 +76,28 @@ class AuthRepository {
     } catch (e) {
       return null;
     }
+  }
+
+  Future<void> _registerFailure(User user) async {
+    final model = await _buildUserModel(user);
+    if (model == null || model.appRole == AppRole.administrador) return;
+    final count = failedAttempts.registerFailure(user.username);
+    if (count < maxFailedLoginAttempts) return;
+    await (database.update(database.users)..where((u) => u.id.equals(user.id)))
+        .write(
+          UsersCompanion(isActive: const Value(false), updatedAt: Value(appNow())),
+        );
+    _justLocked.add(user.username);
+  }
+
+  bool takeJustLocked(String username) => _justLocked.remove(username);
+
+  Future<bool> isBlocked(String username, String password) async {
+    final user = await (database.select(
+      database.users,
+    )..where((u) => u.username.equals(username))).getSingleOrNull();
+    if (user == null) return false;
+    return !user.isActive && user.passwordHash == _hashPassword(password);
   }
 
   Future<UserModel?> getSesionActual() async {

@@ -12,9 +12,11 @@ import 'application/purchase_provider.dart';
 import 'application/sale_provider.dart';
 import 'application/supplier_provider.dart';
 import 'application/unit_provider.dart';
+import 'application/user_provider.dart';
 import 'config/rounding.dart';
 import 'main.dart' show MyApp;
 import 'config/app_clock.dart';
+import 'models/app_role.dart';
 
 const seedClients = <(String, String)>[
   ('John Smith', 'john.smith@example.com | +591 7000 0001 | @johnsmith'),
@@ -30,6 +32,25 @@ const seedClients = <(String, String)>[
   ('Daniel Anderson', '@danielanderson'),
   ('Laura Thompson', 'laura.thompson@example.com | +591 7000 0009'),
   ('Robert Clark', 'robert.clark@example.com'),
+];
+
+const seedOwner = (
+  username: 'mary.wilson',
+  email: 'mary.wilson@example.com',
+  password: '654321',
+);
+
+const seedEmployees = [
+  (
+    username: 'chris.taylor',
+    email: 'chris.taylor@example.com',
+    password: 'chris123',
+  ),
+  (
+    username: 'emily.johnson',
+    email: 'emily.johnson@example.com',
+    password: 'emily123',
+  ),
 ];
 
 const seedSuppliers = <(String, String)>[
@@ -640,6 +661,25 @@ Future<bool> seedSampleData(ProviderContainer c, {DateTime? now}) async {
   final events = buildSeedEvents(today);
   final sales = buildSeedSales(today, events);
   final purchases = buildSeedPurchases(events);
+
+  await c
+      .read(userRepositoryProvider)
+      .create(
+        username: seedOwner.username,
+        email: seedOwner.email,
+        password: seedOwner.password,
+        role: AppRole.propietario,
+      );
+  for (final employee in seedEmployees) {
+    await c
+        .read(userRepositoryProvider)
+        .create(
+          username: employee.username,
+          email: employee.email,
+          password: employee.password,
+          role: AppRole.empleado,
+        );
+  }
 
   for (final cat in seedCategories) {
     await c

@@ -9,6 +9,7 @@ import 'login_page.dart';
 import '../widgets/confirm_cancel_dialog.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/app_avatar.dart';
+import 'users_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -35,7 +36,7 @@ class SettingsPage extends ConsumerWidget {
     final user = ref.watch(authProvider).user;
     final username = user?.username ?? '';
     final email = user?.email ?? '';
-    final role = user?.role ?? '';
+    final role = user?.appRole.label ?? '';
 
     return ScreenScaffold.slivers(
       title: 'Ajustes',
@@ -51,7 +52,7 @@ class SettingsPage extends ConsumerWidget {
                       subtitle: role.isEmpty
                           ? null
                           : Text(
-                              _capitalize(role),
+                              role,
                               style: AppText.rowSubtitle(context),
                             ),
                     ),
@@ -78,6 +79,7 @@ class SettingsPage extends ConsumerWidget {
                       ),
                   ],
                 ),
+                const UsersSettingsEntry(),
                 AppSection(
                   header: 'Apariencia',
                   dividerIndent: AppMetrics.dividerIndentWithTile,
@@ -149,7 +151,4 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
   }
-
-  static String _capitalize(String value) =>
-      value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 }

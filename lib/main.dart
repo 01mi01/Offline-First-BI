@@ -8,6 +8,7 @@ import 'application/image_storage_provider.dart';
 import 'theme/app_theme.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/widgets/day_change_watcher.dart';
+import 'presentation/widgets/inactivity_watcher.dart';
 import 'presentation/navigation/main_navigation_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -24,6 +25,8 @@ void main() async {
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 }
 
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
@@ -34,10 +37,14 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Sistema de gestión para emprendimientos artísticos',
       debugShowCheckedModeBanner: false,
+      navigatorKey: appNavigatorKey,
       theme: lightTheme,
       builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
         value: appSystemOverlayStyle,
-        child: DayChangeWatcher(child: child ?? const SizedBox.shrink()),
+        child: InactivityWatcher(
+          navigatorKey: appNavigatorKey,
+          child: DayChangeWatcher(child: child ?? const SizedBox.shrink()),
+        ),
       ),
       locale: appLocale,
       supportedLocales: appSupportedLocales,

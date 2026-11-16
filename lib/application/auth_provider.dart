@@ -1,11 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/auth_repository.dart';
+import '../data/repositories/failed_login_attempts.dart';
 import '../models/user_model.dart';
 import 'database_provider.dart';
 
+const String blockedUserMessage =
+    'Tu usuario está bloqueado. Comunícate con el administrador.';
+
+const String inactivityLogoutMessage = 'Tu sesión se cerró por inactividad.';
+
+final failedLoginAttemptsProvider = Provider<FailedLoginAttempts>(
+  (ref) => FailedLoginAttempts(),
+);
+
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final db = ref.watch(databaseProvider);
-  return AuthRepository(db);
+  return AuthRepository(
+    db,
+    failedAttempts: ref.watch(failedLoginAttemptsProvider),
+  );
 });
 
 class AuthState {
@@ -46,11 +59,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (user != null) {
       state = state.copyWith(user: user, isLoading: false);
     } else {
+      final blocked =
+          repository.takeJustLocked(username) ||
+          await repository.isBlocked(username, password);
       state = state.copyWith(
         isLoading: false,
-        error: 'Usuario o contraseña incorrectos',
+        error: blocked ? blockedUserMessage : 'Usuario o contraseña incorrectos',
       );
     }
+  }
+
+  Future<void> refreshUser() async {
+    if (state.user == null) return;
+    final user = await repository.getSesionActual();
+    if (user != null) state = state.copyWith(user: user);
   }
 
   void clearError() {
@@ -60,6 +82,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await repository.logout();
     state = AuthState();
+  }
+
+  Future<void> logoutForInactivity() async {
+    if (state.user == null) return;
+    await repository.logout();
+    state = AuthState(error: inactivityLogoutMessage);
   }
 }
 
