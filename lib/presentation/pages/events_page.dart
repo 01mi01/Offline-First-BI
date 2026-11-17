@@ -24,12 +24,28 @@ import '../widgets/record_list.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/module_gate.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
 
 class EventsPage extends ConsumerWidget {
   const EventsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final access = ref.watch(accessControlProvider);
+    final events = access.canRead(AppModule.eventos);
+    final locations = access.canRead(AppModule.ubicaciones);
+    if (!events && !locations) {
+      return const ModuleDeniedScreen(title: 'Eventos');
+    }
+    if (!events || !locations) {
+      return ScreenScaffold(
+        title: events ? 'Eventos' : 'Ubicaciones',
+        actions: const [ProfileButton()],
+        body: events ? const _EventsTab() : const _LocationsTab(),
+      );
+    }
     return DefaultTabController(
       length: 2,
       child: ScreenScaffold(
@@ -47,6 +63,7 @@ class _EventsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final access = ref.watch(accessControlProvider);
     final state = ref.watch(eventProvider);
     final locations = ref.watch(locationProvider).locations;
     final status = ref.watch(eventStatusFilterProvider);
@@ -120,10 +137,12 @@ class _EventsTab extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FlatFab(
-        heroTag: 'events_tab_fab',
-        onPressed: () => _showDialog(context, null),
-      ),
+      floatingActionButton: access.canCreate(AppModule.eventos)
+          ? FlatFab(
+              heroTag: 'events_tab_fab',
+              onPressed: () => _showDialog(context, null),
+            )
+          : null,
       body: Column(
         children: [
           FilterArea(
@@ -143,8 +162,12 @@ class _EventsTab extends ConsumerWidget {
                     child: AppEmptyState.list(
                       plural: 'eventos',
                       icon: Icons.event_rounded,
-                      actionLabel: 'Nuevo evento',
-                      onAction: () => _showDialog(context, null),
+                      actionLabel: access.canCreate(AppModule.eventos)
+                          ? 'Nuevo evento'
+                          : null,
+                      onAction: access.canCreate(AppModule.eventos)
+                          ? () => _showDialog(context, null)
+                          : null,
                     ),
                   )
                 : visible.isEmpty
@@ -161,7 +184,9 @@ class _EventsTab extends ConsumerWidget {
                       return _EventRow(
                         event: event,
                         location: location,
-                        onEdit: () => _showDialog(context, event),
+                        onEdit: access.canEditOrDeactivate(AppModule.eventos)
+                            ? () => _showDialog(context, event)
+                            : null,
                       );
                     },
                   ),
@@ -181,6 +206,7 @@ class _LocationsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final access = ref.watch(accessControlProvider);
     final state = ref.watch(locationProvider);
     final status = ref.watch(locationStatusFilterProvider);
     final country = ref.watch(locationCountryFilterProvider);
@@ -200,10 +226,12 @@ class _LocationsTab extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FlatFab(
-        heroTag: 'locations_tab_fab',
-        onPressed: () => _showDialog(context, null),
-      ),
+      floatingActionButton: access.canCreate(AppModule.ubicaciones)
+          ? FlatFab(
+              heroTag: 'locations_tab_fab',
+              onPressed: () => _showDialog(context, null),
+            )
+          : null,
       body: Column(
         children: [
           FilterArea(
@@ -262,8 +290,12 @@ class _LocationsTab extends ConsumerWidget {
                     child: AppEmptyState.list(
                       plural: 'ubicaciones',
                       icon: Icons.place_rounded,
-                      actionLabel: 'Nueva ubicación',
-                      onAction: () => _showDialog(context, null),
+                      actionLabel: access.canCreate(AppModule.ubicaciones)
+                          ? 'Nueva ubicación'
+                          : null,
+                      onAction: access.canCreate(AppModule.ubicaciones)
+                          ? () => _showDialog(context, null)
+                          : null,
                     ),
                   )
                 : visible.isEmpty
@@ -276,7 +308,9 @@ class _LocationsTab extends ConsumerWidget {
                       final loc = visible[index];
                       return _LocationRow(
                         location: loc,
-                        onEdit: () => _showDialog(context, loc),
+                        onEdit: access.canEditOrDeactivate(AppModule.ubicaciones)
+                            ? () => _showDialog(context, loc)
+                            : null,
                       );
                     },
                   ),
@@ -298,7 +332,7 @@ String _eventDates(EventModel event) => event.endDate != null
 class _EventRow extends StatelessWidget {
   final EventModel event;
   final LocationModel? location;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
 
   const _EventRow({
     required this.event,
@@ -355,7 +389,7 @@ class _EventRow extends StatelessWidget {
 
 class _LocationRow extends StatelessWidget {
   final LocationModel location;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
 
   const _LocationRow({required this.location, required this.onEdit});
 

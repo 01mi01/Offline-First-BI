@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/module_gate.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/report_provider.dart';
 import '../../config/rounding.dart';
@@ -167,6 +170,9 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(accessControlProvider).canRead(AppModule.reportes)) {
+      return const ModuleDeniedScreen(title: 'Reportes');
+    }
     final isSales = widget.type == ReportType.sales;
     final saleSummary = isSales
         ? ref.watch(reportServiceProvider).summarizeSaleRows(widget.saleRows)

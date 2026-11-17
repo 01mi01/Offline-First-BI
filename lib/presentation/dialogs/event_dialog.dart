@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
 import '../../application/event_provider.dart';
@@ -131,6 +134,7 @@ class _EventDialogState extends ConsumerState<EventDialog>
     showFormSheet<void>(
       context,
       builder: (_) => LocationDialog(
+        from: AppModule.eventos,
         onSaved: (locationId) {
           setState(() => _selectedLocationId = locationId);
         },
@@ -151,23 +155,41 @@ class _EventDialogState extends ConsumerState<EventDialog>
       submitAttempted && _startDate == null ? 'Selecciona la fecha de inicio' : null;
 
   Future<void> _save() async {
+    if (widget.event != null &&
+        !ref.read(accessControlProvider).canUpdate(AppModule.eventos)) {
+      final error = await ref
+          .read(eventProvider.notifier)
+          .setActive(widget.event!.id, _isActive);
+      if (!mounted) return;
+      if (error != null) {
+        setState(() => _saveError = error);
+        return;
+      }
+      Navigator.pop(context);
+      return;
+    }
     final valid = validateForm();
     if (!valid || _startDate == null || _endDateError != null) return;
     setState(() => _saveError = null);
 
-    await ref
-        .read(eventProvider.notifier)
-        .save(
-          id: widget.event?.id,
-          name: _nameController.text.trim(),
-          locationId: _selectedLocationId,
-          startDate: _startDate!,
-          endDate: _endDate,
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-          isActive: _isActive,
-        );
+    try {
+      await ref
+          .read(eventProvider.notifier)
+          .save(
+            id: widget.event?.id,
+            name: _nameController.text.trim(),
+            locationId: _selectedLocationId,
+            startDate: _startDate!,
+            endDate: _endDate,
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+            isActive: _isActive,
+          );
+    } on AccessDeniedException catch (e) {
+      if (mounted) setState(() => _saveError = e.toString());
+      return;
+    }
 
     if (mounted) Navigator.pop(context);
   }
@@ -187,6 +209,8 @@ class _EventDialogState extends ConsumerState<EventDialog>
 
   Widget _buildForm(BuildContext context) {
     final isEditing = widget.event != null;
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.eventos);
     final locations = ref
         .watch(locationProvider)
         .locations
@@ -194,6 +218,8 @@ class _EventDialogState extends ConsumerState<EventDialog>
         .toList();
 
     return FormSheet(
+      locked: locked,
+      lockedNotice: deactivateOnlyNotice,
       title: isEditing ? 'Editar evento' : 'Nuevo evento',
       formKey: _formKey,
       actions: FormActions(
@@ -226,10 +252,12 @@ class _EventDialogState extends ConsumerState<EventDialog>
             onlyActive: false,
           ),
           onChanged: (val) => setState(() => _selectedLocationId = val),
-          labelAction: FormAddButton(
-            label: 'Nueva ubicación',
-            onPressed: _showAddLocationSheet,
-          ),
+          labelAction: access.canQuickAdd(AppModule.ubicaciones, AppModule.eventos)
+              ? FormAddButton(
+                  label: 'Nueva ubicación',
+                  onPressed: _showAddLocationSheet,
+                )
+              : null,
         ),
         const SizedBox(height: AppSpacing.s16),
 
@@ -264,7 +292,7 @@ class _EventDialogState extends ConsumerState<EventDialog>
           ),
         ),
 
-        if (isEditing) ...[
+        if (isEditing && access.canDeactivate(AppModule.eventos)) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Evento activo',

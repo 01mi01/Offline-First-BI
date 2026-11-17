@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/access_control.dart';
+import 'module_permission_provider.dart';
 import '../data/repositories/sale_repository.dart';
 import '../models/sale_model.dart';
 import '../models/sale_item_model.dart';
@@ -59,6 +61,10 @@ class SaleNotifier extends StateNotifier<SaleState> {
     String? notes,
     required List<Map<String, dynamic>> items,
   }) async {
+    final denied = ref
+        .read(accessGuardProvider)
+        .check(AppModule.ventas, ModuleAction.create);
+    if (denied != null) return denied;
     if (discount < 0 || discount.isNaN) {
       return SaleRepository.negativeDiscountMessage;
     }
@@ -94,6 +100,10 @@ class SaleNotifier extends StateNotifier<SaleState> {
     String? notes,
     required List<Map<String, dynamic>> newItems,
   }) async {
+    final denied = ref
+        .read(accessGuardProvider)
+        .check(AppModule.ventas, ModuleAction.update);
+    if (denied != null) return denied;
     try {
       final error = await repository.editSale(
         saleId: saleId,
@@ -116,6 +126,10 @@ class SaleNotifier extends StateNotifier<SaleState> {
   }
 
   Future<String?> cancelSale(int saleId) async {
+    final denied = ref
+        .read(accessGuardProvider)
+        .check(AppModule.ventas, ModuleAction.deactivate);
+    if (denied != null) return denied;
     try {
       final error = await repository.cancelSale(saleId);
       await load();

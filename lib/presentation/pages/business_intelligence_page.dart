@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/module_gate.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/bi_provider.dart';
 import '../../application/product_provider.dart';
@@ -54,6 +57,9 @@ class _BusinessIntelligencePageState
 
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(accessControlProvider).canRead(AppModule.businessIntelligence)) {
+      return const ModuleDeniedScreen(title: 'Business Intelligence');
+    }
     final config = ref.watch(biConfigProvider);
     final saleState = ref.watch(saleProvider);
     final purchaseState = ref.watch(purchaseProvider);

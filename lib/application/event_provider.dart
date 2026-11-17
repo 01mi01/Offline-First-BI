@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/access_control.dart';
+import 'module_permission_provider.dart';
 import '../data/repositories/event_repository.dart';
 import '../models/event_model.dart';
 import 'database_provider.dart';
@@ -34,8 +36,10 @@ class EventState {
 
 class EventNotifier extends StateNotifier<EventState> {
   final EventRepository repository;
+  final AccessGuard guard;
 
-  EventNotifier(this.repository) : super(EventState()) {
+  EventNotifier(this.repository, {this.guard = AccessGuard.none})
+    : super(EventState()) {
     load();
   }
 
@@ -58,6 +62,51 @@ class EventNotifier extends StateNotifier<EventState> {
     String? notes,
     bool isActive = true,
   }) async {
+    final current = id == null
+        ? null
+        : state.events.where((e) => e.id == id).firstOrNull;
+    guard.requireSave(
+      AppModule.eventos,
+      isNew: id == null,
+      activeChanged: current != null && current.isActive != isActive,
+    );
+    await _persist(
+      id: id,
+      name: name,
+      locationId: locationId,
+      startDate: startDate,
+      endDate: endDate,
+      notes: notes,
+      isActive: isActive,
+    );
+  }
+
+  Future<String?> setActive(int id, bool isActive) async {
+    final denied = guard.check(AppModule.eventos, ModuleAction.deactivate);
+    if (denied != null) return denied;
+    final e = state.events.where((e) => e.id == id).firstOrNull;
+    if (e == null) return 'El evento no existe';
+    await _persist(
+      id: e.id,
+      name: e.name,
+      locationId: e.locationId,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      notes: e.notes,
+      isActive: isActive,
+    );
+    return null;
+  }
+
+  Future<void> _persist({
+    int? id,
+    required String name,
+    int? locationId,
+    required DateTime startDate,
+    DateTime? endDate,
+    String? notes,
+    required bool isActive,
+  }) async {
     await repository.save(
       id: id,
       name: name,
@@ -74,5 +123,5 @@ class EventNotifier extends StateNotifier<EventState> {
 final eventProvider =
     StateNotifierProvider<EventNotifier, EventState>((ref) {
   final repository = ref.watch(eventRepositoryProvider);
-  return EventNotifier(repository);
+  return EventNotifier(repository, guard: ref.watch(accessGuardProvider));
 });

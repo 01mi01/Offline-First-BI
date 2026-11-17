@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
+import 'location_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/sale_provider.dart';
@@ -184,8 +188,22 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
     showFormSheet<void>(
       context,
       builder: (_) => ClientDialog(
+        from: AppModule.ventas,
         onSaved: (clientId) {
           setState(() => _selectedClientId = clientId);
+        },
+      ),
+    );
+  }
+
+  void _showAddLocationSheet() {
+    dismissKeyboard();
+    showFormSheet<void>(
+      context,
+      builder: (_) => LocationDialog(
+        from: AppModule.ventas,
+        onSaved: (locationId) {
+          setState(() => _selectedLocationId = locationId);
         },
       ),
     );
@@ -371,12 +389,16 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
               .toList()
         : const <ProductModel>[];
 
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.ventas);
+
     return AppSheetScaffold(
       title: isEditing ? 'Editar venta' : 'Nueva venta',
       child: Form(
         key: _formKey,
         child: FormScroll(
-            children: [
+            children: lockChildren(locked, [
+              if (locked) const LockedFormNotice(cancelOnlyNotice),
               SearchablePickerField<int>(
                 label: 'Cliente',
                 searchHint: 'Buscar cliente',
@@ -389,10 +411,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                   _selectedClientId = val;
                   _error = null;
                 }),
-                labelAction: FormAddButton(
-                  label: 'Nuevo cliente',
-                  onPressed: _showAddClientSheet,
-                ),
+                labelAction:
+                    access.canQuickAdd(AppModule.clientes, AppModule.ventas)
+                    ? FormAddButton(
+                        label: 'Nuevo cliente',
+                        onPressed: _showAddClientSheet,
+                      )
+                    : null,
               ),
               const SizedBox(height: AppSpacing.s16),
               SearchablePickerField<int>(
@@ -405,6 +430,13 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                   keepId: _selectedLocationId,
                 ),
                 onChanged: (val) => setState(() => _selectedLocationId = val),
+                labelAction:
+                    access.canQuickAdd(AppModule.ubicaciones, AppModule.ventas)
+                    ? FormAddButton(
+                        label: 'Nueva ubicación',
+                        onPressed: _showAddLocationSheet,
+                      )
+                    : null,
               ),
               const SizedBox(height: AppSpacing.s16),
               SearchablePickerField<int>(
@@ -598,9 +630,12 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
               FormActions(
                 onSecondary: () => Navigator.pop(context),
                 primaryLabel: isEditing ? 'Guardar' : 'Registrar venta',
-                onPrimary: () => runOnce(_save),
+                onPrimary: locked ? null : () => runOnce(_save),
                 busy: inFlight,
-                destructive: isEditing && !widget.sale!.isCanceled
+                destructive:
+                    isEditing &&
+                        !widget.sale!.isCanceled &&
+                        access.canDeactivate(AppModule.ventas)
                     ? AppActionButton(
                         label: 'Cancelar la venta',
                         kind: AppButtonKind.destructive,
@@ -608,7 +643,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                       )
                     : null,
               ),
-            ],
+            ]),
         ),
       ),
     );

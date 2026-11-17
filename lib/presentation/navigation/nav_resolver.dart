@@ -13,7 +13,8 @@ List<NavGroupId> resolveVisibleGroups(List<String> readableModules) {
   }
   if (readableModules.contains('clientes') ||
       readableModules.contains('proveedores') ||
-      readableModules.contains('eventos')) {
+      readableModules.contains('eventos') ||
+      readableModules.contains('ubicaciones')) {
     groups.add(NavGroupId.contactos);
   }
   if (readableModules.contains('reportes') ||
@@ -56,7 +57,8 @@ List<ContactosCard> resolveContactosCards(List<String> readableModules) {
   if (readableModules.contains('proveedores')) {
     cards.add(ContactosCard.proveedores);
   }
-  if (readableModules.contains('eventos')) {
+  if (readableModules.contains('eventos') ||
+      readableModules.contains('ubicaciones')) {
     cards.add(ContactosCard.eventos);
   }
   return cards;

@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/access_control.dart';
+import 'module_permission_provider.dart';
 import '../data/repositories/name_rules.dart';
 import '../data/repositories/product_repository.dart';
 import '../models/product_model.dart';
@@ -35,8 +37,10 @@ class ProductState {
 
 class ProductNotifier extends StateNotifier<ProductState> {
   final ProductRepository repository;
+  final AccessGuard guard;
 
-  ProductNotifier(this.repository) : super(ProductState()) {
+  ProductNotifier(this.repository, {this.guard = AccessGuard.none})
+    : super(ProductState()) {
     load();
   }
 
@@ -61,6 +65,60 @@ class ProductNotifier extends StateNotifier<ProductState> {
     double? productionCost,
     required int stock,
     bool isActive = true,
+  }) async {
+    final current = id == null
+        ? null
+        : state.products.where((p) => p.id == id).firstOrNull;
+    final denied = guard.checkSave(
+      AppModule.inventario,
+      isNew: id == null,
+      activeChanged: current != null && current.isActive != isActive,
+    );
+    if (denied != null) return denied;
+    return _persist(
+      id: id,
+      categoryId: categoryId,
+      name: name,
+      description: description,
+      image: image,
+      priceA: priceA,
+      priceB: priceB,
+      productionCost: productionCost,
+      stock: stock,
+      isActive: isActive,
+    );
+  }
+
+  Future<String?> setActive(int id, bool isActive) async {
+    final denied = guard.check(AppModule.inventario, ModuleAction.deactivate);
+    if (denied != null) return denied;
+    final p = state.products.where((p) => p.id == id).firstOrNull;
+    if (p == null) return 'El producto no existe';
+    return _persist(
+      id: p.id,
+      categoryId: p.categoryId,
+      name: p.name,
+      description: p.description,
+      image: p.image,
+      priceA: p.priceA,
+      priceB: p.priceB,
+      productionCost: p.productionCost,
+      stock: p.stock,
+      isActive: isActive,
+    );
+  }
+
+  Future<String?> _persist({
+    int? id,
+    int? categoryId,
+    required String name,
+    String? description,
+    String? image,
+    double? priceA,
+    double? priceB,
+    double? productionCost,
+    required int stock,
+    required bool isActive,
   }) async {
     try {
       await repository.save(
@@ -88,5 +146,5 @@ class ProductNotifier extends StateNotifier<ProductState> {
 final productProvider =
     StateNotifierProvider<ProductNotifier, ProductState>((ref) {
   final repository = ref.watch(productRepositoryProvider);
-  return ProductNotifier(repository);
+  return ProductNotifier(repository, guard: ref.watch(accessGuardProvider));
 });

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
 import '../../models/client_model.dart';
@@ -18,7 +21,9 @@ class ClientDialog extends ConsumerStatefulWidget {
   final ClientModel? client;
   final Function(int clientId)? onSaved;
 
-  const ClientDialog({super.key, this.client, this.onSaved});
+  final AppModule? from;
+
+  const ClientDialog({super.key, this.client, this.onSaved, this.from});
 
   @override
   ConsumerState<ClientDialog> createState() => _ClientDialogState();
@@ -81,6 +86,19 @@ class _ClientDialogState extends ConsumerState<ClientDialog>
   }
 
   Future<void> _save() async {
+    if (widget.client != null &&
+        !ref.read(accessControlProvider).canUpdate(AppModule.clientes)) {
+      final error = await ref
+          .read(clientProvider.notifier)
+          .setActive(widget.client!.id, _isActive);
+      if (!mounted) return;
+      if (error != null) {
+        setState(() => _saveError = error);
+        return;
+      }
+      Navigator.pop(context);
+      return;
+    }
     if (!validateForm()) return;
     setState(() => _saveError = null);
     final result = await ref
@@ -92,6 +110,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog>
               ? null
               : _contactController.text.trim(),
           isActive: _isActive,
+          from: widget.from,
         );
     if (!mounted) return;
     final error = result.error;
@@ -132,8 +151,12 @@ class _ClientDialogState extends ConsumerState<ClientDialog>
 
   Widget _buildForm(BuildContext context) {
     final isEditing = widget.client != null;
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.clientes);
 
     return FormSheet(
+      locked: locked,
+      lockedNotice: deactivateOnlyNotice,
       title: isEditing ? 'Editar cliente' : 'Nuevo cliente',
       formKey: _formKey,
       actions: FormActions(
@@ -167,7 +190,7 @@ class _ClientDialogState extends ConsumerState<ClientDialog>
           ),
         ),
 
-        if (isEditing) ...[
+        if (isEditing && access.canDeactivate(AppModule.clientes)) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Cliente activo',

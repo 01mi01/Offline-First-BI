@@ -4,7 +4,9 @@ import '../../application/auth_provider.dart';
 import '../../application/user_provider.dart';
 import '../../models/user_model.dart';
 import '../../theme/app_theme.dart';
+import '../dialogs/permissions_dialog.dart';
 import '../dialogs/user_dialog.dart';
+import '../../models/app_role.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/app_group.dart';
 import '../widgets/app_sheet.dart';
@@ -171,6 +173,20 @@ class _UserDetailSheetState extends ConsumerState<UserDetailSheet> {
               ),
             ),
           ),
+          if (user.appRole == AppRole.empleado) ...[
+            const SizedBox(height: AppButtons.stackGap),
+            AppActionButton(
+              label: 'Permisos',
+              kind: AppButtonKind.neutral,
+              onPressed: () => _openThen(
+                (navigator) => showFormSheet<void>(
+                  navigator.context,
+                  heightFactor: 0.94,
+                  builder: (_) => PermissionsDialog(user: user),
+                ),
+              ),
+            ),
+          ],
           if (!self) ...[
             const SizedBox(height: AppButtons.stackGap),
             AppActionButton(

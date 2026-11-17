@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/location_provider.dart';
 import '../../models/location_model.dart';
@@ -17,7 +20,9 @@ class LocationDialog extends ConsumerStatefulWidget {
   final LocationModel? location;
   final Function(int locationId)? onSaved;
 
-  const LocationDialog({super.key, this.location, this.onSaved});
+  final AppModule? from;
+
+  const LocationDialog({super.key, this.location, this.onSaved, this.from});
 
   @override
   ConsumerState<LocationDialog> createState() => _LocationDialogState();
@@ -94,6 +99,19 @@ class _LocationDialogState extends ConsumerState<LocationDialog>
   }
 
   Future<void> _save() async {
+    if (widget.location != null &&
+        !ref.read(accessControlProvider).canUpdate(AppModule.ubicaciones)) {
+      final error = await ref
+          .read(locationProvider.notifier)
+          .setActive(widget.location!.id, _isActive);
+      if (!mounted) return;
+      if (error != null) {
+        setState(() => _saveError = error);
+        return;
+      }
+      Navigator.pop(context);
+      return;
+    }
     if (!validateForm()) return;
     if (_isDuplicate()) {
       setState(
@@ -104,15 +122,22 @@ class _LocationDialogState extends ConsumerState<LocationDialog>
     }
     setState(() => _saveError = null);
 
-    final savedId = await ref.read(locationProvider.notifier).save(
-          id: widget.location?.id,
-          city: _cityController.text.trim(),
-          country: _countryController.text.trim(),
-          description: _descController.text.trim().isEmpty
-              ? null
-              : _descController.text.trim(),
-          isActive: _isActive,
-        );
+    final int savedId;
+    try {
+      savedId = await ref.read(locationProvider.notifier).save(
+            id: widget.location?.id,
+            city: _cityController.text.trim(),
+            country: _countryController.text.trim(),
+            description: _descController.text.trim().isEmpty
+                ? null
+                : _descController.text.trim(),
+            isActive: _isActive,
+            from: widget.from,
+          );
+    } on AccessDeniedException catch (e) {
+      if (mounted) setState(() => _saveError = e.toString());
+      return;
+    }
 
     if (!mounted) return;
 
@@ -150,8 +175,12 @@ class _LocationDialogState extends ConsumerState<LocationDialog>
 
   Widget _buildForm(BuildContext context) {
     final isEditing = widget.location != null;
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.ubicaciones);
 
     return FormSheet(
+      locked: locked,
+      lockedNotice: deactivateOnlyNotice,
       title: isEditing ? 'Editar ubicación' : 'Nueva ubicación',
       formKey: _formKey,
       actions: FormActions(
@@ -194,7 +223,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog>
           ),
         ),
 
-        if (isEditing) ...[
+        if (isEditing && access.canDeactivate(AppModule.ubicaciones)) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Ubicación activa',

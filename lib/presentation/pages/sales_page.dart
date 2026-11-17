@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/module_gate.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
 import '../../application/today_provider.dart';
@@ -37,7 +40,11 @@ class SalesPage extends StatelessWidget {
   const SalesPage({super.key});
 
   @override
-  Widget build(BuildContext context) => const SalesListBody();
+  Widget build(BuildContext context) => const ModuleGate(
+    modules: [AppModule.ventas],
+    title: 'Ventas',
+    child: SalesListBody(),
+  );
 }
 
 class SalesListBody extends ConsumerWidget {
@@ -46,6 +53,9 @@ class SalesListBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(todayProvider);
+    final canCreate = ref
+        .watch(accessControlProvider)
+        .canCreate(AppModule.ventas);
     final state = ref.watch(saleProvider);
     final clients = ref.watch(clientProvider).clients;
     final dates = ref.watch(saleDateFilterProvider);
@@ -73,10 +83,12 @@ class SalesListBody extends ConsumerWidget {
     return ScreenScaffold.slivers(
       title: 'Ventas',
       actions: const [ProfileButton()],
-      floatingActionButton: FlatFab(
-        heroTag: 'sales_list_fab',
-        onPressed: () => showSaleForm(context),
-      ),
+      floatingActionButton: canCreate
+          ? FlatFab(
+              heroTag: 'sales_list_fab',
+              onPressed: () => showSaleForm(context),
+            )
+          : null,
       slivers: [
         if (state.isLoading)
           const SliverFillRemaining(
@@ -90,8 +102,8 @@ class SalesListBody extends ConsumerWidget {
               child: AppEmptyState.list(
                 plural: 'ventas',
                 icon: Icons.point_of_sale_rounded,
-                actionLabel: 'Nueva venta',
-                onAction: () => showSaleForm(context),
+                actionLabel: canCreate ? 'Nueva venta' : null,
+                onAction: canCreate ? () => showSaleForm(context) : null,
               ),
             ),
           )
@@ -159,7 +171,11 @@ void showSaleReceipt(BuildContext context, SaleModel sale, String clientName) {
     builder: (_) => _SaleReceiptSheet(
       sale: sale,
       clientName: clientName,
-      onEdit: sale.isCanceled ? null : () => showSaleForm(context, sale),
+      onEdit:
+          sale.isCanceled ||
+              !readAccess(context).canEditOrDeactivate(AppModule.ventas)
+          ? null
+          : () => showSaleForm(context, sale),
     ),
   );
 }

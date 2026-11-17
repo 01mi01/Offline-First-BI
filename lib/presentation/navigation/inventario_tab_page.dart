@@ -10,6 +10,8 @@ import 'nav_resolver.dart';
 import '../widgets/profile_button.dart';
 import '../widgets/app_list_row.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/module_gate.dart';
+import '../../models/access_control.dart';
 
 class InventarioTabPage extends ConsumerWidget {
   const InventarioTabPage({super.key});
@@ -98,10 +100,14 @@ class ProductsScreen extends StatelessWidget {
   const ProductsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const ScreenScaffold(
+  Widget build(BuildContext context) => const ModuleGate(
+    modules: [AppModule.inventario],
     title: 'Productos',
-    actions: [ProfileButton()],
-    body: ProductsPage(),
+    child: ScreenScaffold(
+      title: 'Productos',
+      actions: [ProfileButton()],
+      body: ProductsPage(),
+    ),
   );
 }
 
@@ -109,9 +115,13 @@ class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const ScreenScaffold(
+  Widget build(BuildContext context) => const ModuleGate(
+    modules: [AppModule.inventario],
     title: 'Categorías',
-    actions: [ProfileButton()],
-    body: CategoriesPage(),
+    child: ScreenScaffold(
+      title: 'Categorías',
+      actions: [ProfileButton()],
+      body: CategoriesPage(),
+    ),
   );
 }

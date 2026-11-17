@@ -1,5 +1,9 @@
 import '../../config/quantity_format.dart';
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
+import '../widgets/form_style.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
@@ -29,7 +33,9 @@ class MaterialDialog extends ConsumerStatefulWidget {
   )?
   onSaved;
 
-  const MaterialDialog({super.key, this.material, this.onSaved});
+  final AppModule? from;
+
+  const MaterialDialog({super.key, this.material, this.onSaved, this.from});
 
   @override
   ConsumerState<MaterialDialog> createState() => _MaterialDialogState();
@@ -37,6 +43,7 @@ class MaterialDialog extends ConsumerStatefulWidget {
 
 class _MaterialDialogState extends ConsumerState<MaterialDialog>
     with SingleFlight<MaterialDialog>, LiveValidation<MaterialDialog> {
+  String? _accessError;
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
@@ -137,20 +144,40 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog>
   }
 
   Future<void> _save() async {
+    if (widget.material != null &&
+        !ref.read(accessControlProvider).canUpdate(AppModule.materiales)) {
+      final error = await ref
+          .read(materialProvider.notifier)
+          .setActive(widget.material!.id, _isActive);
+      if (!mounted) return;
+      if (error != null) {
+        setState(() => _accessError = error);
+        return;
+      }
+      Navigator.pop(context);
+      return;
+    }
     if (!validateForm()) return;
     final stock = double.tryParse(_stockController.text.trim()) ?? 0;
     final pricePerUnit = _container.resolvedPrice ?? 0;
-    final savedId = await ref
-        .read(materialProvider.notifier)
-        .save(
-          id: widget.material?.id,
-          name: _nameController.text.trim(),
-          description: _descController.text.trim(),
-          unitId: _selectedUnitId!,
-          stock: stock,
-          pricePerUnit: pricePerUnit,
-          isActive: _isActive,
-        );
+    final int savedId;
+    try {
+      savedId = await ref
+          .read(materialProvider.notifier)
+          .save(
+            id: widget.material?.id,
+            name: _nameController.text.trim(),
+            description: _descController.text.trim(),
+            unitId: _selectedUnitId!,
+            stock: stock,
+            pricePerUnit: pricePerUnit,
+            isActive: _isActive,
+            from: widget.from,
+          );
+    } on AccessDeniedException catch (e) {
+      if (mounted) setState(() => _accessError = e.toString());
+      return;
+    }
     if (mounted) Navigator.pop(context);
     if (widget.onSaved != null) {
       final materials = ref.read(materialProvider).materials;
@@ -193,6 +220,8 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog>
 
   Widget _buildForm(BuildContext context) {
     final isEditing = widget.material != null;
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.materiales);
     final allUnits = ref.watch(unitProvider).units;
     final currentUnit = isEditing
         ? allUnits.where((u) => u.id == widget.material!.unitId).firstOrNull
@@ -203,6 +232,8 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog>
     final unitName = selectedUnit?.name ?? 'unidad';
 
     return FormSheet(
+      locked: locked,
+      lockedNotice: deactivateOnlyNotice,
       title: isEditing ? 'Editar material' : 'Nuevo material',
       formKey: _formKey,
       actions: FormActions(
@@ -291,7 +322,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog>
           ),
         ],
 
-        if (isEditing) ...[
+        if (isEditing && access.canDeactivate(AppModule.materiales)) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Material activo',
@@ -302,6 +333,7 @@ class _MaterialDialogState extends ConsumerState<MaterialDialog>
             onChanged: _onToggleActive,
           ),
         ],
+        if (_accessError != null) FormErrorText(_accessError!),
       ],
     );
   }

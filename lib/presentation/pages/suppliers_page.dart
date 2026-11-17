@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../widgets/module_gate.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/supplier_provider.dart';
 import '../../application/record_search.dart';
@@ -22,10 +25,14 @@ class SuppliersPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ScreenScaffold(
+    return ModuleGate(
+      modules: const [AppModule.proveedores],
       title: 'Proveedores',
-      actions: const [ProfileButton()],
-      body: const SuppliersListBody(),
+      child: ScreenScaffold(
+        title: 'Proveedores',
+        actions: const [ProfileButton()],
+        body: const SuppliersListBody(),
+      ),
     );
   }
 }
@@ -35,6 +42,7 @@ class SuppliersListBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final access = ref.watch(accessControlProvider);
     final state = ref.watch(supplierProvider);
     final status = ref.watch(supplierStatusFilterProvider);
     final query = ref.watch(supplierListQueryProvider);
@@ -46,10 +54,12 @@ class SuppliersListBody extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FlatFab(
-        heroTag: 'suppliers_list_body_fab',
-        onPressed: () => _showDialog(context, null),
-      ),
+      floatingActionButton: access.canCreate(AppModule.proveedores)
+          ? FlatFab(
+              heroTag: 'suppliers_list_body_fab',
+              onPressed: () => _showDialog(context, null),
+            )
+          : null,
       body: Column(
         children: [
           FilterArea(
@@ -78,8 +88,12 @@ class SuppliersListBody extends ConsumerWidget {
                     child: AppEmptyState.list(
                       plural: 'proveedores',
                       icon: Icons.local_shipping_rounded,
-                      actionLabel: 'Nuevo proveedor',
-                      onAction: () => _showDialog(context, null),
+                      actionLabel: access.canCreate(AppModule.proveedores)
+                          ? 'Nuevo proveedor'
+                          : null,
+                      onAction: access.canCreate(AppModule.proveedores)
+                          ? () => _showDialog(context, null)
+                          : null,
                     ),
                   )
                 : visible.isEmpty
@@ -105,7 +119,9 @@ class SuppliersListBody extends ConsumerWidget {
                           contactInfo: s.contactInfo,
                           isActive: s.isActive,
                           protectedMessage: protected,
-                          onEdit: () => _showDialog(context, s),
+                          onEdit: access.canEditOrDeactivate(AppModule.proveedores)
+                              ? () => _showDialog(context, s)
+                              : null,
                         ),
                       );
                     },

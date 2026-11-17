@@ -860,6 +860,7 @@ class AppDatabase extends _$AppDatabase {
         ModulesCompanion.insert(name: 'business_intelligence'),
         ModulesCompanion.insert(name: 'auditoria'),
         ModulesCompanion.insert(name: 'usuarios'),
+        ModulesCompanion.insert(name: 'ubicaciones'),
       ]);
     });
 

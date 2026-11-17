@@ -4,7 +4,9 @@ import 'dart:convert';
 import '../../data/db/app_database.dart';
 import '../../models/user_model.dart';
 import '../../config/app_clock.dart';
+import '../../models/access_control.dart';
 import '../../models/app_role.dart';
+import 'module_permission_repository.dart';
 import 'failed_login_attempts.dart';
 
 class AuthRepository {
@@ -34,6 +36,12 @@ class AuthRepository {
       role = roleData?.name ?? 'empleado';
     }
 
+    final access = AppRole.fromDbName(role) == AppRole.empleado
+        ? AccessControl.restricted(
+            await ModulePermissionRepository(database).getPermissions(user.id),
+          )
+        : AccessControl.full;
+
     return UserModel(
       id: user.id,
       username: user.username,
@@ -42,6 +50,7 @@ class AuthRepository {
       mfaEnabled: user.mfaEnabled,
       darkMode: user.darkMode,
       isActive: user.isActive,
+      access: access,
     );
   }
 

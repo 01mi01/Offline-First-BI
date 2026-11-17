@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../models/access_control.dart';
+import '../../application/module_permission_provider.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:offline_first_bi/models/product_model.dart';
 import '../../application/product_provider.dart';
@@ -35,6 +38,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final access = ref.watch(accessControlProvider);
     final state = ref.watch(productProvider);
     final categories = ref.watch(categoryProvider).categories;
     final filter = ref.watch(productCatalogFilterProvider);
@@ -47,10 +51,12 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FlatFab(
-        heroTag: 'products_page_fab',
-        onPressed: () => _showForm(context, null),
-      ),
+      floatingActionButton: access.canCreate(AppModule.inventario)
+          ? FlatFab(
+              heroTag: 'products_page_fab',
+              onPressed: () => _showForm(context, null),
+            )
+          : null,
       body: Column(
         children: [
           ViewModeSwitcher(
@@ -110,8 +116,12 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     child: AppEmptyState.list(
                       plural: 'productos',
                       icon: Icons.inventory_2_rounded,
-                      actionLabel: 'Nuevo producto',
-                      onAction: () => _showForm(context, null),
+                      actionLabel: access.canCreate(AppModule.inventario)
+                          ? 'Nuevo producto'
+                          : null,
+                      onAction: access.canCreate(AppModule.inventario)
+                          ? () => _showForm(context, null)
+                          : null,
                     ),
                   )
                 : visible.isEmpty
@@ -144,7 +154,9 @@ void _showDetail(
       product: product,
       categoryName: categoryName,
       priceDisplay: priceDisplay,
-      onEdit: () => _showForm(context, product),
+      onEdit: readAccess(context).canEditOrDeactivate(AppModule.inventario)
+          ? () => _showForm(context, product)
+          : null,
     ),
   );
 }
@@ -284,7 +296,7 @@ class _ProductDetailSheet extends ConsumerStatefulWidget {
   final ProductModel product;
   final String categoryName;
   final PriceDisplay priceDisplay;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
 
   const _ProductDetailSheet({
     required this.product,

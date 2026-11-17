@@ -1,5 +1,8 @@
 import '../../config/quantity_format.dart';
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../widgets/module_gate.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/material_provider.dart';
 import '../../config/rounding.dart';
@@ -42,14 +45,20 @@ class MaterialsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 2,
-      child: ScreenScaffold(
-        title: 'Materiales',
-        actions: const [ProfileButton()],
-        bottom: const AppTabSwitcher(labels: ['Materiales', 'Registro de uso']),
-        body: const TabBarView(
-          children: [MaterialsListTab(), MaterialsUsageTab()],
+    return ModuleGate(
+      modules: const [AppModule.materiales],
+      title: 'Materiales',
+      child: DefaultTabController(
+        length: 2,
+        child: ScreenScaffold(
+          title: 'Materiales',
+          actions: const [ProfileButton()],
+          bottom: const AppTabSwitcher(
+            labels: ['Materiales', 'Registro de uso'],
+          ),
+          body: const TabBarView(
+            children: [MaterialsListTab(), MaterialsUsageTab()],
+          ),
         ),
       ),
     );
@@ -61,6 +70,7 @@ class MaterialsListTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final access = ref.watch(accessControlProvider);
     final state = ref.watch(materialProvider);
     final units = ref.watch(unitProvider).units;
     final status = ref.watch(materialStatusFilterProvider);
@@ -73,10 +83,12 @@ class MaterialsListTab extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FlatFab(
-        heroTag: 'materials_list_tab_fab',
-        onPressed: () => _showDialog(context, null),
-      ),
+      floatingActionButton: access.canCreate(AppModule.materiales)
+          ? FlatFab(
+              heroTag: 'materials_list_tab_fab',
+              onPressed: () => _showDialog(context, null),
+            )
+          : null,
       body: Column(
         children: [
           FilterArea(
@@ -106,8 +118,12 @@ class MaterialsListTab extends ConsumerWidget {
                     child: AppEmptyState.list(
                       plural: 'materiales',
                       icon: Icons.palette_rounded,
-                      actionLabel: 'Nuevo material',
-                      onAction: () => _showDialog(context, null),
+                      actionLabel: access.canCreate(AppModule.materiales)
+                          ? 'Nuevo material'
+                          : null,
+                      onAction: access.canCreate(AppModule.materiales)
+                          ? () => _showDialog(context, null)
+                          : null,
                     ),
                   )
                 : visible.isEmpty
@@ -125,7 +141,9 @@ class MaterialsListTab extends ConsumerWidget {
                         material: m,
                         unitName: unit?.name,
                         unitType: unit?.type,
-                        onEdit: () => _showDialog(context, m),
+                        onEdit: access.canEditOrDeactivate(AppModule.materiales)
+                            ? () => _showDialog(context, m)
+                            : null,
                       );
                     },
                   ),
@@ -197,7 +215,13 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
       context,
       builder: (_) => RecordDetailSheet(
         title: 'Detalle del registro de uso',
-        onEdit: entry.isCanceled ? null : () => _showEditSheet(entry),
+        onEdit:
+            entry.isCanceled ||
+                !ref
+                    .read(accessControlProvider)
+                    .canEditOrDeactivate(AppModule.materiales)
+            ? null
+            : () => _showEditSheet(entry),
         children: [
           RecordHeadline(
             title: entry.materialName,
@@ -233,7 +257,10 @@ class _MaterialsUsageTabState extends ConsumerState<MaterialsUsageTab> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: _selectedProductId != null && !_searching
+      floatingActionButton:
+          _selectedProductId != null &&
+              !_searching &&
+              ref.watch(accessControlProvider).canCreate(AppModule.materiales)
           ? FlatFab(
               heroTag: 'materials_usage_tab_fab',
               onPressed: _showRegisterSheet,
@@ -735,19 +762,27 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet>
       widget.entry.materialUnitName,
     );
 
+    final access = ref.watch(accessControlProvider);
+    final canUpdate = access.canUpdate(AppModule.materiales);
+    final canCancel = access.canDeactivate(AppModule.materiales);
+
     return FormSheet(
       title: 'Editar registro de uso',
       formKey: _formKey,
+      locked: !canUpdate,
+      lockedNotice: cancelOnlyNotice,
       actions: FormActions(
         onSecondary: () => Navigator.pop(context),
         primaryLabel: 'Guardar',
-        onPrimary: () => runOnce(_save),
+        onPrimary: canUpdate ? () => runOnce(_save) : null,
         busy: inFlight,
-        destructive: AppActionButton(
-          label: 'Cancelar el registro de uso',
-          kind: AppButtonKind.destructive,
-          onPressed: inFlight ? null : () => runOnce(_cancelUsage),
-        ),
+        destructive: canCancel
+            ? AppActionButton(
+                label: 'Cancelar el registro de uso',
+                kind: AppButtonKind.destructive,
+                onPressed: inFlight ? null : () => runOnce(_cancelUsage),
+              )
+            : null,
       ),
       children: [
         Padding(
@@ -823,7 +858,7 @@ class _MaterialRow extends StatelessWidget {
   final MaterialModel material;
   final String? unitName;
   final String? unitType;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
 
   const _MaterialRow({
     required this.material,

@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/access_control.dart';
+import 'module_permission_provider.dart';
 import '../data/repositories/category_repository.dart';
 import '../models/category_model.dart';
 import '../models/default_records.dart';
@@ -35,8 +37,10 @@ class CategoryState {
 
 class CategoryNotifier extends StateNotifier<CategoryState> {
   final CategoryRepository repository;
+  final AccessGuard guard;
 
-  CategoryNotifier(this.repository) : super(CategoryState()) {
+  CategoryNotifier(this.repository, {this.guard = AccessGuard.none})
+    : super(CategoryState()) {
     load();
   }
 
@@ -56,6 +60,51 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
     String? description,
     String? image,
     bool isActive = true,
+  }) async {
+    final current = id == null
+        ? null
+        : state.categories.where((c) => c.id == id).firstOrNull;
+    final denied = guard.checkSave(
+      AppModule.inventario,
+      isNew: id == null,
+      activeChanged: current != null && current.isActive != isActive,
+    );
+    if (denied != null) {
+      state = state.copyWith(error: denied);
+      return;
+    }
+    await _persist(
+      id: id,
+      name: name,
+      description: description,
+      image: image,
+      isActive: isActive,
+    );
+  }
+
+  Future<void> setActive(int id, bool isActive) async {
+    final denied = guard.check(AppModule.inventario, ModuleAction.deactivate);
+    if (denied != null) {
+      state = state.copyWith(error: denied);
+      return;
+    }
+    final c = state.categories.where((c) => c.id == id).firstOrNull;
+    if (c == null) return;
+    await _persist(
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      image: c.image,
+      isActive: isActive,
+    );
+  }
+
+  Future<void> _persist({
+    int? id,
+    required String name,
+    String? description,
+    String? image,
+    required bool isActive,
   }) async {
     if (id != null && !isActive) {
       final hasActive = await repository.hasActiveProducts(id);
@@ -83,6 +132,11 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
   }
 
   Future<void> deactivate(int id) async {
+    final denied = guard.check(AppModule.inventario, ModuleAction.deactivate);
+    if (denied != null) {
+      state = state.copyWith(error: denied);
+      return;
+    }
     try {
       await repository.deactivate(id);
     } on ProtectedRecordException catch (e) {
@@ -96,6 +150,6 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 final categoryProvider = StateNotifierProvider<CategoryNotifier, CategoryState>(
   (ref) {
     final repository = ref.watch(categoryRepositoryProvider);
-    return CategoryNotifier(repository);
+    return CategoryNotifier(repository, guard: ref.watch(accessGuardProvider));
   },
 );

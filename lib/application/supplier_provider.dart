@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/access_control.dart';
+import 'module_permission_provider.dart';
 import '../data/repositories/supplier_repository.dart';
 import '../models/supplier_model.dart';
 import 'database_provider.dart';
@@ -34,8 +36,10 @@ class SupplierState {
 
 class SupplierNotifier extends StateNotifier<SupplierState> {
   final SupplierRepository repository;
+  final AccessGuard guard;
 
-  SupplierNotifier(this.repository) : super(SupplierState()) {
+  SupplierNotifier(this.repository, {this.guard = AccessGuard.none})
+    : super(SupplierState()) {
     load();
   }
 
@@ -54,6 +58,44 @@ class SupplierNotifier extends StateNotifier<SupplierState> {
     required String name,
     String? contactInfo,
     bool isActive = true,
+    AppModule? from,
+  }) async {
+    final current = id == null
+        ? null
+        : state.suppliers.where((r) => r.id == id).firstOrNull;
+    final denied = guard.checkSave(
+      AppModule.proveedores,
+      isNew: id == null,
+      activeChanged: current != null && current.isActive != isActive,
+      from: from,
+    );
+    if (denied != null) return (id: null, error: denied);
+    return _persist(
+      id: id,
+      name: name,
+      contactInfo: contactInfo,
+      isActive: isActive,
+    );
+  }
+
+  Future<String?> setActive(int id, bool isActive) async {
+    final denied = guard.check(AppModule.proveedores, ModuleAction.deactivate);
+    if (denied != null) return denied;
+    final r = state.suppliers.where((r) => r.id == id).firstOrNull;
+    if (r == null) return 'El registro no existe';
+    return (await _persist(
+      id: r.id,
+      name: r.name,
+      contactInfo: r.contactInfo,
+      isActive: isActive,
+    )).error;
+  }
+
+  Future<({int? id, String? error})> _persist({
+    int? id,
+    required String name,
+    String? contactInfo,
+    required bool isActive,
   }) async {
     try {
       final savedId = await repository.save(
@@ -74,17 +116,19 @@ class SupplierNotifier extends StateNotifier<SupplierState> {
     required String name,
     String? contactInfo,
     bool isActive = true,
+    AppModule? from,
   }) async => (await saveWithId(
     id: id,
     name: name,
     contactInfo: contactInfo,
     isActive: isActive,
+    from: from,
   )).error;
 }
 
 final supplierProvider = StateNotifierProvider<SupplierNotifier, SupplierState>(
   (ref) {
     final repository = ref.watch(supplierRepositoryProvider);
-    return SupplierNotifier(repository);
+    return SupplierNotifier(repository, guard: ref.watch(accessGuardProvider));
   },
 );

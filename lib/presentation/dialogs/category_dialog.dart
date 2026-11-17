@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../application/image_storage_provider.dart';
@@ -119,6 +122,20 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog>
   }
 
   Future<void> _save() async {
+    if (widget.category != null &&
+        !ref.read(accessControlProvider).canUpdate(AppModule.inventario)) {
+      await ref
+          .read(categoryProvider.notifier)
+          .setActive(widget.category!.id, _isActive);
+      if (!mounted) return;
+      final error = ref.read(categoryProvider).error;
+      if (error != null) {
+        setState(() => _saveError = error);
+        return;
+      }
+      Navigator.pop(context);
+      return;
+    }
     if (!validateForm()) return;
 
     setState(() => _saveError = null);
@@ -183,8 +200,12 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog>
 
   Widget _buildForm(BuildContext context) {
     final isEditing = widget.category != null;
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.inventario);
 
     return FormSheet(
+      locked: locked,
+      lockedNotice: deactivateOnlyNotice,
       title: isEditing ? 'Editar categoría' : 'Nueva categoría',
       formKey: _formKey,
       actions: FormActions(
@@ -219,7 +240,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog>
           ),
         ),
 
-        if (isEditing) ...[
+        if (isEditing && access.canDeactivate(AppModule.inventario)) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Categoría activa',

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../application/image_storage_provider.dart';
@@ -141,6 +144,19 @@ class _ProductDialogState extends ConsumerState<ProductDialog>
   }
 
   Future<void> _save() async {
+    if (widget.product != null &&
+        !ref.read(accessControlProvider).canUpdate(AppModule.inventario)) {
+      final error = await ref
+          .read(productProvider.notifier)
+          .setActive(widget.product!.id, _isActive);
+      if (!mounted) return;
+      if (error != null) {
+        setState(() => _saveError = error);
+        return;
+      }
+      Navigator.pop(context);
+      return;
+    }
     if (!validateForm()) return;
     final priceA = double.tryParse(_priceAController.text.trim());
     final priceB = double.tryParse(_priceBController.text.trim());
@@ -249,6 +265,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog>
 
   Widget _buildForm(BuildContext context) {
     final isEditing = widget.product != null;
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.inventario);
     final allCategories = ref.watch(categoryProvider).categories;
     final categories = allCategories
         .where(
@@ -260,6 +278,8 @@ class _ProductDialogState extends ConsumerState<ProductDialog>
         : null;
 
     return FormSheet(
+      locked: locked,
+      lockedNotice: deactivateOnlyNotice,
       title: isEditing ? 'Editar producto' : 'Nuevo producto',
       formKey: _formKey,
       actions: FormActions(
@@ -355,7 +375,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog>
 
         if (_saveError != null) FormErrorText(_saveError!),
 
-        if (isEditing) ...[
+        if (isEditing && access.canDeactivate(AppModule.inventario)) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Producto activo',

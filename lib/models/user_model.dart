@@ -1,3 +1,4 @@
+import 'access_control.dart';
 import 'app_role.dart';
 
 class UserModel {
@@ -8,6 +9,7 @@ class UserModel {
   final bool mfaEnabled;
   final bool darkMode;
   final bool isActive;
+  final AccessControl access;
 
   UserModel({
     required this.id,
@@ -17,6 +19,7 @@ class UserModel {
     required this.mfaEnabled,
     required this.darkMode,
     this.isActive = true,
+    this.access = AccessControl.full,
   });
 
   AppRole get appRole => AppRole.fromDbName(role);

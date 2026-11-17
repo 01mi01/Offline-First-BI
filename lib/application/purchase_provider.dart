@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/access_control.dart';
+import 'module_permission_provider.dart';
 import '../data/repositories/purchase_repository.dart';
 import '../models/purchase_kind.dart';
 import '../models/purchase_model.dart';
@@ -68,6 +70,10 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     String? notes,
     required List<Map<String, dynamic>> items,
   }) async {
+    final denied = ref
+        .read(accessGuardProvider)
+        .check(AppModule.compras, ModuleAction.create);
+    if (denied != null) return denied;
     try {
       await repository.createPurchase(
         supplierId: supplierId,
@@ -100,6 +106,10 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
     String? notes,
     required List<Map<String, dynamic>> newItems,
   }) async {
+    final denied = ref
+        .read(accessGuardProvider)
+        .check(AppModule.compras, ModuleAction.update);
+    if (denied != null) return denied;
     try {
       final error = await repository.editPurchase(
         purchaseId: purchaseId,
@@ -122,6 +132,10 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
   }
 
   Future<String?> cancelPurchase(int purchaseId) async {
+    final denied = ref
+        .read(accessGuardProvider)
+        .check(AppModule.compras, ModuleAction.deactivate);
+    if (denied != null) return denied;
     try {
       final error = await repository.cancelPurchase(purchaseId);
       await load();

@@ -1,5 +1,9 @@
 import '../../config/quantity_format.dart';
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
+import 'location_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
@@ -176,11 +180,25 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     showFormSheet<void>(
       context,
       builder: (_) => SupplierDialog(
+        from: AppModule.compras,
         onSaved: (supplierId) {
           setState(() {
             _selectedSupplierId = supplierId;
             _error = null;
           });
+        },
+      ),
+    );
+  }
+
+  void _showAddLocationSheet() {
+    dismissKeyboard();
+    showFormSheet<void>(
+      context,
+      builder: (_) => LocationDialog(
+        from: AppModule.compras,
+        onSaved: (locationId) {
+          setState(() => _selectedLocationId = locationId);
         },
       ),
     );
@@ -352,13 +370,23 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       return allUnits.where((u) => u.id == material.unitId).firstOrNull;
     }
 
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.compras);
+
     return AppSheetScaffold(
       title: isEditing ? 'Editar compra' : 'Nueva compra',
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            Padding(
+            if (locked)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+                child: LockedFormNotice(cancelOnlyNotice),
+              ),
+            EditLock(
+              locked: locked,
+              child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
               child: AppSegmented<bool>(
                 expand: true,
@@ -380,6 +408,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                 },
               ),
             ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -390,7 +419,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                  children: lockChildren(locked, [
                     SearchablePickerField<int>(
                       label: 'Proveedor',
                       searchHint: 'Buscar proveedor',
@@ -403,10 +432,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                         _selectedSupplierId = val;
                         _error = null;
                       }),
-                      labelAction: FormAddButton(
-                        label: 'Nuevo proveedor',
-                        onPressed: _showAddSupplierSheet,
-                      ),
+                      labelAction:
+                          access.canQuickAdd(
+                            AppModule.proveedores,
+                            AppModule.compras,
+                          )
+                          ? FormAddButton(
+                              label: 'Nuevo proveedor',
+                              onPressed: _showAddSupplierSheet,
+                            )
+                          : null,
                     ),
                     const SizedBox(height: AppSpacing.s16),
                     SearchablePickerField<int>(
@@ -420,6 +455,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                       ),
                       onChanged: (val) =>
                           setState(() => _selectedLocationId = val),
+                      labelAction:
+                          access.canQuickAdd(
+                            AppModule.ubicaciones,
+                            AppModule.compras,
+                          )
+                          ? FormAddButton(
+                              label: 'Nueva ubicación',
+                              onPressed: _showAddLocationSheet,
+                            )
+                          : null,
                     ),
                     const SizedBox(height: AppSpacing.s16),
                     SearchablePickerField<int>(
@@ -558,9 +603,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                     FormActions(
                       onSecondary: () => Navigator.pop(context),
                       primaryLabel: isEditing ? 'Guardar' : 'Registrar compra',
-                      onPrimary: () => runOnce(_save),
+                      onPrimary: locked ? null : () => runOnce(_save),
                       busy: inFlight,
-                      destructive: isEditing && !widget.purchase!.isCanceled
+                      destructive:
+                          isEditing &&
+                              !widget.purchase!.isCanceled &&
+                              access.canDeactivate(AppModule.compras)
                           ? AppActionButton(
                               label: 'Cancelar la compra',
                               kind: AppButtonKind.destructive,
@@ -570,7 +618,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                             )
                           : null,
                     ),
-                  ],
+                  ]),
                 ),
               ),
             ),
@@ -757,6 +805,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet>
     showFormSheet<void>(
       context,
       builder: (_) => MaterialDialog(
+        from: AppModule.compras,
         onSaved: (materialId, materialName, pricePerUnit, _) {
           if (mounted) {
             setState(() {
@@ -843,10 +892,15 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet>
                     _resetFor(mat?.pricePerUnit);
                   });
                 },
-                labelAction: FormAddButton(
-                  label: 'Nuevo material',
-                  onPressed: _showCreateMaterialSheet,
-                ),
+                labelAction:
+                    ref
+                        .watch(accessControlProvider)
+                        .canQuickAdd(AppModule.materiales, AppModule.compras)
+                    ? FormAddButton(
+                        label: 'Nuevo material',
+                        onPressed: _showCreateMaterialSheet,
+                      )
+                    : null,
               ),
               if (_materialError != null) FormErrorText(_materialError!),
               const SizedBox(height: AppSpacing.s16),

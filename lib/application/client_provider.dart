@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/access_control.dart';
+import 'module_permission_provider.dart';
 import '../data/repositories/client_repository.dart';
 import '../models/client_model.dart';
 import 'database_provider.dart';
@@ -30,8 +32,10 @@ class ClientState {
 
 class ClientNotifier extends StateNotifier<ClientState> {
   final ClientRepository repository;
+  final AccessGuard guard;
 
-  ClientNotifier(this.repository) : super(ClientState()) {
+  ClientNotifier(this.repository, {this.guard = AccessGuard.none})
+    : super(ClientState()) {
     load();
   }
 
@@ -50,6 +54,44 @@ class ClientNotifier extends StateNotifier<ClientState> {
     required String name,
     String? contactInfo,
     bool isActive = true,
+    AppModule? from,
+  }) async {
+    final current = id == null
+        ? null
+        : state.clients.where((r) => r.id == id).firstOrNull;
+    final denied = guard.checkSave(
+      AppModule.clientes,
+      isNew: id == null,
+      activeChanged: current != null && current.isActive != isActive,
+      from: from,
+    );
+    if (denied != null) return (id: null, error: denied);
+    return _persist(
+      id: id,
+      name: name,
+      contactInfo: contactInfo,
+      isActive: isActive,
+    );
+  }
+
+  Future<String?> setActive(int id, bool isActive) async {
+    final denied = guard.check(AppModule.clientes, ModuleAction.deactivate);
+    if (denied != null) return denied;
+    final r = state.clients.where((r) => r.id == id).firstOrNull;
+    if (r == null) return 'El registro no existe';
+    return (await _persist(
+      id: r.id,
+      name: r.name,
+      contactInfo: r.contactInfo,
+      isActive: isActive,
+    )).error;
+  }
+
+  Future<({int? id, String? error})> _persist({
+    int? id,
+    required String name,
+    String? contactInfo,
+    required bool isActive,
   }) async {
     try {
       final savedId = await repository.save(
@@ -70,11 +112,13 @@ class ClientNotifier extends StateNotifier<ClientState> {
     required String name,
     String? contactInfo,
     bool isActive = true,
+    AppModule? from,
   }) async => (await saveWithId(
     id: id,
     name: name,
     contactInfo: contactInfo,
     isActive: isActive,
+    from: from,
   )).error;
 }
 
@@ -82,5 +126,5 @@ final clientProvider = StateNotifierProvider<ClientNotifier, ClientState>((
   ref,
 ) {
   final repository = ref.watch(clientRepositoryProvider);
-  return ClientNotifier(repository);
+  return ClientNotifier(repository, guard: ref.watch(accessGuardProvider));
 });

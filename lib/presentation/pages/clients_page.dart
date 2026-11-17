@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../widgets/module_gate.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/client_provider.dart';
 import '../../application/record_search.dart';
@@ -22,10 +25,14 @@ class ClientsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ScreenScaffold(
+    return ModuleGate(
+      modules: const [AppModule.clientes],
       title: 'Clientes',
-      actions: const [ProfileButton()],
-      body: const ClientsListBody(),
+      child: ScreenScaffold(
+        title: 'Clientes',
+        actions: const [ProfileButton()],
+        body: const ClientsListBody(),
+      ),
     );
   }
 }
@@ -35,6 +42,7 @@ class ClientsListBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final access = ref.watch(accessControlProvider);
     final state = ref.watch(clientProvider);
     final status = ref.watch(clientStatusFilterProvider);
     final query = ref.watch(clientListQueryProvider);
@@ -46,10 +54,12 @@ class ClientsListBody extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FlatFab(
-        heroTag: 'clients_list_body_fab',
-        onPressed: () => _showDialog(context, null),
-      ),
+      floatingActionButton: access.canCreate(AppModule.clientes)
+          ? FlatFab(
+              heroTag: 'clients_list_body_fab',
+              onPressed: () => _showDialog(context, null),
+            )
+          : null,
       body: Column(
         children: [
           FilterArea(
@@ -78,8 +88,12 @@ class ClientsListBody extends ConsumerWidget {
                     child: AppEmptyState.list(
                       plural: 'clientes',
                       icon: Icons.person_rounded,
-                      actionLabel: 'Nuevo cliente',
-                      onAction: () => _showDialog(context, null),
+                      actionLabel: access.canCreate(AppModule.clientes)
+                          ? 'Nuevo cliente'
+                          : null,
+                      onAction: access.canCreate(AppModule.clientes)
+                          ? () => _showDialog(context, null)
+                          : null,
                     ),
                   )
                 : visible.isEmpty
@@ -105,7 +119,9 @@ class ClientsListBody extends ConsumerWidget {
                           contactInfo: c.contactInfo,
                           isActive: c.isActive,
                           protectedMessage: protected,
-                          onEdit: () => _showDialog(context, c),
+                          onEdit: access.canEditOrDeactivate(AppModule.clientes)
+                              ? () => _showDialog(context, c)
+                              : null,
                         ),
                       );
                     },

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../models/access_control.dart';
+import '../../application/module_permission_provider.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/category_provider.dart';
 import '../../application/category_catalog_filter.dart';
@@ -31,6 +34,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final access = ref.watch(accessControlProvider);
     final state = ref.watch(categoryProvider);
     final filter = ref.watch(categoryCatalogFilterProvider);
     final setFilter = ref.read(categoryCatalogFilterProvider.notifier);
@@ -41,10 +45,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FlatFab(
-        heroTag: 'categories_page_fab',
-        onPressed: () => _showForm(context, null),
-      ),
+      floatingActionButton: access.canCreate(AppModule.inventario)
+          ? FlatFab(
+              heroTag: 'categories_page_fab',
+              onPressed: () => _showForm(context, null),
+            )
+          : null,
       body: Column(
         children: [
           ViewModeSwitcher(
@@ -81,8 +87,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                     child: AppEmptyState.list(
                       plural: 'categorías',
                       icon: Icons.category_rounded,
-                      actionLabel: 'Nueva categoría',
-                      onAction: () => _showForm(context, null),
+                      actionLabel: access.canCreate(AppModule.inventario)
+                          ? 'Nueva categoría'
+                          : null,
+                      onAction: access.canCreate(AppModule.inventario)
+                          ? () => _showForm(context, null)
+                          : null,
                     ),
                   )
                 : visible.isEmpty
@@ -112,7 +122,11 @@ void _showDetail(BuildContext context, CategoryModel category) {
     context,
     builder: (_) => RecordDetailSheet(
       title: 'Detalle de la categoría',
-      onEdit: category.isDefault ? null : () => _showForm(context, category),
+      onEdit:
+          category.isDefault ||
+              !readAccess(context).canEditOrDeactivate(AppModule.inventario)
+          ? null
+          : () => _showForm(context, category),
       children: [
         RecordHeadline(
           title: category.name,

@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import 'app_style.dart';
 import 'form_sheet_route.dart';
 import 'form_style.dart';
+import 'form_widgets.dart';
 
 WidgetBuilder _sheetBuilder(
   MediaQueryData media,
@@ -158,11 +159,50 @@ class SheetActionBar extends StatelessWidget {
   }
 }
 
+class EditLock extends StatelessWidget {
+  final bool locked;
+  final Widget child;
+
+  const EditLock({super.key, required this.locked, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!locked) return child;
+    return ExcludeFocus(child: AbsorbPointer(child: child));
+  }
+}
+
+List<Widget> lockChildren(bool locked, List<Widget> children) => [
+  for (final child in children)
+    child is AppToggleRow || child is FormErrorText || child is FormActions
+        ? child
+        : EditLock(locked: locked, child: child),
+];
+
+class LockedFormNotice extends StatelessWidget {
+  final String text;
+
+  const LockedFormNotice(this.text, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.s4,
+        bottom: AppSpacing.s16,
+      ),
+      child: Text(text, style: AppText.footnote(context)),
+    );
+  }
+}
+
 class FormSheet extends StatelessWidget {
   final String title;
   final GlobalKey<FormState>? formKey;
   final List<Widget> children;
   final Widget? actions;
+  final bool locked;
+  final String? lockedNotice;
 
   const FormSheet({
     super.key,
@@ -170,6 +210,8 @@ class FormSheet extends StatelessWidget {
     required this.children,
     this.formKey,
     this.actions,
+    this.locked = false,
+    this.lockedNotice,
   });
 
   @override
@@ -181,7 +223,11 @@ class FormSheet extends StatelessWidget {
         key: formKey,
         child: FormScroll(
           children: [
-            ...children,
+            if (locked && lockedNotice != null) LockedFormNotice(lockedNotice!),
+            for (final child in children)
+              child is AppToggleRow || child is FormErrorText
+                  ? child
+                  : EditLock(locked: locked, child: child),
             if (actions != null) ...[
               const SizedBox(height: AppSpacing.s24),
               actions!,

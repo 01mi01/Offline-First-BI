@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
+import '../widgets/module_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/supplier_provider.dart';
 import '../../models/supplier_model.dart';
@@ -18,7 +21,9 @@ class SupplierDialog extends ConsumerStatefulWidget {
   final SupplierModel? supplier;
   final Function(int supplierId)? onSaved;
 
-  const SupplierDialog({super.key, this.supplier, this.onSaved});
+  final AppModule? from;
+
+  const SupplierDialog({super.key, this.supplier, this.onSaved, this.from});
 
   @override
   ConsumerState<SupplierDialog> createState() => _SupplierDialogState();
@@ -86,6 +91,19 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog>
   }
 
   Future<void> _save() async {
+    if (widget.supplier != null &&
+        !ref.read(accessControlProvider).canUpdate(AppModule.proveedores)) {
+      final error = await ref
+          .read(supplierProvider.notifier)
+          .setActive(widget.supplier!.id, _isActive);
+      if (!mounted) return;
+      if (error != null) {
+        setState(() => _saveError = error);
+        return;
+      }
+      Navigator.pop(context);
+      return;
+    }
     if (!validateForm()) return;
     setState(() => _saveError = null);
     final result = await ref
@@ -97,6 +115,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog>
               ? null
               : _contactController.text.trim(),
           isActive: _isActive,
+          from: widget.from,
         );
     if (!mounted) return;
     final error = result.error;
@@ -137,8 +156,12 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog>
 
   Widget _buildForm(BuildContext context) {
     final isEditing = widget.supplier != null;
+    final access = ref.watch(accessControlProvider);
+    final locked = isEditing && !access.canUpdate(AppModule.proveedores);
 
     return FormSheet(
+      locked: locked,
+      lockedNotice: deactivateOnlyNotice,
       title: isEditing ? 'Editar proveedor' : 'Nuevo proveedor',
       formKey: _formKey,
       actions: FormActions(
@@ -172,7 +195,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog>
           ),
         ),
 
-        if (isEditing) ...[
+        if (isEditing && access.canDeactivate(AppModule.proveedores)) ...[
           const SizedBox(height: AppSpacing.s16),
           AppToggleRow(
             title: 'Proveedor activo',

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/module_gate.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/date_range_filter.dart';
 import '../../application/today_provider.dart';
@@ -38,7 +41,11 @@ class PurchasesPage extends StatelessWidget {
   const PurchasesPage({super.key});
 
   @override
-  Widget build(BuildContext context) => const PurchasesListBody();
+  Widget build(BuildContext context) => const ModuleGate(
+    modules: [AppModule.compras],
+    title: 'Compras',
+    child: PurchasesListBody(),
+  );
 }
 
 class PurchasesListBody extends ConsumerWidget {
@@ -47,6 +54,9 @@ class PurchasesListBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(todayProvider);
+    final canCreate = ref
+        .watch(accessControlProvider)
+        .canCreate(AppModule.compras);
     final state = ref.watch(purchaseProvider);
     final suppliers = ref.watch(supplierProvider).suppliers;
     final kind = ref.watch(purchaseKindFilterProvider);
@@ -90,10 +100,12 @@ class PurchasesListBody extends ConsumerWidget {
     return ScreenScaffold.slivers(
       title: 'Compras',
       actions: const [ProfileButton()],
-      floatingActionButton: FlatFab(
-        heroTag: 'purchases_list_fab',
-        onPressed: () => showPurchaseForm(context),
-      ),
+      floatingActionButton: canCreate
+          ? FlatFab(
+              heroTag: 'purchases_list_fab',
+              onPressed: () => showPurchaseForm(context),
+            )
+          : null,
       slivers: [
         if (state.isLoading)
           const SliverFillRemaining(
@@ -107,8 +119,8 @@ class PurchasesListBody extends ConsumerWidget {
               child: AppEmptyState.list(
                 plural: 'compras',
                 icon: Icons.shopping_bag_rounded,
-                actionLabel: 'Nueva compra',
-                onAction: () => showPurchaseForm(context),
+                actionLabel: canCreate ? 'Nueva compra' : null,
+                onAction: canCreate ? () => showPurchaseForm(context) : null,
               ),
             ),
           )
@@ -184,7 +196,9 @@ void showPurchaseDetail(
     builder: (_) => _PurchaseDetailSheet(
       purchase: purchase,
       supplierName: supplierName,
-      onEdit: purchase.isCanceled
+      onEdit:
+          purchase.isCanceled ||
+              !readAccess(context).canEditOrDeactivate(AppModule.compras)
           ? null
           : () => showPurchaseForm(context, purchase),
     ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/module_gate.dart';
+import '../../application/module_permission_provider.dart';
+import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
@@ -32,6 +35,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(accessControlProvider).canRead(AppModule.reportes)) {
+      return const ModuleDeniedScreen(title: 'Reportes');
+    }
     ref.listen<DateTime>(todayProvider, (previous, next) {
       setState(() {
         _salesFilters = _salesFilters.refreshedFor(next);
