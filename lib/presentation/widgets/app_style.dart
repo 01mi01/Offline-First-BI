@@ -55,7 +55,7 @@ class AppChevron extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(
+    return Icon(
       Icons.chevron_right_rounded,
       size: AppIconSize.s22,
       color: AppColors.chevron,

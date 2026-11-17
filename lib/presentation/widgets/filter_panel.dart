@@ -89,7 +89,7 @@ class FilterDropdown<T> extends FilterField {
           maxWidth: constraints.maxWidth,
           maxHeight: AppMetrics.menuMaxHeight,
         ),
-        color: AppColors.surface,
+        color: AppColors.menuSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
         ),
@@ -423,7 +423,7 @@ class _DateBox extends StatelessWidget {
                 IconButton(
                   tooltip: 'Quitar $label',
                   visualDensity: VisualDensity.compact,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.cancel_rounded,
                     size: AppIconSize.s18,
                     color: AppColors.chevron,

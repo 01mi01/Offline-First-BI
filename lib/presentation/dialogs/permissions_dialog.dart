@@ -153,7 +153,7 @@ class _PermissionSwitchRow extends StatelessWidget {
         onChanged: onChanged,
         activeThumbColor: AppColors.cyanDark,
         inactiveTrackColor: AppColors.border,
-        inactiveThumbColor: AppColors.surface,
+        inactiveThumbColor: AppColors.switchThumbOff,
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
       ),
     );

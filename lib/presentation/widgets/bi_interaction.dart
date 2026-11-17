@@ -240,7 +240,7 @@ class _Bubble extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppMetrics.controlRadius),
           border: Border.all(color: AppColors.border),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
               color: AppColors.shadowNeutral,
               blurRadius: AppSpacing.s8,

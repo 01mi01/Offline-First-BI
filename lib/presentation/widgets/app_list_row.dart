@@ -22,7 +22,7 @@ class AppListCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const Divider(height: AppStroke.hairline, color: AppColors.border),
+            if (i > 0) Divider(height: AppStroke.hairline, color: AppColors.border),
             children[i],
           ],
         ],

@@ -113,7 +113,7 @@ class RecordRow extends StatelessWidget {
   }
 }
 
-final Color imagePlaceholderColor = AppColors.cyanDark.withValues(alpha: AppOpacity.a14);
+Color get imagePlaceholderColor => AppColors.cyanDark.withValues(alpha: AppOpacity.a14);
 
 class RecordThumb extends StatelessWidget {
   final String? imagePath;

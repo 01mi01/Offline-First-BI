@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../navigation/main_navigation_page.dart';
 import 'dart:math' as math;
 import '../widgets/form_style.dart';
+import '../widgets/brand_assets.dart';
 
 const double _maxContentWidth = AppExtent.e420;
 const double _cardRadius = AppSpacing.s28;
@@ -94,7 +95,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           horizontal: AppSpacing.s24,
                           vertical: AppSpacing.s48,
                         ),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.all(
                             Radius.circular(_cardRadius),
@@ -107,7 +108,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           children: [
                             Center(
                               child: SvgPicture.asset(
-                                'assets/images/logo.svg',
+                                logoAsset,
                                 width: MediaQuery.of(context).size.width * 0.6,
                                 fit: BoxFit.contain,
                               ),
@@ -229,7 +230,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               disabledForegroundColor: AppColors.onDark,
             ),
             child: authState.isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     height: AppSpacing.s20,
                     width: AppSpacing.s20,
                     child: CircularProgressIndicator(

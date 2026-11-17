@@ -5,10 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'application/auth_provider.dart';
 import 'application/database_provider.dart';
 import 'application/image_storage_provider.dart';
+import 'application/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'presentation/pages/login_page.dart';
+import 'presentation/pages/splash_page.dart';
 import 'presentation/widgets/day_change_watcher.dart';
 import 'presentation/widgets/inactivity_watcher.dart';
+import 'presentation/widgets/theme_refresh.dart';
 import 'presentation/navigation/main_navigation_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -22,6 +25,7 @@ void main() async {
         .read(imageStorageProvider)
         .migrateLegacyImages(container.read(databaseProvider));
   } catch (_) {}
+  await container.read(themeChoiceStoreProvider).load();
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 }
 
@@ -33,14 +37,23 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final dark =
+        themeMode == ThemeMode.dark ||
+        (themeMode == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    applyActivePalette(context, dark: dark);
 
     return MaterialApp(
       title: 'Sistema de gestión para emprendimientos artísticos',
       debugShowCheckedModeBanner: false,
       navigatorKey: appNavigatorKey,
       theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+      themeAnimationDuration: Duration.zero,
       builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-        value: appSystemOverlayStyle,
+        value: activeSystemOverlayStyle,
         child: InactivityWatcher(
           navigatorKey: appNavigatorKey,
           child: DayChangeWatcher(child: child ?? const SizedBox.shrink()),
@@ -49,13 +62,16 @@ class MyApp extends ConsumerWidget {
       locale: appLocale,
       supportedLocales: appSupportedLocales,
       localizationsDelegates: appLocalizationsDelegates,
-      home: authState.isLoading
-          ? const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            )
-          : authState.user != null
-              ? const MainNavigationPage()
-              : const LoginPage(),
+      home: SplashGate(
+        loading: authState.isLoading,
+        child: authState.isLoading
+            ? const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              )
+            : authState.user != null
+                ? const MainNavigationPage()
+                : const LoginPage(),
+      ),
     );
   }
 }

@@ -20,7 +20,7 @@ Future<void> showInfoDialog(
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(

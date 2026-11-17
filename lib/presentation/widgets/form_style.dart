@@ -22,7 +22,7 @@ InputDecorationTheme appInputDecorationTheme(BuildContext context) {
     enabledBorder: enabled,
     disabledBorder: enabled,
     errorBorder: enabled,
-    hintStyle: const TextStyle(color: AppColors.textMuted),
+    hintStyle: TextStyle(color: AppColors.textMuted),
     focusedBorder: focused,
     focusedErrorBorder: focused,
     errorStyle: textTheme.bodySmall?.copyWith(color: AppColors.error),

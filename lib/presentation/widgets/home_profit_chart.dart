@@ -81,7 +81,7 @@ class HomeProfitChart extends StatelessWidget {
       context,
     ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary);
     final selectedIndex = selected != null && selected! < n ? selected : null;
-    const color = AppColors.cyanDark;
+    final color = AppColors.cyanDark;
 
     return LineChart(
       LineChartData(

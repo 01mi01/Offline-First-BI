@@ -533,7 +533,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                             suffixIcon: _totalOverridden
                                 ? IconButton(
                                     tooltip: 'Usar el total calculado',
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.restart_alt_rounded,
                                       color: AppColors.textSecondary,
                                     ),
@@ -641,7 +641,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
         children: [
           IconButton(
             tooltip: 'Quitar material',
-            icon: const Icon(
+            icon: Icon(
               Icons.remove_circle_rounded,
               size: AppIconSize.s24,
               color: AppColors.error,

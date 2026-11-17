@@ -8,12 +8,12 @@ class AppAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = AppColors.cyanDark;
+    final color = AppColors.cyanDark;
     final onColor = onColorOf(color);
     return Container(
       width: AppFlat.thumbSize,
       height: AppFlat.thumbSize,
-      decoration: const BoxDecoration(color: color, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       child: Center(
         child: name.isEmpty
             ? Icon(Icons.person_rounded, color: onColor)

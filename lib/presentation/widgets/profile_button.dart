@@ -8,7 +8,7 @@ class ProfileButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: const Icon(
+      icon: Icon(
         Icons.settings_rounded,
         color: AppColors.cyanDark,
         size: AppHeader.iconSize,

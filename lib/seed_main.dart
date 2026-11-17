@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'application/category_provider.dart';
+import 'application/theme_provider.dart';
 import 'application/client_provider.dart';
 import 'application/event_provider.dart';
 import 'application/location_provider.dart';
@@ -963,5 +964,6 @@ void main() async {
   } catch (e, st) {
     print('SEED ERROR: $e\n$st');
   }
+  await container.read(themeChoiceStoreProvider).load();
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 }

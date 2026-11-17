@@ -4,14 +4,12 @@ import '../../theme/app_theme.dart';
 class StatusBadge extends StatelessWidget {
   final String label;
   final bool positive;
-  final Color? _text;
-  final Color? _background;
+  final bool _expense;
 
   const StatusBadge.purchaseType({super.key, required bool isMaterial})
     : label = isMaterial ? 'Material' : 'Gasto',
       positive = isMaterial,
-      _text = isMaterial ? null : AppColors.blue,
-      _background = isMaterial ? null : AppColors.blueSoft;
+      _expense = !isMaterial;
 
   const StatusBadge.forState({
     super.key,
@@ -20,13 +18,11 @@ class StatusBadge extends StatelessWidget {
     String inactiveLabel = 'Inactivo',
   }) : label = isActive ? activeLabel : inactiveLabel,
        positive = isActive,
-       _text = null,
-       _background = null;
+       _expense = false;
 
   const StatusBadge.canceled({super.key, this.label = 'Cancelada'})
     : positive = false,
-      _text = null,
-      _background = null;
+      _expense = false;
 
   static Color textColor(bool positive) =>
       positive ? AppColors.successDark : AppColors.error;
@@ -42,14 +38,14 @@ class StatusBadge extends StatelessWidget {
         vertical: AppSpacing.s4,
       ),
       decoration: BoxDecoration(
-        color: _background ?? backgroundColor(positive),
+        color: _expense ? AppColors.blueSoft : backgroundColor(positive),
         borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
-          color: _text ?? textColor(positive),
+          color: _expense ? AppColors.blue : textColor(positive),
         ),
       ),
     );

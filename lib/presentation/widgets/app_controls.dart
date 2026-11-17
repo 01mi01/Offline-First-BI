@@ -104,7 +104,7 @@ InputDecoration appSearchDecoration(
     border: border(),
     enabledBorder: border(),
     focusedBorder: border(),
-    prefixIcon: const Icon(
+    prefixIcon: Icon(
       Icons.search_rounded,
       size: AppIconSize.s20,
       color: AppColors.textSecondary,
@@ -163,7 +163,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
               ? null
               : IconButton(
                   tooltip: 'Borrar búsqueda',
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.cancel_rounded,
                     size: AppIconSize.s18,
                     color: AppColors.textSecondary,

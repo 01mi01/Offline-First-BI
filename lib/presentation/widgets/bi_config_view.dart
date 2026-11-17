@@ -128,7 +128,7 @@ class _IndicatorRow extends StatelessWidget {
       trailing: IconButton(
         key: ValueKey('bi-config-info-${indicator.name}'),
         tooltip: 'Información',
-        icon: const Icon(
+        icon: Icon(
           Icons.info_outline_rounded,
           size: AppIconSize.s20,
           color: AppColors.textMuted,

@@ -176,7 +176,7 @@ class BiSectionCard extends StatelessWidget {
 class BiStat extends StatelessWidget {
   final String label;
   final String value;
-  final Color valueColor;
+  final Color? valueColor;
   final bool large;
   final Key? valueKey;
 
@@ -184,7 +184,7 @@ class BiStat extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
-    this.valueColor = AppColors.textPrimary,
+    this.valueColor,
     this.large = false,
     this.valueKey,
   });
@@ -204,7 +204,7 @@ class BiStat extends StatelessWidget {
               key: valueKey,
               style: base?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: valueColor,
+                color: valueColor ?? AppColors.textPrimary,
               ),
             ),
           ),
@@ -239,7 +239,7 @@ class BiSectionHeader extends StatelessWidget {
             key: ValueKey('bi-info-$title'),
             onTap: () => showBiInfo(context, title, info!),
             radius: AppSpacing.s20,
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.all(AppSpacing.s4),
               child: Icon(
                 Icons.info_outline_rounded,
@@ -457,7 +457,7 @@ class _RankingRow extends StatelessWidget {
                 style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
               ),
               if (onTap != null)
-                const Icon(
+                Icon(
                   Icons.chevron_right,
                   size: AppIconSize.s18,
                   color: AppColors.textSecondary,
@@ -1077,7 +1077,7 @@ List<TouchedSpotIndicatorData?> biSpotIndicators(
   return [
     for (final _ in indexes)
       TouchedSpotIndicatorData(
-        const FlLine(color: AppColors.border, strokeWidth: AppStroke.thin),
+        FlLine(color: AppColors.border, strokeWidth: AppStroke.thin),
         FlDotData(
           getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
             radius: AppSmallRadius.r5,
@@ -1293,7 +1293,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) =>
-              const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
+              FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
         ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(),
@@ -1344,7 +1344,7 @@ class _BiTimeSeriesChartState extends State<BiTimeSeriesChart> {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) =>
-              const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
+              FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
         ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(),

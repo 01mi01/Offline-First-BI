@@ -95,7 +95,7 @@ class _PeriodPicker extends StatelessWidget {
     );
     return PopupMenuButton<HomePeriod>(
       tooltip: 'Cambiar período',
-      color: AppColors.surface,
+      color: AppColors.menuSurface,
       initialValue: period,
       onSelected: onChanged,
       itemBuilder: (_) => [
@@ -127,7 +127,7 @@ class _PeriodPicker extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(period.label, style: labelStyle),
-                const Icon(
+                Icon(
                   Icons.arrow_drop_down_rounded,
                   size: AppIconSize.s24,
                   color: AppColors.cyanDark,
@@ -415,7 +415,7 @@ class _ShortcutButton extends StatelessWidget {
               Container(
                 width: AppFlat.thumbSize,
                 height: AppFlat.thumbSize,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
                   shape: BoxShape.circle,
                   boxShadow: AppShadows.card,
@@ -577,7 +577,7 @@ class HomeErrorCard extends StatelessWidget {
       decoration: AppCards.decoration,
       child: Column(
         children: [
-          const Icon(Icons.error_rounded, color: AppColors.error, size: AppIconSize.s28),
+          Icon(Icons.error_rounded, color: AppColors.error, size: AppIconSize.s28),
           const SizedBox(height: AppSpacing.s8),
           Text(
             'No se pudo cargar la información',

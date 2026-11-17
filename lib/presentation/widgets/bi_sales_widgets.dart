@@ -25,14 +25,14 @@ String _salesText(int n) => n == 1 ? '1 venta' : '$n ventas';
 class _StatTile extends StatelessWidget {
   final String label;
   final String value;
-  final Color valueColor;
+  final Color? valueColor;
   final bool large;
 
   const _StatTile({
     super.key,
     required this.label,
     required this.value,
-    this.valueColor = AppColors.textPrimary,
+    this.valueColor,
     this.large = false,
   });
 
@@ -66,7 +66,7 @@ SideTitles _countAxisTitles(double maxY) {
 FlGridData _grid() => FlGridData(
   drawVerticalLine: false,
   getDrawingHorizontalLine: (_) =>
-      const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
+      FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
 );
 
 class BiCoPurchaseSection extends StatelessWidget {
@@ -120,7 +120,7 @@ class BiCoPurchaseSection extends StatelessWidget {
               decoration: BoxDecoration(
                 border: i == shown.length - 1
                     ? null
-                    : const Border(bottom: BorderSide(color: AppColors.border)),
+                    : Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -639,7 +639,7 @@ class _TrendLineState extends State<_TrendLine> {
           gridData: FlGridData(
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
+                FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(),
@@ -854,7 +854,7 @@ class BiEventProfitSection extends StatelessWidget {
               decoration: BoxDecoration(
                 border: i == entries.length - 1
                     ? null
-                    : const Border(bottom: BorderSide(color: AppColors.border)),
+                    : Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -977,7 +977,7 @@ class BiCostReturnSection extends StatelessWidget {
               decoration: BoxDecoration(
                 border: i == entries.length - 1
                     ? null
-                    : const Border(bottom: BorderSide(color: AppColors.border)),
+                    : Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [

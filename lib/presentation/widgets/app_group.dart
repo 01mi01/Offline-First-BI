@@ -68,26 +68,27 @@ class AppSection extends StatelessWidget {
 
 class AppTile extends StatelessWidget {
   final IconData icon;
-  final Color color;
+  final Color? color;
   final Color? iconColor;
 
   const AppTile({
     super.key,
     required this.icon,
-    this.color = AppColors.cyanDark,
+    this.color,
     this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final fill = color ?? AppColors.cyanDark;
     return Container(
       width: AppMetrics.tileSize,
       height: AppMetrics.tileSize,
       decoration: BoxDecoration(
-        color: color,
+        color: fill,
         borderRadius: BorderRadius.circular(AppMetrics.tileRadius),
       ),
-      child: Icon(icon, size: AppIconSize.s18, color: iconColor ?? onColorOf(color)),
+      child: Icon(icon, size: AppIconSize.s18, color: iconColor ?? onColorOf(fill)),
     );
   }
 }

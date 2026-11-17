@@ -21,7 +21,7 @@ Future<DateTime?> pickFilterDate(
   );
 }
 
-final DatePickerThemeData _appDatePickerTheme = DatePickerThemeData(
+DatePickerThemeData get _appDatePickerTheme => DatePickerThemeData(
   backgroundColor: AppColors.surface,
   surfaceTintColor: Colors.transparent,
   shape: RoundedRectangleBorder(
@@ -62,7 +62,9 @@ Future<DateTime?> showAppDatePicker(
     confirmText: 'Aceptar',
     builder: (ctx, child) => Theme(
       data: Theme.of(ctx).copyWith(
-        colorScheme: ColorScheme.light(primary: AppColors.cyanDark),
+        colorScheme: AppColors.isDark
+            ? Theme.of(ctx).colorScheme
+            : ColorScheme.light(primary: AppColors.cyanDark),
         datePickerTheme: _appDatePickerTheme,
       ),
       child: child!,

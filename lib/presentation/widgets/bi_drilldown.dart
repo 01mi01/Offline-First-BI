@@ -434,13 +434,13 @@ class _DrillStat extends StatelessWidget {
   final String statKey;
   final String label;
   final String value;
-  final Color color;
+  final Color? color;
 
   const _DrillStat({
     required this.statKey,
     required this.label,
     required this.value,
-    this.color = AppColors.textPrimary,
+    this.color,
   });
 
   @override
@@ -543,7 +543,7 @@ class _OverTimeState extends State<_OverTime> {
                     gridData: FlGridData(
                       drawVerticalLine: false,
                       getDrawingHorizontalLine: (_) =>
-                          const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
+                          FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
                     ),
                     titlesData: FlTitlesData(
                       topTitles: const AxisTitles(),
@@ -631,7 +631,7 @@ class _OverTimeState extends State<_OverTime> {
             decoration: BoxDecoration(
               border: i == active.length - 1
                   ? null
-                  : const Border(bottom: BorderSide(color: AppColors.border)),
+                  : Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -202,7 +202,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                 FilterDropdown<String?>(
                   label: 'Exportar',
                   placeholder: 'Elegir formato',
-                  options: const [
+                  options: [
                     FilterOption<String?>(
                       'excel',
                       'Exportar Excel',
@@ -226,7 +226,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                 ).build(context),
                 if (_isExporting) ...[
                   const SizedBox(height: AppSpacing.s8),
-                  const LinearProgressIndicator(color: AppColors.cyanDark),
+                  LinearProgressIndicator(color: AppColors.cyanDark),
                 ],
               ],
             ),

@@ -143,7 +143,7 @@ class AppDateField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             errorText: errorText,
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.calendar_today_rounded,
               color: AppColors.cyanDark,
               size: AppIconSize.s20,
@@ -151,7 +151,7 @@ class AppDateField extends StatelessWidget {
             suffixIcon: text != null && onClear != null
                 ? IconButton(
                     tooltip: 'Quitar fecha',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       color: AppColors.textSecondary,
                       size: AppIconSize.s18,
@@ -203,7 +203,7 @@ class AppDropdownField<T> extends FormField<T> {
                    maxWidth: constraints.maxWidth,
                    maxHeight: AppMetrics.menuMaxHeight,
                  ),
-                 color: AppColors.surface,
+                 color: AppColors.menuSurface,
                  shape: RoundedRectangleBorder(
                    borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
                  ),
@@ -228,7 +228,7 @@ class AppDropdownField<T> extends FormField<T> {
                      hintText: hint,
                      helperText: helperText,
                      errorText: state.errorText,
-                     suffixIcon: const Icon(
+                     suffixIcon: Icon(
                        Icons.unfold_more_rounded,
                        color: AppColors.textSecondary,
                      ),
@@ -276,7 +276,7 @@ class FormActions extends StatelessWidget {
         ElevatedButton(
           onPressed: loading || busy ? null : onPrimary,
           child: loading
-              ? const SizedBox(
+              ? SizedBox(
                   height: AppSpacing.s20,
                   width: AppSpacing.s20,
                   child: CircularProgressIndicator(
@@ -349,7 +349,7 @@ class AppToggleRow extends StatelessWidget {
             onChanged: onChanged,
             activeThumbColor: AppColors.cyanDark,
             inactiveTrackColor: AppColors.border,
-            inactiveThumbColor: AppColors.surface,
+            inactiveThumbColor: AppColors.switchThumbOff,
             trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
           ),
         ],
@@ -370,7 +370,7 @@ class AppPhotoSlot extends StatelessWidget {
     width: size,
     height: size,
     color: imagePlaceholderColor,
-    child: const Icon(
+    child: Icon(
       Icons.add_a_photo_rounded,
       color: AppColors.cyanDark,
       size: AppIconSize.s32,

@@ -242,7 +242,7 @@ class UsersSettingsEntry extends ConsumerWidget {
       dividerIndent: AppMetrics.dividerIndentWithTile,
       children: [
         AppRow(
-          leading: const AppTile(
+          leading: AppTile(
             icon: Icons.manage_accounts_rounded,
             color: AppColors.cyanDark,
             iconColor: AppColors.onDark,

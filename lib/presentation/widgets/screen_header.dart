@@ -24,7 +24,8 @@ class ScreenTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final back = showBack ?? Navigator.canPop(context);
+    final back =
+        showBack ?? ModalRoute.of(context)?.canPop ?? Navigator.canPop(context);
 
     return Container(
       color: AppColors.background,
@@ -173,7 +174,7 @@ class _BackButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.chevron_left_rounded,
                 size: AppHeader.backIconSize,
                 color: AppColors.cyanDark,

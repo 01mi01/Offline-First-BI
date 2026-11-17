@@ -40,6 +40,7 @@ Future<void> pumpUserApp(
   WidgetTester tester,
   AppDatabase db, {
   List<Override> overrides = const [],
+  bool settle = true,
 }) async {
   tester.view.physicalSize = const Size(900, 1800);
   tester.view.devicePixelRatio = 1.0;
@@ -51,7 +52,7 @@ Future<void> pumpUserApp(
       child: const MyApp(),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
 }
 
 Future<void> loginAs(

@@ -177,7 +177,7 @@ class _CatalogPopup extends StatelessWidget {
                       child: InkWell(
                         customBorder: const CircleBorder(),
                         onTap: () => Navigator.pop(context),
-                        child: const Padding(
+                        child: Padding(
                           padding: EdgeInsets.all(AppSpacing.s12),
                           child: Icon(
                             Icons.close_rounded,
@@ -252,7 +252,7 @@ class FlatFab extends StatelessWidget {
       highlightElevation: 0,
       shape: const CircleBorder(),
       onPressed: onPressed,
-      child: const Icon(Icons.add_rounded, color: AppColors.onDark),
+      child: Icon(Icons.add_rounded, color: AppColors.onDark),
     );
   }
 }

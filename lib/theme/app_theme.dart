@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class AppColors {
+class AppLightColors {
   static const cyan = Color(0xFF06B1B9);
   static const cyanDark = Color(0xFF05959C);
   static const cyanSoft = Color(0xFFE1F6F7);
@@ -36,6 +36,9 @@ class AppColors {
   static const successDark = Color(0xFF4F720C);
   static const successSoft = Color(0xFFEEF6D6);
   static const blueSoft = Color(0xFFE6EEF3);
+  static const menuSurface = surface;
+  static const switchThumbOff = surface;
+  static const splashBackground = background;
 
   static const chartColor1 = cyanDark;
   static const chartColor2 = Color(0xFF15305F);
@@ -44,7 +47,134 @@ class AppColors {
   static const chartColor5 = blue;
 }
 
-Color chartColorAt(int index) => const [
+class AppDarkColors {
+  static const cyan = Color(0xFFE3FF6B);
+  static const cyanDark = Color(0xFFCFFF04);
+  static const cyanSoft = Color(0xFF2B3512);
+  static const navy = Color(0xFFEEF2EA);
+  static const blue = Color(0xFF7DB9E8);
+
+  static const background = Color(0xFF0F1210);
+  static const surface = Color(0xFF1A1F1C);
+  static const neutralButton = Color(0xFF2A302C);
+  static const track = neutralButton;
+
+  static const textPrimary = navy;
+  static const textSecondary = Color(0xFFA6B0A9);
+  static const textSecondaryDark = Color(0xFFD3DAD4);
+  static const textMuted = Color(0xFF6F7A73);
+
+  static const onCyan = Color(0xFF111511);
+  static const onDark = Color(0xFF111511);
+
+  static const border = Color(0xFF323A35);
+  static const separator = Color(0xFF282E2A);
+  static const chevron = Color(0xFF6F7A73);
+  static const cyanDeep = Color(0xFFA9D600);
+
+  static const pressedOverlay = Color(0x29000000);
+  static const shadow = Color(0x40000000);
+  static const shadowNeutral = Color(0x52000000);
+
+  static const error = Color(0xFFFF6B8B);
+  static const errorSoft = Color(0xFF3B1F27);
+  static const success = Color(0xFF4FD68A);
+  static const successDark = Color(0xFF7BE3A6);
+  static const successSoft = Color(0xFF173022);
+  static const blueSoft = Color(0xFF1D2A35);
+  static const menuSurface = Color(0xFF272D29);
+  static const switchThumbOff = Color(0xFF8C968F);
+  static const splashBackground = background;
+
+  static const chartColor1 = cyanDark;
+  static const chartColor2 = Color(0xFF00E5FF);
+  static const chartColor3 = Color(0xFFFF9F1C);
+  static const chartColor4 = Color(0xFFE040FB);
+  static const chartColor5 = Color(0xFF7C6CFF);
+}
+
+class AppColors {
+  static bool _dark = false;
+
+  static bool get isDark => _dark;
+
+  static void useDark(bool dark) => _dark = dark;
+
+  static Color get cyan =>
+      _dark ? AppDarkColors.cyan : AppLightColors.cyan;
+  static Color get cyanDark =>
+      _dark ? AppDarkColors.cyanDark : AppLightColors.cyanDark;
+  static Color get cyanSoft =>
+      _dark ? AppDarkColors.cyanSoft : AppLightColors.cyanSoft;
+  static Color get navy =>
+      _dark ? AppDarkColors.navy : AppLightColors.navy;
+  static Color get blue =>
+      _dark ? AppDarkColors.blue : AppLightColors.blue;
+  static Color get background =>
+      _dark ? AppDarkColors.background : AppLightColors.background;
+  static Color get surface =>
+      _dark ? AppDarkColors.surface : AppLightColors.surface;
+  static Color get neutralButton =>
+      _dark ? AppDarkColors.neutralButton : AppLightColors.neutralButton;
+  static Color get track =>
+      _dark ? AppDarkColors.track : AppLightColors.track;
+  static Color get textPrimary =>
+      _dark ? AppDarkColors.textPrimary : AppLightColors.textPrimary;
+  static Color get textSecondary =>
+      _dark ? AppDarkColors.textSecondary : AppLightColors.textSecondary;
+  static Color get textSecondaryDark =>
+      _dark ? AppDarkColors.textSecondaryDark : AppLightColors.textSecondaryDark;
+  static Color get textMuted =>
+      _dark ? AppDarkColors.textMuted : AppLightColors.textMuted;
+  static Color get onCyan =>
+      _dark ? AppDarkColors.onCyan : AppLightColors.onCyan;
+  static Color get onDark =>
+      _dark ? AppDarkColors.onDark : AppLightColors.onDark;
+  static Color get border =>
+      _dark ? AppDarkColors.border : AppLightColors.border;
+  static Color get separator =>
+      _dark ? AppDarkColors.separator : AppLightColors.separator;
+  static Color get chevron =>
+      _dark ? AppDarkColors.chevron : AppLightColors.chevron;
+  static Color get cyanDeep =>
+      _dark ? AppDarkColors.cyanDeep : AppLightColors.cyanDeep;
+  static Color get pressedOverlay =>
+      _dark ? AppDarkColors.pressedOverlay : AppLightColors.pressedOverlay;
+  static Color get shadow =>
+      _dark ? AppDarkColors.shadow : AppLightColors.shadow;
+  static Color get shadowNeutral =>
+      _dark ? AppDarkColors.shadowNeutral : AppLightColors.shadowNeutral;
+  static Color get error =>
+      _dark ? AppDarkColors.error : AppLightColors.error;
+  static Color get errorSoft =>
+      _dark ? AppDarkColors.errorSoft : AppLightColors.errorSoft;
+  static Color get success =>
+      _dark ? AppDarkColors.success : AppLightColors.success;
+  static Color get successDark =>
+      _dark ? AppDarkColors.successDark : AppLightColors.successDark;
+  static Color get successSoft =>
+      _dark ? AppDarkColors.successSoft : AppLightColors.successSoft;
+  static Color get blueSoft =>
+      _dark ? AppDarkColors.blueSoft : AppLightColors.blueSoft;
+  static Color get menuSurface =>
+      _dark ? AppDarkColors.menuSurface : AppLightColors.menuSurface;
+  static Color get switchThumbOff =>
+      _dark ? AppDarkColors.switchThumbOff : AppLightColors.switchThumbOff;
+  static Color get splashBackground =>
+      _dark ? AppDarkColors.splashBackground : AppLightColors.splashBackground;
+  static Color get chartColor1 =>
+      _dark ? AppDarkColors.chartColor1 : AppLightColors.chartColor1;
+  static Color get chartColor2 =>
+      _dark ? AppDarkColors.chartColor2 : AppLightColors.chartColor2;
+  static Color get chartColor3 =>
+      _dark ? AppDarkColors.chartColor3 : AppLightColors.chartColor3;
+  static Color get chartColor4 =>
+      _dark ? AppDarkColors.chartColor4 : AppLightColors.chartColor4;
+  static Color get chartColor5 =>
+      _dark ? AppDarkColors.chartColor5 : AppLightColors.chartColor5;
+}
+
+Color chartColorAt(int index) => [
   AppColors.chartColor1,
   AppColors.chartColor2,
   AppColors.chartColor3,
@@ -57,17 +187,27 @@ Color onColorOf(Color fill) {
   return AppColors.onDark;
 }
 
-const TextStyle chartAxisStyle = TextStyle(
+TextStyle get chartAxisStyle => TextStyle(
   fontSize: 10,
   color: AppColors.textSecondary,
 );
 
 const SystemUiOverlayStyle appSystemOverlayStyle = SystemUiOverlayStyle(
-  statusBarColor: AppColors.background,
+  statusBarColor: AppLightColors.background,
   statusBarIconBrightness: Brightness.dark,
   statusBarBrightness: Brightness.light,
   systemStatusBarContrastEnforced: false,
 );
+
+const SystemUiOverlayStyle appDarkSystemOverlayStyle = SystemUiOverlayStyle(
+  statusBarColor: AppDarkColors.background,
+  statusBarIconBrightness: Brightness.light,
+  statusBarBrightness: Brightness.dark,
+  systemStatusBarContrastEnforced: false,
+);
+
+SystemUiOverlayStyle get activeSystemOverlayStyle =>
+    AppColors.isDark ? appDarkSystemOverlayStyle : appSystemOverlayStyle;
 
 class AppSpacing {
   static const double s2 = 2;
@@ -150,8 +290,8 @@ class AppLineHeight {
 }
 
 class AppShadows {
-  static const card = [
-    BoxShadow(color: AppColors.shadow, blurRadius: 32, offset: Offset(0, 12)),
+  static List<BoxShadow> get card => [
+    BoxShadow(color: AppColors.shadow, blurRadius: 32, offset: const Offset(0, 12)),
   ];
 }
 
@@ -160,7 +300,7 @@ class AppCards {
   static const BorderRadius borderRadius = BorderRadius.all(
     Radius.circular(radius),
   );
-  static const BoxDecoration decoration = BoxDecoration(
+  static BoxDecoration get decoration => BoxDecoration(
     color: AppColors.surface,
     borderRadius: borderRadius,
     boxShadow: AppShadows.card,
@@ -245,6 +385,10 @@ class AppFlat {
   );
 }
 
+class AppSplash {
+  static const double imageWidth = 160;
+}
+
 const String appFontFamily = 'Roboto';
 
 String formatNumber(double value) {
@@ -254,12 +398,12 @@ String formatNumber(double value) {
   return value.toString();
 }
 
-final ButtonStyle destructiveButtonStyle = ElevatedButton.styleFrom(
+ButtonStyle get destructiveButtonStyle => ElevatedButton.styleFrom(
   backgroundColor: AppColors.error,
   foregroundColor: AppColors.onDark,
 );
 
-final ButtonStyle neutralButtonStyle = ElevatedButton.styleFrom(
+ButtonStyle get neutralButtonStyle => ElevatedButton.styleFrom(
   backgroundColor: AppColors.neutralButton,
   foregroundColor: AppColors.textPrimary,
 );
@@ -268,16 +412,16 @@ final lightTheme = ThemeData(
   useMaterial3: true,
   fontFamily: appFontFamily,
   colorScheme: ColorScheme.fromSeed(
-    seedColor: AppColors.cyan,
+    seedColor: AppLightColors.cyan,
     brightness: Brightness.light,
-    primary: AppColors.cyanDark,
-    surface: AppColors.surface,
-    background: AppColors.background,
-    error: AppColors.error,
+    primary: AppLightColors.cyanDark,
+    surface: AppLightColors.surface,
+    background: AppLightColors.background,
+    error: AppLightColors.error,
   ),
-  scaffoldBackgroundColor: AppColors.background,
-  canvasColor: AppColors.surface,
-  cardColor: AppColors.surface,
+  scaffoldBackgroundColor: AppLightColors.background,
+  canvasColor: AppLightColors.surface,
+  cardColor: AppLightColors.surface,
 
   textTheme: const TextTheme(
     headlineSmall: TextStyle(fontSize: 26, fontWeight: FontWeight.normal),
@@ -288,8 +432,8 @@ final lightTheme = ThemeData(
   ),
 
   appBarTheme: const AppBarTheme(
-    backgroundColor: AppColors.background,
-    foregroundColor: AppColors.textPrimary,
+    backgroundColor: AppLightColors.background,
+    foregroundColor: AppLightColors.textPrimary,
     elevation: 0,
     scrolledUnderElevation: 0,
     surfaceTintColor: Colors.transparent,
@@ -298,34 +442,34 @@ final lightTheme = ThemeData(
   ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
-    fillColor: AppColors.surface,
+    fillColor: AppLightColors.surface,
     contentPadding: const EdgeInsets.symmetric(
       horizontal: AppSpacing.s16,
       vertical: AppSpacing.s14,
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-      borderSide: const BorderSide(color: AppColors.border),
+      borderSide: const BorderSide(color: AppLightColors.border),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-      borderSide: const BorderSide(color: AppColors.border),
+      borderSide: const BorderSide(color: AppLightColors.border),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-      borderSide: const BorderSide(color: AppColors.cyanDark, width: 2),
+      borderSide: const BorderSide(color: AppLightColors.cyanDark, width: 2),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
-      borderSide: const BorderSide(color: AppColors.error),
+      borderSide: const BorderSide(color: AppLightColors.error),
     ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.cyanDark,
-      foregroundColor: AppColors.onDark,
+      backgroundColor: AppLightColors.cyanDark,
+      foregroundColor: AppLightColors.onDark,
       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      overlayColor: AppColors.pressedOverlay,
+      overlayColor: AppLightColors.pressedOverlay,
       minimumSize: const Size(double.infinity, AppButtons.height),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppButtons.radius),
@@ -342,41 +486,168 @@ final lightTheme = ThemeData(
     ),
   ),
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: AppColors.cyanDark,
-    foregroundColor: AppColors.onDark,
+    backgroundColor: AppLightColors.cyanDark,
+    foregroundColor: AppLightColors.onDark,
   ),
   cardTheme: const CardThemeData(
-    color: AppColors.surface,
+    color: AppLightColors.surface,
     surfaceTintColor: Colors.transparent,
   ),
   dialogTheme: DialogThemeData(
-    backgroundColor: AppColors.surface,
+    backgroundColor: AppLightColors.surface,
     surfaceTintColor: Colors.transparent,
     titleTextStyle: const TextStyle(
       fontSize: 26,
       fontWeight: FontWeight.bold,
-      color: AppColors.textPrimary,
+      color: AppLightColors.textPrimary,
     ),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
     ),
   ),
   bottomSheetTheme: const BottomSheetThemeData(
-    backgroundColor: AppColors.surface,
+    backgroundColor: AppLightColors.surface,
     surfaceTintColor: Colors.transparent,
   ),
   popupMenuTheme: const PopupMenuThemeData(
-    color: AppColors.surface,
+    color: AppLightColors.surface,
     surfaceTintColor: Colors.transparent,
   ),
   dropdownMenuTheme: const DropdownMenuThemeData(
     menuStyle: MenuStyle(
-      backgroundColor: WidgetStatePropertyAll(AppColors.surface),
+      backgroundColor: WidgetStatePropertyAll(AppLightColors.surface),
       surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
     ),
   ),
   datePickerTheme: const DatePickerThemeData(
-    backgroundColor: AppColors.surface,
+    backgroundColor: AppLightColors.surface,
+    surfaceTintColor: Colors.transparent,
+  ),
+);
+
+final darkTheme = ThemeData(
+  useMaterial3: true,
+  fontFamily: appFontFamily,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: AppDarkColors.cyan,
+    brightness: Brightness.dark,
+    primary: AppDarkColors.cyanDark,
+    surface: AppDarkColors.surface,
+    error: AppDarkColors.error,
+    onPrimary: AppDarkColors.onDark,
+    onError: AppDarkColors.onDark,
+    onSurface: AppDarkColors.textPrimary,
+    onSurfaceVariant: AppDarkColors.textSecondary,
+    outline: AppDarkColors.border,
+    outlineVariant: AppDarkColors.separator,
+    surfaceContainerLowest: AppDarkColors.background,
+    surfaceContainerLow: AppDarkColors.surface,
+    surfaceContainer: AppDarkColors.surface,
+    surfaceContainerHigh: AppDarkColors.neutralButton,
+    surfaceContainerHighest: AppDarkColors.neutralButton,
+  ),
+  scaffoldBackgroundColor: AppDarkColors.background,
+  canvasColor: AppDarkColors.surface,
+  cardColor: AppDarkColors.surface,
+
+  textTheme: const TextTheme(
+    headlineSmall: TextStyle(fontSize: 26, fontWeight: FontWeight.normal),
+    displayLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.normal),
+    displayMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.normal),
+    displaySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
+    headlineLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
+  ),
+
+  appBarTheme: const AppBarTheme(
+    backgroundColor: AppDarkColors.background,
+    foregroundColor: AppDarkColors.textPrimary,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    surfaceTintColor: Colors.transparent,
+    systemOverlayStyle: appDarkSystemOverlayStyle,
+    centerTitle: false,
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: AppDarkColors.surface,
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.s16,
+      vertical: AppSpacing.s14,
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
+      borderSide: const BorderSide(color: AppDarkColors.border),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
+      borderSide: const BorderSide(color: AppDarkColors.border),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
+      borderSide: const BorderSide(color: AppDarkColors.cyanDark, width: 2),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppFlat.fieldRadius),
+      borderSide: const BorderSide(color: AppDarkColors.error),
+    ),
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: AppDarkColors.cyanDark,
+      foregroundColor: AppDarkColors.onDark,
+      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      overlayColor: AppDarkColors.pressedOverlay,
+      minimumSize: const Size(double.infinity, AppButtons.height),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppButtons.radius),
+      ),
+      elevation: 0,
+    ),
+  ),
+  outlinedButtonTheme: OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(
+      minimumSize: const Size(64, AppMetrics.minTap),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
+      ),
+    ),
+  ),
+  floatingActionButtonTheme: const FloatingActionButtonThemeData(
+    backgroundColor: AppDarkColors.cyanDark,
+    foregroundColor: AppDarkColors.onDark,
+  ),
+  cardTheme: const CardThemeData(
+    color: AppDarkColors.surface,
+    surfaceTintColor: Colors.transparent,
+  ),
+  dialogTheme: DialogThemeData(
+    backgroundColor: AppDarkColors.surface,
+    surfaceTintColor: Colors.transparent,
+    titleTextStyle: const TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+      color: AppDarkColors.textPrimary,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppMetrics.groupRadius),
+    ),
+  ),
+  bottomSheetTheme: const BottomSheetThemeData(
+    backgroundColor: AppDarkColors.surface,
+    surfaceTintColor: Colors.transparent,
+  ),
+  popupMenuTheme: const PopupMenuThemeData(
+    color: AppDarkColors.menuSurface,
+    surfaceTintColor: Colors.transparent,
+  ),
+  dropdownMenuTheme: const DropdownMenuThemeData(
+    menuStyle: MenuStyle(
+      backgroundColor: WidgetStatePropertyAll(AppDarkColors.menuSurface),
+      surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
+    ),
+  ),
+  datePickerTheme: const DatePickerThemeData(
+    backgroundColor: AppDarkColors.surface,
     surfaceTintColor: Colors.transparent,
   ),
 );

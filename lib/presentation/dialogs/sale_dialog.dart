@@ -491,7 +491,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                             : ListView.separated(
                                 padding: EdgeInsets.zero,
                                 itemCount: visibleProducts.length,
-                                separatorBuilder: (_, _) => const Divider(
+                                separatorBuilder: (_, _) => Divider(
                                   height: AppStroke.hairline,
                                   thickness: AppStroke.hairline,
                                   indent: AppMetrics.dividerIndent,
@@ -706,7 +706,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
                               }
                             }),
                             radius: AppSpacing.s20,
-                            child: const Padding(
+                            child: Padding(
                               padding: EdgeInsets.all(AppSpacing.s8),
                               child: Icon(
                                 Icons.edit_rounded,

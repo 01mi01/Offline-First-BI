@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
+import '../../application/theme_provider.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_group.dart';
 import '../widgets/screen_header.dart';
@@ -11,8 +12,45 @@ import '../widgets/app_buttons.dart';
 import '../widgets/app_avatar.dart';
 import 'users_page.dart';
 
+const String themeLightLabel = 'Claro';
+const String themeDarkLabel = 'Oscuro';
+const String themeSystemLabel = 'Seguir el tema del teléfono';
+
+Key themeOptionKey(ThemeMode mode) => Key('settings-theme-${mode.name}');
+
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
+
+  void _setThemeMode(WidgetRef ref, ThemeMode mode) {
+    ref.read(themeModeProvider.notifier).setMode(mode);
+  }
+
+  Widget _themeRow(
+    WidgetRef ref, {
+    required ThemeMode mode,
+    required ThemeMode current,
+    required IconData icon,
+    required String label,
+  }) {
+    final selected = mode == current;
+    return AppRow(
+      key: themeOptionKey(mode),
+      leading: AppTile(
+        icon: icon,
+        color: AppColors.navy,
+        iconColor: AppColors.onDark,
+      ),
+      title: label,
+      onTap: () => _setThemeMode(ref, mode),
+      trailing: selected
+          ? Icon(
+              Icons.check_rounded,
+              size: AppIconSize.s22,
+              color: AppColors.cyanDark,
+            )
+          : null,
+    );
+  }
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final confirmed = await confirmCancellation(
@@ -37,6 +75,7 @@ class SettingsPage extends ConsumerWidget {
     final username = user?.username ?? '';
     final email = user?.email ?? '';
     final role = user?.appRole.label ?? '';
+    final themeMode = ref.watch(themeModeProvider);
 
     return ScreenScaffold.slivers(
       title: 'Ajustes',
@@ -84,25 +123,26 @@ class SettingsPage extends ConsumerWidget {
                   header: 'Apariencia',
                   dividerIndent: AppMetrics.dividerIndentWithTile,
                   children: [
-                    AppRow(
-                      leading: const AppTile(
-                        icon: Icons.dark_mode_rounded,
-                        color: AppColors.navy,
-                        iconColor: AppColors.onDark,
-                      ),
-                      title: 'Tema oscuro',
-                      titleColor: AppColors.textSecondary,
-                      subtitle: Text(
-                        'Próximamente',
-                        style: AppText.rowSubtitle(context),
-                      ),
-                      trailing: const Switch(
-                        value: false,
-                        onChanged: null,
-                        activeTrackColor: AppColors.cyanDark,
-                        inactiveTrackColor: AppColors.border,
-                        inactiveThumbColor: AppColors.surface,
-                      ),
+                    _themeRow(
+                      ref,
+                      mode: ThemeMode.light,
+                      current: themeMode,
+                      icon: Icons.light_mode_rounded,
+                      label: themeLightLabel,
+                    ),
+                    _themeRow(
+                      ref,
+                      mode: ThemeMode.dark,
+                      current: themeMode,
+                      icon: Icons.dark_mode_rounded,
+                      label: themeDarkLabel,
+                    ),
+                    _themeRow(
+                      ref,
+                      mode: ThemeMode.system,
+                      current: themeMode,
+                      icon: Icons.smartphone_rounded,
+                      label: themeSystemLabel,
                     ),
                   ],
                 ),

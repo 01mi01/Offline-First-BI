@@ -194,7 +194,7 @@ class BiGroupedBarsState extends State<BiGroupedBars> {
                     gridData: FlGridData(
                       drawVerticalLine: false,
                       getDrawingHorizontalLine: (_) =>
-                          const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
+                          FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
                     ),
                     titlesData: FlTitlesData(
                       topTitles: const AxisTitles(),
@@ -340,7 +340,7 @@ class BiPeriodComparisonSection extends StatelessWidget {
                   higherIsBetter: true,
                 ),
                 if (showExpenses) ...[
-                  const Divider(
+                  Divider(
                     height: AppSpacing.s24,
                     color: AppColors.border,
                   ),
@@ -351,7 +351,7 @@ class BiPeriodComparisonSection extends StatelessWidget {
                     current: comparison.current.gastos,
                     higherIsBetter: false,
                   ),
-                  const Divider(
+                  Divider(
                     height: AppSpacing.s24,
                     color: AppColors.border,
                   ),
@@ -548,7 +548,7 @@ class _MarginList extends StatelessWidget {
             decoration: BoxDecoration(
               border: i == entries.length - 1
                   ? null
-                  : const Border(bottom: BorderSide(color: AppColors.border)),
+                  : Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               children: [
@@ -774,7 +774,7 @@ class _BiProjectionSectionState extends State<BiProjectionSection> {
           gridData: FlGridData(
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
+                FlLine(color: AppColors.border, strokeWidth: AppStroke.hairline),
           ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(),
@@ -1210,7 +1210,7 @@ class _InventoryRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: AppColors.border)),
+            : Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -1441,13 +1441,13 @@ class _BiRadarSectionState extends State<BiRadarSection> {
                             fontSize: AppMetrics.tinyTextSize,
                             color: Colors.transparent,
                           ),
-                          tickBorderData: const BorderSide(
+                          tickBorderData: BorderSide(
                             color: AppColors.border,
                           ),
-                          gridBorderData: const BorderSide(
+                          gridBorderData: BorderSide(
                             color: AppColors.border,
                           ),
-                          radarBorderData: const BorderSide(
+                          radarBorderData: BorderSide(
                             color: AppColors.border,
                           ),
                           titleTextStyle: Theme.of(context).textTheme.labelMedium
