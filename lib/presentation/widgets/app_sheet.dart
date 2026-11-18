@@ -15,7 +15,10 @@ WidgetBuilder _sheetBuilder(
 ) {
   return (ctx) {
     final inset = MediaQuery.of(ctx).viewInsets.bottom;
-    final child = AppFormTheme(child: builder(ctx));
+    final child = ColoredBox(
+      color: AppColors.background,
+      child: AppFormTheme(child: builder(ctx)),
+    );
     if (heightFactor == null) {
       return Padding(
         padding: EdgeInsets.only(bottom: inset),
