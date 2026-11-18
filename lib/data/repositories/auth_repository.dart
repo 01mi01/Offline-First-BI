@@ -8,14 +8,28 @@ import '../../models/access_control.dart';
 import '../../models/app_role.dart';
 import 'module_permission_repository.dart';
 import 'failed_login_attempts.dart';
+import '../services/totp.dart';
+
+class TwoFactorChallenge {
+  final int userId;
+  final String username;
+
+  const TwoFactorChallenge({required this.userId, required this.username});
+}
 
 class AuthRepository {
   final AppDatabase database;
   final FailedLoginAttempts failedAttempts;
+  final FailedLoginAttempts failedCodeAttempts;
   final Set<String> _justLocked = {};
+  final Map<String, TwoFactorChallenge> _challenges = {};
 
-  AuthRepository(this.database, {FailedLoginAttempts? failedAttempts})
-    : failedAttempts = failedAttempts ?? FailedLoginAttempts();
+  AuthRepository(
+    this.database, {
+    FailedLoginAttempts? failedAttempts,
+    FailedLoginAttempts? failedCodeAttempts,
+  }) : failedAttempts = failedAttempts ?? FailedLoginAttempts(),
+       failedCodeAttempts = failedCodeAttempts ?? FailedLoginAttempts();
 
   String _hashPassword(String password) {
     final bytes = utf8.encode(password);
@@ -70,20 +84,57 @@ class AuthRepository {
 
       failedAttempts.reset(user.username);
 
-      await database.delete(database.sesionLocal).go();
-      await database
-          .into(database.sesionLocal)
-          .insert(
-            SesionLocalCompanion.insert(
-              userId: user.id,
-              username: user.username,
-              createdAt: appNow(),
-            ),
-          );
+      if (user.mfaEnabled && user.mfaSecret != null) {
+        _challenges[user.username] = TwoFactorChallenge(
+          userId: user.id,
+          username: user.username,
+        );
+        return null;
+      }
 
-      final model = await _buildUserModel(user);
-      if (model != null) database.sensitiveData.openSession();
-      return model;
+      return await _startSession(user);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<UserModel?> _startSession(User user) async {
+    await database.delete(database.sesionLocal).go();
+    await database
+        .into(database.sesionLocal)
+        .insert(
+          SesionLocalCompanion.insert(
+            userId: user.id,
+            username: user.username,
+            createdAt: appNow(),
+          ),
+        );
+
+    final model = await _buildUserModel(user);
+    if (model != null) database.sensitiveData.openSession();
+    return model;
+  }
+
+  TwoFactorChallenge? takeTwoFactorChallenge(String username) =>
+      _challenges.remove(username);
+
+  Future<UserModel?> verifyCode(int userId, String code) async {
+    try {
+      final user = await (database.select(
+        database.users,
+      )..where((u) => u.id.equals(userId))).getSingleOrNull();
+      if (user == null ||
+          !user.isActive ||
+          !user.mfaEnabled ||
+          user.mfaSecret == null) {
+        return null;
+      }
+      if (verifyTotp(user.mfaSecret!, code, appNow())) {
+        failedCodeAttempts.reset(user.username);
+        return await _startSession(user);
+      }
+      await _registerCodeFailure(user);
+      return null;
     } catch (e) {
       return null;
     }
@@ -94,6 +145,18 @@ class AuthRepository {
     if (model == null || model.appRole == AppRole.administrador) return;
     final count = failedAttempts.registerFailure(user.username);
     if (count < maxFailedLoginAttempts) return;
+    await _block(user);
+  }
+
+  Future<void> _registerCodeFailure(User user) async {
+    final model = await _buildUserModel(user);
+    if (model == null || model.appRole == AppRole.administrador) return;
+    final count = failedCodeAttempts.registerFailure(user.username);
+    if (count < maxFailedLoginAttempts) return;
+    await _block(user);
+  }
+
+  Future<void> _block(User user) async {
     await (database.update(database.users)..where((u) => u.id.equals(user.id)))
         .write(
           UsersCompanion(isActive: const Value(false), updatedAt: Value(appNow())),

@@ -5,6 +5,7 @@ import '../../application/user_provider.dart';
 import '../../models/user_model.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/permissions_dialog.dart';
+import '../dialogs/two_factor_setup_sheet.dart';
 import '../dialogs/user_dialog.dart';
 import '../../models/app_role.dart';
 import '../widgets/app_buttons.dart';
@@ -133,6 +134,55 @@ class _UserDetailSheetState extends ConsumerState<UserDetailSheet> {
     });
   }
 
+  Future<void> _toggleTwoFactor(UserModel user) async {
+    final enable = !user.mfaEnabled;
+    final confirmed = await confirmCancellation(
+      context,
+      title: enable
+          ? '¿Activar la verificación en dos pasos?'
+          : '¿Desactivar la verificación en dos pasos?',
+      message: enable
+          ? '${user.username} deberá ingresar un código de Google '
+                'Authenticator además de su contraseña para iniciar sesión.'
+          : '${user.username} iniciará sesión solo con su usuario y '
+                'contraseña. La clave actual dejará de funcionar.',
+      confirmLabel: enable ? 'Activar' : 'Desactivar',
+      confirmKind: enable ? AppButtonKind.primary : AppButtonKind.destructive,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final notifier = ref.read(userManagementProvider.notifier);
+    if (!enable) {
+      final error = await notifier.disableTwoFactor(user.id);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = error;
+      });
+      return;
+    }
+    final result = await notifier.enableTwoFactor(user.id);
+    if (!mounted) return;
+    final secret = result.secret;
+    if (secret == null) {
+      setState(() {
+        _busy = false;
+        _error = result.error;
+      });
+      return;
+    }
+    _openThen(
+      (navigator) => showAppSheet<void>(
+        navigator.context,
+        builder: (_) =>
+            TwoFactorSetupSheet(username: user.username, secret: secret),
+      ),
+    );
+  }
+
   void _openThen(void Function(NavigatorState navigator) open) {
     final navigator = Navigator.of(context);
     navigator.pop();
@@ -187,6 +237,14 @@ class _UserDetailSheetState extends ConsumerState<UserDetailSheet> {
               ),
             ),
           ],
+          const SizedBox(height: AppButtons.stackGap),
+          AppActionButton(
+            label: user.mfaEnabled
+                ? 'Desactivar verificación en dos pasos'
+                : 'Activar verificación en dos pasos',
+            kind: AppButtonKind.neutral,
+            onPressed: _busy ? null : () => _toggleTwoFactor(user),
+          ),
           if (!self) ...[
             const SizedBox(height: AppButtons.stackGap),
             AppActionButton(
@@ -222,6 +280,10 @@ class _UserDetailSheetState extends ConsumerState<UserDetailSheet> {
             children: [
               AppValueRow(label: 'Correo', value: user.email),
               AppValueRow(label: 'Rol', value: user.appRole.label),
+              AppValueRow(
+                label: 'Dos pasos',
+                value: user.mfaEnabled ? 'Activada' : 'Desactivada',
+              ),
             ],
           ),
           if (_error != null) FormErrorText(_error!),

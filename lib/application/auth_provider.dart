@@ -12,7 +12,13 @@ const String inactivityLogoutMessage = 'Tu sesión se cerró por inactividad.';
 const String dataUnavailableMessage =
     'No se pudo abrir la información guardada en este dispositivo.';
 
+const String wrongCodeMessage = 'El código de verificación es incorrecto.';
+
 final failedLoginAttemptsProvider = Provider<FailedLoginAttempts>(
+  (ref) => FailedLoginAttempts(),
+);
+
+final failedCodeAttemptsProvider = Provider<FailedLoginAttempts>(
   (ref) => FailedLoginAttempts(),
 );
 
@@ -21,6 +27,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
     db,
     failedAttempts: ref.watch(failedLoginAttemptsProvider),
+    failedCodeAttempts: ref.watch(failedCodeAttemptsProvider),
   );
 });
 
@@ -28,14 +35,16 @@ class AuthState {
   final UserModel? user;
   final bool isLoading;
   final String? error;
+  final TwoFactorChallenge? twoFactor;
 
-  AuthState({this.user, this.isLoading = false, this.error});
+  AuthState({this.user, this.isLoading = false, this.error, this.twoFactor});
 
   AuthState copyWith({UserModel? user, bool? isLoading, String? error}) {
     return AuthState(
       user: user ?? this.user,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      twoFactor: twoFactor,
     );
   }
 }
@@ -59,8 +68,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> login(String username, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     final user = await repository.login(username, password);
+    final challenge = user == null
+        ? repository.takeTwoFactorChallenge(username)
+        : null;
     if (user != null) {
       state = state.copyWith(user: user, isLoading: false);
+    } else if (challenge != null) {
+      state = AuthState(twoFactor: challenge);
     } else {
       try {
         final blocked =
@@ -76,6 +90,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = state.copyWith(isLoading: false, error: dataUnavailableMessage);
       }
     }
+  }
+
+  Future<void> verifyCode(String code) async {
+    final challenge = state.twoFactor;
+    if (challenge == null) return;
+    state = state.copyWith(isLoading: true, error: null);
+    final user = await repository.verifyCode(challenge.userId, code);
+    if (user != null) {
+      state = AuthState(user: user);
+    } else if (repository.takeJustLocked(challenge.username)) {
+      state = AuthState(error: blockedUserMessage);
+    } else {
+      state = AuthState(twoFactor: challenge, error: wrongCodeMessage);
+    }
+  }
+
+  void cancelTwoFactor() {
+    state = AuthState();
   }
 
   Future<void> refreshUser() async {

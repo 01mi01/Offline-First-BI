@@ -24,6 +24,7 @@ class Users extends Table {
   TextColumn get passwordHash => text()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   BoolColumn get mfaEnabled => boolean().withDefault(const Constant(false))();
+  TextColumn get mfaSecret => text().nullable()();
   BoolColumn get darkMode => boolean().withDefault(const Constant(false))();
   BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
   TextColumn get supabaseId => text().nullable()();
@@ -342,7 +343,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor) : sensitiveData = SensitiveDataGate();
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
@@ -819,6 +820,12 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 19) {
         await customStatement('DROP TABLE IF EXISTS saved_reports');
+      }
+      if (from < 20) {
+        await m.addColumn(users, users.mfaSecret);
+        await customStatement(
+          'UPDATE users SET mfa_enabled = 0 WHERE mfa_secret IS NULL',
+        );
       }
     },
   );

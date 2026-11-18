@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../application/auth_provider.dart';
 import '../../application/form_validation.dart';
+import '../../data/services/totp.dart';
 import '../../theme/app_theme.dart';
 import '../navigation/main_navigation_page.dart';
 import 'dart:math' as math;
 import '../widgets/form_style.dart';
 import '../widgets/brand_assets.dart';
+import '../widgets/app_buttons.dart';
 
 const double _maxContentWidth = AppExtent.e420;
 const double _cardRadius = AppSpacing.s28;
 const Duration _motion = Duration(milliseconds: 300);
+const String codeLengthMessage = 'El código tiene 6 dígitos.';
+const String twoFactorTitle = 'Verificación en dos pasos';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -24,13 +29,39 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _codeFormKey = GlobalKey<FormState>();
+  final _codeController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _codeController.dispose();
     super.dispose();
+  }
+
+  void _openApp() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const MainNavigationPage()),
+    );
+  }
+
+  Future<void> _handleCode() async {
+    if (!_codeFormKey.currentState!.validate()) return;
+    await ref.read(authProvider.notifier).verifyCode(_codeController.text);
+    if (!mounted) return;
+    final state = ref.read(authProvider);
+    if (state.user != null) {
+      _openApp();
+    } else {
+      _codeController.clear();
+    }
+  }
+
+  void _cancelCode() {
+    _codeController.clear();
+    ref.read(authProvider.notifier).cancelTwoFactor();
   }
 
   Future<void> _handleLogin() async {
@@ -41,11 +72,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         .login(_usernameController.text.trim(), _passwordController.text);
 
     final state = ref.read(authProvider);
-    if (state.user != null && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigationPage()),
-      );
-    }
+    if (state.user != null && mounted) _openApp();
   }
 
   InputDecoration _decoration({
@@ -115,7 +142,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                             const SizedBox(height: AppSpacing.s32),
                             Text(
-                              'Iniciar sesión',
+                              authState.twoFactor == null
+                                  ? 'Iniciar sesión'
+                                  : twoFactorTitle,
                               style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -124,7 +153,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: AppSpacing.s32),
-                            _buildForm(context, authState),
+                            authState.twoFactor == null
+                                ? _buildForm(context, authState)
+                                : _buildCodeForm(context, authState),
                           ],
                         ),
                       ),
@@ -197,54 +228,133 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             validator: (v) => v == null || v.isEmpty ? requiredMessage : null,
           ),
           const SizedBox(height: AppSpacing.s32),
-          AnimatedSize(
-            duration: _motion,
-            curve: Curves.easeOut,
-            alignment: Alignment.topCenter,
-            child: AnimatedSwitcher(
-              duration: _motion,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -0.15),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
+          _errorArea(authState),
+          _submitButton(
+            context,
+            authState,
+            label: 'Iniciar sesión',
+            onPressed: _handleLogin,
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _errorArea(AuthState authState) {
+    return AnimatedSize(
+      duration: _motion,
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: _motion,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, -0.15),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        ),
+        child: authState.error == null
+            ? const SizedBox(width: double.infinity)
+            : _ErrorText(
+                key: ValueKey(authState.error),
+                message: authState.error!,
               ),
-              child: authState.error == null
-                  ? const SizedBox(width: double.infinity)
-                  : _ErrorText(
-                      key: ValueKey(authState.error),
-                      message: authState.error!,
-                    ),
+      ),
+    );
+  }
+
+  Widget _submitButton(
+    BuildContext context,
+    AuthState authState, {
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton(
+      onPressed: authState.isLoading ? null : onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.cyanDark,
+        foregroundColor: AppColors.onDark,
+        disabledBackgroundColor: AppColors.cyanDark,
+        disabledForegroundColor: AppColors.onDark,
+      ),
+      child: authState.isLoading
+          ? SizedBox(
+              height: AppSpacing.s20,
+              width: AppSpacing.s20,
+              child: CircularProgressIndicator(
+                color: AppColors.onDark,
+                strokeWidth: AppStroke.medium,
+              ),
+            )
+          : Text(
+              label,
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.onDark,
+              ),
+            ),
+    );
+  }
+
+  Widget _buildCodeForm(BuildContext context, AuthState authState) {
+    final fieldStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: AppColors.textPrimary,
+    );
+    return Form(
+      key: _codeFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Código de Google Authenticator para '
+            '${authState.twoFactor!.username}.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textMuted,
             ),
           ),
-          ElevatedButton(
-            onPressed: authState.isLoading ? null : _handleLogin,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.cyanDark,
-              foregroundColor: AppColors.onDark,
-              disabledBackgroundColor: AppColors.cyanDark,
-              disabledForegroundColor: AppColors.onDark,
+          const SizedBox(height: AppSpacing.s20),
+          TextFormField(
+            key: const ValueKey('two_factor_code_field'),
+            controller: _codeController,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(totpDigits),
+            ],
+            onChanged: (_) => ref.read(authProvider.notifier).clearError(),
+            onFieldSubmitted: (_) => _handleCode(),
+            style: fieldStyle,
+            cursorColor: AppColors.cyanDark,
+            cursorErrorColor: AppColors.cyanDark,
+            textInputAction: TextInputAction.done,
+            decoration: _decoration(
+              hint: 'Código de verificación',
+              icon: Icons.pin_rounded,
             ),
-            child: authState.isLoading
-                ? SizedBox(
-                    height: AppSpacing.s20,
-                    width: AppSpacing.s20,
-                    child: CircularProgressIndicator(
-                      color: AppColors.onDark,
-                      strokeWidth: AppStroke.medium,
-                    ),
-                  )
-                : Text(
-                    'Iniciar sesión',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.onDark,
-                    ),
-                  ),
+            validator: (v) => v == null || v.isEmpty
+                ? requiredMessage
+                : v.length != totpDigits
+                ? codeLengthMessage
+                : null,
+          ),
+          const SizedBox(height: AppSpacing.s32),
+          _errorArea(authState),
+          _submitButton(
+            context,
+            authState,
+            label: 'Verificar',
+            onPressed: _handleCode,
+          ),
+          const SizedBox(height: AppButtons.stackGap),
+          AppActionButton(
+            label: 'Volver',
+            kind: AppButtonKind.neutral,
+            onPressed: authState.isLoading ? null : _cancelCode,
           ),
         ],
       ),

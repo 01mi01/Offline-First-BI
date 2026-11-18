@@ -84,6 +84,17 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _mfaSecretMeta = const VerificationMeta(
+    'mfaSecret',
+  );
+  @override
+  late final GeneratedColumn<String> mfaSecret = GeneratedColumn<String>(
+    'mfa_secret',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _darkModeMeta = const VerificationMeta(
     'darkMode',
   );
@@ -156,6 +167,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     passwordHash,
     isActive,
     mfaEnabled,
+    mfaSecret,
     darkMode,
     sincronizado,
     supabaseId,
@@ -214,6 +226,12 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       context.handle(
         _mfaEnabledMeta,
         mfaEnabled.isAcceptableOrUnknown(data['mfa_enabled']!, _mfaEnabledMeta),
+      );
+    }
+    if (data.containsKey('mfa_secret')) {
+      context.handle(
+        _mfaSecretMeta,
+        mfaSecret.isAcceptableOrUnknown(data['mfa_secret']!, _mfaSecretMeta),
       );
     }
     if (data.containsKey('dark_mode')) {
@@ -282,6 +300,10 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.bool,
         data['${effectivePrefix}mfa_enabled'],
       )!,
+      mfaSecret: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mfa_secret'],
+      ),
       darkMode: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}dark_mode'],
@@ -318,6 +340,7 @@ class User extends DataClass implements Insertable<User> {
   final String passwordHash;
   final bool isActive;
   final bool mfaEnabled;
+  final String? mfaSecret;
   final bool darkMode;
   final bool sincronizado;
   final String? supabaseId;
@@ -330,6 +353,7 @@ class User extends DataClass implements Insertable<User> {
     required this.passwordHash,
     required this.isActive,
     required this.mfaEnabled,
+    this.mfaSecret,
     required this.darkMode,
     required this.sincronizado,
     this.supabaseId,
@@ -345,6 +369,9 @@ class User extends DataClass implements Insertable<User> {
     map['password_hash'] = Variable<String>(passwordHash);
     map['is_active'] = Variable<bool>(isActive);
     map['mfa_enabled'] = Variable<bool>(mfaEnabled);
+    if (!nullToAbsent || mfaSecret != null) {
+      map['mfa_secret'] = Variable<String>(mfaSecret);
+    }
     map['dark_mode'] = Variable<bool>(darkMode);
     map['sincronizado'] = Variable<bool>(sincronizado);
     if (!nullToAbsent || supabaseId != null) {
@@ -365,6 +392,9 @@ class User extends DataClass implements Insertable<User> {
       passwordHash: Value(passwordHash),
       isActive: Value(isActive),
       mfaEnabled: Value(mfaEnabled),
+      mfaSecret: mfaSecret == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mfaSecret),
       darkMode: Value(darkMode),
       sincronizado: Value(sincronizado),
       supabaseId: supabaseId == null && nullToAbsent
@@ -389,6 +419,7 @@ class User extends DataClass implements Insertable<User> {
       passwordHash: serializer.fromJson<String>(json['passwordHash']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       mfaEnabled: serializer.fromJson<bool>(json['mfaEnabled']),
+      mfaSecret: serializer.fromJson<String?>(json['mfaSecret']),
       darkMode: serializer.fromJson<bool>(json['darkMode']),
       sincronizado: serializer.fromJson<bool>(json['sincronizado']),
       supabaseId: serializer.fromJson<String?>(json['supabaseId']),
@@ -406,6 +437,7 @@ class User extends DataClass implements Insertable<User> {
       'passwordHash': serializer.toJson<String>(passwordHash),
       'isActive': serializer.toJson<bool>(isActive),
       'mfaEnabled': serializer.toJson<bool>(mfaEnabled),
+      'mfaSecret': serializer.toJson<String?>(mfaSecret),
       'darkMode': serializer.toJson<bool>(darkMode),
       'sincronizado': serializer.toJson<bool>(sincronizado),
       'supabaseId': serializer.toJson<String?>(supabaseId),
@@ -421,6 +453,7 @@ class User extends DataClass implements Insertable<User> {
     String? passwordHash,
     bool? isActive,
     bool? mfaEnabled,
+    Value<String?> mfaSecret = const Value.absent(),
     bool? darkMode,
     bool? sincronizado,
     Value<String?> supabaseId = const Value.absent(),
@@ -433,6 +466,7 @@ class User extends DataClass implements Insertable<User> {
     passwordHash: passwordHash ?? this.passwordHash,
     isActive: isActive ?? this.isActive,
     mfaEnabled: mfaEnabled ?? this.mfaEnabled,
+    mfaSecret: mfaSecret.present ? mfaSecret.value : this.mfaSecret,
     darkMode: darkMode ?? this.darkMode,
     sincronizado: sincronizado ?? this.sincronizado,
     supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
@@ -451,6 +485,7 @@ class User extends DataClass implements Insertable<User> {
       mfaEnabled: data.mfaEnabled.present
           ? data.mfaEnabled.value
           : this.mfaEnabled,
+      mfaSecret: data.mfaSecret.present ? data.mfaSecret.value : this.mfaSecret,
       darkMode: data.darkMode.present ? data.darkMode.value : this.darkMode,
       sincronizado: data.sincronizado.present
           ? data.sincronizado.value
@@ -472,6 +507,7 @@ class User extends DataClass implements Insertable<User> {
           ..write('passwordHash: $passwordHash, ')
           ..write('isActive: $isActive, ')
           ..write('mfaEnabled: $mfaEnabled, ')
+          ..write('mfaSecret: $mfaSecret, ')
           ..write('darkMode: $darkMode, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
@@ -489,6 +525,7 @@ class User extends DataClass implements Insertable<User> {
     passwordHash,
     isActive,
     mfaEnabled,
+    mfaSecret,
     darkMode,
     sincronizado,
     supabaseId,
@@ -505,6 +542,7 @@ class User extends DataClass implements Insertable<User> {
           other.passwordHash == this.passwordHash &&
           other.isActive == this.isActive &&
           other.mfaEnabled == this.mfaEnabled &&
+          other.mfaSecret == this.mfaSecret &&
           other.darkMode == this.darkMode &&
           other.sincronizado == this.sincronizado &&
           other.supabaseId == this.supabaseId &&
@@ -519,6 +557,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> passwordHash;
   final Value<bool> isActive;
   final Value<bool> mfaEnabled;
+  final Value<String?> mfaSecret;
   final Value<bool> darkMode;
   final Value<bool> sincronizado;
   final Value<String?> supabaseId;
@@ -531,6 +570,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.passwordHash = const Value.absent(),
     this.isActive = const Value.absent(),
     this.mfaEnabled = const Value.absent(),
+    this.mfaSecret = const Value.absent(),
     this.darkMode = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
@@ -544,6 +584,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     required String passwordHash,
     this.isActive = const Value.absent(),
     this.mfaEnabled = const Value.absent(),
+    this.mfaSecret = const Value.absent(),
     this.darkMode = const Value.absent(),
     this.sincronizado = const Value.absent(),
     this.supabaseId = const Value.absent(),
@@ -559,6 +600,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? passwordHash,
     Expression<bool>? isActive,
     Expression<bool>? mfaEnabled,
+    Expression<String>? mfaSecret,
     Expression<bool>? darkMode,
     Expression<bool>? sincronizado,
     Expression<String>? supabaseId,
@@ -572,6 +614,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (passwordHash != null) 'password_hash': passwordHash,
       if (isActive != null) 'is_active': isActive,
       if (mfaEnabled != null) 'mfa_enabled': mfaEnabled,
+      if (mfaSecret != null) 'mfa_secret': mfaSecret,
       if (darkMode != null) 'dark_mode': darkMode,
       if (sincronizado != null) 'sincronizado': sincronizado,
       if (supabaseId != null) 'supabase_id': supabaseId,
@@ -587,6 +630,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Value<String>? passwordHash,
     Value<bool>? isActive,
     Value<bool>? mfaEnabled,
+    Value<String?>? mfaSecret,
     Value<bool>? darkMode,
     Value<bool>? sincronizado,
     Value<String?>? supabaseId,
@@ -600,6 +644,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       passwordHash: passwordHash ?? this.passwordHash,
       isActive: isActive ?? this.isActive,
       mfaEnabled: mfaEnabled ?? this.mfaEnabled,
+      mfaSecret: mfaSecret ?? this.mfaSecret,
       darkMode: darkMode ?? this.darkMode,
       sincronizado: sincronizado ?? this.sincronizado,
       supabaseId: supabaseId ?? this.supabaseId,
@@ -629,6 +674,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (mfaEnabled.present) {
       map['mfa_enabled'] = Variable<bool>(mfaEnabled.value);
     }
+    if (mfaSecret.present) {
+      map['mfa_secret'] = Variable<String>(mfaSecret.value);
+    }
     if (darkMode.present) {
       map['dark_mode'] = Variable<bool>(darkMode.value);
     }
@@ -656,6 +704,7 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('passwordHash: $passwordHash, ')
           ..write('isActive: $isActive, ')
           ..write('mfaEnabled: $mfaEnabled, ')
+          ..write('mfaSecret: $mfaSecret, ')
           ..write('darkMode: $darkMode, ')
           ..write('sincronizado: $sincronizado, ')
           ..write('supabaseId: $supabaseId, ')
@@ -12125,6 +12174,7 @@ typedef $$UsersTableCreateCompanionBuilder =
       required String passwordHash,
       Value<bool> isActive,
       Value<bool> mfaEnabled,
+      Value<String?> mfaSecret,
       Value<bool> darkMode,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
@@ -12139,6 +12189,7 @@ typedef $$UsersTableUpdateCompanionBuilder =
       Value<String> passwordHash,
       Value<bool> isActive,
       Value<bool> mfaEnabled,
+      Value<String?> mfaSecret,
       Value<bool> darkMode,
       Value<bool> sincronizado,
       Value<String?> supabaseId,
@@ -12264,6 +12315,11 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<bool> get mfaEnabled => $composableBuilder(
     column: $table.mfaEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mfaSecret => $composableBuilder(
+    column: $table.mfaSecret,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12432,6 +12488,11 @@ class $$UsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get mfaSecret => $composableBuilder(
+    column: $table.mfaSecret,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get darkMode => $composableBuilder(
     column: $table.darkMode,
     builder: (column) => ColumnOrderings(column),
@@ -12488,6 +12549,9 @@ class $$UsersTableAnnotationComposer
     column: $table.mfaEnabled,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get mfaSecret =>
+      $composableBuilder(column: $table.mfaSecret, builder: (column) => column);
 
   GeneratedColumn<bool> get darkMode =>
       $composableBuilder(column: $table.darkMode, builder: (column) => column);
@@ -12649,6 +12713,7 @@ class $$UsersTableTableManager
                 Value<String> passwordHash = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<bool> mfaEnabled = const Value.absent(),
+                Value<String?> mfaSecret = const Value.absent(),
                 Value<bool> darkMode = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
@@ -12661,6 +12726,7 @@ class $$UsersTableTableManager
                 passwordHash: passwordHash,
                 isActive: isActive,
                 mfaEnabled: mfaEnabled,
+                mfaSecret: mfaSecret,
                 darkMode: darkMode,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,
@@ -12675,6 +12741,7 @@ class $$UsersTableTableManager
                 required String passwordHash,
                 Value<bool> isActive = const Value.absent(),
                 Value<bool> mfaEnabled = const Value.absent(),
+                Value<String?> mfaSecret = const Value.absent(),
                 Value<bool> darkMode = const Value.absent(),
                 Value<bool> sincronizado = const Value.absent(),
                 Value<String?> supabaseId = const Value.absent(),
@@ -12687,6 +12754,7 @@ class $$UsersTableTableManager
                 passwordHash: passwordHash,
                 isActive: isActive,
                 mfaEnabled: mfaEnabled,
+                mfaSecret: mfaSecret,
                 darkMode: darkMode,
                 sincronizado: sincronizado,
                 supabaseId: supabaseId,

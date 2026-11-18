@@ -7,6 +7,7 @@ import '../../data/db/app_database.dart';
 import '../../models/app_role.dart';
 import '../../models/user_model.dart';
 import 'failed_login_attempts.dart';
+import '../services/totp.dart';
 
 class UserManagementException implements Exception {
   final String message;
@@ -27,8 +28,9 @@ String hashPassword(String password) =>
 class UserRepository {
   final AppDatabase database;
   final FailedLoginAttempts? failedAttempts;
+  final FailedLoginAttempts? failedCodeAttempts;
 
-  UserRepository(this.database, {this.failedAttempts});
+  UserRepository(this.database, {this.failedAttempts, this.failedCodeAttempts});
 
   Future<List<UserModel>> getAll() async {
     final query =
@@ -207,7 +209,40 @@ class UserRepository {
         database.users,
       )..where((u) => u.id.equals(id))).getSingle();
       failedAttempts?.reset(user.username);
+      failedCodeAttempts?.reset(user.username);
     }
+  }
+
+  Future<String> enableTwoFactor(int id) async {
+    final secret = generateTotpSecret();
+    await database.transaction(() async {
+      await _requireUser(id);
+      await (database.update(
+        database.users,
+      )..where((u) => u.id.equals(id))).write(
+        UsersCompanion(
+          mfaEnabled: const Value(true),
+          mfaSecret: Value(secret),
+          updatedAt: Value(appNow()),
+        ),
+      );
+    });
+    return secret;
+  }
+
+  Future<void> disableTwoFactor(int id) async {
+    await database.transaction(() async {
+      await _requireUser(id);
+      await (database.update(
+        database.users,
+      )..where((u) => u.id.equals(id))).write(
+        UsersCompanion(
+          mfaEnabled: const Value(false),
+          mfaSecret: const Value(null),
+          updatedAt: Value(appNow()),
+        ),
+      );
+    });
   }
 
   Future<void> resetPassword(int id, String newPassword) async {

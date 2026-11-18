@@ -16,6 +16,7 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository(
     db,
     failedAttempts: ref.watch(failedLoginAttemptsProvider),
+    failedCodeAttempts: ref.watch(failedCodeAttemptsProvider),
   );
 });
 
@@ -136,6 +137,17 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
     }
     return _run(() => repository.setBlocked(id, blocked));
   }
+
+  Future<({String? secret, String? error})> enableTwoFactor(int id) async {
+    String? secret;
+    final error = await _run(() async {
+      secret = await repository.enableTwoFactor(id);
+    });
+    return (secret: error == null ? secret : null, error: error);
+  }
+
+  Future<String?> disableTwoFactor(int id) =>
+      _run(() => repository.disableTwoFactor(id));
 
   Future<String?> resetPassword(int id, String newPassword) {
     final error = validatePassword(newPassword);
