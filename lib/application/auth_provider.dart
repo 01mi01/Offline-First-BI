@@ -9,6 +9,9 @@ const String blockedUserMessage =
 
 const String inactivityLogoutMessage = 'Tu sesión se cerró por inactividad.';
 
+const String dataUnavailableMessage =
+    'No se pudo abrir la información guardada en este dispositivo.';
+
 final failedLoginAttemptsProvider = Provider<FailedLoginAttempts>(
   (ref) => FailedLoginAttempts(),
 );
@@ -59,13 +62,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (user != null) {
       state = state.copyWith(user: user, isLoading: false);
     } else {
-      final blocked =
-          repository.takeJustLocked(username) ||
-          await repository.isBlocked(username, password);
-      state = state.copyWith(
-        isLoading: false,
-        error: blocked ? blockedUserMessage : 'Usuario o contraseña incorrectos',
-      );
+      try {
+        final blocked =
+            repository.takeJustLocked(username) ||
+            await repository.isBlocked(username, password);
+        state = state.copyWith(
+          isLoading: false,
+          error: blocked
+              ? blockedUserMessage
+              : 'Usuario o contraseña incorrectos',
+        );
+      } catch (_) {
+        state = state.copyWith(isLoading: false, error: dataUnavailableMessage);
+      }
     }
   }
 

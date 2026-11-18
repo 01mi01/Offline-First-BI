@@ -15,7 +15,6 @@ dependencies:
   flutter_riverpod: ^2.4.9
   # Base de datos local
   drift: ^2.14.0
-  sqlite3_flutter_libs: ^0.5.18
   path_provider: ^2.1.1
   path: ^1.8.3
   # Seguridad
@@ -30,6 +29,9 @@ dependencies:
   share_plus: ^10.1.2
   # UI
   fl_chart: ^0.68.0
+  sqlcipher_flutter_libs: ^0.6.8
+  flutter_secure_storage: ^10.3.4
+  sqlite3: ^2.9.4
 
 dev_dependencies:
   flutter_test:

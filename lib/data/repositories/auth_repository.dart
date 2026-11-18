@@ -81,7 +81,9 @@ class AuthRepository {
             ),
           );
 
-      return await _buildUserModel(user);
+      final model = await _buildUserModel(user);
+      if (model != null) database.sensitiveData.openSession();
+      return model;
     } catch (e) {
       return null;
     }
@@ -112,7 +114,10 @@ class AuthRepository {
   Future<UserModel?> getSesionActual() async {
     try {
       final sesiones = await database.select(database.sesionLocal).get();
-      if (sesiones.isEmpty) return null;
+      if (sesiones.isEmpty) {
+        database.sensitiveData.closeSession();
+        return null;
+      }
 
       final sesion = sesiones.first;
 
@@ -122,15 +127,21 @@ class AuthRepository {
                 ..where((u) => u.isActive.equals(true)))
               .getSingleOrNull();
 
-      if (user == null) return null;
+      if (user == null) {
+        database.sensitiveData.closeSession();
+        return null;
+      }
 
-      return await _buildUserModel(user);
+      final model = await _buildUserModel(user);
+      if (model != null) database.sensitiveData.openSession();
+      return model;
     } catch (e) {
       return null;
     }
   }
 
   Future<void> logout() async {
+    database.sensitiveData.closeSession();
     await database.delete(database.sesionLocal).go();
   }
 }

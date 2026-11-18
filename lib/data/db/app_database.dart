@@ -9,6 +9,9 @@ import '../../application/form_validation.dart';
 import '../../config/app_config.dart';
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
+import 'database_encryption.dart';
+import 'database_key_store.dart';
+import 'sensitive_data_guard.dart';
 
 part 'app_database.g.dart';
 
@@ -324,10 +327,19 @@ class SesionLocal extends Table {
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  final SensitiveDataGate sensitiveData;
+
+  AppDatabase({DatabaseKeyStore keyStore = const SecureDatabaseKeyStore()})
+    : this.guarded(_openConnection(keyStore));
+
+  AppDatabase.guarded(QueryExecutor executor)
+    : this._withGate(executor, SensitiveDataGate());
+
+  AppDatabase._withGate(QueryExecutor executor, this.sensitiveData)
+    : super(executor.interceptWith(SensitiveDataGuard(sensitiveData)));
 
   // Constructor para pruebas: permite inyectar un QueryExecutor (p. ej. NativeDatabase.memory())
-  AppDatabase.forTesting(super.executor);
+  AppDatabase.forTesting(super.executor) : sensitiveData = SensitiveDataGate();
 
   @override
   int get schemaVersion => 19;
@@ -943,11 +955,19 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // Abre la conexión con la base de datos local
-  static LazyDatabase _openConnection() {
+  static LazyDatabase _openConnection(DatabaseKeyStore keyStore) {
     return LazyDatabase(() async {
       final dbFolder = await getApplicationDocumentsDirectory();
       final file = File(p.join(dbFolder.path, 'offline_first_bi.db'));
-      return NativeDatabase(file);
+      await loadSqlCipher();
+      final key = await EncryptedDatabaseOpener(
+        keyStore: keyStore,
+        cipher: const SqlCipherDatabaseCipher(),
+      ).prepare(file);
+      return NativeDatabase(
+        file,
+        setup: (database) => unlockDatabase(database, key),
+      );
     });
   }
 }

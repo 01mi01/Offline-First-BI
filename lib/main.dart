@@ -21,9 +21,10 @@ void main() async {
 
   final container = ProviderContainer();
   try {
-    await container
-        .read(imageStorageProvider)
-        .migrateLegacyImages(container.read(databaseProvider));
+    final database = container.read(databaseProvider);
+    await database.sensitiveData.runAsSystem(
+      () => container.read(imageStorageProvider).migrateLegacyImages(database),
+    );
   } catch (_) {}
   await container.read(themeChoiceStoreProvider).load();
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));

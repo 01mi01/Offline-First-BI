@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'application/category_provider.dart';
+import 'application/database_provider.dart';
 import 'application/theme_provider.dart';
 import 'application/client_provider.dart';
 import 'application/event_provider.dart';
@@ -955,7 +956,10 @@ void main() async {
   await initializeDateFormatting('es', null);
   final container = ProviderContainer();
   try {
-    final seeded = await seedSampleData(container);
+    final seeded = await container
+        .read(databaseProvider)
+        .sensitiveData
+        .runAsSystem(() => seedSampleData(container));
     print(
       seeded
           ? 'SEED: datos de ejemplo cargados'
