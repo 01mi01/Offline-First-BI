@@ -97,7 +97,7 @@ class _PermissionsDialogState extends ConsumerState<PermissionsDialog>
       child: FormSheet(
         title: 'Permisos de ${widget.user.username}',
         actions: FormActions(
-          onSecondary: () => Navigator.pop(context),
+          onSecondary: () => Navigator.maybePop(context),
           primaryLabel: 'Guardar',
           onPrimary: current == null ? null : () => runOnce(_save),
           busy: inFlight,

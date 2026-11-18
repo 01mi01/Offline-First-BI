@@ -223,7 +223,7 @@ class _EventDialogState extends ConsumerState<EventDialog>
       title: isEditing ? 'Editar evento' : 'Nuevo evento',
       formKey: _formKey,
       actions: FormActions(
-        onSecondary: () => Navigator.pop(context),
+        onSecondary: () => Navigator.maybePop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
         onPrimary: () => runOnce(_save),
         busy: inFlight,

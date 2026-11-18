@@ -283,7 +283,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog>
       title: isEditing ? 'Editar producto' : 'Nuevo producto',
       formKey: _formKey,
       actions: FormActions(
-        onSecondary: () => Navigator.pop(context),
+        onSecondary: () => Navigator.maybePop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
         onPrimary: () => runOnce(_save),
         busy: inFlight,

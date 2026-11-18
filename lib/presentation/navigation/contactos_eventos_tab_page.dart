@@ -23,7 +23,9 @@ class ContactosEventosTabPage extends ConsumerWidget {
         final cards = resolveContactosCards(modules);
 
         return ScreenScaffold(
-          title: 'Contactos y Eventos',
+          title: cards.isEmpty
+              ? 'Contactos y Eventos'
+              : contactosTitle(modules),
           actions: const [ProfileButton()],
           body: cards.isEmpty
               ? const AppEmptyState.hint(
@@ -39,7 +41,7 @@ class ContactosEventosTabPage extends ConsumerWidget {
                           AppListRow(
                             icon: _iconFor(cards[i]),
                             iconColor: AppColors.cyanDark,
-                            title: _labelFor(cards[i]),
+                            title: _labelFor(cards[i], modules),
                             chevron: true,
                             onTap: () => Navigator.push(
                               context,
@@ -64,14 +66,14 @@ class ContactosEventosTabPage extends ConsumerWidget {
   }
 }
 
-String _labelFor(ContactosCard card) {
+String _labelFor(ContactosCard card, List<String> modules) {
   switch (card) {
     case ContactosCard.clientes:
       return 'Clientes';
     case ContactosCard.proveedores:
       return 'Proveedores';
     case ContactosCard.eventos:
-      return 'Eventos y Ubicaciones';
+      return eventosUbicacionesLabel(modules);
   }
 }
 

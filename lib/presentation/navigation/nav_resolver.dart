@@ -76,3 +76,51 @@ List<ReportesCard> resolveReportesCards(List<String> readableModules) {
 }
 
 const int maxVisibleNavTabs = 5;
+
+bool _readsContacts(List<String> readable) =>
+    readable.contains('clientes') || readable.contains('proveedores');
+
+String _joinParts(List<String> parts) => parts.join(' y ');
+
+String navTabLabel(NavGroupId group, List<String> readable) {
+  switch (group) {
+    case NavGroupId.home:
+      return 'Inicio';
+    case NavGroupId.inventario:
+      return 'Inventario';
+    case NavGroupId.ventasCompras:
+      return readable.contains('ventas') ? 'Ventas' : 'Compras';
+    case NavGroupId.contactos:
+      if (_readsContacts(readable)) return 'Contactos';
+      return readable.contains('eventos') ? 'Eventos' : 'Ubicaciones';
+    case NavGroupId.reportes:
+      return readable.contains('reportes') ? 'Reportes' : 'BI';
+  }
+}
+
+String ventasComprasTitle(List<String> readable) => _joinParts([
+  if (readable.contains('ventas')) 'Ventas',
+  if (readable.contains('compras')) 'Compras',
+]);
+
+String eventosUbicacionesLabel(List<String> readable) => _joinParts([
+  if (readable.contains('eventos')) 'Eventos',
+  if (readable.contains('ubicaciones')) 'Ubicaciones',
+]);
+
+String contactosTitle(List<String> readable) {
+  final events = readable.contains('eventos')
+      ? 'Eventos'
+      : readable.contains('ubicaciones')
+      ? 'Ubicaciones'
+      : null;
+  return _joinParts([
+    if (_readsContacts(readable)) 'Contactos',
+    if (events != null) events,
+  ]);
+}
+
+String reportesTitle(List<String> readable) => _joinParts([
+  if (readable.contains('reportes')) 'Reportes',
+  if (readable.contains('business_intelligence')) 'Business Intelligence',
+]);

@@ -601,7 +601,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                     if (_error != null) FormErrorText(_error!),
                     const SizedBox(height: AppSpacing.s24),
                     FormActions(
-                      onSecondary: () => Navigator.pop(context),
+                      onSecondary: () => Navigator.maybePop(context),
                       primaryLabel: isEditing ? 'Guardar' : 'Registrar compra',
                       onPrimary: locked ? null : () => runOnce(_save),
                       busy: inFlight,
@@ -973,7 +973,7 @@ class _AddMaterialItemSheetState extends ConsumerState<_AddMaterialItemSheet>
               ),
               const SizedBox(height: AppSpacing.s24),
               FormActions(
-                onSecondary: () => Navigator.pop(context),
+                onSecondary: () => Navigator.maybePop(context),
                 primaryLabel: 'Agregar',
                 onPrimary: () => runOnce(() async => _add()),
                 busy: inFlight,

@@ -9,7 +9,8 @@ import 'nav_resolver.dart';
 import 'reportes_bi_tab_page.dart';
 import 'ventas_compras_tab_page.dart';
 
-String labelForGroup(NavGroupId group) {
+String labelForGroup(NavGroupId group, [List<String>? readableModules]) {
+  if (readableModules != null) return navTabLabel(group, readableModules);
   switch (group) {
     case NavGroupId.home:
       return 'Inicio';
@@ -84,6 +85,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
           ),
           bottomNavigationBar: MainBottomBar(
             groups: groups,
+            readableModules: readableModules,
             selectedIndex: index,
             onSelect: (i) =>
                 ref.read(mainTabIndexProvider.notifier).state = i,
@@ -102,12 +104,14 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
 
 class MainBottomBar extends StatelessWidget {
   final List<NavGroupId> groups;
+  final List<String>? readableModules;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
   const MainBottomBar({
     super.key,
     required this.groups,
+    this.readableModules,
     required this.selectedIndex,
     required this.onSelect,
   });
@@ -135,7 +139,7 @@ class MainBottomBar extends StatelessWidget {
             for (final group in visibleGroups)
               Expanded(
                 child: _NavTabButton(
-                  label: labelForGroup(group),
+                  label: labelForGroup(group, readableModules),
                   icon: iconForGroup(group),
                   selected: groups.indexOf(group) == selectedIndex,
                   onTap: () => onSelect(groups.indexOf(group)),
@@ -172,7 +176,7 @@ class MainBottomBar extends StatelessWidget {
               .map(
                 (group) => ListTile(
                   leading: Icon(iconForGroup(group), color: AppColors.cyanDark),
-                  title: Text(labelForGroup(group)),
+                  title: Text(labelForGroup(group, readableModules)),
                   onTap: () {
                     Navigator.pop(sheetContext);
                     onSelect(groups.indexOf(group));

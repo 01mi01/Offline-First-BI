@@ -45,7 +45,7 @@ class HomeEntrance extends StatelessWidget {
 class HomeHeader extends StatelessWidget {
   final String userName;
   final HomePeriod period;
-  final ValueChanged<HomePeriod> onPeriodChanged;
+  final ValueChanged<HomePeriod>? onPeriodChanged;
   final Widget? hero;
 
   const HomeHeader({
@@ -64,13 +64,14 @@ class HomeHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ScreenTitle('Hola, $userName', horizontal: side),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: side),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: _PeriodPicker(period: period, onChanged: onPeriodChanged),
+        if (onPeriodChanged != null)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: side),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _PeriodPicker(period: period, onChanged: onPeriodChanged!),
+            ),
           ),
-        ),
         if (hero != null)
           Padding(
             padding: EdgeInsets.fromLTRB(side, AppSpacing.s8, side, 0),

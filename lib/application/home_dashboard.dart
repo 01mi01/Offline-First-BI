@@ -8,7 +8,10 @@ class HomeAccess {
   final bool sales;
   final bool purchases;
   final bool inventory;
+  final bool materials;
   final bool clients;
+  final bool suppliers;
+  final bool events;
   final bool reports;
   final bool businessIntelligence;
 
@@ -16,7 +19,10 @@ class HomeAccess {
     this.sales = false,
     this.purchases = false,
     this.inventory = false,
+    this.materials = false,
     this.clients = false,
+    this.suppliers = false,
+    this.events = false,
     this.reports = false,
     this.businessIntelligence = false,
   });
@@ -25,14 +31,38 @@ class HomeAccess {
     sales: readableModules.contains('ventas'),
     purchases: readableModules.contains('compras'),
     inventory: readableModules.contains('inventario'),
+    materials: readableModules.contains('materiales'),
     clients: readableModules.contains('clientes'),
+    suppliers: readableModules.contains('proveedores'),
+    events: readableModules.contains('eventos'),
     reports: readableModules.contains('reportes'),
     businessIntelligence: readableModules.contains('business_intelligence'),
   );
 
-  bool get profit => sales && purchases;
+  bool get salesFigures => sales && reports;
 
-  bool get needsReport => sales || purchases;
+  bool get purchaseFigures => purchases && reports;
+
+  bool get profit => salesFigures && purchaseFigures;
+
+  bool get needsReport => salesFigures || purchaseFigures;
+
+  bool get salesBreakdown => salesFigures && inventory;
+
+  bool get drillDown => salesBreakdown && businessIntelligence;
+
+  bool get recentSales => sales && clients;
+
+  bool get recentPurchases => purchases && suppliers;
+
+  bool get recentActivity => recentSales || recentPurchases;
+
+  bool get overview => !needsReport && (inventory || materials || events);
+
+  bool get usesPeriod => needsReport;
+
+  bool get showsAnything =>
+      needsReport || recentActivity || overview || shortcuts.isNotEmpty;
 
   List<HomeShortcut> get shortcuts => [
     if (inventory) HomeShortcut.products,
@@ -40,6 +70,26 @@ class HomeAccess {
     if (reports) HomeShortcut.reports,
     if (businessIntelligence) HomeShortcut.businessIntelligence,
   ];
+}
+
+class HomeOverview {
+  final int? activeProducts;
+  final int? lowStockProducts;
+  final int? activeMaterials;
+  final int? upcomingEvents;
+
+  const HomeOverview({
+    this.activeProducts,
+    this.lowStockProducts,
+    this.activeMaterials,
+    this.upcomingEvents,
+  });
+
+  bool get isEmpty =>
+      activeProducts == null &&
+      lowStockProducts == null &&
+      activeMaterials == null &&
+      upcomingEvents == null;
 }
 
 enum HomeShortcut {

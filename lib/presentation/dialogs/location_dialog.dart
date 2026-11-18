@@ -184,7 +184,7 @@ class _LocationDialogState extends ConsumerState<LocationDialog>
       title: isEditing ? 'Editar ubicación' : 'Nueva ubicación',
       formKey: _formKey,
       actions: FormActions(
-        onSecondary: () => Navigator.pop(context),
+        onSecondary: () => Navigator.maybePop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
         onPrimary: () => runOnce(_save),
         busy: inFlight,

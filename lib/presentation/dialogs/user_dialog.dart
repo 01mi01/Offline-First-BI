@@ -169,7 +169,7 @@ class _UserDialogState extends ConsumerState<UserDialog>
       title: _isEditing ? 'Editar usuario' : 'Nuevo usuario',
       formKey: _formKey,
       actions: FormActions(
-        onSecondary: () => Navigator.pop(context),
+        onSecondary: () => Navigator.maybePop(context),
         primaryLabel: _isEditing ? 'Guardar' : 'Crear',
         onPrimary: () => runOnce(_save),
         busy: inFlight,
@@ -311,7 +311,7 @@ class _ResetPasswordDialogState extends ConsumerState<ResetPasswordDialog>
         title: 'Restablecer contraseña',
         formKey: _formKey,
         actions: FormActions(
-          onSecondary: () => Navigator.pop(context),
+          onSecondary: () => Navigator.maybePop(context),
           primaryLabel: 'Guardar',
           onPrimary: () => runOnce(_save),
           busy: inFlight,

@@ -6,8 +6,9 @@ import '../../application/bi_provider.dart';
 import '../../application/client_provider.dart';
 import '../../application/date_range_filter.dart';
 import '../../application/home_dashboard.dart';
-import '../../application/home_period_provider.dart';
+import '../../application/home_data_provider.dart';
 import '../../application/module_permission_provider.dart';
+import '../../application/home_period_provider.dart';
 import '../../application/purchase_provider.dart';
 import '../../application/report_provider.dart';
 import '../../application/sale_provider.dart';
@@ -34,14 +35,54 @@ import 'reports_page.dart';
 import 'sales_page.dart';
 import '../widgets/empty_state.dart';
 
+const String homeNothingToShowMessage =
+    'No hay información disponible para mostrar en Inicio.';
+
+List<AppKpi> homeOverviewKpis(HomeOverview overview) => [
+  if (overview.activeProducts != null)
+    AppKpi(
+      key: 'productos',
+      label: 'Productos activos',
+      value: '${overview.activeProducts}',
+      icon: Icons.inventory_2_rounded,
+      color: AppColors.cyanDark,
+    ),
+  if (overview.lowStockProducts != null)
+    AppKpi(
+      key: 'stock-bajo',
+      label: 'Productos con stock bajo',
+      value: '${overview.lowStockProducts}',
+      icon: Icons.warning_amber_rounded,
+      color: AppColors.error,
+      background: AppColors.errorSoft,
+    ),
+  if (overview.activeMaterials != null)
+    AppKpi(
+      key: 'materiales',
+      label: 'Materiales activos',
+      value: '${overview.activeMaterials}',
+      icon: Icons.palette_rounded,
+      color: AppColors.blue,
+    ),
+  if (overview.upcomingEvents != null)
+    AppKpi(
+      key: 'eventos',
+      label: 'Próximos eventos',
+      value: '${overview.upcomingEvents}',
+      icon: Icons.event_rounded,
+      color: AppColors.success,
+    ),
+];
+
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
-    final readable = ref.watch(readableModulesProvider).valueOrNull ?? [];
-    final access = HomeAccess.from(readable);
+    final access = HomeAccess.from(
+      ref.watch(readableModulesProvider).valueOrNull ?? const [],
+    );
     final period = ref.watch(homePeriodProvider);
 
     final saleState = ref.watch(saleProvider);
@@ -57,8 +98,8 @@ class HomePage extends ConsumerWidget {
       datePreset: DatePreset.values.byName(period.name),
     );
     final query = BiQuery(filters: filters);
-    final report = access.needsReport && !loading && !failed
-        ? ref.watch(biReportProvider(query))
+    final report = !loading && !failed
+        ? ref.watch(homeReportProvider(query))
         : null;
 
     BiSummary summaryOf(ReportFilters f) {
@@ -67,10 +108,10 @@ class HomePage extends ConsumerWidget {
           .watch(biServiceProvider)
           .summarize(
             sales: reports.summarizeSaleRows(
-              ref.watch(saleReportRowsProvider(f)),
+              ref.watch(homeSaleRowsProvider(f)),
             ),
             purchases: reports.summarizePurchases(
-              ref.watch(filteredPurchasesProvider(f)),
+              ref.watch(homePurchasesProvider(f)),
             ),
           );
     }
@@ -85,11 +126,11 @@ class HomePage extends ConsumerWidget {
       profitSeries = buildProfitSeries(
         period: period,
         sales: [
-          for (final r in ref.watch(saleReportRowsProvider(filters)))
+          for (final r in ref.watch(homeSaleRowsProvider(filters)))
             (date: r.sale.date, amount: r.netAmount),
         ],
         expenses: [
-          for (final p in ref.watch(filteredPurchasesProvider(filters)))
+          for (final p in ref.watch(homePurchasesProvider(filters)))
             (date: p.date, amount: p.totalAmount),
         ],
         now: now,
@@ -170,7 +211,7 @@ class HomePage extends ConsumerWidget {
 
     if (report != null) {
       final kpis = <AppKpi>[
-        if (access.sales)
+        if (access.salesFigures)
           AppKpi(
             key: 'ventas',
             label: 'Ventas ${period.ofLabel}',
@@ -178,7 +219,7 @@ class HomePage extends ConsumerWidget {
             icon: Icons.trending_up_rounded,
             color: AppColors.cyanDark,
           ),
-        if (access.purchases)
+        if (access.purchaseFigures)
           AppKpi(
             key: 'gastos',
             label: 'Gastos ${period.ofLabel}',
@@ -187,7 +228,7 @@ class HomePage extends ConsumerWidget {
             color: AppColors.error,
             background: AppColors.errorSoft,
           ),
-        if (access.sales)
+        if (access.salesFigures)
           AppKpi(
             key: 'cantidad',
             label: 'Cantidad de ventas',
@@ -237,7 +278,7 @@ class HomePage extends ConsumerWidget {
         period: period.duringLabel,
       );
 
-      if (access.profit || access.sales) {
+      if (access.profit || access.salesBreakdown) {
         sections.add(
           (_) => padded(
             const AppSectionTitle('Análisis'),
@@ -302,7 +343,7 @@ class HomePage extends ConsumerWidget {
           ),
         );
       }
-      if (access.sales) {
+      if (access.salesBreakdown) {
         sections.add(
           (_) => padded(
             HomeChartCard(
@@ -333,7 +374,7 @@ class HomePage extends ConsumerWidget {
                       byQuantity: false,
                       quantityText: (e) => unitsText(e.quantity),
                       maxItems: 5,
-                      onEntryTap: access.businessIntelligence
+                      onEntryTap: access.drillDown
                           ? (entry) => showBiDrillDown(
                               ctx,
                               kind: BiDrillKind.product,
@@ -348,7 +389,27 @@ class HomePage extends ConsumerWidget {
       }
     }
 
-    if (access.sales || access.purchases) {
+    final overview = ref.watch(homeOverviewProvider);
+    if (access.overview && !overview.isEmpty) {
+      sections.add(
+        (_) => padded(
+          HomeEntrance(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.s8),
+                  child: AppSectionTitle('Resumen'),
+                ),
+                AppKpiGrid(items: homeOverviewKpis(overview)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (access.recentActivity) {
       final clients = ref.watch(clientProvider).clients;
       final suppliers = ref.watch(supplierProvider).suppliers;
       String clientName(SaleModel sale) =>
@@ -365,8 +426,8 @@ class HomePage extends ConsumerWidget {
               clientName: clientName,
               supplierName: supplierName,
               now: now,
-              includeSales: access.sales,
-              includePurchases: access.purchases,
+              includeSales: access.recentSales,
+              includePurchases: access.recentPurchases,
             );
       if (!loading && !failed) {
         sections.add(
@@ -393,14 +454,26 @@ class HomePage extends ConsumerWidget {
                   child: HomeHeader(
                     userName: user?.username ?? '',
                     period: period,
-                    onPeriodChanged: (value) =>
-                        ref.read(homePeriodProvider.notifier).state = value,
+                    onPeriodChanged: access.usesPeriod
+                        ? (value) =>
+                              ref.read(homePeriodProvider.notifier).state =
+                                  value
+                        : null,
                     hero: hero,
                   ),
                 ),
                 const SliverToBoxAdapter(
                   child: SizedBox(height: AppSpacing.s16),
                 ),
+                if (!access.showsAnything)
+                  SliverToBoxAdapter(
+                    child: padded(
+                      const AppEmptyState.hint(
+                        icon: Icons.home_rounded,
+                        text: homeNothingToShowMessage,
+                      ),
+                    ),
+                  ),
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => sections[index](context),

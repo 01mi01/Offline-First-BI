@@ -22,7 +22,9 @@ class VentasComprasTabPage extends ConsumerWidget {
         final cards = resolveVentasComprasCards(modules);
 
         return ScreenScaffold(
-          title: 'Ventas y Compras',
+          title: cards.isEmpty
+              ? 'Ventas y Compras'
+              : ventasComprasTitle(modules),
           actions: const [ProfileButton()],
           body: cards.isEmpty
               ? const AppEmptyState.hint(icon: Icons.point_of_sale_rounded, text: 'No tienes acceso a ventas ni compras.')

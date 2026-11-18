@@ -526,7 +526,7 @@ class _RegisterUsageSheetState extends ConsumerState<_RegisterUsageSheet>
       title: 'Registrar uso de material',
       formKey: _formKey,
       actions: FormActions(
-        onSecondary: () => Navigator.pop(context),
+        onSecondary: () => Navigator.maybePop(context),
         primaryLabel: 'Registrar',
         onPrimary: () => runOnce(_register),
         busy: inFlight,
@@ -772,7 +772,7 @@ class _EditUsageSheetState extends ConsumerState<_EditUsageSheet>
       locked: !canUpdate,
       lockedNotice: cancelOnlyNotice,
       actions: FormActions(
-        onSecondary: () => Navigator.pop(context),
+        onSecondary: () => Navigator.maybePop(context),
         primaryLabel: 'Guardar',
         onPrimary: canUpdate ? () => runOnce(_save) : null,
         busy: inFlight,

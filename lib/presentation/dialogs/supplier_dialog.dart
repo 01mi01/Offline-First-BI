@@ -165,7 +165,7 @@ class _SupplierDialogState extends ConsumerState<SupplierDialog>
       title: isEditing ? 'Editar proveedor' : 'Nuevo proveedor',
       formKey: _formKey,
       actions: FormActions(
-        onSecondary: () => Navigator.pop(context),
+        onSecondary: () => Navigator.maybePop(context),
         primaryLabel: isEditing ? 'Guardar' : 'Crear',
         onPrimary: () => runOnce(_save),
         busy: inFlight,

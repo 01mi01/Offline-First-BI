@@ -76,11 +76,11 @@ class AppDarkColors {
   static const shadow = Color(0x40000000);
   static const shadowNeutral = Color(0x52000000);
 
-  static const error = Color(0xFFFF6B8B);
-  static const errorSoft = Color(0xFF3B1F27);
-  static const success = Color(0xFF4FD68A);
-  static const successDark = Color(0xFF7BE3A6);
-  static const successSoft = Color(0xFF173022);
+  static const error = Color(0xFFFF3B3B);
+  static const errorSoft = Color(0xFF3D1214);
+  static const success = Color(0xFF00F59B);
+  static const successDark = Color(0xFF5CFFC0);
+  static const successSoft = Color(0xFF06331F);
   static const blueSoft = Color(0xFF1D2A35);
   static const menuSurface = Color(0xFF272D29);
   static const switchThumbOff = Color(0xFF8C968F);
@@ -88,9 +88,9 @@ class AppDarkColors {
 
   static const chartColor1 = cyanDark;
   static const chartColor2 = Color(0xFF00E5FF);
-  static const chartColor3 = Color(0xFFFF9F1C);
-  static const chartColor4 = Color(0xFFE040FB);
-  static const chartColor5 = Color(0xFF7C6CFF);
+  static const chartColor3 = Color(0xFFFFD60A);
+  static const chartColor4 = Color(0xFF2F6BFF);
+  static const chartColor5 = Color(0xFFFF2D95);
 }
 
 class AppColors {

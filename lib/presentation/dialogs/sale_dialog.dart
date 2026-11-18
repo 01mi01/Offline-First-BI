@@ -628,7 +628,7 @@ class _SaleDialogState extends ConsumerState<SaleDialog>
               ],
               const SizedBox(height: AppSpacing.s24),
               FormActions(
-                onSecondary: () => Navigator.pop(context),
+                onSecondary: () => Navigator.maybePop(context),
                 primaryLabel: isEditing ? 'Guardar' : 'Registrar venta',
                 onPrimary: locked ? null : () => runOnce(_save),
                 busy: inFlight,

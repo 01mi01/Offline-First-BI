@@ -22,7 +22,9 @@ class ReportesBiTabPage extends ConsumerWidget {
         final cards = resolveReportesCards(modules);
 
         return ScreenScaffold(
-          title: 'Reportes y Business Intelligence',
+          title: cards.isEmpty
+              ? 'Reportes y Business Intelligence'
+              : reportesTitle(modules),
           actions: const [ProfileButton()],
           body: cards.isEmpty
               ? const AppEmptyState.hint(
