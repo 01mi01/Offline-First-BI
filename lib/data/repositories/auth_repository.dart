@@ -9,6 +9,7 @@ import '../../models/app_role.dart';
 import 'module_permission_repository.dart';
 import 'failed_login_attempts.dart';
 import '../services/totp.dart';
+import '../db/audit_log.dart';
 
 class TwoFactorChallenge {
   final int userId;
@@ -76,8 +77,16 @@ class AuthRepository {
         database.users,
       )..where((u) => u.username.equals(username))).getSingleOrNull();
 
-      if (user == null || !user.isActive) return null;
+      if (user == null || !user.isActive) {
+        await _recordFailure(
+          user?.id,
+          user?.username,
+          user == null ? 'unknown_user' : 'blocked_user',
+        );
+        return null;
+      }
       if (user.passwordHash != hash) {
+        await _recordFailure(user.id, user.username, 'wrong_password');
         await _registerFailure(user);
         return null;
       }
@@ -98,21 +107,62 @@ class AuthRepository {
     }
   }
 
-  Future<UserModel?> _startSession(User user) async {
-    await database.delete(database.sesionLocal).go();
-    await database
-        .into(database.sesionLocal)
-        .insert(
-          SesionLocalCompanion.insert(
-            userId: user.id,
-            username: user.username,
-            createdAt: appNow(),
-          ),
-        );
+  Future<void> _recordFailure(int? userId, String? username, String reason) =>
+      database.recordAudit(
+        module: AuditModule.sesion,
+        action: AuditAction.loginFailed,
+        entity: 'users',
+        recordId: userId,
+        label: username,
+        after: {'username': ?username, 'reason': reason},
+        userId: userId,
+        actorName: username,
+        always: true,
+      );
 
-    final model = await _buildUserModel(user);
-    if (model != null) database.sensitiveData.openSession();
+  Future<UserModel?> _startSession(User user) async {
+    final model = await database.transaction(() async {
+      await database.delete(database.sesionLocal).go();
+      await database
+          .into(database.sesionLocal)
+          .insert(
+            SesionLocalCompanion.insert(
+              userId: user.id,
+              username: user.username,
+              createdAt: appNow(),
+            ),
+          );
+      final model = await _buildUserModel(user);
+      if (model != null) {
+        await database.recordAudit(
+          module: AuditModule.sesion,
+          action: AuditAction.login,
+          entity: 'users',
+          recordId: user.id,
+          label: user.username,
+          after: {
+            'username': user.username,
+            'role': model.appRole.dbName,
+            'two_factor': user.mfaEnabled ? 1 : 0,
+          },
+          userId: user.id,
+          actorName: user.username,
+          always: true,
+        );
+      }
+      return model;
+    });
+    if (model != null) _openSession(user, model);
     return model;
+  }
+
+  void _openSession(User user, UserModel model) {
+    database.auditActor.set(user.id, user.username);
+    database.sensitiveData.openSession(
+      canReadAudit:
+          model.appRole == AppRole.administrador ||
+          model.appRole == AppRole.propietario,
+    );
   }
 
   TwoFactorChallenge? takeTwoFactorChallenge(String username) =>
@@ -133,6 +183,7 @@ class AuthRepository {
         failedCodeAttempts.reset(user.username);
         return await _startSession(user);
       }
+      await _recordFailure(user.id, user.username, 'wrong_code');
       await _registerCodeFailure(user);
       return null;
     } catch (e) {
@@ -145,7 +196,7 @@ class AuthRepository {
     if (model == null || model.appRole == AppRole.administrador) return;
     final count = failedAttempts.registerFailure(user.username);
     if (count < maxFailedLoginAttempts) return;
-    await _block(user);
+    await _block(user, 'password');
   }
 
   Future<void> _registerCodeFailure(User user) async {
@@ -153,14 +204,29 @@ class AuthRepository {
     if (model == null || model.appRole == AppRole.administrador) return;
     final count = failedCodeAttempts.registerFailure(user.username);
     if (count < maxFailedLoginAttempts) return;
-    await _block(user);
+    await _block(user, 'verification_code');
   }
 
-  Future<void> _block(User user) async {
-    await (database.update(database.users)..where((u) => u.id.equals(user.id)))
-        .write(
-          UsersCompanion(isActive: const Value(false), updatedAt: Value(appNow())),
-        );
+  Future<void> _block(User user, String cause) async {
+    await database.transaction(() async {
+      await (database.update(
+        database.users,
+      )..where((u) => u.id.equals(user.id))).write(
+        UsersCompanion(isActive: const Value(false), updatedAt: Value(appNow())),
+      );
+      await database.recordAudit(
+        module: AuditModule.sesion,
+        action: AuditAction.lockout,
+        entity: 'users',
+        recordId: user.id,
+        label: user.username,
+        before: {'username': user.username, 'is_active': 1},
+        after: {'username': user.username, 'is_active': 0, 'cause': cause},
+        userId: user.id,
+        actorName: user.username,
+        always: true,
+      );
+    });
     _justLocked.add(user.username);
   }
 
@@ -179,6 +245,7 @@ class AuthRepository {
       final sesiones = await database.select(database.sesionLocal).get();
       if (sesiones.isEmpty) {
         database.sensitiveData.closeSession();
+        database.auditActor.clear();
         return null;
       }
 
@@ -192,11 +259,12 @@ class AuthRepository {
 
       if (user == null) {
         database.sensitiveData.closeSession();
+        database.auditActor.clear();
         return null;
       }
 
       final model = await _buildUserModel(user);
-      if (model != null) database.sensitiveData.openSession();
+      if (model != null) _openSession(user, model);
       return model;
     } catch (e) {
       return null;
@@ -204,7 +272,28 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
+    final actor = database.auditActor.userId;
+    final actorName = database.auditActor.username;
     database.sensitiveData.closeSession();
-    await database.delete(database.sesionLocal).go();
+    await database.transaction(() async {
+      final sesiones = await database.select(database.sesionLocal).get();
+      await database.delete(database.sesionLocal).go();
+      final userId = actor ?? sesiones.firstOrNull?.userId;
+      final username = actorName ?? sesiones.firstOrNull?.username;
+      if (userId != null) {
+        await database.recordAudit(
+          module: AuditModule.sesion,
+          action: AuditAction.logout,
+          entity: 'users',
+          recordId: userId,
+          label: username,
+          after: {'username': ?username},
+          userId: userId,
+          actorName: username,
+          always: true,
+        );
+      }
+    });
+    database.auditActor.clear();
   }
 }

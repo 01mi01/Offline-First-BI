@@ -3,6 +3,7 @@ import '../widgets/module_gate.dart';
 import '../../application/module_permission_provider.dart';
 import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/audit_provider.dart';
 import '../../application/report_provider.dart';
 import '../../config/rounding.dart';
 import '../../data/services/export_storage.dart';
@@ -38,10 +39,26 @@ class ReportDetailPage extends ConsumerStatefulWidget {
 class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
   bool _isExporting = false;
 
-  Future<void> _export(Future<ExportOutcome?> Function() action) async {
+  Future<void> _export(
+    String format,
+    Future<ExportOutcome?> Function() action,
+  ) async {
     setState(() => _isExporting = true);
     try {
       final outcome = await action();
+      if (outcome is ExportSaved) {
+        await ref
+            .read(auditRepositoryProvider)
+            .recordExport(
+              report: widget.type == ReportType.sales ? 'ventas' : 'compras',
+              format: format,
+              title: widget.title,
+              fileName: outcome.fileName,
+              rows: widget.type == ReportType.sales
+                  ? widget.saleRows.length
+                  : widget.purchases.length,
+            );
+      }
       if (outcome != null && mounted) _showOutcome(outcome);
     } catch (e) {
       if (mounted) {
@@ -133,7 +150,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
     }
   }
 
-  Future<void> _exportPdf() => _export(() async {
+  Future<void> _exportPdf() => _export('pdf', () async {
     final exports = ref.read(reportExportRepositoryProvider);
     if (widget.type == ReportType.sales) {
       final summary = ref
@@ -155,7 +172,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
     }
   });
 
-  Future<void> _exportExcel() => _export(() async {
+  Future<void> _exportExcel() => _export('excel', () async {
     final exports = ref.read(reportExportRepositoryProvider);
     if (widget.type == ReportType.sales) {
       return exports.exportSalesExcel(

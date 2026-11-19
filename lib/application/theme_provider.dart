@@ -43,13 +43,19 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   Future<void> setMode(ThemeMode mode) async {
     final id = userId;
     if (id == null) return;
+    final previous = state;
     state = mode;
     final saved = store.save(id, switch (mode) {
       ThemeMode.light => ThemeChoice.light,
       ThemeMode.dark => ThemeChoice.dark,
       ThemeMode.system => null,
     });
-    await repository.setDarkMode(id, mode == ThemeMode.dark);
+    await repository.setDarkMode(
+      id,
+      mode == ThemeMode.dark,
+      previousTheme: previous.name,
+      theme: mode.name,
+    );
     await saved;
   }
 

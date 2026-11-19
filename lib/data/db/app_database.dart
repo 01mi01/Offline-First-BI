@@ -12,6 +12,7 @@ import '../../config/app_clock.dart';
 import 'database_encryption.dart';
 import 'database_key_store.dart';
 import 'sensitive_data_guard.dart';
+import 'audit_log.dart';
 
 part 'app_database.g.dart';
 
@@ -277,13 +278,19 @@ class PurchaseItems extends Table {
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
+@TableIndex(name: 'audit_logs_created_at', columns: {#createdAt})
+@TableIndex(name: 'audit_logs_user_created', columns: {#userId, #createdAt})
+@TableIndex(name: 'audit_logs_module_created', columns: {#moduleName, #createdAt})
+@TableIndex(name: 'audit_logs_action_created', columns: {#action, #createdAt})
 class AuditLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get userId => integer().references(Users, #id)();
+  IntColumn get userId => integer().nullable().references(Users, #id)();
+  TextColumn get actorName => text().nullable()();
   TextColumn get moduleName => text()();
   TextColumn get action => text()();
   TextColumn get entityType => text().nullable()();
   IntColumn get recordId => integer().nullable()();
+  TextColumn get recordLabel => text().nullable()();
   TextColumn get oldValue => text().nullable()();
   TextColumn get newValue => text().nullable()();
   BoolColumn get sincronizado => boolean().withDefault(const Constant(false))();
@@ -304,6 +311,7 @@ class SesionLocal extends Table {
 // Base de datos
 
 @DriftDatabase(
+  include: {'audit.drift'},
   tables: [
     Users,
     Roles,
@@ -329,6 +337,7 @@ class SesionLocal extends Table {
 )
 class AppDatabase extends _$AppDatabase {
   final SensitiveDataGate sensitiveData;
+  final AuditActor auditActor = AuditActor();
 
   AppDatabase({DatabaseKeyStore keyStore = const SecureDatabaseKeyStore()})
     : this.guarded(_openConnection(keyStore));
@@ -343,7 +352,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor) : sensitiveData = SensitiveDataGate();
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 22;
 
   // Nombre del proveedor por defecto: las compras sin proveedor elegido se
   // asignan a él (mismo patrón que la categoría "Sin categoría" de productos).
@@ -826,6 +835,30 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'UPDATE users SET mfa_enabled = 0 WHERE mfa_secret IS NULL',
         );
+      }
+      if (from < 21) {
+        await m.alterTable(
+          TableMigration(
+            auditLogs,
+            newColumns: [auditLogs.actorName, auditLogs.recordLabel],
+          ),
+        );
+        await m.create(auditLogsCreatedAt);
+        await m.create(auditLogsNoDelete);
+      } else if (from < 22) {
+        await m.addColumn(auditLogs, auditLogs.actorName);
+        await m.addColumn(auditLogs, auditLogs.recordLabel);
+        await customStatement('DROP TRIGGER IF EXISTS audit_logs_no_update');
+      }
+      if (from < 22) {
+        await customStatement(
+          'UPDATE audit_logs SET actor_name = '
+          '(SELECT username FROM users WHERE users.id = audit_logs.user_id)',
+        );
+        await m.create(auditLogsNoUpdate);
+        await m.create(auditLogsUserCreated);
+        await m.create(auditLogsModuleCreated);
+        await m.create(auditLogsActionCreated);
       }
     },
   );

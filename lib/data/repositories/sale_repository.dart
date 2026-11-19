@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/default_records.dart';
 import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
@@ -70,13 +71,14 @@ class SaleRepository {
     )..where((c) => c.name.equals(DefaultRecords.client))).getSingleOrNull();
     if (existing != null) return existing.id;
     final now = appNow();
-    return database.into(database.clients).insert(
+    return database.auditedInsert('clients', () => database.into(database.clients).insert(
       ClientsCompanion.insert(
         name: DefaultRecords.client,
         isActive: const Value(true),
         createdAt: Value(now),
         updatedAt: Value(now),
       ),
+    ),
     );
   }
 
@@ -189,16 +191,26 @@ class SaleRepository {
 
         if (product != null) {
           final newStock = product.stock - quantity;
-          await (database.update(
-            database.products,
-          )..where((p) => p.id.equals(productId))).write(
-            ProductsCompanion(
-              stock: Value(newStock < 0 ? 0 : newStock),
-              updatedAt: Value(appNow()),
-            ),
-          );
+          await database.auditedStockUpdate('products', productId, () async {
+            await (database.update(
+              database.products,
+            )..where((p) => p.id.equals(productId))).write(
+              ProductsCompanion(
+                stock: Value(newStock < 0 ? 0 : newStock),
+                updatedAt: Value(appNow()),
+              ),
+            );
+          });
         }
       }
+      await database.recordChange(
+        module: AuditModule.ventas,
+        entity: 'sales',
+        id: saleId,
+        before: null,
+        after: () async =>
+            await database.auditRowWithItems('sales', saleId, 'sale_items', 'sale_id'),
+      );
     });
   }
 
@@ -219,17 +231,20 @@ class SaleRepository {
           database.products,
         )..where((p) => p.id.equals(item.productId))).getSingleOrNull();
         if (product == null) continue;
-        await (database.update(
-          database.products,
-        )..where((p) => p.id.equals(item.productId))).write(
-          ProductsCompanion(
-            stock: Value(product.stock + item.quantity),
-            updatedAt: Value(appNow()),
-          ),
-        );
+        await database.auditedStockUpdate('products', item.productId, () async {
+          await (database.update(
+            database.products,
+          )..where((p) => p.id.equals(item.productId))).write(
+            ProductsCompanion(
+              stock: Value(product.stock + item.quantity),
+              updatedAt: Value(appNow()),
+            ),
+          );
+        });
       }
 
       final now = appNow();
+      final before = await database.auditRowWithItems('sales', saleId, 'sale_items', 'sale_id');
       await (database.update(
         database.sales,
       )..where((s) => s.id.equals(saleId))).write(
@@ -238,6 +253,14 @@ class SaleRepository {
           canceledAt: Value(now),
           updatedAt: Value(now),
         ),
+      );
+      await database.recordChange(
+        module: AuditModule.ventas,
+        entity: 'sales',
+        id: saleId,
+        before: before,
+        after: () async =>
+            await database.auditRowWithItems('sales', saleId, 'sale_items', 'sale_id'),
       );
       return null;
     });
@@ -267,6 +290,7 @@ class SaleRepository {
       if (current.isCanceled) {
         return 'La venta está cancelada y no se puede editar';
       }
+      final before = await database.auditRowWithItems('sales', saleId, 'sale_items', 'sale_id');
 
       final oldItems = await (database.select(
         database.saleItems,
@@ -277,14 +301,16 @@ class SaleRepository {
           database.products,
         )..where((p) => p.id.equals(oldItem.productId))).getSingleOrNull();
         if (product != null) {
-          await (database.update(
-            database.products,
-          )..where((p) => p.id.equals(oldItem.productId))).write(
-            ProductsCompanion(
-              stock: Value(product.stock + oldItem.quantity),
-              updatedAt: Value(appNow()),
-            ),
-          );
+          await database.auditedStockUpdate('products', oldItem.productId, () async {
+            await (database.update(
+              database.products,
+            )..where((p) => p.id.equals(oldItem.productId))).write(
+              ProductsCompanion(
+                stock: Value(product.stock + oldItem.quantity),
+                updatedAt: Value(appNow()),
+              ),
+            );
+          });
         }
       }
 
@@ -334,16 +360,27 @@ class SaleRepository {
 
         if (product != null) {
           final newStock = product.stock - quantity;
-          await (database.update(
-            database.products,
-          )..where((p) => p.id.equals(productId))).write(
-            ProductsCompanion(
-              stock: Value(newStock < 0 ? 0 : newStock),
-              updatedAt: Value(appNow()),
-            ),
-          );
+          await database.auditedStockUpdate('products', productId, () async {
+            await (database.update(
+              database.products,
+            )..where((p) => p.id.equals(productId))).write(
+              ProductsCompanion(
+                stock: Value(newStock < 0 ? 0 : newStock),
+                updatedAt: Value(appNow()),
+              ),
+            );
+          });
         }
       }
+      await database.recordChange(
+        module: AuditModule.ventas,
+        entity: 'sales',
+        id: saleId,
+        before: before,
+        action: AuditAction.update,
+        after: () async =>
+            await database.auditRowWithItems('sales', saleId, 'sale_items', 'sale_id'),
+      );
       return null;
     });
   }

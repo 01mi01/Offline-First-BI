@@ -3,6 +3,7 @@ import '../../config/quantity_format.dart';
 import 'package:drift/drift.dart';
 import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/material_model.dart';
 import '../../models/product_material_model.dart';
 import '../../models/unit_model.dart';
@@ -68,6 +69,7 @@ class MaterialRepository {
       }
     }
     return database.transaction(() async {
+      final before = await database.auditRow('materials', id);
       final savedId = await database
           .into(database.materials)
           .insertOnConflictUpdate(
@@ -131,6 +133,12 @@ class MaterialRepository {
           );
         }
       }
+      await database.recordChange(
+        module: AuditModule.materiales,
+        entity: 'materials',
+        id: id ?? savedId,
+        before: before,
+      );
       return id ?? savedId;
     });
   }
@@ -258,6 +266,10 @@ class MaterialRepository {
           return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
         }
         final now = appNow();
+        final before = await database.auditRow(
+          'product_materials',
+          existing.id,
+        );
         await database.transaction(() async {
           await (database.update(
             database.productMaterials,
@@ -269,21 +281,29 @@ class MaterialRepository {
               updatedAt: Value(now),
             ),
           );
-          await (database.update(
-            database.materials,
-          )..where((m) => m.id.equals(materialId))).write(
-            MaterialsCompanion(
-              stock: Value(
-                await roundForUnit(
-                  database,
-                  material.unitId,
-                  material.stock - quantityUsed,
+          await database.auditedStockUpdate('materials', materialId, () async {
+            await (database.update(
+              database.materials,
+            )..where((m) => m.id.equals(materialId))).write(
+              MaterialsCompanion(
+                stock: Value(
+                  await roundForUnit(
+                    database,
+                    material.unitId,
+                    material.stock - quantityUsed,
+                  ),
                 ),
+                updatedAt: Value(now),
               ),
-              updatedAt: Value(now),
-            ),
-          );
+            );
+          });
         });
+        await database.recordChange(
+          module: AuditModule.materiales,
+          entity: 'product_materials',
+          id: existing.id,
+          before: before,
+        );
         return null;
       }
 
@@ -298,7 +318,7 @@ class MaterialRepository {
         return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
       }
 
-      await database
+      final newId = await database
           .into(database.productMaterials)
           .insert(
             ProductMaterialsCompanion.insert(
@@ -308,21 +328,29 @@ class MaterialRepository {
             ),
           );
 
-      await (database.update(
-        database.materials,
-      )..where((m) => m.id.equals(materialId))).write(
-        MaterialsCompanion(
-          stock: Value(
-            await roundForUnit(
-              database,
-              material.unitId,
-              material.stock - quantityUsed,
+      await database.auditedStockUpdate('materials', materialId, () async {
+        await (database.update(
+          database.materials,
+        )..where((m) => m.id.equals(materialId))).write(
+          MaterialsCompanion(
+            stock: Value(
+              await roundForUnit(
+                database,
+                material.unitId,
+                material.stock - quantityUsed,
+              ),
             ),
+            updatedAt: Value(appNow()),
           ),
-          updatedAt: Value(appNow()),
-        ),
-      );
+        );
+      });
 
+      await database.recordChange(
+        module: AuditModule.materiales,
+        entity: 'product_materials',
+        id: newId,
+        before: null,
+      );
       return null;
     });
   }
@@ -364,6 +392,7 @@ class MaterialRepository {
         return 'Stock insuficiente. Disponible: ${await _fmt(material)}';
       }
 
+      final before = await database.auditRow('product_materials', recordId);
       await (database.update(database.productMaterials)
             ..where((pm) => pm.id.equals(recordId)))
           .write(ProductMaterialsCompanion(
@@ -371,21 +400,29 @@ class MaterialRepository {
         updatedAt: Value(appNow()),
       ));
 
-      await (database.update(
-        database.materials,
-      )..where((m) => m.id.equals(record.materialId))).write(
-        MaterialsCompanion(
-          stock: Value(
-            await roundForUnit(
-              database,
-              material.unitId,
-              material.stock - difference,
+      await database.auditedStockUpdate('materials', record.materialId, () async {
+        await (database.update(
+          database.materials,
+        )..where((m) => m.id.equals(record.materialId))).write(
+          MaterialsCompanion(
+            stock: Value(
+              await roundForUnit(
+                database,
+                material.unitId,
+                material.stock - difference,
+              ),
             ),
+            updatedAt: Value(appNow()),
           ),
-          updatedAt: Value(appNow()),
-        ),
-      );
+        );
+      });
 
+      await database.recordChange(
+        module: AuditModule.materiales,
+        entity: 'product_materials',
+        id: recordId,
+        before: before,
+      );
       return null;
     });
   }
@@ -406,20 +443,23 @@ class MaterialRepository {
       if (material == null) return 'Material no encontrado';
 
       final now = appNow();
-      await (database.update(
-        database.materials,
-      )..where((m) => m.id.equals(record.materialId))).write(
-        MaterialsCompanion(
-          stock: Value(
-            await roundForUnit(
-              database,
-              material.unitId,
-              material.stock + record.quantityUsed,
+      final before = await database.auditRow('product_materials', recordId);
+      await database.auditedStockUpdate('materials', record.materialId, () async {
+        await (database.update(
+          database.materials,
+        )..where((m) => m.id.equals(record.materialId))).write(
+          MaterialsCompanion(
+            stock: Value(
+              await roundForUnit(
+                database,
+                material.unitId,
+                material.stock + record.quantityUsed,
+              ),
             ),
+            updatedAt: Value(now),
           ),
-          updatedAt: Value(now),
-        ),
-      );
+        );
+      });
       await (database.update(
         database.productMaterials,
       )..where((pm) => pm.id.equals(recordId))).write(
@@ -428,6 +468,12 @@ class MaterialRepository {
           canceledAt: Value(now),
           updatedAt: Value(now),
         ),
+      );
+      await database.recordChange(
+        module: AuditModule.materiales,
+        entity: 'product_materials',
+        id: recordId,
+        before: before,
       );
       return null;
     });

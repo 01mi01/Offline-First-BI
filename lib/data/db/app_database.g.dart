@@ -715,6 +715,819 @@ class UsersCompanion extends UpdateCompanion<User> {
   }
 }
 
+class $AuditLogsTable extends AuditLogs
+    with TableInfo<$AuditLogsTable, AuditLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AuditLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<int> userId = GeneratedColumn<int>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _actorNameMeta = const VerificationMeta(
+    'actorName',
+  );
+  @override
+  late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
+    'actor_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _moduleNameMeta = const VerificationMeta(
+    'moduleName',
+  );
+  @override
+  late final GeneratedColumn<String> moduleName = GeneratedColumn<String>(
+    'module_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recordIdMeta = const VerificationMeta(
+    'recordId',
+  );
+  @override
+  late final GeneratedColumn<int> recordId = GeneratedColumn<int>(
+    'record_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recordLabelMeta = const VerificationMeta(
+    'recordLabel',
+  );
+  @override
+  late final GeneratedColumn<String> recordLabel = GeneratedColumn<String>(
+    'record_label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _oldValueMeta = const VerificationMeta(
+    'oldValue',
+  );
+  @override
+  late final GeneratedColumn<String> oldValue = GeneratedColumn<String>(
+    'old_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _newValueMeta = const VerificationMeta(
+    'newValue',
+  );
+  @override
+  late final GeneratedColumn<String> newValue = GeneratedColumn<String>(
+    'new_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
+    'sincronizado',
+  );
+  @override
+  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
+    'sincronizado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sincronizado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
+    'supabaseId',
+  );
+  @override
+  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
+    'supabase_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    actorName,
+    moduleName,
+    action,
+    entityType,
+    recordId,
+    recordLabel,
+    oldValue,
+    newValue,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'audit_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AuditLog> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
+    if (data.containsKey('actor_name')) {
+      context.handle(
+        _actorNameMeta,
+        actorName.isAcceptableOrUnknown(data['actor_name']!, _actorNameMeta),
+      );
+    }
+    if (data.containsKey('module_name')) {
+      context.handle(
+        _moduleNameMeta,
+        moduleName.isAcceptableOrUnknown(data['module_name']!, _moduleNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moduleNameMeta);
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    }
+    if (data.containsKey('record_id')) {
+      context.handle(
+        _recordIdMeta,
+        recordId.isAcceptableOrUnknown(data['record_id']!, _recordIdMeta),
+      );
+    }
+    if (data.containsKey('record_label')) {
+      context.handle(
+        _recordLabelMeta,
+        recordLabel.isAcceptableOrUnknown(
+          data['record_label']!,
+          _recordLabelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('old_value')) {
+      context.handle(
+        _oldValueMeta,
+        oldValue.isAcceptableOrUnknown(data['old_value']!, _oldValueMeta),
+      );
+    }
+    if (data.containsKey('new_value')) {
+      context.handle(
+        _newValueMeta,
+        newValue.isAcceptableOrUnknown(data['new_value']!, _newValueMeta),
+      );
+    }
+    if (data.containsKey('sincronizado')) {
+      context.handle(
+        _sincronizadoMeta,
+        sincronizado.isAcceptableOrUnknown(
+          data['sincronizado']!,
+          _sincronizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supabase_id')) {
+      context.handle(
+        _supabaseIdMeta,
+        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AuditLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AuditLog(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}user_id'],
+      ),
+      actorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_name'],
+      ),
+      moduleName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}module_name'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      ),
+      recordId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}record_id'],
+      ),
+      recordLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}record_label'],
+      ),
+      oldValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}old_value'],
+      ),
+      newValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}new_value'],
+      ),
+      sincronizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sincronizado'],
+      )!,
+      supabaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supabase_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $AuditLogsTable createAlias(String alias) {
+    return $AuditLogsTable(attachedDatabase, alias);
+  }
+}
+
+class AuditLog extends DataClass implements Insertable<AuditLog> {
+  final int id;
+  final int? userId;
+  final String? actorName;
+  final String moduleName;
+  final String action;
+  final String? entityType;
+  final int? recordId;
+  final String? recordLabel;
+  final String? oldValue;
+  final String? newValue;
+  final bool sincronizado;
+  final String? supabaseId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  const AuditLog({
+    required this.id,
+    this.userId,
+    this.actorName,
+    required this.moduleName,
+    required this.action,
+    this.entityType,
+    this.recordId,
+    this.recordLabel,
+    this.oldValue,
+    this.newValue,
+    required this.sincronizado,
+    this.supabaseId,
+    required this.createdAt,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<int>(userId);
+    }
+    if (!nullToAbsent || actorName != null) {
+      map['actor_name'] = Variable<String>(actorName);
+    }
+    map['module_name'] = Variable<String>(moduleName);
+    map['action'] = Variable<String>(action);
+    if (!nullToAbsent || entityType != null) {
+      map['entity_type'] = Variable<String>(entityType);
+    }
+    if (!nullToAbsent || recordId != null) {
+      map['record_id'] = Variable<int>(recordId);
+    }
+    if (!nullToAbsent || recordLabel != null) {
+      map['record_label'] = Variable<String>(recordLabel);
+    }
+    if (!nullToAbsent || oldValue != null) {
+      map['old_value'] = Variable<String>(oldValue);
+    }
+    if (!nullToAbsent || newValue != null) {
+      map['new_value'] = Variable<String>(newValue);
+    }
+    map['sincronizado'] = Variable<bool>(sincronizado);
+    if (!nullToAbsent || supabaseId != null) {
+      map['supabase_id'] = Variable<String>(supabaseId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  AuditLogsCompanion toCompanion(bool nullToAbsent) {
+    return AuditLogsCompanion(
+      id: Value(id),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
+      actorName: actorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorName),
+      moduleName: Value(moduleName),
+      action: Value(action),
+      entityType: entityType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityType),
+      recordId: recordId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recordId),
+      recordLabel: recordLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recordLabel),
+      oldValue: oldValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldValue),
+      newValue: newValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newValue),
+      sincronizado: Value(sincronizado),
+      supabaseId: supabaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supabaseId),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory AuditLog.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AuditLog(
+      id: serializer.fromJson<int>(json['id']),
+      userId: serializer.fromJson<int?>(json['userId']),
+      actorName: serializer.fromJson<String?>(json['actorName']),
+      moduleName: serializer.fromJson<String>(json['moduleName']),
+      action: serializer.fromJson<String>(json['action']),
+      entityType: serializer.fromJson<String?>(json['entityType']),
+      recordId: serializer.fromJson<int?>(json['recordId']),
+      recordLabel: serializer.fromJson<String?>(json['recordLabel']),
+      oldValue: serializer.fromJson<String?>(json['oldValue']),
+      newValue: serializer.fromJson<String?>(json['newValue']),
+      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
+      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'userId': serializer.toJson<int?>(userId),
+      'actorName': serializer.toJson<String?>(actorName),
+      'moduleName': serializer.toJson<String>(moduleName),
+      'action': serializer.toJson<String>(action),
+      'entityType': serializer.toJson<String?>(entityType),
+      'recordId': serializer.toJson<int?>(recordId),
+      'recordLabel': serializer.toJson<String?>(recordLabel),
+      'oldValue': serializer.toJson<String?>(oldValue),
+      'newValue': serializer.toJson<String?>(newValue),
+      'sincronizado': serializer.toJson<bool>(sincronizado),
+      'supabaseId': serializer.toJson<String?>(supabaseId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  AuditLog copyWith({
+    int? id,
+    Value<int?> userId = const Value.absent(),
+    Value<String?> actorName = const Value.absent(),
+    String? moduleName,
+    String? action,
+    Value<String?> entityType = const Value.absent(),
+    Value<int?> recordId = const Value.absent(),
+    Value<String?> recordLabel = const Value.absent(),
+    Value<String?> oldValue = const Value.absent(),
+    Value<String?> newValue = const Value.absent(),
+    bool? sincronizado,
+    Value<String?> supabaseId = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
+  }) => AuditLog(
+    id: id ?? this.id,
+    userId: userId.present ? userId.value : this.userId,
+    actorName: actorName.present ? actorName.value : this.actorName,
+    moduleName: moduleName ?? this.moduleName,
+    action: action ?? this.action,
+    entityType: entityType.present ? entityType.value : this.entityType,
+    recordId: recordId.present ? recordId.value : this.recordId,
+    recordLabel: recordLabel.present ? recordLabel.value : this.recordLabel,
+    oldValue: oldValue.present ? oldValue.value : this.oldValue,
+    newValue: newValue.present ? newValue.value : this.newValue,
+    sincronizado: sincronizado ?? this.sincronizado,
+    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  AuditLog copyWithCompanion(AuditLogsCompanion data) {
+    return AuditLog(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      actorName: data.actorName.present ? data.actorName.value : this.actorName,
+      moduleName: data.moduleName.present
+          ? data.moduleName.value
+          : this.moduleName,
+      action: data.action.present ? data.action.value : this.action,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      recordId: data.recordId.present ? data.recordId.value : this.recordId,
+      recordLabel: data.recordLabel.present
+          ? data.recordLabel.value
+          : this.recordLabel,
+      oldValue: data.oldValue.present ? data.oldValue.value : this.oldValue,
+      newValue: data.newValue.present ? data.newValue.value : this.newValue,
+      sincronizado: data.sincronizado.present
+          ? data.sincronizado.value
+          : this.sincronizado,
+      supabaseId: data.supabaseId.present
+          ? data.supabaseId.value
+          : this.supabaseId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuditLog(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('actorName: $actorName, ')
+          ..write('moduleName: $moduleName, ')
+          ..write('action: $action, ')
+          ..write('entityType: $entityType, ')
+          ..write('recordId: $recordId, ')
+          ..write('recordLabel: $recordLabel, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    actorName,
+    moduleName,
+    action,
+    entityType,
+    recordId,
+    recordLabel,
+    oldValue,
+    newValue,
+    sincronizado,
+    supabaseId,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AuditLog &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.actorName == this.actorName &&
+          other.moduleName == this.moduleName &&
+          other.action == this.action &&
+          other.entityType == this.entityType &&
+          other.recordId == this.recordId &&
+          other.recordLabel == this.recordLabel &&
+          other.oldValue == this.oldValue &&
+          other.newValue == this.newValue &&
+          other.sincronizado == this.sincronizado &&
+          other.supabaseId == this.supabaseId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
+  final Value<int> id;
+  final Value<int?> userId;
+  final Value<String?> actorName;
+  final Value<String> moduleName;
+  final Value<String> action;
+  final Value<String?> entityType;
+  final Value<int?> recordId;
+  final Value<String?> recordLabel;
+  final Value<String?> oldValue;
+  final Value<String?> newValue;
+  final Value<bool> sincronizado;
+  final Value<String?> supabaseId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
+  const AuditLogsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    this.moduleName = const Value.absent(),
+    this.action = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.recordId = const Value.absent(),
+    this.recordLabel = const Value.absent(),
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  AuditLogsCompanion.insert({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    required String moduleName,
+    required String action,
+    this.entityType = const Value.absent(),
+    this.recordId = const Value.absent(),
+    this.recordLabel = const Value.absent(),
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    this.sincronizado = const Value.absent(),
+    this.supabaseId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : moduleName = Value(moduleName),
+       action = Value(action);
+  static Insertable<AuditLog> custom({
+    Expression<int>? id,
+    Expression<int>? userId,
+    Expression<String>? actorName,
+    Expression<String>? moduleName,
+    Expression<String>? action,
+    Expression<String>? entityType,
+    Expression<int>? recordId,
+    Expression<String>? recordLabel,
+    Expression<String>? oldValue,
+    Expression<String>? newValue,
+    Expression<bool>? sincronizado,
+    Expression<String>? supabaseId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (actorName != null) 'actor_name': actorName,
+      if (moduleName != null) 'module_name': moduleName,
+      if (action != null) 'action': action,
+      if (entityType != null) 'entity_type': entityType,
+      if (recordId != null) 'record_id': recordId,
+      if (recordLabel != null) 'record_label': recordLabel,
+      if (oldValue != null) 'old_value': oldValue,
+      if (newValue != null) 'new_value': newValue,
+      if (sincronizado != null) 'sincronizado': sincronizado,
+      if (supabaseId != null) 'supabase_id': supabaseId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  AuditLogsCompanion copyWith({
+    Value<int>? id,
+    Value<int?>? userId,
+    Value<String?>? actorName,
+    Value<String>? moduleName,
+    Value<String>? action,
+    Value<String?>? entityType,
+    Value<int?>? recordId,
+    Value<String?>? recordLabel,
+    Value<String?>? oldValue,
+    Value<String?>? newValue,
+    Value<bool>? sincronizado,
+    Value<String?>? supabaseId,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
+  }) {
+    return AuditLogsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      actorName: actorName ?? this.actorName,
+      moduleName: moduleName ?? this.moduleName,
+      action: action ?? this.action,
+      entityType: entityType ?? this.entityType,
+      recordId: recordId ?? this.recordId,
+      recordLabel: recordLabel ?? this.recordLabel,
+      oldValue: oldValue ?? this.oldValue,
+      newValue: newValue ?? this.newValue,
+      sincronizado: sincronizado ?? this.sincronizado,
+      supabaseId: supabaseId ?? this.supabaseId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<int>(userId.value);
+    }
+    if (actorName.present) {
+      map['actor_name'] = Variable<String>(actorName.value);
+    }
+    if (moduleName.present) {
+      map['module_name'] = Variable<String>(moduleName.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (recordId.present) {
+      map['record_id'] = Variable<int>(recordId.value);
+    }
+    if (recordLabel.present) {
+      map['record_label'] = Variable<String>(recordLabel.value);
+    }
+    if (oldValue.present) {
+      map['old_value'] = Variable<String>(oldValue.value);
+    }
+    if (newValue.present) {
+      map['new_value'] = Variable<String>(newValue.value);
+    }
+    if (sincronizado.present) {
+      map['sincronizado'] = Variable<bool>(sincronizado.value);
+    }
+    if (supabaseId.present) {
+      map['supabase_id'] = Variable<String>(supabaseId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuditLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('actorName: $actorName, ')
+          ..write('moduleName: $moduleName, ')
+          ..write('action: $action, ')
+          ..write('entityType: $entityType, ')
+          ..write('recordId: $recordId, ')
+          ..write('recordLabel: $recordLabel, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('sincronizado: $sincronizado, ')
+          ..write('supabaseId: $supabaseId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $RolesTable extends Roles with TableInfo<$RolesTable, Role> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -11051,715 +11864,6 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
   }
 }
 
-class $AuditLogsTable extends AuditLogs
-    with TableInfo<$AuditLogsTable, AuditLog> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $AuditLogsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
-  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
-  @override
-  late final GeneratedColumn<int> userId = GeneratedColumn<int>(
-    'user_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES users (id)',
-    ),
-  );
-  static const VerificationMeta _moduleNameMeta = const VerificationMeta(
-    'moduleName',
-  );
-  @override
-  late final GeneratedColumn<String> moduleName = GeneratedColumn<String>(
-    'module_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _actionMeta = const VerificationMeta('action');
-  @override
-  late final GeneratedColumn<String> action = GeneratedColumn<String>(
-    'action',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
-    'entityType',
-  );
-  @override
-  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
-    'entity_type',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _recordIdMeta = const VerificationMeta(
-    'recordId',
-  );
-  @override
-  late final GeneratedColumn<int> recordId = GeneratedColumn<int>(
-    'record_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _oldValueMeta = const VerificationMeta(
-    'oldValue',
-  );
-  @override
-  late final GeneratedColumn<String> oldValue = GeneratedColumn<String>(
-    'old_value',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _newValueMeta = const VerificationMeta(
-    'newValue',
-  );
-  @override
-  late final GeneratedColumn<String> newValue = GeneratedColumn<String>(
-    'new_value',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _sincronizadoMeta = const VerificationMeta(
-    'sincronizado',
-  );
-  @override
-  late final GeneratedColumn<bool> sincronizado = GeneratedColumn<bool>(
-    'sincronizado',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("sincronizado" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _supabaseIdMeta = const VerificationMeta(
-    'supabaseId',
-  );
-  @override
-  late final GeneratedColumn<String> supabaseId = GeneratedColumn<String>(
-    'supabase_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-    'updated_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    userId,
-    moduleName,
-    action,
-    entityType,
-    recordId,
-    oldValue,
-    newValue,
-    sincronizado,
-    supabaseId,
-    createdAt,
-    updatedAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'audit_logs';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<AuditLog> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('user_id')) {
-      context.handle(
-        _userIdMeta,
-        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_userIdMeta);
-    }
-    if (data.containsKey('module_name')) {
-      context.handle(
-        _moduleNameMeta,
-        moduleName.isAcceptableOrUnknown(data['module_name']!, _moduleNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_moduleNameMeta);
-    }
-    if (data.containsKey('action')) {
-      context.handle(
-        _actionMeta,
-        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_actionMeta);
-    }
-    if (data.containsKey('entity_type')) {
-      context.handle(
-        _entityTypeMeta,
-        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
-      );
-    }
-    if (data.containsKey('record_id')) {
-      context.handle(
-        _recordIdMeta,
-        recordId.isAcceptableOrUnknown(data['record_id']!, _recordIdMeta),
-      );
-    }
-    if (data.containsKey('old_value')) {
-      context.handle(
-        _oldValueMeta,
-        oldValue.isAcceptableOrUnknown(data['old_value']!, _oldValueMeta),
-      );
-    }
-    if (data.containsKey('new_value')) {
-      context.handle(
-        _newValueMeta,
-        newValue.isAcceptableOrUnknown(data['new_value']!, _newValueMeta),
-      );
-    }
-    if (data.containsKey('sincronizado')) {
-      context.handle(
-        _sincronizadoMeta,
-        sincronizado.isAcceptableOrUnknown(
-          data['sincronizado']!,
-          _sincronizadoMeta,
-        ),
-      );
-    }
-    if (data.containsKey('supabase_id')) {
-      context.handle(
-        _supabaseIdMeta,
-        supabaseId.isAcceptableOrUnknown(data['supabase_id']!, _supabaseIdMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    }
-    if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  AuditLog map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return AuditLog(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      userId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}user_id'],
-      )!,
-      moduleName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}module_name'],
-      )!,
-      action: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}action'],
-      )!,
-      entityType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}entity_type'],
-      ),
-      recordId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}record_id'],
-      ),
-      oldValue: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}old_value'],
-      ),
-      newValue: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}new_value'],
-      ),
-      sincronizado: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}sincronizado'],
-      )!,
-      supabaseId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}supabase_id'],
-      ),
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-      updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}updated_at'],
-      ),
-    );
-  }
-
-  @override
-  $AuditLogsTable createAlias(String alias) {
-    return $AuditLogsTable(attachedDatabase, alias);
-  }
-}
-
-class AuditLog extends DataClass implements Insertable<AuditLog> {
-  final int id;
-  final int userId;
-  final String moduleName;
-  final String action;
-  final String? entityType;
-  final int? recordId;
-  final String? oldValue;
-  final String? newValue;
-  final bool sincronizado;
-  final String? supabaseId;
-  final DateTime createdAt;
-  final DateTime? updatedAt;
-  const AuditLog({
-    required this.id,
-    required this.userId,
-    required this.moduleName,
-    required this.action,
-    this.entityType,
-    this.recordId,
-    this.oldValue,
-    this.newValue,
-    required this.sincronizado,
-    this.supabaseId,
-    required this.createdAt,
-    this.updatedAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['user_id'] = Variable<int>(userId);
-    map['module_name'] = Variable<String>(moduleName);
-    map['action'] = Variable<String>(action);
-    if (!nullToAbsent || entityType != null) {
-      map['entity_type'] = Variable<String>(entityType);
-    }
-    if (!nullToAbsent || recordId != null) {
-      map['record_id'] = Variable<int>(recordId);
-    }
-    if (!nullToAbsent || oldValue != null) {
-      map['old_value'] = Variable<String>(oldValue);
-    }
-    if (!nullToAbsent || newValue != null) {
-      map['new_value'] = Variable<String>(newValue);
-    }
-    map['sincronizado'] = Variable<bool>(sincronizado);
-    if (!nullToAbsent || supabaseId != null) {
-      map['supabase_id'] = Variable<String>(supabaseId);
-    }
-    map['created_at'] = Variable<DateTime>(createdAt);
-    if (!nullToAbsent || updatedAt != null) {
-      map['updated_at'] = Variable<DateTime>(updatedAt);
-    }
-    return map;
-  }
-
-  AuditLogsCompanion toCompanion(bool nullToAbsent) {
-    return AuditLogsCompanion(
-      id: Value(id),
-      userId: Value(userId),
-      moduleName: Value(moduleName),
-      action: Value(action),
-      entityType: entityType == null && nullToAbsent
-          ? const Value.absent()
-          : Value(entityType),
-      recordId: recordId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(recordId),
-      oldValue: oldValue == null && nullToAbsent
-          ? const Value.absent()
-          : Value(oldValue),
-      newValue: newValue == null && nullToAbsent
-          ? const Value.absent()
-          : Value(newValue),
-      sincronizado: Value(sincronizado),
-      supabaseId: supabaseId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(supabaseId),
-      createdAt: Value(createdAt),
-      updatedAt: updatedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(updatedAt),
-    );
-  }
-
-  factory AuditLog.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return AuditLog(
-      id: serializer.fromJson<int>(json['id']),
-      userId: serializer.fromJson<int>(json['userId']),
-      moduleName: serializer.fromJson<String>(json['moduleName']),
-      action: serializer.fromJson<String>(json['action']),
-      entityType: serializer.fromJson<String?>(json['entityType']),
-      recordId: serializer.fromJson<int?>(json['recordId']),
-      oldValue: serializer.fromJson<String?>(json['oldValue']),
-      newValue: serializer.fromJson<String?>(json['newValue']),
-      sincronizado: serializer.fromJson<bool>(json['sincronizado']),
-      supabaseId: serializer.fromJson<String?>(json['supabaseId']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'userId': serializer.toJson<int>(userId),
-      'moduleName': serializer.toJson<String>(moduleName),
-      'action': serializer.toJson<String>(action),
-      'entityType': serializer.toJson<String?>(entityType),
-      'recordId': serializer.toJson<int?>(recordId),
-      'oldValue': serializer.toJson<String?>(oldValue),
-      'newValue': serializer.toJson<String?>(newValue),
-      'sincronizado': serializer.toJson<bool>(sincronizado),
-      'supabaseId': serializer.toJson<String?>(supabaseId),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
-    };
-  }
-
-  AuditLog copyWith({
-    int? id,
-    int? userId,
-    String? moduleName,
-    String? action,
-    Value<String?> entityType = const Value.absent(),
-    Value<int?> recordId = const Value.absent(),
-    Value<String?> oldValue = const Value.absent(),
-    Value<String?> newValue = const Value.absent(),
-    bool? sincronizado,
-    Value<String?> supabaseId = const Value.absent(),
-    DateTime? createdAt,
-    Value<DateTime?> updatedAt = const Value.absent(),
-  }) => AuditLog(
-    id: id ?? this.id,
-    userId: userId ?? this.userId,
-    moduleName: moduleName ?? this.moduleName,
-    action: action ?? this.action,
-    entityType: entityType.present ? entityType.value : this.entityType,
-    recordId: recordId.present ? recordId.value : this.recordId,
-    oldValue: oldValue.present ? oldValue.value : this.oldValue,
-    newValue: newValue.present ? newValue.value : this.newValue,
-    sincronizado: sincronizado ?? this.sincronizado,
-    supabaseId: supabaseId.present ? supabaseId.value : this.supabaseId,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
-  );
-  AuditLog copyWithCompanion(AuditLogsCompanion data) {
-    return AuditLog(
-      id: data.id.present ? data.id.value : this.id,
-      userId: data.userId.present ? data.userId.value : this.userId,
-      moduleName: data.moduleName.present
-          ? data.moduleName.value
-          : this.moduleName,
-      action: data.action.present ? data.action.value : this.action,
-      entityType: data.entityType.present
-          ? data.entityType.value
-          : this.entityType,
-      recordId: data.recordId.present ? data.recordId.value : this.recordId,
-      oldValue: data.oldValue.present ? data.oldValue.value : this.oldValue,
-      newValue: data.newValue.present ? data.newValue.value : this.newValue,
-      sincronizado: data.sincronizado.present
-          ? data.sincronizado.value
-          : this.sincronizado,
-      supabaseId: data.supabaseId.present
-          ? data.supabaseId.value
-          : this.supabaseId,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AuditLog(')
-          ..write('id: $id, ')
-          ..write('userId: $userId, ')
-          ..write('moduleName: $moduleName, ')
-          ..write('action: $action, ')
-          ..write('entityType: $entityType, ')
-          ..write('recordId: $recordId, ')
-          ..write('oldValue: $oldValue, ')
-          ..write('newValue: $newValue, ')
-          ..write('sincronizado: $sincronizado, ')
-          ..write('supabaseId: $supabaseId, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    userId,
-    moduleName,
-    action,
-    entityType,
-    recordId,
-    oldValue,
-    newValue,
-    sincronizado,
-    supabaseId,
-    createdAt,
-    updatedAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is AuditLog &&
-          other.id == this.id &&
-          other.userId == this.userId &&
-          other.moduleName == this.moduleName &&
-          other.action == this.action &&
-          other.entityType == this.entityType &&
-          other.recordId == this.recordId &&
-          other.oldValue == this.oldValue &&
-          other.newValue == this.newValue &&
-          other.sincronizado == this.sincronizado &&
-          other.supabaseId == this.supabaseId &&
-          other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
-}
-
-class AuditLogsCompanion extends UpdateCompanion<AuditLog> {
-  final Value<int> id;
-  final Value<int> userId;
-  final Value<String> moduleName;
-  final Value<String> action;
-  final Value<String?> entityType;
-  final Value<int?> recordId;
-  final Value<String?> oldValue;
-  final Value<String?> newValue;
-  final Value<bool> sincronizado;
-  final Value<String?> supabaseId;
-  final Value<DateTime> createdAt;
-  final Value<DateTime?> updatedAt;
-  const AuditLogsCompanion({
-    this.id = const Value.absent(),
-    this.userId = const Value.absent(),
-    this.moduleName = const Value.absent(),
-    this.action = const Value.absent(),
-    this.entityType = const Value.absent(),
-    this.recordId = const Value.absent(),
-    this.oldValue = const Value.absent(),
-    this.newValue = const Value.absent(),
-    this.sincronizado = const Value.absent(),
-    this.supabaseId = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-  });
-  AuditLogsCompanion.insert({
-    this.id = const Value.absent(),
-    required int userId,
-    required String moduleName,
-    required String action,
-    this.entityType = const Value.absent(),
-    this.recordId = const Value.absent(),
-    this.oldValue = const Value.absent(),
-    this.newValue = const Value.absent(),
-    this.sincronizado = const Value.absent(),
-    this.supabaseId = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-  }) : userId = Value(userId),
-       moduleName = Value(moduleName),
-       action = Value(action);
-  static Insertable<AuditLog> custom({
-    Expression<int>? id,
-    Expression<int>? userId,
-    Expression<String>? moduleName,
-    Expression<String>? action,
-    Expression<String>? entityType,
-    Expression<int>? recordId,
-    Expression<String>? oldValue,
-    Expression<String>? newValue,
-    Expression<bool>? sincronizado,
-    Expression<String>? supabaseId,
-    Expression<DateTime>? createdAt,
-    Expression<DateTime>? updatedAt,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (userId != null) 'user_id': userId,
-      if (moduleName != null) 'module_name': moduleName,
-      if (action != null) 'action': action,
-      if (entityType != null) 'entity_type': entityType,
-      if (recordId != null) 'record_id': recordId,
-      if (oldValue != null) 'old_value': oldValue,
-      if (newValue != null) 'new_value': newValue,
-      if (sincronizado != null) 'sincronizado': sincronizado,
-      if (supabaseId != null) 'supabase_id': supabaseId,
-      if (createdAt != null) 'created_at': createdAt,
-      if (updatedAt != null) 'updated_at': updatedAt,
-    });
-  }
-
-  AuditLogsCompanion copyWith({
-    Value<int>? id,
-    Value<int>? userId,
-    Value<String>? moduleName,
-    Value<String>? action,
-    Value<String?>? entityType,
-    Value<int?>? recordId,
-    Value<String?>? oldValue,
-    Value<String?>? newValue,
-    Value<bool>? sincronizado,
-    Value<String?>? supabaseId,
-    Value<DateTime>? createdAt,
-    Value<DateTime?>? updatedAt,
-  }) {
-    return AuditLogsCompanion(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      moduleName: moduleName ?? this.moduleName,
-      action: action ?? this.action,
-      entityType: entityType ?? this.entityType,
-      recordId: recordId ?? this.recordId,
-      oldValue: oldValue ?? this.oldValue,
-      newValue: newValue ?? this.newValue,
-      sincronizado: sincronizado ?? this.sincronizado,
-      supabaseId: supabaseId ?? this.supabaseId,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (userId.present) {
-      map['user_id'] = Variable<int>(userId.value);
-    }
-    if (moduleName.present) {
-      map['module_name'] = Variable<String>(moduleName.value);
-    }
-    if (action.present) {
-      map['action'] = Variable<String>(action.value);
-    }
-    if (entityType.present) {
-      map['entity_type'] = Variable<String>(entityType.value);
-    }
-    if (recordId.present) {
-      map['record_id'] = Variable<int>(recordId.value);
-    }
-    if (oldValue.present) {
-      map['old_value'] = Variable<String>(oldValue.value);
-    }
-    if (newValue.present) {
-      map['new_value'] = Variable<String>(newValue.value);
-    }
-    if (sincronizado.present) {
-      map['sincronizado'] = Variable<bool>(sincronizado.value);
-    }
-    if (supabaseId.present) {
-      map['supabase_id'] = Variable<String>(supabaseId.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AuditLogsCompanion(')
-          ..write('id: $id, ')
-          ..write('userId: $userId, ')
-          ..write('moduleName: $moduleName, ')
-          ..write('action: $action, ')
-          ..write('entityType: $entityType, ')
-          ..write('recordId: $recordId, ')
-          ..write('oldValue: $oldValue, ')
-          ..write('newValue: $newValue, ')
-          ..write('sincronizado: $sincronizado, ')
-          ..write('supabaseId: $supabaseId, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $SesionLocalTable extends SesionLocal
     with TableInfo<$SesionLocalTable, SesionLocalData> {
   @override
@@ -12116,6 +12220,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $UsersTable users = $UsersTable(this);
+  late final $AuditLogsTable auditLogs = $AuditLogsTable(this);
+  late final Trigger auditLogsNoDelete = Trigger(
+    'CREATE TRIGGER audit_logs_no_delete BEFORE DELETE ON audit_logs BEGIN SELECT RAISE (ABORT, \'audit_logs is append-only\');END',
+    'audit_logs_no_delete',
+  );
+  late final Trigger auditLogsNoUpdate = Trigger(
+    'CREATE TRIGGER audit_logs_no_update BEFORE UPDATE ON audit_logs WHEN NEW.id IS NOT OLD.id OR NEW.user_id IS NOT OLD.user_id OR NEW.actor_name IS NOT OLD.actor_name OR NEW.module_name IS NOT OLD.module_name OR NEW."action" IS NOT OLD."action" OR NEW.entity_type IS NOT OLD.entity_type OR NEW.record_id IS NOT OLD.record_id OR NEW.record_label IS NOT OLD.record_label OR NEW.old_value IS NOT OLD.old_value OR NEW.new_value IS NOT OLD.new_value OR NEW.created_at IS NOT OLD.created_at BEGIN SELECT RAISE (ABORT, \'audit_logs is append-only\');END',
+    'audit_logs_no_update',
+  );
   late final $RolesTable roles = $RolesTable(this);
   late final $UserRolesTable userRoles = $UserRolesTable(this);
   late final $ModulesTable modules = $ModulesTable(this);
@@ -12136,14 +12249,32 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SaleItemsTable saleItems = $SaleItemsTable(this);
   late final $PurchasesTable purchases = $PurchasesTable(this);
   late final $PurchaseItemsTable purchaseItems = $PurchaseItemsTable(this);
-  late final $AuditLogsTable auditLogs = $AuditLogsTable(this);
   late final $SesionLocalTable sesionLocal = $SesionLocalTable(this);
+  late final Index auditLogsCreatedAt = Index(
+    'audit_logs_created_at',
+    'CREATE INDEX audit_logs_created_at ON audit_logs (created_at)',
+  );
+  late final Index auditLogsUserCreated = Index(
+    'audit_logs_user_created',
+    'CREATE INDEX audit_logs_user_created ON audit_logs (user_id, created_at)',
+  );
+  late final Index auditLogsModuleCreated = Index(
+    'audit_logs_module_created',
+    'CREATE INDEX audit_logs_module_created ON audit_logs (module_name, created_at)',
+  );
+  late final Index auditLogsActionCreated = Index(
+    'audit_logs_action_created',
+    'CREATE INDEX audit_logs_action_created ON audit_logs ("action", created_at)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     users,
+    auditLogs,
+    auditLogsNoDelete,
+    auditLogsNoUpdate,
     roles,
     userRoles,
     modules,
@@ -12161,9 +12292,29 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     saleItems,
     purchases,
     purchaseItems,
-    auditLogs,
     sesionLocal,
+    auditLogsCreatedAt,
+    auditLogsUserCreated,
+    auditLogsModuleCreated,
+    auditLogsActionCreated,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'audit_logs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'audit_logs',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+  ]);
 }
 
 typedef $$UsersTableCreateCompanionBuilder =
@@ -12200,6 +12351,24 @@ typedef $$UsersTableUpdateCompanionBuilder =
 final class $$UsersTableReferences
     extends BaseReferences<_$AppDatabase, $UsersTable, User> {
   $$UsersTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$AuditLogsTable, List<AuditLog>>
+  _auditLogsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.auditLogs,
+    aliasName: $_aliasNameGenerator(db.users.id, db.auditLogs.userId),
+  );
+
+  $$AuditLogsTableProcessedTableManager get auditLogsRefs {
+    final manager = $$AuditLogsTableTableManager(
+      $_db,
+      $_db.auditLogs,
+    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_auditLogsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 
   static MultiTypedResultKey<$UserRolesTable, List<UserRole>>
   _userRolesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -12238,24 +12407,6 @@ final class $$UsersTableReferences
     final cache = $_typedResult.readTableOrNull(
       _modulePermissionsRefsTable($_db),
     );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$AuditLogsTable, List<AuditLog>>
-  _auditLogsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.auditLogs,
-    aliasName: $_aliasNameGenerator(db.users.id, db.auditLogs.userId),
-  );
-
-  $$AuditLogsTableProcessedTableManager get auditLogsRefs {
-    final manager = $$AuditLogsTableTableManager(
-      $_db,
-      $_db.auditLogs,
-    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_auditLogsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -12348,6 +12499,31 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
     builder: (column) => ColumnFilters(column),
   );
 
+  Expression<bool> auditLogsRefs(
+    Expression<bool> Function($$AuditLogsTableFilterComposer f) f,
+  ) {
+    final $$AuditLogsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.auditLogs,
+      getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AuditLogsTableFilterComposer(
+            $db: $db,
+            $table: $db.auditLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> userRolesRefs(
     Expression<bool> Function($$UserRolesTableFilterComposer f) f,
   ) {
@@ -12389,31 +12565,6 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
           }) => $$ModulePermissionsTableFilterComposer(
             $db: $db,
             $table: $db.modulePermissions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> auditLogsRefs(
-    Expression<bool> Function($$AuditLogsTableFilterComposer f) f,
-  ) {
-    final $$AuditLogsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.auditLogs,
-      getReferencedColumn: (t) => t.userId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$AuditLogsTableFilterComposer(
-            $db: $db,
-            $table: $db.auditLogs,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -12572,6 +12723,31 @@ class $$UsersTableAnnotationComposer
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
+  Expression<T> auditLogsRefs<T extends Object>(
+    Expression<T> Function($$AuditLogsTableAnnotationComposer a) f,
+  ) {
+    final $$AuditLogsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.auditLogs,
+      getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AuditLogsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.auditLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> userRolesRefs<T extends Object>(
     Expression<T> Function($$UserRolesTableAnnotationComposer a) f,
   ) {
@@ -12623,31 +12799,6 @@ class $$UsersTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> auditLogsRefs<T extends Object>(
-    Expression<T> Function($$AuditLogsTableAnnotationComposer a) f,
-  ) {
-    final $$AuditLogsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.auditLogs,
-      getReferencedColumn: (t) => t.userId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$AuditLogsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.auditLogs,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> sesionLocalRefs<T extends Object>(
     Expression<T> Function($$SesionLocalTableAnnotationComposer a) f,
   ) {
@@ -12688,9 +12839,9 @@ class $$UsersTableTableManager
           (User, $$UsersTableReferences),
           User,
           PrefetchHooks Function({
+            bool auditLogsRefs,
             bool userRolesRefs,
             bool modulePermissionsRefs,
-            bool auditLogsRefs,
             bool sesionLocalRefs,
           })
         > {
@@ -12769,22 +12920,39 @@ class $$UsersTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                auditLogsRefs = false,
                 userRolesRefs = false,
                 modulePermissionsRefs = false,
-                auditLogsRefs = false,
                 sesionLocalRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (auditLogsRefs) db.auditLogs,
                     if (userRolesRefs) db.userRoles,
                     if (modulePermissionsRefs) db.modulePermissions,
-                    if (auditLogsRefs) db.auditLogs,
                     if (sesionLocalRefs) db.sesionLocal,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (auditLogsRefs)
+                        await $_getPrefetchedData<User, $UsersTable, AuditLog>(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._auditLogsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).auditLogsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.userId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (userRolesRefs)
                         await $_getPrefetchedData<User, $UsersTable, UserRole>(
                           currentTable: table,
@@ -12817,23 +12985,6 @@ class $$UsersTableTableManager
                                 table,
                                 p0,
                               ).modulePermissionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.userId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (auditLogsRefs)
-                        await $_getPrefetchedData<User, $UsersTable, AuditLog>(
-                          currentTable: table,
-                          referencedTable: $$UsersTableReferences
-                              ._auditLogsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$UsersTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).auditLogsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.userId == item.id,
@@ -12882,11 +13033,504 @@ typedef $$UsersTableProcessedTableManager =
       (User, $$UsersTableReferences),
       User,
       PrefetchHooks Function({
+        bool auditLogsRefs,
         bool userRolesRefs,
         bool modulePermissionsRefs,
-        bool auditLogsRefs,
         bool sesionLocalRefs,
       })
+    >;
+typedef $$AuditLogsTableCreateCompanionBuilder =
+    AuditLogsCompanion Function({
+      Value<int> id,
+      Value<int?> userId,
+      Value<String?> actorName,
+      required String moduleName,
+      required String action,
+      Value<String?> entityType,
+      Value<int?> recordId,
+      Value<String?> recordLabel,
+      Value<String?> oldValue,
+      Value<String?> newValue,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
+typedef $$AuditLogsTableUpdateCompanionBuilder =
+    AuditLogsCompanion Function({
+      Value<int> id,
+      Value<int?> userId,
+      Value<String?> actorName,
+      Value<String> moduleName,
+      Value<String> action,
+      Value<String?> entityType,
+      Value<int?> recordId,
+      Value<String?> recordLabel,
+      Value<String?> oldValue,
+      Value<String?> newValue,
+      Value<bool> sincronizado,
+      Value<String?> supabaseId,
+      Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+    });
+
+final class $$AuditLogsTableReferences
+    extends BaseReferences<_$AppDatabase, $AuditLogsTable, AuditLog> {
+  $$AuditLogsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $UsersTable _userIdTable(_$AppDatabase db) => db.users.createAlias(
+    $_aliasNameGenerator(db.auditLogs.userId, db.users.id),
+  );
+
+  $$UsersTableProcessedTableManager? get userId {
+    final $_column = $_itemColumn<int>('user_id');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AuditLogsTableFilterComposer
+    extends Composer<_$AppDatabase, $AuditLogsTable> {
+  $$AuditLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get moduleName => $composableBuilder(
+    column: $table.moduleName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recordLabel => $composableBuilder(
+    column: $table.recordLabel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get oldValue => $composableBuilder(
+    column: $table.oldValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get newValue => $composableBuilder(
+    column: $table.newValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableFilterComposer get userId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AuditLogsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AuditLogsTable> {
+  $$AuditLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get moduleName => $composableBuilder(
+    column: $table.moduleName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get recordId => $composableBuilder(
+    column: $table.recordId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recordLabel => $composableBuilder(
+    column: $table.recordLabel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get oldValue => $composableBuilder(
+    column: $table.oldValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get newValue => $composableBuilder(
+    column: $table.newValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableOrderingComposer get userId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AuditLogsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AuditLogsTable> {
+  $$AuditLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get actorName =>
+      $composableBuilder(column: $table.actorName, builder: (column) => column);
+
+  GeneratedColumn<String> get moduleName => $composableBuilder(
+    column: $table.moduleName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get recordId =>
+      $composableBuilder(column: $table.recordId, builder: (column) => column);
+
+  GeneratedColumn<String> get recordLabel => $composableBuilder(
+    column: $table.recordLabel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get oldValue =>
+      $composableBuilder(column: $table.oldValue, builder: (column) => column);
+
+  GeneratedColumn<String> get newValue =>
+      $composableBuilder(column: $table.newValue, builder: (column) => column);
+
+  GeneratedColumn<bool> get sincronizado => $composableBuilder(
+    column: $table.sincronizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get supabaseId => $composableBuilder(
+    column: $table.supabaseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get userId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AuditLogsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AuditLogsTable,
+          AuditLog,
+          $$AuditLogsTableFilterComposer,
+          $$AuditLogsTableOrderingComposer,
+          $$AuditLogsTableAnnotationComposer,
+          $$AuditLogsTableCreateCompanionBuilder,
+          $$AuditLogsTableUpdateCompanionBuilder,
+          (AuditLog, $$AuditLogsTableReferences),
+          AuditLog,
+          PrefetchHooks Function({bool userId})
+        > {
+  $$AuditLogsTableTableManager(_$AppDatabase db, $AuditLogsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AuditLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AuditLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AuditLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> userId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                Value<String> moduleName = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String?> entityType = const Value.absent(),
+                Value<int?> recordId = const Value.absent(),
+                Value<String?> recordLabel = const Value.absent(),
+                Value<String?> oldValue = const Value.absent(),
+                Value<String?> newValue = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => AuditLogsCompanion(
+                id: id,
+                userId: userId,
+                actorName: actorName,
+                moduleName: moduleName,
+                action: action,
+                entityType: entityType,
+                recordId: recordId,
+                recordLabel: recordLabel,
+                oldValue: oldValue,
+                newValue: newValue,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> userId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                required String moduleName,
+                required String action,
+                Value<String?> entityType = const Value.absent(),
+                Value<int?> recordId = const Value.absent(),
+                Value<String?> recordLabel = const Value.absent(),
+                Value<String?> oldValue = const Value.absent(),
+                Value<String?> newValue = const Value.absent(),
+                Value<bool> sincronizado = const Value.absent(),
+                Value<String?> supabaseId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+              }) => AuditLogsCompanion.insert(
+                id: id,
+                userId: userId,
+                actorName: actorName,
+                moduleName: moduleName,
+                action: action,
+                entityType: entityType,
+                recordId: recordId,
+                recordLabel: recordLabel,
+                oldValue: oldValue,
+                newValue: newValue,
+                sincronizado: sincronizado,
+                supabaseId: supabaseId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AuditLogsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({userId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (userId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.userId,
+                                referencedTable: $$AuditLogsTableReferences
+                                    ._userIdTable(db),
+                                referencedColumn: $$AuditLogsTableReferences
+                                    ._userIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AuditLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AuditLogsTable,
+      AuditLog,
+      $$AuditLogsTableFilterComposer,
+      $$AuditLogsTableOrderingComposer,
+      $$AuditLogsTableAnnotationComposer,
+      $$AuditLogsTableCreateCompanionBuilder,
+      $$AuditLogsTableUpdateCompanionBuilder,
+      (AuditLog, $$AuditLogsTableReferences),
+      AuditLog,
+      PrefetchHooks Function({bool userId})
     >;
 typedef $$RolesTableCreateCompanionBuilder =
     RolesCompanion Function({
@@ -21551,459 +22195,6 @@ typedef $$PurchaseItemsTableProcessedTableManager =
       PurchaseItem,
       PrefetchHooks Function({bool purchaseId, bool materialId})
     >;
-typedef $$AuditLogsTableCreateCompanionBuilder =
-    AuditLogsCompanion Function({
-      Value<int> id,
-      required int userId,
-      required String moduleName,
-      required String action,
-      Value<String?> entityType,
-      Value<int?> recordId,
-      Value<String?> oldValue,
-      Value<String?> newValue,
-      Value<bool> sincronizado,
-      Value<String?> supabaseId,
-      Value<DateTime> createdAt,
-      Value<DateTime?> updatedAt,
-    });
-typedef $$AuditLogsTableUpdateCompanionBuilder =
-    AuditLogsCompanion Function({
-      Value<int> id,
-      Value<int> userId,
-      Value<String> moduleName,
-      Value<String> action,
-      Value<String?> entityType,
-      Value<int?> recordId,
-      Value<String?> oldValue,
-      Value<String?> newValue,
-      Value<bool> sincronizado,
-      Value<String?> supabaseId,
-      Value<DateTime> createdAt,
-      Value<DateTime?> updatedAt,
-    });
-
-final class $$AuditLogsTableReferences
-    extends BaseReferences<_$AppDatabase, $AuditLogsTable, AuditLog> {
-  $$AuditLogsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $UsersTable _userIdTable(_$AppDatabase db) => db.users.createAlias(
-    $_aliasNameGenerator(db.auditLogs.userId, db.users.id),
-  );
-
-  $$UsersTableProcessedTableManager get userId {
-    final $_column = $_itemColumn<int>('user_id')!;
-
-    final manager = $$UsersTableTableManager(
-      $_db,
-      $_db.users,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$AuditLogsTableFilterComposer
-    extends Composer<_$AppDatabase, $AuditLogsTable> {
-  $$AuditLogsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get moduleName => $composableBuilder(
-    column: $table.moduleName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get action => $composableBuilder(
-    column: $table.action,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get entityType => $composableBuilder(
-    column: $table.entityType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get recordId => $composableBuilder(
-    column: $table.recordId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get oldValue => $composableBuilder(
-    column: $table.oldValue,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get newValue => $composableBuilder(
-    column: $table.newValue,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get sincronizado => $composableBuilder(
-    column: $table.sincronizado,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get supabaseId => $composableBuilder(
-    column: $table.supabaseId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$UsersTableFilterComposer get userId {
-    final $$UsersTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableFilterComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$AuditLogsTableOrderingComposer
-    extends Composer<_$AppDatabase, $AuditLogsTable> {
-  $$AuditLogsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get moduleName => $composableBuilder(
-    column: $table.moduleName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get action => $composableBuilder(
-    column: $table.action,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get entityType => $composableBuilder(
-    column: $table.entityType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get recordId => $composableBuilder(
-    column: $table.recordId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get oldValue => $composableBuilder(
-    column: $table.oldValue,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get newValue => $composableBuilder(
-    column: $table.newValue,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get sincronizado => $composableBuilder(
-    column: $table.sincronizado,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get supabaseId => $composableBuilder(
-    column: $table.supabaseId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$UsersTableOrderingComposer get userId {
-    final $$UsersTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableOrderingComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$AuditLogsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $AuditLogsTable> {
-  $$AuditLogsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get moduleName => $composableBuilder(
-    column: $table.moduleName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get action =>
-      $composableBuilder(column: $table.action, builder: (column) => column);
-
-  GeneratedColumn<String> get entityType => $composableBuilder(
-    column: $table.entityType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get recordId =>
-      $composableBuilder(column: $table.recordId, builder: (column) => column);
-
-  GeneratedColumn<String> get oldValue =>
-      $composableBuilder(column: $table.oldValue, builder: (column) => column);
-
-  GeneratedColumn<String> get newValue =>
-      $composableBuilder(column: $table.newValue, builder: (column) => column);
-
-  GeneratedColumn<bool> get sincronizado => $composableBuilder(
-    column: $table.sincronizado,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get supabaseId => $composableBuilder(
-    column: $table.supabaseId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  $$UsersTableAnnotationComposer get userId {
-    final $$UsersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.userId,
-      referencedTable: $db.users,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UsersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.users,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$AuditLogsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $AuditLogsTable,
-          AuditLog,
-          $$AuditLogsTableFilterComposer,
-          $$AuditLogsTableOrderingComposer,
-          $$AuditLogsTableAnnotationComposer,
-          $$AuditLogsTableCreateCompanionBuilder,
-          $$AuditLogsTableUpdateCompanionBuilder,
-          (AuditLog, $$AuditLogsTableReferences),
-          AuditLog,
-          PrefetchHooks Function({bool userId})
-        > {
-  $$AuditLogsTableTableManager(_$AppDatabase db, $AuditLogsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$AuditLogsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$AuditLogsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$AuditLogsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                Value<int> userId = const Value.absent(),
-                Value<String> moduleName = const Value.absent(),
-                Value<String> action = const Value.absent(),
-                Value<String?> entityType = const Value.absent(),
-                Value<int?> recordId = const Value.absent(),
-                Value<String?> oldValue = const Value.absent(),
-                Value<String?> newValue = const Value.absent(),
-                Value<bool> sincronizado = const Value.absent(),
-                Value<String?> supabaseId = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime?> updatedAt = const Value.absent(),
-              }) => AuditLogsCompanion(
-                id: id,
-                userId: userId,
-                moduleName: moduleName,
-                action: action,
-                entityType: entityType,
-                recordId: recordId,
-                oldValue: oldValue,
-                newValue: newValue,
-                sincronizado: sincronizado,
-                supabaseId: supabaseId,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-              ),
-          createCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                required int userId,
-                required String moduleName,
-                required String action,
-                Value<String?> entityType = const Value.absent(),
-                Value<int?> recordId = const Value.absent(),
-                Value<String?> oldValue = const Value.absent(),
-                Value<String?> newValue = const Value.absent(),
-                Value<bool> sincronizado = const Value.absent(),
-                Value<String?> supabaseId = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime?> updatedAt = const Value.absent(),
-              }) => AuditLogsCompanion.insert(
-                id: id,
-                userId: userId,
-                moduleName: moduleName,
-                action: action,
-                entityType: entityType,
-                recordId: recordId,
-                oldValue: oldValue,
-                newValue: newValue,
-                sincronizado: sincronizado,
-                supabaseId: supabaseId,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$AuditLogsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({userId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (userId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.userId,
-                                referencedTable: $$AuditLogsTableReferences
-                                    ._userIdTable(db),
-                                referencedColumn: $$AuditLogsTableReferences
-                                    ._userIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$AuditLogsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $AuditLogsTable,
-      AuditLog,
-      $$AuditLogsTableFilterComposer,
-      $$AuditLogsTableOrderingComposer,
-      $$AuditLogsTableAnnotationComposer,
-      $$AuditLogsTableCreateCompanionBuilder,
-      $$AuditLogsTableUpdateCompanionBuilder,
-      (AuditLog, $$AuditLogsTableReferences),
-      AuditLog,
-      PrefetchHooks Function({bool userId})
-    >;
 typedef $$SesionLocalTableCreateCompanionBuilder =
     SesionLocalCompanion Function({
       Value<int> id,
@@ -22322,6 +22513,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$UsersTableTableManager get users =>
       $$UsersTableTableManager(_db, _db.users);
+  $$AuditLogsTableTableManager get auditLogs =>
+      $$AuditLogsTableTableManager(_db, _db.auditLogs);
   $$RolesTableTableManager get roles =>
       $$RolesTableTableManager(_db, _db.roles);
   $$UserRolesTableTableManager get userRoles =>
@@ -22356,8 +22549,6 @@ class $AppDatabaseManager {
       $$PurchasesTableTableManager(_db, _db.purchases);
   $$PurchaseItemsTableTableManager get purchaseItems =>
       $$PurchaseItemsTableTableManager(_db, _db.purchaseItems);
-  $$AuditLogsTableTableManager get auditLogs =>
-      $$AuditLogsTableTableManager(_db, _db.auditLogs);
   $$SesionLocalTableTableManager get sesionLocal =>
       $$SesionLocalTableTableManager(_db, _db.sesionLocal);
 }

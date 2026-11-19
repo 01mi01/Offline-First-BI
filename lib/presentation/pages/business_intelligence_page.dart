@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/module_gate.dart';
 import '../../application/module_permission_provider.dart';
 import '../../models/access_control.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/audit_provider.dart';
 import '../../application/bi_provider.dart';
 import '../../application/product_provider.dart';
 import '../../application/purchase_provider.dart';
@@ -44,8 +46,12 @@ class _BusinessIntelligencePageState
         : '$base · vista ${series.granularity.label.toLowerCase()}';
   }
 
-  void _update(BiConfig config) =>
-      ref.read(biConfigProvider.notifier).state = config;
+  void _update(BiConfig config) {
+    unawaited(
+      ref.read(auditRepositoryProvider).recordBiSettings(_config, config),
+    );
+    ref.read(biConfigProvider.notifier).state = config;
+  }
 
   void _setChartType(BiIndicator indicator, BiChartType type) => _update(
     _config.copyWith(chartTypes: {..._config.chartTypes, indicator: type}),

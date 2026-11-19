@@ -13,6 +13,8 @@ const List<String> sensitiveTables = [
   'suppliers',
 ];
 
+const String auditTable = 'audit_logs';
+
 class SensitiveDataLockedException implements Exception {
   const SensitiveDataLockedException();
 
@@ -24,14 +26,25 @@ final Object _systemAccess = Object();
 
 class SensitiveDataGate {
   bool _sessionActive = false;
+  bool _auditReader = false;
 
   bool get sessionActive => _sessionActive;
 
-  bool get isOpen => _sessionActive || Zone.current[_systemAccess] == true;
+  bool get _system => Zone.current[_systemAccess] == true;
 
-  void openSession() => _sessionActive = true;
+  bool get isOpen => _sessionActive || _system;
 
-  void closeSession() => _sessionActive = false;
+  bool get canReadAudit => (_sessionActive && _auditReader) || _system;
+
+  void openSession({bool canReadAudit = false}) {
+    _sessionActive = true;
+    _auditReader = canReadAudit;
+  }
+
+  void closeSession() {
+    _sessionActive = false;
+    _auditReader = false;
+  }
 
   Future<T> runAsSystem<T>(Future<T> Function() action) =>
       runZoned(action, zoneValues: {_systemAccess: true});
@@ -44,6 +57,13 @@ final RegExp _sensitiveStatement = RegExp(
 
 bool readsSensitiveTable(String statement) =>
     _sensitiveStatement.hasMatch(statement);
+
+final RegExp _auditStatement = RegExp(
+  '\\b$auditTable\\b',
+  caseSensitive: false,
+);
+
+bool readsAuditTable(String statement) => _auditStatement.hasMatch(statement);
 
 class SensitiveDataGuard extends QueryInterceptor {
   final SensitiveDataGate gate;
@@ -61,6 +81,9 @@ class SensitiveDataGuard extends QueryInterceptor {
     List<Object?> args,
   ) {
     if (!gate.isOpen && readsSensitiveTable(statement)) {
+      return Future.error(const SensitiveDataLockedException());
+    }
+    if (!gate.canReadAudit && readsAuditTable(statement)) {
       return Future.error(const SensitiveDataLockedException());
     }
     return executor.runSelect(statement, args);

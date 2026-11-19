@@ -1,0 +1,22 @@
+import 'app_database.dart';
+
+CREATE TRIGGER audit_logs_no_delete BEFORE DELETE ON audit_logs
+BEGIN
+  SELECT RAISE(ABORT, 'audit_logs is append-only');
+END;
+
+CREATE TRIGGER audit_logs_no_update BEFORE UPDATE ON audit_logs
+WHEN NEW.id IS NOT OLD.id
+  OR NEW.user_id IS NOT OLD.user_id
+  OR NEW.actor_name IS NOT OLD.actor_name
+  OR NEW.module_name IS NOT OLD.module_name
+  OR NEW.action IS NOT OLD.action
+  OR NEW.entity_type IS NOT OLD.entity_type
+  OR NEW.record_id IS NOT OLD.record_id
+  OR NEW.record_label IS NOT OLD.record_label
+  OR NEW.old_value IS NOT OLD.old_value
+  OR NEW.new_value IS NOT OLD.new_value
+  OR NEW.created_at IS NOT OLD.created_at
+BEGIN
+  SELECT RAISE(ABORT, 'audit_logs is append-only');
+END;

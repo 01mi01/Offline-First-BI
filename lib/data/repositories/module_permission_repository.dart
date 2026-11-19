@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../config/app_clock.dart';
 import '../../models/access_control.dart';
 
@@ -53,6 +54,7 @@ class ModulePermissionRepository {
     Map<AppModule, PermissionSet> permissions,
   ) async {
     await database.transaction(() async {
+      final before = await database.auditPermissions(userId);
       final modules = await database.select(database.modules).get();
       final moduleIds = {for (final m in modules) m.name: m.id};
       final now = appNow();
@@ -88,6 +90,17 @@ class ModulePermissionRepository {
               );
         }
       }
+      await database.recordChange(
+        module: AuditModule.usuarios,
+        entity: 'module_permissions',
+        id: userId,
+        before: before,
+        action: AuditAction.permissionsUpdate,
+        label: (await (database.select(
+          database.users,
+        )..where((u) => u.id.equals(userId))).getSingleOrNull())?.username,
+        after: () => database.auditPermissions(userId),
+      );
     });
   }
 }

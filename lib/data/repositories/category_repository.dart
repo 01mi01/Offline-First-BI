@@ -1,4 +1,5 @@
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/category_model.dart';
 import '../../models/default_records.dart';
 import 'package:drift/drift.dart';
@@ -34,7 +35,9 @@ class CategoryRepository {
         database.categories,
       )..where((c) => c.id.equals(id))).getSingleOrNull();
       if (current != null && DefaultRecords.isCategory(current.name)) {
-        throw const ProtectedRecordException(DefaultRecords.protectedCategoryMessage);
+        throw const ProtectedRecordException(
+          DefaultRecords.protectedCategoryMessage,
+        );
       }
     }
     if (newName != null && DefaultRecords.isCategory(newName)) {
@@ -51,20 +54,29 @@ class CategoryRepository {
   }) async {
     name = requireName(name);
     await _ensureNotProtected(id: id, newName: name);
-    final now = appNow();
-    await database
-        .into(database.categories)
-        .insertOnConflictUpdate(
-          CategoriesCompanion(
-            id: id != null ? Value(id) : const Value.absent(),
-            name: Value(name),
-            description: Value(description),
-            image: Value(image),
-            isActive: Value(isActive),
-            createdAt: id == null ? Value(now) : const Value.absent(),
-            updatedAt: Value(now),
-          ),
-        );
+    await database.transaction(() async {
+      final before = await database.auditRow('categories', id);
+      final now = appNow();
+      final savedId = await database
+          .into(database.categories)
+          .insertOnConflictUpdate(
+            CategoriesCompanion(
+              id: id != null ? Value(id) : const Value.absent(),
+              name: Value(name),
+              description: Value(description),
+              image: Value(image),
+              isActive: Value(isActive),
+              createdAt: id == null ? Value(now) : const Value.absent(),
+              updatedAt: Value(now),
+            ),
+          );
+      await database.recordChange(
+        module: AuditModule.inventario,
+        entity: 'categories',
+        id: id ?? savedId,
+        before: before,
+      );
+    });
   }
 
   Future<bool> hasActiveProducts(int categoryId) async {
@@ -78,13 +90,22 @@ class CategoryRepository {
 
   Future<void> deactivate(int id) async {
     await _ensureNotProtected(id: id);
-    await (database.update(
-      database.categories,
-    )..where((c) => c.id.equals(id))).write(
-      CategoriesCompanion(
-        isActive: const Value(false),
-        updatedAt: Value(appNow()),
-      ),
-    );
+    await database.transaction(() async {
+      final before = await database.auditRow('categories', id);
+      await (database.update(
+        database.categories,
+      )..where((c) => c.id.equals(id))).write(
+        CategoriesCompanion(
+          isActive: const Value(false),
+          updatedAt: Value(appNow()),
+        ),
+      );
+      await database.recordChange(
+        module: AuditModule.inventario,
+        entity: 'categories',
+        id: id,
+        before: before,
+      );
+    });
   }
 }

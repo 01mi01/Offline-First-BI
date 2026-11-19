@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/default_records.dart';
 import '../../models/supplier_model.dart';
 import '../../config/app_clock.dart';
@@ -49,11 +50,15 @@ class SupplierRepository {
           database.suppliers,
         )..where((s) => s.id.equals(id))).getSingleOrNull();
         if (current != null && DefaultRecords.isSupplier(current.name)) {
-          throw const ProtectedRecordException(DefaultRecords.protectedSupplierMessage);
+          throw const ProtectedRecordException(
+            DefaultRecords.protectedSupplierMessage,
+          );
         }
       }
       if (DefaultRecords.isSupplier(name)) {
-        throw const ProtectedRecordException(DefaultRecords.reservedNameMessage);
+        throw const ProtectedRecordException(
+          DefaultRecords.reservedNameMessage,
+        );
       }
       final existing = await (database.select(
         database.suppliers,
@@ -61,8 +66,9 @@ class SupplierRepository {
       if (existing != null && existing.id != id) {
         throw Exception('Ya existe un proveedor con ese nombre');
       }
+      final before = await database.auditRow('suppliers', id);
       final now = appNow();
-      return await database
+      final newId = await database
           .into(database.suppliers)
           .insertOnConflictUpdate(
             SuppliersCompanion(
@@ -74,6 +80,14 @@ class SupplierRepository {
               updatedAt: Value(now),
             ),
           );
+      final savedId = id ?? newId;
+      await database.recordChange(
+        module: AuditModule.proveedores,
+        entity: 'suppliers',
+        id: savedId,
+        before: before,
+      );
+      return savedId;
     });
   }
 }

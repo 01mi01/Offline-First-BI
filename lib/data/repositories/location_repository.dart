@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/location_model.dart';
 import '../../config/app_clock.dart';
 import 'name_rules.dart';
@@ -21,9 +22,9 @@ class LocationRepository {
   }
 
   Future<List<LocationModel>> getAllIncludingInactive() async {
-    final rows = await (database.select(database.locations)
-          ..orderBy([(l) => OrderingTerm.asc(l.city)]))
-        .get();
+    final rows = await (database.select(
+      database.locations,
+    )..orderBy([(l) => OrderingTerm.asc(l.city)])).get();
     return rows.map(_toModel).toList();
   }
 
@@ -36,18 +37,29 @@ class LocationRepository {
   }) async {
     city = requireName(city);
     country = requireName(country);
-    final now = appNow();
-    final savedId = await database.into(database.locations).insertOnConflictUpdate(
-          LocationsCompanion(
-            id: id != null ? Value(id) : const Value.absent(),
-            city: Value(city),
-            country: Value(country),
-            description: Value(description),
-            isActive: Value(isActive),
-            createdAt: id == null ? Value(now) : const Value.absent(),
-            updatedAt: Value(now),
-          ),
-        );
-    return id ?? savedId;
+    return database.transaction(() async {
+      final before = await database.auditRow('locations', id);
+      final now = appNow();
+      final savedId = await database
+          .into(database.locations)
+          .insertOnConflictUpdate(
+            LocationsCompanion(
+              id: id != null ? Value(id) : const Value.absent(),
+              city: Value(city),
+              country: Value(country),
+              description: Value(description),
+              isActive: Value(isActive),
+              createdAt: id == null ? Value(now) : const Value.absent(),
+              updatedAt: Value(now),
+            ),
+          );
+      await database.recordChange(
+        module: AuditModule.ubicaciones,
+        entity: 'locations',
+        id: id ?? savedId,
+        before: before,
+      );
+      return id ?? savedId;
+    });
   }
 }

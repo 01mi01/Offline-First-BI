@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth_provider.dart';
+import '../../application/audit_provider.dart';
 import '../../application/user_provider.dart';
 import '../../models/user_model.dart';
+import 'audit_page.dart';
 import '../../theme/app_theme.dart';
 import '../dialogs/permissions_dialog.dart';
 import '../dialogs/two_factor_setup_sheet.dart';
@@ -298,28 +300,49 @@ class UsersSettingsEntry extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(isAdminProvider)) return const SizedBox.shrink();
+    final isAdmin = ref.watch(isAdminProvider);
+    final canAudit = ref.watch(canViewAuditProvider);
+    if (!isAdmin && !canAudit) return const SizedBox.shrink();
     return AppSection(
       header: 'Administración',
       dividerIndent: AppMetrics.dividerIndentWithTile,
       children: [
-        AppRow(
-          leading: AppTile(
-            icon: Icons.manage_accounts_rounded,
-            color: AppColors.cyanDark,
-            iconColor: AppColors.onDark,
+        if (isAdmin)
+          AppRow(
+            leading: AppTile(
+              icon: Icons.manage_accounts_rounded,
+              color: AppColors.cyanDark,
+              iconColor: AppColors.onDark,
+            ),
+            title: 'Usuarios',
+            subtitle: Text(
+              'Crear, editar y bloquear usuarios',
+              style: AppText.rowSubtitle(context),
+            ),
+            trailing: const AppChevron(),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const UsersPage()),
+            ),
           ),
-          title: 'Usuarios',
-          subtitle: Text(
-            'Crear, editar y bloquear usuarios',
-            style: AppText.rowSubtitle(context),
+        if (canAudit)
+          AppRow(
+            leading: AppTile(
+              icon: Icons.history_rounded,
+              color: AppColors.cyanDark,
+              iconColor: AppColors.onDark,
+            ),
+            title: auditTitle,
+            subtitle: Text(
+              'Registro de las acciones realizadas',
+              style: AppText.rowSubtitle(context),
+            ),
+            trailing: const AppChevron(),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AuditPage()),
+            ),
           ),
-          trailing: const AppChevron(),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const UsersPage()),
-          ),
-        ),
       ],
     );
   }

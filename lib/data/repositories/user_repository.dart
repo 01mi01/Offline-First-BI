@@ -8,6 +8,7 @@ import '../../models/app_role.dart';
 import '../../models/user_model.dart';
 import 'failed_login_attempts.dart';
 import '../services/totp.dart';
+import '../db/audit_log.dart';
 
 class UserManagementException implements Exception {
   final String message;
@@ -128,6 +129,30 @@ class UserRepository {
     }
   }
 
+  Future<Map<String, Object?>?> _auditUser(int id) async {
+    final row = await database.auditRow('users', id);
+    if (row == null) return null;
+    final role = await database.customSelect(
+      'SELECT r.name AS role FROM user_roles ur JOIN roles r ON r.id = ur.role_id '
+      'WHERE ur.user_id = ? LIMIT 1',
+      variables: [Variable.withInt(id)],
+    ).getSingleOrNull();
+    return {...row, 'role': role?.read<String>('role')};
+  }
+
+  Future<void> _recordUser(
+    int id,
+    Map<String, Object?>? before,
+    String action,
+  ) => database.recordChange(
+    module: AuditModule.usuarios,
+    entity: 'users',
+    id: id,
+    before: before,
+    action: action,
+    after: () => _auditUser(id),
+  );
+
   Future<int> create({
     required String username,
     required String email,
@@ -166,6 +191,16 @@ class UserRepository {
               ),
             );
       }
+      await _recordUser(id, null, AuditAction.create);
+      await database.recordChange(
+        module: AuditModule.usuarios,
+        entity: 'module_permissions',
+        id: id,
+        before: null,
+        action: AuditAction.create,
+        label: username,
+        after: () => database.auditPermissions(id),
+      );
       return id;
     });
   }
@@ -181,6 +216,7 @@ class UserRepository {
     await database.transaction(() async {
       await _requireUser(id);
       await _checkUnique(id: id, username: username, email: email);
+      final before = await _auditUser(id);
       await (database.update(
         database.users,
       )..where((u) => u.id.equals(id))).write(
@@ -192,16 +228,23 @@ class UserRepository {
       );
       final current = await getById(id);
       if (current?.appRole != role) await _setRole(id, role);
+      await _recordUser(id, before, AuditAction.update);
     });
   }
 
   Future<void> setBlocked(int id, bool blocked) async {
     await database.transaction(() async {
       await _requireUser(id);
+      final before = await _auditUser(id);
       await (database.update(
         database.users,
       )..where((u) => u.id.equals(id))).write(
         UsersCompanion(isActive: Value(!blocked), updatedAt: Value(appNow())),
+      );
+      await _recordUser(
+        id,
+        before,
+        blocked ? AuditAction.block : AuditAction.unblock,
       );
     });
     if (!blocked) {
@@ -217,6 +260,7 @@ class UserRepository {
     final secret = generateTotpSecret();
     await database.transaction(() async {
       await _requireUser(id);
+      final before = await _auditUser(id);
       await (database.update(
         database.users,
       )..where((u) => u.id.equals(id))).write(
@@ -226,6 +270,7 @@ class UserRepository {
           updatedAt: Value(appNow()),
         ),
       );
+      await _recordUser(id, before, AuditAction.twoFactorEnable);
     });
     return secret;
   }
@@ -233,6 +278,7 @@ class UserRepository {
   Future<void> disableTwoFactor(int id) async {
     await database.transaction(() async {
       await _requireUser(id);
+      final before = await _auditUser(id);
       await (database.update(
         database.users,
       )..where((u) => u.id.equals(id))).write(
@@ -242,12 +288,14 @@ class UserRepository {
           updatedAt: Value(appNow()),
         ),
       );
+      await _recordUser(id, before, AuditAction.twoFactorDisable);
     });
   }
 
   Future<void> resetPassword(int id, String newPassword) async {
     await database.transaction(() async {
       await _requireUser(id);
+      final before = await _auditUser(id);
       await (database.update(
         database.users,
       )..where((u) => u.id.equals(id))).write(
@@ -256,6 +304,7 @@ class UserRepository {
           updatedAt: Value(appNow()),
         ),
       );
+      await _recordUser(id, before, AuditAction.passwordReset);
     });
   }
 }

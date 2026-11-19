@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import 'stock_rounding.dart';
 import '../../models/purchase_model.dart';
 import '../../models/purchase_item_model.dart';
@@ -28,7 +29,7 @@ class PurchaseRepository {
             .getSingleOrNull();
     if (existing != null) return existing.id;
     final now = appNow();
-    return database
+    return database.auditedInsert('suppliers', () => database
         .into(database.suppliers)
         .insert(
           SuppliersCompanion.insert(
@@ -36,7 +37,7 @@ class PurchaseRepository {
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
-        );
+        ));
   }
 
   DateTime get _startOfTomorrow {
@@ -187,26 +188,36 @@ class PurchaseRepository {
           )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
           if (material != null) {
-            await (database.update(
-              database.materials,
-            )..where((m) => m.id.equals(materialId))).write(
-              MaterialsCompanion(
-                stock: Value(
-                  await roundForUnit(
-                    database,
-                    material.unitId,
-                    material.stock + quantity,
+            await database.auditedStockUpdate('materials', materialId, () async {
+              await (database.update(
+                database.materials,
+              )..where((m) => m.id.equals(materialId))).write(
+                MaterialsCompanion(
+                  stock: Value(
+                    await roundForUnit(
+                      database,
+                      material.unitId,
+                      material.stock + quantity,
+                    ),
                   ),
+                  pricePerUnit: later || _isFutureDated(date)
+                      ? const Value.absent()
+                      : Value(unitPrice),
+                  updatedAt: Value(appNow()),
                 ),
-                pricePerUnit: later || _isFutureDated(date)
-                    ? const Value.absent()
-                    : Value(unitPrice),
-                updatedAt: Value(appNow()),
-              ),
-            );
+              );
+            });
           }
         }
       }
+      await database.recordChange(
+        module: AuditModule.compras,
+        entity: 'purchases',
+        id: purchaseId,
+        before: null,
+        after: () async =>
+            await database.auditRowWithItems('purchases', purchaseId, 'purchase_items', 'purchase_id'),
+      );
     });
   }
 
@@ -225,6 +236,7 @@ class PurchaseRepository {
       )..where((p) => p.id.equals(purchaseId))).getSingleOrNull();
       if (purchase == null) return 'Compra no encontrada';
       if (purchase.isCanceled) return 'La compra ya está cancelada';
+      final before = await database.auditRowWithItems('purchases', purchaseId, 'purchase_items', 'purchase_id');
 
       final items = purchase.isMaterial
           ? await (database.select(
@@ -255,14 +267,16 @@ class PurchaseRepository {
 
       final now = appNow();
       for (final entry in stocks.entries) {
-        await (database.update(
-          database.materials,
-        )..where((m) => m.id.equals(entry.key))).write(
-          MaterialsCompanion(
-            stock: Value(entry.value),
-            updatedAt: Value(now),
-          ),
-        );
+        await database.auditedStockUpdate('materials', entry.key, () async {
+          await (database.update(
+            database.materials,
+          )..where((m) => m.id.equals(entry.key))).write(
+            MaterialsCompanion(
+              stock: Value(entry.value),
+              updatedAt: Value(now),
+            ),
+          );
+        });
       }
 
       await (database.update(
@@ -273,6 +287,14 @@ class PurchaseRepository {
           canceledAt: Value(now),
           updatedAt: Value(now),
         ),
+      );
+      await database.recordChange(
+        module: AuditModule.compras,
+        entity: 'purchases',
+        id: purchaseId,
+        before: before,
+        after: () async =>
+            await database.auditRowWithItems('purchases', purchaseId, 'purchase_items', 'purchase_id'),
       );
       return null;
     });
@@ -298,6 +320,7 @@ class PurchaseRepository {
       if (current.isCanceled) {
         return 'La compra está cancelada y no se puede editar';
       }
+      final before = await database.auditRowWithItems('purchases', purchaseId, 'purchase_items', 'purchase_id');
 
       final resolvedSupplierId = supplierId ?? await _defaultSupplierId();
 
@@ -340,20 +363,22 @@ class PurchaseRepository {
           database.materials,
         )..where((m) => m.id.equals(oldItem.materialId))).getSingleOrNull();
         if (material != null) {
-          await (database.update(
-            database.materials,
-          )..where((m) => m.id.equals(oldItem.materialId))).write(
-            MaterialsCompanion(
-              stock: Value(
-                await roundForUnit(
-                  database,
-                  material.unitId,
-                  material.stock - oldItem.quantity,
+          await database.auditedStockUpdate('materials', oldItem.materialId, () async {
+            await (database.update(
+              database.materials,
+            )..where((m) => m.id.equals(oldItem.materialId))).write(
+              MaterialsCompanion(
+                stock: Value(
+                  await roundForUnit(
+                    database,
+                    material.unitId,
+                    material.stock - oldItem.quantity,
+                  ),
                 ),
+                updatedAt: Value(appNow()),
               ),
-              updatedAt: Value(appNow()),
-            ),
-          );
+            );
+          });
         }
       }
 
@@ -409,26 +434,37 @@ class PurchaseRepository {
           )..where((m) => m.id.equals(materialId))).getSingleOrNull();
 
           if (material != null) {
-            await (database.update(
-              database.materials,
-            )..where((m) => m.id.equals(materialId))).write(
-              MaterialsCompanion(
-                stock: Value(
-                  await roundForUnit(
-                    database,
-                    material.unitId,
-                    material.stock + quantity,
+            await database.auditedStockUpdate('materials', materialId, () async {
+              await (database.update(
+                database.materials,
+              )..where((m) => m.id.equals(materialId))).write(
+                MaterialsCompanion(
+                  stock: Value(
+                    await roundForUnit(
+                      database,
+                      material.unitId,
+                      material.stock + quantity,
+                    ),
                   ),
+                  pricePerUnit: later || _isFutureDated(date)
+                      ? const Value.absent()
+                      : Value(unitPrice),
+                  updatedAt: Value(appNow()),
                 ),
-                pricePerUnit: later || _isFutureDated(date)
-                    ? const Value.absent()
-                    : Value(unitPrice),
-                updatedAt: Value(appNow()),
-              ),
-            );
+              );
+            });
           }
         }
       }
+      await database.recordChange(
+        module: AuditModule.compras,
+        entity: 'purchases',
+        id: purchaseId,
+        before: before,
+        action: AuditAction.update,
+        after: () async =>
+            await database.auditRowWithItems('purchases', purchaseId, 'purchase_items', 'purchase_id'),
+      );
       return null;
     });
   }

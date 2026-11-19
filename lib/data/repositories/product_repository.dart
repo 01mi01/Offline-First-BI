@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../config/rounding.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/default_records.dart';
 import '../../models/product_model.dart';
 import '../../config/app_clock.dart';
@@ -30,17 +31,18 @@ class ProductRepository {
   }
 
   Future<List<ProductModel>> getAllIncludingInactive() async {
-    final rows = await (database.select(database.products)
-          ..orderBy([(p) => OrderingTerm.asc(p.name)]))
-        .get();
+    final rows = await (database.select(
+      database.products,
+    )..orderBy([(p) => OrderingTerm.asc(p.name)])).get();
     return rows.map(_toModel).toList();
   }
 
   Future<List<ProductModel>> getActive() async {
-    final rows = await (database.select(database.products)
-          ..where((p) => p.isActive.equals(true))
-          ..orderBy([(p) => OrderingTerm.asc(p.name)]))
-        .get();
+    final rows =
+        await (database.select(database.products)
+              ..where((p) => p.isActive.equals(true))
+              ..orderBy([(p) => OrderingTerm.asc(p.name)]))
+            .get();
     return rows.map(_toModel).toList();
   }
 
@@ -59,25 +61,36 @@ class ProductRepository {
     name = requireName(name);
     await _ensureUniqueName(name, id);
     final prices = resolveProductPrices(priceA, priceB);
-    final now = appNow();
-    await database.into(database.products).insertOnConflictUpdate(
-          ProductsCompanion(
-            id: id != null ? Value(id) : const Value.absent(),
-            categoryId: Value(categoryId ?? await _defaultCategoryId()),
-            name: Value(name),
-            description: Value(description),
-            image: Value(image),
-            priceA: Value(round2(prices.priceA)),
-            priceB: Value(round2(prices.priceB)),
-            productionCost: Value(
-              productionCost == null ? null : round2(productionCost),
+    await database.transaction(() async {
+      final before = await database.auditRow('products', id);
+      final now = appNow();
+      final savedId = await database
+          .into(database.products)
+          .insertOnConflictUpdate(
+            ProductsCompanion(
+              id: id != null ? Value(id) : const Value.absent(),
+              categoryId: Value(categoryId ?? await _defaultCategoryId()),
+              name: Value(name),
+              description: Value(description),
+              image: Value(image),
+              priceA: Value(round2(prices.priceA)),
+              priceB: Value(round2(prices.priceB)),
+              productionCost: Value(
+                productionCost == null ? null : round2(productionCost),
+              ),
+              stock: Value(stock),
+              isActive: Value(isActive),
+              createdAt: id == null ? Value(now) : const Value.absent(),
+              updatedAt: Value(now),
             ),
-            stock: Value(stock),
-            isActive: Value(isActive),
-            createdAt: id == null ? Value(now) : const Value.absent(),
-            updatedAt: Value(now),
-          ),
-        );
+          );
+      await database.recordChange(
+        module: AuditModule.inventario,
+        entity: 'products',
+        id: id ?? savedId,
+        before: before,
+      );
+    });
   }
 
   Future<void> _ensureUniqueName(String name, int? id) async {
@@ -94,8 +107,8 @@ class ProductRepository {
       database.categories,
     )..where((c) => c.name.equals(DefaultRecords.category))).getSingleOrNull();
     if (existing != null) return existing.id;
-    return await database
+    return database.auditedInsert('categories', () => database
         .into(database.categories)
-        .insert(CategoriesCompanion.insert(name: DefaultRecords.category));
+        .insert(CategoriesCompanion.insert(name: DefaultRecords.category)));
   }
 }

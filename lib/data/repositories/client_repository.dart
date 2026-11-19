@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/client_model.dart';
 import '../../models/default_records.dart';
 import '../../config/app_clock.dart';
@@ -40,14 +41,19 @@ class ClientRepository {
           database.clients,
         )..where((c) => c.id.equals(id))).getSingleOrNull();
         if (current != null && DefaultRecords.isClient(current.name)) {
-          throw const ProtectedRecordException(DefaultRecords.protectedClientMessage);
+          throw const ProtectedRecordException(
+            DefaultRecords.protectedClientMessage,
+          );
         }
       }
       if (DefaultRecords.isClient(name)) {
-        throw const ProtectedRecordException(DefaultRecords.reservedNameMessage);
+        throw const ProtectedRecordException(
+          DefaultRecords.reservedNameMessage,
+        );
       }
+      final before = await database.auditRow('clients', id);
       final now = appNow();
-      return await database
+      final newId = await database
           .into(database.clients)
           .insertOnConflictUpdate(
             ClientsCompanion(
@@ -59,6 +65,14 @@ class ClientRepository {
               updatedAt: Value(now),
             ),
           );
+      final savedId = id ?? newId;
+      await database.recordChange(
+        module: AuditModule.clientes,
+        entity: 'clients',
+        id: savedId,
+        before: before,
+      );
+      return savedId;
     });
   }
 }

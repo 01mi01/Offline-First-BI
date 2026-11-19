@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../data/db/app_database.dart';
+import '../db/audit_log.dart';
 import '../../models/event_model.dart';
 import '../../config/app_clock.dart';
 import 'name_rules.dart';
@@ -23,9 +24,9 @@ class EventRepository {
   }
 
   Future<List<EventModel>> getAll() async {
-    final rows = await (database.select(database.events)
-          ..orderBy([(e) => OrderingTerm.desc(e.startDate)]))
-        .get();
+    final rows = await (database.select(
+      database.events,
+    )..orderBy([(e) => OrderingTerm.desc(e.startDate)])).get();
     return rows.map(_toModel).toList();
   }
 
@@ -39,19 +40,30 @@ class EventRepository {
     bool isActive = true,
   }) async {
     name = requireName(name);
-    final now = appNow();
-    await database.into(database.events).insertOnConflictUpdate(
-          EventsCompanion(
-            id: id != null ? Value(id) : const Value.absent(),
-            name: Value(name),
-            locationId: Value(locationId),
-            startDate: Value(startDate),
-            endDate: Value(endDate),
-            notes: Value(notes),
-            isActive: Value(isActive),
-            createdAt: id == null ? Value(now) : const Value.absent(),
-            updatedAt: Value(now),
-          ),
-        );
+    await database.transaction(() async {
+      final before = await database.auditRow('events', id);
+      final now = appNow();
+      final savedId = await database
+          .into(database.events)
+          .insertOnConflictUpdate(
+            EventsCompanion(
+              id: id != null ? Value(id) : const Value.absent(),
+              name: Value(name),
+              locationId: Value(locationId),
+              startDate: Value(startDate),
+              endDate: Value(endDate),
+              notes: Value(notes),
+              isActive: Value(isActive),
+              createdAt: id == null ? Value(now) : const Value.absent(),
+              updatedAt: Value(now),
+            ),
+          );
+      await database.recordChange(
+        module: AuditModule.eventos,
+        entity: 'events',
+        id: id ?? savedId,
+        before: before,
+      );
+    });
   }
 }
